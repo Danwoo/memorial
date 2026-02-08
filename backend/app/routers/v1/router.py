@@ -4,18 +4,28 @@ Combines all v1 routers into a single router
 """
 from fastapi import APIRouter
 
-from app.routers.v1 import auth, chat, digest, graph, integrations, journal, memory, search, stats
+from app.routers.v1 import (
+    auth_router,
+    chat_router,
+    digest_router,
+    graph_router,
+    integrations_router,
+    journal_router,
+    memory_router,
+    search_router,
+    stats_router,
+)
 
 api_router = APIRouter(prefix="/api/v1")
 
 # Include all routers
-api_router.include_router(memory.router)
-api_router.include_router(chat.router)
-api_router.include_router(graph.router)
-api_router.include_router(search.router)
-api_router.include_router(auth.router)
-api_router.include_router(integrations.router)
-api_router.include_router(stats.router)
-api_router.include_router(journal.router)
-api_router.include_router(digest.router)
+api_router.include_router(memory_router.router)
+api_router.include_router(chat_router.router)
+api_router.include_router(graph_router.router)
+api_router.include_router(search_router.router)
+api_router.include_router(auth_router.router)
+api_router.include_router(integrations_router.router)
+api_router.include_router(stats_router.router)
+api_router.include_router(journal_router.router)
+api_router.include_router(digest_router.router)
 
