@@ -1,0 +1,239 @@
+.journal-view {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    background-color: #1a1a1a;
+    color: #e5e5e5;
+    overflow: hidden;
+}
+
+.editor-section {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #333;
+    padding: 20px;
+}
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.editor-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #a78bfa; /* Purple tone */
+}
+
+.save-btn {
+    background-color: #34d399;
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.save-btn:hover {
+    background-color: #10b981;
+}
+
+.editor-container {
+    display: flex;
+    flex: 1;
+    gap: 20px;
+    height: calc(100% - 60px);
+}
+
+.markdown-input {
+    flex: 1;
+    background-color: #262626;
+    border: 1px solid #404040;
+    border-radius: 8px;
+    color: #e5e5e5;
+    padding: 16px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 1rem;
+    line-height: 1.6;
+    resize: none;
+    outline: none;
+}
+
+.markdown-input:focus {
+    border-color: #a78bfa;
+}
+
+.markdown-preview {
+    flex: 1;
+    background-color: #262626;
+    border: 1px solid #404040;
+    border-radius: 8px;
+    padding: 16px;
+    overflow-y: auto;
+    font-family: sans-serif;
+    line-height: 1.6;
+}
+
+.markdown-preview h1, .markdown-preview h2, .markdown-preview h3 {
+    border-bottom: 1px solid #404040;
+    padding-bottom: 0.5em;
+    margin-bottom: 0.5em;
+    color: #e5e5e5;
+}
+
+.markdown-preview p {
+    margin-bottom: 1em;
+}
+
+.markdown-preview ul, .markdown-preview ol {
+    padding-left: 20px;
+    margin-bottom: 1em;
+}
+
+.markdown-preview blockquote {
+    border-left: 4px solid #a78bfa;
+    margin-left: 0;
+    padding-left: 16px;
+    color: #a3a3a3;
+}
+
+/* Companion Section (Right Sidebar) */
+.companion-section {
+    flex: 1;
+    min-width: 350px;
+    display: flex;
+    flex-direction: column;
+    background-color: #171717;
+    border-left: 1px solid #333;
+}
+
+.companion-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #333;
+    background-color: #262626;
+}
+
+.companion-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #fbbf24; /* Amber for 'Thinking' */
+}
+
+.chat-wrapper {
+    flex: 1;
+    overflow: hidden;
+    /* Force ChatView to fit inside */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Override ChatView styles if needed to fit */
+.chat-wrapper .chat-view {
+    height: 100%;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+}
+
+.chat-wrapper .chat-input-container {
+    background-color: #171717;
+}
+
+/* Context Sidebar */
+.context-sidebar {
+    width: 280px;
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    background-color: #1f1f1f;
+    border-left: 1px solid #333;
+    border-right: 1px solid #333;
+}
+
+.context-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 16px;
+    border-bottom: 1px solid #333;
+    background-color: #262626;
+}
+
+.context-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #60a5fa; /* Blue accent */
+}
+
+.loading-indicator {
+    color: #a3a3a3;
+    font-size: 0.9rem;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.context-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.memory-card {
+    background-color: #262626;
+    border: 1px solid #404040;
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.1s;
+}
+
+.memory-card:hover {
+    border-color: #60a5fa;
+    transform: translateY(-2px);
+}
+
+.memory-type {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #a78bfa;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.memory-title {
+    font-weight: 600;
+    color: #e5e5e5;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+.memory-summary {
+    font-size: 0.8rem;
+    color: #a3a3a3;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.no-context {
+    color: #737373;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 20px;
+    line-height: 1.5;
+}
+

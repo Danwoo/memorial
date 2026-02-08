@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 300px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #1a1a1a;
+      color: #e5e5e5;
+      margin: 0;
+      padding: 16px;
+    }
+    h2 { margin-top: 0; color: #a78bfa; font-size: 1.2rem; }
+    .page-info {
+      background: #2d2d2d;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    .page-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .page-url {
+      color: #888;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #8b5cf6;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    button:hover { background: #7c3aed; }
+    button:disabled { background: #555; cursor: not-allowed; }
+    #status {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      text-align: center;
+      min-height: 20px;
+    }
+    .success { color: #34d399; }
+    .error { color: #f87171; }
+  </style>
+</head>
+<body>
+  <h2>Memoir Scout 🧠</h2>
+  
+  <div class="page-info">
+    <div class="page-title" id="title">Loading...</div>
+    <div class="page-url" id="url">...</div>
+  </div>
+
+  <button id="saveBtn">Save to Memory</button>
+  <div id="status"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

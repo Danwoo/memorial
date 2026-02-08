@@ -1,0 +1,290 @@
+import { useState, useEffect } from 'react'
+import './DashboardView.css'
+
+interface OverviewStats {
+  total_memories: number
+  total_this_week: number
+  total_this_month: number
+  most_active_day: string | null
+}
+
+interface ActivityData {
+  date: string
+  count: number
+}
+
+interface SourceStats {
+  source_type: string
+  count: number
+  percentage: number
+}
+
+interface TagStats {
+  tag: string
+  count: number
+}
+
+interface StatsData {
+  overview: OverviewStats
+  recent_activity: ActivityData[]
+  sources: SourceStats[]
+  top_tags: TagStats[]
+}
+
+interface DigestMemory {
+  id: string
+  title: string
+  type: string
+  summary: string
+  tags: string[]
+}
+
+interface DigestData {
+  date: string
+  summary: {
+    memory_count: number
+    journal_count: number
+    chat_count: number
+  }
+  memories: DigestMemory[]
+  insights: {
+    main_topics: string[]
+    suggested_questions: string[]
+  }
+}
+
+const API_BASE = '/api/v1'
+
+export default function DashboardView() {
+  const [stats, setStats] = useState<StatsData | null>(null)
+  const [digest, setDigest] = useState<DigestData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      
+      // Load stats and digest in parallel
+      const [statsRes, digestRes] = await Promise.all([
+        fetch(`${API_BASE}/stats/overview`),
+        fetch(`${API_BASE}/digest/today`)
+      ])
+      
+      if (!statsRes.ok) throw new Error('Failed to load stats')
+      const statsData = await statsRes.json()
+      setStats(statsData)
+      
+      if (digestRes.ok) {
+        const digestData = await digestRes.json()
+        setDigest(digestData)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getSourceIcon = (type: string) => {
+    switch (type) {
+      case 'WEB': return '🌐'
+      case 'PDF': return '📄'
+      case 'NOTE': return '📝'
+      default: return '📋'
+    }
+  }
+
+  const getMaxActivity = () => {
+    if (!stats) return 1
+    return Math.max(...stats.recent_activity.map(a => a.count), 1)
+  }
+
+  if (loading) {
+    return (
+      <div className="dashboard-view">
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>통계 로딩 중...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard-view">
+        <div className="error-state">
+          <div className="error-icon">⚠️</div>
+          <h3>오류 발생</h3>
+          <p>{error}</p>
+          <button className="btn btn-primary" onClick={loadData}>다시 시도</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!stats) return null
+
+  return (
+    <div className="dashboard-view">
+      <div className="dashboard-header">
+        <h1>📊 대시보드</h1>
+        <p className="dashboard-subtitle">나의 지식 활동 요약</p>
+      </div>
+
+      {/* Today's Digest Section */}
+      {digest && (digest.summary.memory_count > 0 || digest.insights.suggested_questions.length > 0) && (
+        <div className="digest-section glass-card">
+          <div className="digest-header">
+            <h2>🌅 오늘의 현황</h2>
+            <span className="digest-date">{digest.date}</span>
+          </div>
+          
+          <div className="digest-stats">
+            <div className="digest-stat">
+              <span className="digest-stat-value">{digest.summary.memory_count}</span>
+              <span className="digest-stat-label">새 메모리</span>
+            </div>
+            <div className="digest-stat">
+              <span className="digest-stat-value">{digest.summary.journal_count}</span>
+              <span className="digest-stat-label">일기</span>
+            </div>
+            <div className="digest-stat">
+              <span className="digest-stat-value">{digest.insights.main_topics.length}</span>
+              <span className="digest-stat-label">주제</span>
+            </div>
+          </div>
+
+          {digest.insights.suggested_questions.length > 0 && (
+            <div className="digest-questions">
+              <h3>🤔 AI 추천 질문</h3>
+              <ul>
+                {digest.insights.suggested_questions.map((q, idx) => (
+                  <li key={idx}>{q}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {digest.memories.length > 0 && (
+            <div className="digest-memories">
+              <h3>📝 오늘 저장한 내용</h3>
+              <div className="digest-memory-list">
+                {digest.memories.slice(0, 3).map((m, idx) => (
+                  <div key={idx} className="digest-memory-item">
+                    <span className="digest-memory-type">{m.type}</span>
+                    <span className="digest-memory-title">{m.title}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Overview Cards */}
+      <div className="stats-grid">
+        <div className="stat-card glass-card">
+          <div className="stat-icon">📚</div>
+          <div className="stat-content">
+            <span className="stat-value">{stats.overview.total_memories}</span>
+            <span className="stat-label">전체 메모리</span>
+          </div>
+        </div>
+
+        <div className="stat-card glass-card">
+          <div className="stat-icon">📅</div>
+          <div className="stat-content">
+            <span className="stat-value">{stats.overview.total_this_week}</span>
+            <span className="stat-label">이번 주</span>
+          </div>
+        </div>
+
+        <div className="stat-card glass-card">
+          <div className="stat-icon">📆</div>
+          <div className="stat-content">
+            <span className="stat-value">{stats.overview.total_this_month}</span>
+            <span className="stat-label">이번 달</span>
+          </div>
+        </div>
+
+        <div className="stat-card glass-card">
+          <div className="stat-icon">🔥</div>
+          <div className="stat-content">
+            <span className="stat-value">
+              {stats.overview.most_active_day ? stats.overview.most_active_day.slice(5) : '-'}
+            </span>
+            <span className="stat-label">가장 활발한 날</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Activity Chart */}
+      <div className="chart-section glass-card">
+        <h2>📈 최근 7일 활동</h2>
+        <div className="activity-chart">
+          {stats.recent_activity.map((day, idx) => (
+            <div key={idx} className="activity-bar-container">
+              <div 
+                className="activity-bar"
+                style={{ height: `${(day.count / getMaxActivity()) * 100}%` }}
+              >
+                <span className="activity-count">{day.count}</span>
+              </div>
+              <span className="activity-date">{day.date.slice(5)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="dashboard-row">
+        {/* Source Distribution */}
+        <div className="chart-section glass-card">
+          <h2>📁 소스 타입 분포</h2>
+          <div className="source-list">
+            {stats.sources.map((src, idx) => (
+              <div key={idx} className="source-item">
+                <div className="source-header">
+                  <span className="source-icon">{getSourceIcon(src.source_type)}</span>
+                  <span className="source-name">{src.source_type}</span>
+                  <span className="source-count">{src.count}</span>
+                </div>
+                <div className="source-bar-bg">
+                  <div 
+                    className="source-bar" 
+                    style={{ width: `${src.percentage}%` }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top Tags */}
+        <div className="chart-section glass-card">
+          <h2>🏷️ 인기 태그</h2>
+          <div className="tag-cloud">
+            {stats.top_tags.length > 0 ? (
+              stats.top_tags.map((tag, idx) => (
+                <span 
+                  key={idx} 
+                  className="tag-item"
+                  style={{ fontSize: `${Math.max(0.8, Math.min(1.5, 0.8 + tag.count * 0.1))}rem` }}
+                >
+                  #{tag.tag} <span className="tag-count">({tag.count})</span>
+                </span>
+              ))
+            ) : (
+              <p className="no-tags">아직 태그가 없습니다</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
