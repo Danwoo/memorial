@@ -11,7 +11,7 @@ import json
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from app.agents.state import AgentState
-from app.core.config import get_settings
+from app.config.settings import get_settings
 
 ONTOLOGIST_SYSTEM_PROMPT = """You are the Ontologist. You build the Knowledge Graph.
 
