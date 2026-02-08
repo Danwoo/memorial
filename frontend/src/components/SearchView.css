@@ -21,7 +21,8 @@
 
 .search-box {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 0;
   padding: 20px;
   margin-bottom: 32px;
 }
@@ -247,13 +248,5 @@
   border-radius: 4px;
   font-size: 0.75rem;
   color: var(--accent-primary);
-}
-
-.search-box {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 20px;
-  margin-bottom: 32px;
 }
 
