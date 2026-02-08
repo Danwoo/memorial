@@ -1,6 +1,9 @@
+import logging
 from typing import List, Dict, Any, Optional
 from uuid import UUID
 from langchain_openai import ChatOpenAI
+
+logger = logging.getLogger(__name__)
 from langchain_core.messages import SystemMessage, HumanMessage
 from app.repositories.journal_repository import JournalRepository
 from app.repositories.graph_repository import GraphRepository
@@ -83,7 +86,7 @@ class JournalService:
             return questions[:3]  # Return max 3 questions
             
         except Exception as e:
-            print(f"Error generating review questions: {e}")
+            logger.exception("Error generating review questions")
             return ["이 경험에서 어떤 인사이트를 얻었나요?"]
 
     def detect_cognitive_distortions(self, content: str) -> Dict[str, Any]:

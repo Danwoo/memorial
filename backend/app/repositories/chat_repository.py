@@ -6,8 +6,12 @@ from typing import List, Optional
 from uuid import UUID, uuid4
 from datetime import datetime
 
+import logging
+
 from supabase import Client
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
+
+logger = logging.getLogger(__name__)
 
 
 class ChatRepository:
@@ -103,7 +107,7 @@ class ChatRepository:
             self.db.table("chat_messages").insert(data).execute()
             return True
         except Exception as e:
-            print(f"Error adding message to Supabase: {e}")
+            logger.exception("Error adding message to Supabase")
             return False
     
     async def get_messages(self, session_id: UUID) -> List[BaseMessage]:
@@ -134,5 +138,5 @@ class ChatRepository:
                 .execute()
             return True
         except Exception as e:
-            print(f"Error deleting session from Supabase: {e}")
+            logger.exception("Error deleting session from Supabase")
             return False

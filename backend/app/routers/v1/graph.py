@@ -2,10 +2,14 @@
 Graph Router
 API endpoints for knowledge graph visualization
 """
-from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import Dict, List, Any
-from datetime import datetime, timedelta
 import hashlib
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, List, Any
+
+from fastapi import APIRouter, HTTPException, Query, Depends
+
+logger = logging.getLogger(__name__)
 
 from app.services.graph_service import GraphService
 from app.repositories.memory_repository import MemoryRepository
@@ -148,7 +152,7 @@ async def get_graph(
             return {"nodes": nodes, "links": unique_links}
             
         except Exception as e:
-            print(f"Error generating graph from memories: {e}")
+            logger.exception("Error generating graph from memories")
             return get_demo_graph_data()
         
     if not graph_service.is_available:

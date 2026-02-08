@@ -2,7 +2,10 @@
 Graph Service
 Business logic for knowledge graph operations
 """
+import logging
 from typing import List, Dict, Any
+
+logger = logging.getLogger(__name__)
 
 from app.repositories.graph_repository import GraphRepository
 
@@ -36,7 +39,7 @@ class GraphService:
             await self.graph_repo.save_relations(relations)
             return True
         except Exception as e:
-            print(f"Error saving to graph: {e}")
+            logger.exception("Error saving to graph")
             return False
     
     async def get_visualization_data(

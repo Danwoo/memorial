@@ -3,9 +3,13 @@ Auth Router
 Authentication endpoints (login, signup, user info)
 Note: Auth endpoints are pass-through to Supabase Auth, so not using Service layer
 """
+import logging
+
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 import httpx
+
+logger = logging.getLogger(__name__)
 
 from app.config.settings import get_settings
 from app.security.auth import get_current_user
@@ -140,7 +144,7 @@ async def get_me(user: dict = Depends(get_current_user)):
                 if profiles:
                     profile = profiles[0]
     except Exception as e:
-        print(f"Failed to fetch profile: {e}")
+        logger.exception("Failed to fetch profile")
 
     return UserResponse(
         id=str(user["id"]),
