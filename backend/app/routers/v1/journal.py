@@ -1,20 +1,27 @@
+"""
+Journal Router
+API endpoints for journal operations
+"""
 import logging
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Dict, Any
-from pydantic import BaseModel
+from typing import Any
 from uuid import UUID
 
-from app.services.journal_service import JournalService
-from app.dependencies import get_journal_service
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+
 from app.config.settings import DEFAULT_USER_ID
+from app.dependencies import get_journal_service, get_vector_repository
+from app.repositories.vector_repository import VectorRepository
+from app.services.journal_service import JournalService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/journals", tags=["journals"])
 
+
 class JournalCreate(BaseModel):
     content: str
+
 
 class JournalResponse(BaseModel):
     id: UUID
@@ -23,7 +30,12 @@ class JournalResponse(BaseModel):
     created_at: str
     updated_at: str
 
-@router.post("", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
+
+class ReviewRequest(BaseModel):
+    content: str
+
+
+@router.post("", response_model=dict[str, Any], status_code=status.HTTP_201_CREATED)
 def create_journal(
     journal: JournalCreate,
     service: JournalService = Depends(get_journal_service),
@@ -34,68 +46,66 @@ def create_journal(
         if not result:
             raise HTTPException(status_code=500, detail="Failed to create journal entry - no result returned")
         return result
-    except Exception as e:
+    except HTTPException:
+        raise
+    except Exception:
         logger.exception("Failed to create journal entry")
-        raise HTTPException(status_code=500, detail="Internal server error while creating journal entry")
+        raise HTTPException(status_code=500, detail="Internal server error while creating journal entry") from None
 
-@router.get("", response_model=List[Dict[str, Any]])
+
+@router.get("", response_model=list[dict[str, Any]])
 def list_journals(
     limit: int = 10,
-    service: JournalService = Depends(get_journal_service)
+    service: JournalService = Depends(get_journal_service),
 ):
     user_id = DEFAULT_USER_ID
     return service.get_entries(user_id, limit)
 
-class ReviewRequest(BaseModel):
-    content: str
 
-@router.post("/review-questions", response_model=Dict[str, Any])
+@router.post("/review-questions", response_model=dict[str, Any])
 def get_review_questions(
     request: ReviewRequest,
-    service: JournalService = Depends(get_journal_service)
+    service: JournalService = Depends(get_journal_service),
 ):
     """Generate Socratic review questions based on journal content."""
     try:
         questions = service.generate_review_questions(request.content)
         return {"questions": questions}
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to generate review questions")
         return {"questions": ["이 경험에서 어떤 인사이트를 얻었나요?"]}
 
-@router.post("/insights", response_model=Dict[str, Any])
+
+@router.post("/insights", response_model=dict[str, Any])
 def analyze_insights(
     request: ReviewRequest,
-    service: JournalService = Depends(get_journal_service)
+    service: JournalService = Depends(get_journal_service),
 ):
     """Analyze journal content for cognitive distortions and provide feedback."""
     try:
         insights = service.detect_cognitive_distortions(request.content)
         return insights
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to analyze cognitive distortions")
         return {"has_distortions": False, "distortions": [], "wellness_score": 100}
 
-@router.post("/related-memories", response_model=Dict[str, Any])
+
+@router.post("/related-memories", response_model=dict[str, Any])
 async def get_related_memories(
     request: ReviewRequest,
+    vector_repo: VectorRepository = Depends(get_vector_repository),
 ):
     """Find memories related to the current journal content for context sidebar."""
-    from app.infrastructure.database import get_supabase_client
-    from app.repositories.vector_repository import VectorRepository
-
-    vector_repo = VectorRepository(get_supabase_client())
     try:
-        # Search for similar memories based on journal content
         if not request.content or len(request.content.strip()) < 10:
             return {"memories": []}
 
         results = await vector_repo.similarity_search(
             query=request.content,
             limit=5,
-            threshold=0.4
+            threshold=0.4,
         )
-        
-        # Format results for frontend
+
         memories = [
             {
                 "id": m.get("id"),
@@ -103,12 +113,12 @@ async def get_related_memories(
                 "summary": m.get("summary") or m.get("content", "")[:100],
                 "type": m.get("type", "memory"),
                 "created_at": m.get("created_at"),
-                "similarity": m.get("similarity", 0)
+                "similarity": m.get("similarity", 0),
             }
             for m in results
         ]
-        
+
         return {"memories": memories}
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to fetch related memories")
         return {"memories": []}
