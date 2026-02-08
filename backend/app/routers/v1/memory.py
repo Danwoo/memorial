@@ -9,7 +9,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 
 from app.agents.librarian import librarian_graph
 from app.dependencies import get_memory_service
-from app.schemas.memory import (
+from app.schemas.memory_schema import (
     MemoryCreate,
     MemoryCreateResponse,
     MemoryDetail,

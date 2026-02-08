@@ -7,7 +7,7 @@ from uuid import UUID
 from app.repositories.graph_repository import GraphRepository
 from app.repositories.memory_repository import MemoryRepository
 from app.repositories.vector_repository import VectorRepository
-from app.schemas.memory import MemoryInDB, SourceType
+from app.schemas.memory_schema import MemoryInDB, SourceType
 
 
 class MemoryService:

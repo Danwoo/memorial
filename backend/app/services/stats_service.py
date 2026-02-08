@@ -7,7 +7,7 @@ from typing import Any
 from uuid import UUID
 
 from app.repositories.stats_repository import StatsRepository
-from app.schemas.stats import (
+from app.schemas.stats_schema import (
     ActivityData,
     OverviewStats,
     SourceStats,

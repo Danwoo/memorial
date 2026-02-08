@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_journal_service, get_vector_repository
 from app.repositories.vector_repository import VectorRepository
-from app.schemas.journal import (
+from app.schemas.journal_schema import (
     InsightsResponse,
     JournalCreate,
     RelatedMemoriesResponse,

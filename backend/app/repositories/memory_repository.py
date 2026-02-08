@@ -11,7 +11,7 @@ from uuid import UUID, uuid4
 
 from supabase import Client
 
-from app.schemas.memory import MemoryInDB, SourceType
+from app.schemas.memory_schema import MemoryInDB, SourceType
 
 
 class MemoryRepository:

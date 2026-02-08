@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app.dependencies import get_chat_service
-from app.schemas.chat import (
+from app.schemas.chat_schema import (
     ChatMessageRequest,
     ChatMessageResponse,
     ChatSessionCreate,

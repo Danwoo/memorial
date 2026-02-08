@@ -1,5 +1,5 @@
 # Schemas Module
-from .memory import (
+from .memory_schema import (
     MemoryCreate,
     MemoryCreateResponse,
     MemoryDetail,
