@@ -1,15 +1,40 @@
-import type { View, User } from '../types'
+import { NavLink, useNavigate } from 'react-router-dom'
+import type { User } from '../types'
 import './Sidebar.css'
 
+// ─── Navigation item definition ──────────────────────────────────────────────
+
+interface NavItem {
+  to: string
+  icon: string
+  label: string
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { to: '/chat',      icon: '💬', label: 'Chat' },
+  { to: '/memories',  icon: '🧠', label: 'Memories' },
+  { to: '/journal',   icon: '📝', label: 'Journal' },
+  { to: '/search',    icon: '🔍', label: 'Search' },
+  { to: '/graph',     icon: '🕸️', label: 'Graph' },
+  { to: '/',          icon: '📊', label: 'Dashboard' },
+  { to: '/timeline',  icon: '📅', label: 'Timeline' },
+]
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 interface SidebarProps {
-  currentView: View
-  onViewChange: (view: View) => void
-  onNewChat: () => void
   onLogout?: () => void
   user?: User | null
 }
 
-export default function Sidebar({ currentView, onViewChange, onNewChat, onLogout, user }: SidebarProps) {
+export default function Sidebar({ onLogout, user }: SidebarProps) {
+  const navigate = useNavigate()
+
+  const handleNewChat = () => {
+    // Navigate to /chat without session state to start fresh
+    navigate('/chat', { state: { newSession: true } })
+  }
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -18,71 +43,28 @@ export default function Sidebar({ currentView, onViewChange, onNewChat, onLogout
           <span className="logo-text">Memoir</span>
         </div>
       </div>
-      
+
       <nav className="sidebar-nav">
-        <button 
-          className={`nav-item ${currentView === 'chat' ? 'active' : ''}`}
-          onClick={() => onViewChange('chat')}
-        >
-          <span className="nav-icon">💬</span>
-          <span>Chat</span>
-        </button>
-        
-        <button 
-          className={`nav-item ${currentView === 'memories' ? 'active' : ''}`}
-          onClick={() => onViewChange('memories')}
-        >
-          <span className="nav-icon">🧠</span>
-          <span>Memories</span>
-        </button>
-
-        <button 
-          className={`nav-item ${currentView === 'journal' ? 'active' : ''}`}
-          onClick={() => onViewChange('journal')}
-          title="Journey"
-        >
-          <span className="nav-icon">📝</span>
-          <span>Journal</span>
-        </button>
-
-        <button 
-          className={`nav-item ${currentView === 'search' ? 'active' : ''}`}
-          onClick={() => onViewChange('search')}
-        >
-          <span className="nav-icon">🔍</span>
-          <span>Search</span>
-        </button>
-
-        <button 
-          className={`nav-item ${currentView === 'graph' ? 'active' : ''}`}
-          onClick={() => onViewChange('graph')}
-        >
-          <span className="nav-icon">🕸️</span>
-          <span>Graph</span>
-        </button>
-
-        <button 
-          className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`}
-          onClick={() => onViewChange('dashboard')}
-        >
-          <span className="nav-icon">📊</span>
-          <span>Dashboard</span>
-        </button>
-
-        <button 
-          className={`nav-item ${currentView === 'timeline' ? 'active' : ''}`}
-          onClick={() => onViewChange('timeline')}
-        >
-          <span className="nav-icon">📅</span>
-          <span>Timeline</span>
-        </button>
+        {NAV_ITEMS.map(({ to, icon, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === '/'}
+            className={({ isActive }) =>
+              `nav-item ${isActive ? 'active' : ''}`
+            }
+          >
+            <span className="nav-icon">{icon}</span>
+            <span>{label}</span>
+          </NavLink>
+        ))}
       </nav>
-      
+
       <div className="sidebar-footer">
-        <button className="btn btn-primary new-chat-btn" onClick={onNewChat}>
+        <button className="btn btn-primary new-chat-btn" onClick={handleNewChat}>
           <span>+ New Chat</span>
         </button>
-        
+
         {user && (
           <div className="user-section">
             <div className="user-info">

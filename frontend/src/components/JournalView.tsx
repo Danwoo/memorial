@@ -8,7 +8,6 @@ import './JournalView.css'
 
 export default function JournalView() {
   const [content, setContent] = useState('# 2024년 2월 7일 회고\n\n오늘은...\n\n')
-  const [sessionId, setSessionId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [relatedMemories, setRelatedMemories] = useState<RelatedMemory[]>([])
   const [isLoadingContext, setIsLoadingContext] = useState(false)
@@ -119,10 +118,7 @@ export default function JournalView() {
             <h3>Thinking Partner</h3>
         </div>
         <div className="chat-wrapper">
-             <ChatView 
-                sessionId={sessionId} 
-                onSessionCreate={setSessionId} 
-             />
+             <ChatView />
         </div>
       </div>
     </div>

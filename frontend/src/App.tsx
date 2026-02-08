@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react'
-import './App.css'
-import Sidebar from './components/Sidebar'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
+import AppLayout from './components/AppLayout'
+import AuthView from './components/AuthView'
 import ChatView from './components/ChatView'
 import MemoryView from './components/MemoryView'
 import GraphView from './components/GraphView'
@@ -8,94 +10,35 @@ import JournalView from './components/JournalView'
 import SearchView from './components/SearchView'
 import DashboardView from './components/DashboardView'
 import TimelineView from './components/TimelineView'
-import AuthView from './components/AuthView'
-import type { View, User } from './types'
-import { fetchCurrentUser } from './api'
+import './App.css'
 
 function App() {
-  const [currentView, setCurrentView] = useState<View>('chat')
-  const [sessionId, setSessionId] = useState<string | null>(null)
-  // In development mode, bypass auth with a dev user.
-  // In production, require real authentication.
-  const isDev = import.meta.env.DEV
-  const [isAuthenticated, setIsAuthenticated] = useState(isDev)
-  const [user, setUser] = useState<User | null>(
-    isDev
-      ? { id: "dev-user", email: "dev@example.com", full_name: "Developer", avatar_url: "" }
-      : null
-  )
-  const [isLoading, setIsLoading] = useState(!isDev)
-
-  // Check for existing auth token on mount (production only)
-  useEffect(() => {
-    if (isDev) return
-
-    const token = localStorage.getItem('auth_token')
-    if (token) {
-      fetchCurrentUser()
-        .then(userData => {
-          setUser(userData)
-          setIsAuthenticated(true)
-        })
-        .catch(() => {
-          localStorage.removeItem('auth_token')
-        })
-        .finally(() => setIsLoading(false))
-    } else {
-      setIsLoading(false)
-    }
-  }, [isDev])
-
-  const handleLogin = (_token: string, userData: User) => {
-    setUser(userData)
-    setIsAuthenticated(true)
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem('auth_token')
-    setUser(null)
-    setIsAuthenticated(false)
-  }
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="app-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading...</p>
-      </div>
-    )
-  }
-
-  // Show auth view if not authenticated
-  if (!isAuthenticated) {
-    return <AuthView onLogin={handleLogin} />
-  }
-
   return (
-    <div className="app-container">
-      <Sidebar 
-        currentView={currentView} 
-        onViewChange={setCurrentView}
-        onNewChat={() => setSessionId(null)}
-        onLogout={handleLogout}
-        user={user}
-      />
-      <main className="main-content">
-        {currentView === 'chat' && (
-          <ChatView 
-            sessionId={sessionId}
-            onSessionCreate={setSessionId}
-          />
-        )}
-        {currentView === 'memories' && <MemoryView />}
-        {currentView === 'journal' && <JournalView />}
-        {currentView === 'graph' && <GraphView />}
-        {currentView === 'search' && <SearchView />}
-        {currentView === 'dashboard' && <DashboardView />}
-        {currentView === 'timeline' && <TimelineView />}
-      </main>
-    </div>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          {/* Public route */}
+          <Route path="/login" element={<AuthView />} />
+
+          {/* Protected routes share the Sidebar layout */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DashboardView />} />
+            <Route path="chat" element={<ChatView />} />
+            <Route path="memories" element={<MemoryView />} />
+            <Route path="journal" element={<JournalView />} />
+            <Route path="search" element={<SearchView />} />
+            <Route path="graph" element={<GraphView />} />
+            <Route path="timeline" element={<TimelineView />} />
+          </Route>
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   )
 }
 

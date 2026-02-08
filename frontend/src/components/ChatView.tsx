@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import type { ChatMessage, ChatMode, ChatModeOption, ChatViewProps } from '../types'
+import { useLocation } from 'react-router-dom'
+import type { ChatMessage, ChatMode, ChatModeOption } from '../types'
 import { createChatSession, sendChatMessage, readSSEStream } from '../api'
 import './ChatView.css'
 
@@ -11,7 +12,10 @@ const MODES: ChatModeOption[] = [
   { value: 'evening', label: '저녁 회고', icon: '🌙', desc: '하루 돌아보기' }
 ]
 
-export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) {
+export default function ChatView() {
+  const location = useLocation()
+
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -19,6 +23,17 @@ export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) 
   const [showModes, setShowModes] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Reset session when Sidebar's "New Chat" navigates with { newSession: true }
+  useEffect(() => {
+    const state = location.state as { newSession?: boolean } | null
+    if (state?.newSession) {
+      setSessionId(null)
+      setMessages([])
+      // Clear the state to prevent re-triggering on re-renders
+      window.history.replaceState({}, '')
+    }
+  }, [location.state])
 
   // Cleanup: abort any in-flight SSE stream on unmount
   useEffect(() => {
@@ -52,7 +67,7 @@ export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) 
       if (!currentSessionId) {
         const session = await createChatSession()
         currentSessionId = session.id
-        onSessionCreate(currentSessionId)
+        setSessionId(currentSessionId)
       }
 
       // Send message and get SSE response

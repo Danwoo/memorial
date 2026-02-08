@@ -1,37 +1,49 @@
 import { useState } from 'react'
-import type { User } from '../types'
-import { login, signup, ApiResponseError } from '../api'
+import { Navigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import './AuthView.css'
 
-interface AuthViewProps {
-  onLogin: (token: string, user: User) => void
-}
+/**
+ * Login / Signup view.
+ * Redirects authenticated users to the page they originally requested,
+ * or to the dashboard by default.
+ */
+export default function AuthView() {
+  const { user, isLoading, signIn, signUp } = useAuth()
+  const location = useLocation()
 
-export default function AuthView({ onLogin }: AuthViewProps) {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Redirect if already authenticated
+  const redirectTo = (location.state as { from?: string })?.from ?? '/'
+  if (!isLoading && user) {
+    return <Navigate to={redirectTo} replace />
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setIsLoading(true)
+    setIsSubmitting(true)
 
     try {
-      const authFn = isLogin ? login : signup
-      const data = await authFn({ email, password })
-      localStorage.setItem('auth_token', data.access_token)
-      onLogin(data.access_token, data.user)
+      if (isLogin) {
+        await signIn(email, password)
+      } else {
+        await signUp(email, password)
+      }
+      // After successful auth, the Navigate above will handle redirection
     } catch (err) {
-      if (err instanceof ApiResponseError) {
-        setError(err.detail || 'Authentication failed')
+      if (err instanceof Error) {
+        setError(err.message || 'Authentication failed')
       } else {
         setError('Network error. Please try again.')
       }
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -45,13 +57,13 @@ export default function AuthView({ onLogin }: AuthViewProps) {
         </div>
 
         <div className="auth-tabs">
-          <button 
+          <button
             className={`auth-tab ${isLogin ? 'active' : ''}`}
             onClick={() => setIsLogin(true)}
           >
             로그인
           </button>
-          <button 
+          <button
             className={`auth-tab ${!isLogin ? 'active' : ''}`}
             onClick={() => setIsLogin(false)}
           >
@@ -66,7 +78,7 @@ export default function AuthView({ onLogin }: AuthViewProps) {
               id="email"
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
             />
@@ -78,7 +90,7 @@ export default function AuthView({ onLogin }: AuthViewProps) {
               id="password"
               type="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
               minLength={6}
@@ -87,12 +99,12 @@ export default function AuthView({ onLogin }: AuthViewProps) {
 
           {error && <div className="auth-error">{error}</div>}
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="btn btn-primary auth-submit"
-            disabled={isLoading}
+            disabled={isSubmitting}
           >
-            {isLoading ? '처리 중...' : (isLogin ? '로그인' : '가입하기')}
+            {isSubmitting ? '처리 중...' : isLogin ? '로그인' : '가입하기'}
           </button>
         </form>
       </div>

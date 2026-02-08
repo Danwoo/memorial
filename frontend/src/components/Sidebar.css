@@ -43,6 +43,9 @@
   background: none;
   width: 100%;
   text-align: left;
+  text-decoration: none;
+  font-size: inherit;
+  font-family: inherit;
   border-radius: var(--radius-md);
   color: var(--text-secondary);
   cursor: pointer;
