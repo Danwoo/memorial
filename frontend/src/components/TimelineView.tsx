@@ -1,26 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import type { TimelineData } from '../types'
 import './TimelineView.css'
-
-interface Memory {
-  id: string
-  title: string
-  summary: string
-  source_type: string
-  created_at: string
-  tags: string[]
-}
-
-interface TimelineGroup {
-  date: string
-  memories: Memory[]
-}
-
-interface TimelineData {
-  page: number
-  limit: number
-  timeline: TimelineGroup[]
-  has_more: boolean
-}
 
 const API_BASE = '/api/v1'
 

@@ -9,15 +9,7 @@ import SearchView from './components/SearchView'
 import DashboardView from './components/DashboardView'
 import TimelineView from './components/TimelineView'
 import AuthView from './components/AuthView'
-
-type View = 'chat' | 'memories' | 'graph' | 'search' | 'dashboard' | 'timeline' | 'journal'
-
-interface User {
-  id: string
-  email: string
-  full_name?: string
-  avatar_url?: string
-}
+import type { View, User } from './types'
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('chat')

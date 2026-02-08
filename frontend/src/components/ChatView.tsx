@@ -1,19 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
+import type { ChatMessage, ChatMode, ChatModeOption, ChatViewProps } from '../types'
 import './ChatView.css'
 
-interface Message {
-  role: 'user' | 'assistant'
-  content: string
-}
-
-interface ChatViewProps {
-  sessionId: string | null
-  onSessionCreate: (id: string) => void
-}
-
-type ChatMode = '' | 'insight' | 'counter' | 'summary' | 'evening'
-
-const MODES: { value: ChatMode; label: string; icon: string; desc: string }[] = [
+const MODES: ChatModeOption[] = [
   { value: '', label: '기본', icon: '💬', desc: '일반 대화' },
   { value: 'insight', label: '인사이트', icon: '💡', desc: '깊은 질문으로 사고 확장' },
   { value: 'counter', label: '반론', icon: '⚖️', desc: '반대 의견 제시' },
@@ -24,7 +13,7 @@ const MODES: { value: ChatMode; label: string; icon: string; desc: string }[] = 
 const API_BASE = '/api/v1'
 
 export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) {
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [mode, setMode] = useState<ChatMode>('')

@@ -1,15 +1,12 @@
+import type { View, User } from '../types'
 import './Sidebar.css'
 
 interface SidebarProps {
-  currentView: 'chat' | 'memories' | 'graph' | 'search' | 'dashboard' | 'timeline' | 'journal'
-  onViewChange: (view: 'chat' | 'memories' | 'graph' | 'search' | 'dashboard' | 'timeline' | 'journal') => void
+  currentView: View
+  onViewChange: (view: View) => void
   onNewChat: () => void
   onLogout?: () => void
-  user?: {
-    email: string
-    full_name?: string
-    avatar_url?: string
-  } | null
+  user?: User | null
 }
 
 export default function Sidebar({ currentView, onViewChange, onNewChat, onLogout, user }: SidebarProps) {

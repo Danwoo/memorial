@@ -1,16 +1,6 @@
 import { useState } from 'react'
+import type { SearchResult } from '../types'
 import './SearchView.css'
-
-interface SearchResult {
-  id: string
-  title: string
-  content: string
-  summary: string | null
-  source_type: 'WEB' | 'PDF' | 'NOTE'
-  similarity: number
-  created_at?: string
-  tags?: string[]
-}
 
 const API_BASE = '/api/v1'
 

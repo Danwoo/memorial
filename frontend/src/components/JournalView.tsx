@@ -2,16 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import ChatView from './ChatView'
+import type { RelatedMemory } from '../types'
 import './JournalView.css'
-
-interface RelatedMemory {
-  id: string
-  title: string
-  summary: string
-  type: string
-  created_at: string
-  similarity: number
-}
 
 export default function JournalView() {
   const [content, setContent] = useState('# 2024년 2월 7일 회고\n\n오늘은...\n\n')

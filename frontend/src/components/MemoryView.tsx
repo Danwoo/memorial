@@ -1,13 +1,6 @@
 import { useState, useEffect } from 'react'
+import type { Memory, SourceType } from '../types'
 import './MemoryView.css'
-
-interface Memory {
-  id: string
-  title: string
-  summary: string | null
-  source_type: 'WEB' | 'PDF' | 'NOTE'
-  created_at: string
-}
 
 const API_BASE = '/api/v1'
 
@@ -17,7 +10,7 @@ export default function MemoryView() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [newUrl, setNewUrl] = useState('')
   const [newNote, setNewNote] = useState('')
-  const [addType, setAddType] = useState<'WEB' | 'NOTE'>('WEB')
+  const [addType, setAddType] = useState<Extract<SourceType, 'WEB' | 'NOTE'>>('WEB')
 
   const loadMemories = async () => {
     setIsLoading(true)

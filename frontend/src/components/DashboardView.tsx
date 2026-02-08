@@ -1,57 +1,6 @@
 import { useState, useEffect } from 'react'
+import type { StatsData, DigestData } from '../types'
 import './DashboardView.css'
-
-interface OverviewStats {
-  total_memories: number
-  total_this_week: number
-  total_this_month: number
-  most_active_day: string | null
-}
-
-interface ActivityData {
-  date: string
-  count: number
-}
-
-interface SourceStats {
-  source_type: string
-  count: number
-  percentage: number
-}
-
-interface TagStats {
-  tag: string
-  count: number
-}
-
-interface StatsData {
-  overview: OverviewStats
-  recent_activity: ActivityData[]
-  sources: SourceStats[]
-  top_tags: TagStats[]
-}
-
-interface DigestMemory {
-  id: string
-  title: string
-  type: string
-  summary: string
-  tags: string[]
-}
-
-interface DigestData {
-  date: string
-  summary: {
-    memory_count: number
-    journal_count: number
-    chat_count: number
-  }
-  memories: DigestMemory[]
-  insights: {
-    main_topics: string[]
-    suggested_questions: string[]
-  }
-}
 
 const API_BASE = '/api/v1'
 

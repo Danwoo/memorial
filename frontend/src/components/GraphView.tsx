@@ -1,28 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
+import type { GraphNode, GraphLink, GraphData } from '../types'
 import './GraphView.css'
-
-interface GraphNode {
-  id: string
-  label: string
-  properties: Record<string, any>
-  val?: number
-  color?: string
-  name?: string
-  x?: number
-  y?: number
-}
-
-interface GraphLink {
-  source: string | GraphNode
-  target: string | GraphNode
-  type: string
-}
-
-interface GraphData {
-  nodes: GraphNode[]
-  links: GraphLink[]
-}
 
 // Color palette for different node types
 const NODE_COLORS: Record<string, string> = {

@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import type { User } from '../types'
 import './AuthView.css'
 
 interface AuthViewProps {
-  onLogin: (token: string, user: { id: string; email: string }) => void
+  onLogin: (token: string, user: User) => void
 }
 
 const API_BASE = '/api/v1'
