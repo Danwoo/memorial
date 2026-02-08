@@ -4,7 +4,7 @@ Combines all v1 routers into a single router
 """
 from fastapi import APIRouter
 
-from app.routers.v1 import memory, chat, graph, search, auth, integrations, stats, journal, digest
+from app.routers.v1 import auth, chat, digest, graph, integrations, journal, memory, search, stats
 
 api_router = APIRouter(prefix="/api/v1")
 

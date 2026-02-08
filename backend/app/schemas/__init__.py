@@ -2,12 +2,12 @@
 from .memory import (
     MemoryCreate,
     MemoryCreateResponse,
-    MemoryListItem,
-    MemoryListResponse,
     MemoryDetail,
     MemoryInDB,
+    MemoryListItem,
+    MemoryListResponse,
+    MemoryStatus,
     SourceType,
-    MemoryStatus
 )
 
 __all__ = [

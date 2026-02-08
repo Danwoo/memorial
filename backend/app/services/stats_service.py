@@ -2,41 +2,41 @@
 Stats Service
 Business logic for dashboard statistics
 """
-from typing import List, Dict, Any
 from datetime import datetime, timedelta
+from typing import Any
 
 from app.repositories.stats_repository import StatsRepository
 from app.schemas.stats import (
-    OverviewStats,
     ActivityData,
+    OverviewStats,
     SourceStats,
-    TagStats,
     StatsOverviewResponse,
+    TagStats,
     TimelineGroup,
 )
 
 
 class StatsService:
     """Service for statistics business logic"""
-    
+
     def __init__(self, stats_repo: StatsRepository):
         self.stats_repo = stats_repo
-    
+
     async def get_overview(self) -> StatsOverviewResponse:
         """Get complete dashboard statistics."""
         memories = await self.stats_repo.get_all_memories()
-        
+
         now = datetime.now()
         week_ago = now - timedelta(days=7)
         month_ago = now - timedelta(days=30)
-        
+
         total = len(memories)
         weekly_count = 0
         monthly_count = 0
-        day_counts: Dict[str, int] = {}
-        source_counts: Dict[str, int] = {}
-        tag_counts: Dict[str, int] = {}
-        
+        day_counts: dict[str, int] = {}
+        source_counts: dict[str, int] = {}
+        tag_counts: dict[str, int] = {}
+
         for memory in memories:
             created_at_str = memory.get("created_at", "")
             if created_at_str:
@@ -44,30 +44,30 @@ class StatsService:
                     created_at = datetime.fromisoformat(
                         created_at_str.replace("Z", "+00:00")
                     ).replace(tzinfo=None)
-                    
+
                     if created_at >= week_ago:
                         weekly_count += 1
                     if created_at >= month_ago:
                         monthly_count += 1
-                    
+
                     day_key = created_at.strftime("%Y-%m-%d")
                     day_counts[day_key] = day_counts.get(day_key, 0) + 1
                 except Exception:
                     pass
-            
+
             # Count sources
             source_type = memory.get("source_type", "UNKNOWN")
             source_counts[source_type] = source_counts.get(source_type, 0) + 1
-            
+
             # Count tags
             for tag in memory.get("tags") or []:
                 tag_counts[tag] = tag_counts.get(tag, 0) + 1
-        
+
         # Find most active day
         most_active_day = None
         if day_counts:
             most_active_day = max(day_counts, key=day_counts.get)
-        
+
         # Prepare response
         overview = OverviewStats(
             total_memories=total,
@@ -75,7 +75,7 @@ class StatsService:
             total_this_month=monthly_count,
             most_active_day=most_active_day
         )
-        
+
         # Recent activity (last 30 days)
         recent_activity = []
         for i in range(30):
@@ -85,7 +85,7 @@ class StatsService:
                 count=day_counts.get(date, 0)
             ))
         recent_activity.reverse()
-        
+
         # Source stats
         sources = [
             SourceStats(
@@ -95,29 +95,29 @@ class StatsService:
             )
             for st, cnt in source_counts.items()
         ]
-        
+
         # Top tags
         sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)[:10]
         top_tags = [TagStats(tag=tag, count=cnt) for tag, cnt in sorted_tags]
-        
+
         return StatsOverviewResponse(
             overview=overview,
             recent_activity=recent_activity,
             sources=sources,
             top_tags=top_tags
         )
-    
+
     async def get_activity(
         self,
         days: int = 30
-    ) -> List[ActivityData]:
+    ) -> list[ActivityData]:
         """Get daily activity data for a range."""
         now = datetime.now()
         start_date = now - timedelta(days=days)
-        
+
         memories = await self.stats_repo.get_memories_in_range(start_date, now)
-        
-        day_counts: Dict[str, int] = {}
+
+        day_counts: dict[str, int] = {}
         for memory in memories:
             created_at_str = memory.get("created_at", "")
             if created_at_str:
@@ -129,24 +129,24 @@ class StatsService:
                     day_counts[day_key] = day_counts.get(day_key, 0) + 1
                 except Exception:
                     pass
-        
+
         result = []
         for i in range(days):
             date = (now - timedelta(days=i)).strftime("%Y-%m-%d")
             result.append(ActivityData(date=date, count=day_counts.get(date, 0)))
-        
+
         result.reverse()
         return result
-    
+
     async def get_timeline(
         self,
         page: int = 1,
         limit: int = 20
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get memories grouped by date for timeline view."""
         memories = await self.stats_repo.get_memories_by_date(page, limit)
-        
-        grouped: Dict[str, List] = {}
+
+        grouped: dict[str, list] = {}
         for memory in memories:
             created_at_str = memory.get("created_at", "")
             if created_at_str:
@@ -160,12 +160,12 @@ class StatsService:
                     grouped[day_key].append(memory)
                 except Exception:
                     pass
-        
+
         timeline = [
             TimelineGroup(date=date, memories=mems)
             for date, mems in sorted(grouped.items(), reverse=True)
         ]
-        
+
         return {
             "page": page,
             "limit": limit,

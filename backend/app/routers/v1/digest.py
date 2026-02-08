@@ -2,16 +2,17 @@
 Digest Router
 API endpoints for daily digest
 """
-from fastapi import APIRouter, Depends
-from typing import Dict, Any
+from typing import Any
 
-from app.services.digest_service import DigestService
+from fastapi import APIRouter, Depends
+
 from app.dependencies import get_digest_service
+from app.services.digest_service import DigestService
 
 router = APIRouter(prefix="/digest", tags=["digest"])
 
 
-@router.get("/today", response_model=Dict[str, Any])
+@router.get("/today", response_model=dict[str, Any])
 async def get_today_digest(
     digest_service: DigestService = Depends(get_digest_service)
 ):
@@ -25,7 +26,7 @@ async def get_today_digest(
     return await digest_service.get_today_digest()
 
 
-@router.get("/date/{date_str}", response_model=Dict[str, Any])
+@router.get("/date/{date_str}", response_model=dict[str, Any])
 async def get_digest_by_date(
     date_str: str,
     digest_service: DigestService = Depends(get_digest_service)

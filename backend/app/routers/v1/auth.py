@@ -5,14 +5,14 @@ Note: Auth endpoints are pass-through to Supabase Auth, so not using Service lay
 """
 import logging
 
-from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel
 import httpx
-
-logger = logging.getLogger(__name__)
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 
 from app.config.settings import get_settings
 from app.security.auth import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -45,7 +45,7 @@ class UserResponse(BaseModel):
 async def login(request: LoginRequest):
     """Login with email and password."""
     settings = get_settings()
-    
+
     async with httpx.AsyncClient() as client:
         response = await client.post(
             f"{settings.SUPABASE_URL}/auth/v1/token?grant_type=password",
@@ -58,7 +58,7 @@ async def login(request: LoginRequest):
                 "password": request.password
             }
         )
-        
+
         if response.status_code == 200:
             data = response.json()
             return AuthResponse(
@@ -80,7 +80,7 @@ async def login(request: LoginRequest):
 async def signup(request: SignupRequest):
     """Create a new user account."""
     settings = get_settings()
-    
+
     async with httpx.AsyncClient() as client:
         response = await client.post(
             f"{settings.SUPABASE_URL}/auth/v1/signup",
@@ -93,7 +93,7 @@ async def signup(request: SignupRequest):
                 "password": request.password
             }
         )
-        
+
         if response.status_code == 200:
             data = response.json()
             if data.get("access_token"):
@@ -125,11 +125,11 @@ async def get_me(user: dict = Depends(get_current_user)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated"
         )
-    
+
     # Fetch profile data
     settings = get_settings()
     profile = {}
-    
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(
@@ -143,7 +143,7 @@ async def get_me(user: dict = Depends(get_current_user)):
                 profiles = response.json()
                 if profiles:
                     profile = profiles[0]
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to fetch profile")
 
     return UserResponse(

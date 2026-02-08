@@ -2,10 +2,10 @@
 Integrations Router
 External service connections (Kakao, etc.)
 """
+
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
-from typing import Optional
 
 from app.services import kakao
 from app.services.kakao import _get_default_service
@@ -24,7 +24,7 @@ class KakaoAuthResponse(BaseModel):
 class SendMessageRequest(BaseModel):
     title: str
     content: str
-    memory_id: Optional[str] = None
+    memory_id: str | None = None
 
 
 class SendMessageResponse(BaseModel):
@@ -82,13 +82,13 @@ async def send_kakao_message(request: SendMessageRequest):
     """Send a message to user's KakaoTalk."""
     service = _get_default_service()
     token = await service.get_stored_token("default_user")
-    
+
     if not token:
         raise HTTPException(
             status_code=401,
             detail="Kakao not connected. Please authorize first via /kakao/auth"
         )
-    
+
     try:
         await service.send_message_to_me(
             access_token=token,
@@ -98,7 +98,7 @@ async def send_kakao_message(request: SendMessageRequest):
         )
         return SendMessageResponse(success=True, message="Message sent to KakaoTalk")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send message: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to send message: {str(e)}") from e
 
 
 @router.post("/kakao/disconnect")

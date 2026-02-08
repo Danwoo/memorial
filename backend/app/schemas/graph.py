@@ -2,15 +2,16 @@
 Graph Schemas
 Request/Response DTOs for knowledge graph endpoints
 """
+from typing import Any
+
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
 
 
 class GraphNode(BaseModel):
     """Node in the knowledge graph"""
     id: str
     label: str
-    properties: Dict[str, Any] = {}
+    properties: dict[str, Any] = {}
 
 
 class GraphLink(BaseModel):
@@ -18,13 +19,13 @@ class GraphLink(BaseModel):
     source: str
     target: str
     type: str
-    properties: Dict[str, Any] = {}
+    properties: dict[str, Any] = {}
 
 
 class GraphDataResponse(BaseModel):
     """Graph data for visualization"""
-    nodes: List[GraphNode]
-    links: List[GraphLink]
+    nodes: list[GraphNode]
+    links: list[GraphLink]
 
 
 class EntityInput(BaseModel):

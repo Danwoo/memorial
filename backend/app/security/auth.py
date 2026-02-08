@@ -2,11 +2,11 @@
 Authentication Dependencies
 JWT token verification using Supabase Auth
 """
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Optional
 from uuid import UUID
+
 import httpx
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config.settings import get_settings
 
@@ -14,8 +14,8 @@ security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
-) -> Optional[dict]:
+    credentials: HTTPAuthorizationCredentials | None = Depends(security)
+) -> dict | None:
     """
     Verify JWT token with Supabase and return user info.
     Returns None if no token provided (for optional auth).
@@ -23,10 +23,10 @@ async def get_current_user(
     """
     if not credentials:
         return None
-    
+
     token = credentials.credentials
     settings = get_settings()
-    
+
     try:
         # Verify token with Supabase
         async with httpx.AsyncClient() as client:
@@ -37,7 +37,7 @@ async def get_current_user(
                     "apikey": settings.SUPABASE_ANON_KEY
                 }
             )
-            
+
             if response.status_code == 200:
                 user_data = response.json()
                 return {
@@ -54,11 +54,11 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Authentication service unavailable"
-        )
+        ) from None
 
 
 async def require_auth(
-    user: Optional[dict] = Depends(get_current_user)
+    user: dict | None = Depends(get_current_user)
 ) -> dict:
     """
     Require authentication - raises 401 if not authenticated.

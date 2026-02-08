@@ -1,5 +1,5 @@
 # Librarian Agent Module
-from .graph import librarian_graph, create_librarian_graph
+from .graph import create_librarian_graph, librarian_graph
 from .nodes import curator_node, ontologist_node, save_node
 
 __all__ = [

@@ -2,33 +2,33 @@
 Search Service
 Business logic for semantic search and recommendations
 """
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
+from typing import Any
 
-from app.repositories.vector_repository import VectorRepository
 from app.repositories.memory_repository import MemoryRepository
+from app.repositories.vector_repository import VectorRepository
 
 
 class SearchService:
     """Service for search business logic"""
-    
+
     def __init__(
         self,
         vector_repo: VectorRepository,
-        memory_repo: Optional[MemoryRepository] = None
+        memory_repo: MemoryRepository | None = None
     ):
         self.vector_repo = vector_repo
         self.memory_repo = memory_repo
-    
+
     async def search(
         self,
         query: str,
         limit: int = 10,
         threshold: float = 0.3,
-        source_type: Optional[str] = None,
-        days: Optional[int] = None,
-        tags: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        source_type: str | None = None,
+        days: int | None = None,
+        tags: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Advanced semantic search with filtering.
         Returns search results with applied filters.
@@ -36,17 +36,17 @@ class SearchService:
         # Build filters for vector search
         filters = {}
         filters_applied = {}
-        
+
         if source_type:
             filters["source_type"] = source_type
             filters_applied["source_type"] = source_type
-        
+
         if days:
             filters_applied["days"] = days
-        
+
         if tags:
             filters_applied["tags"] = tags
-        
+
         # Perform vector search (get more results for filtering)
         results = await self.vector_repo.similarity_search(
             query=query,
@@ -54,11 +54,11 @@ class SearchService:
             threshold=threshold,
             filters=filters if filters else None
         )
-        
+
         # Apply additional filters
         filtered_results = []
         now = datetime.utcnow()
-        
+
         for r in results:
             # Time filter
             if days:
@@ -72,13 +72,13 @@ class SearchService:
                             continue
                     except Exception:
                         pass
-            
+
             # Tag filter
             if tags:
                 memory_tags = r.get("tags") or []
                 if not any(t in memory_tags for t in tags):
                     continue
-            
+
             filtered_results.append({
                 "id": str(r.get("id", "")),
                 "title": r.get("title", "Untitled"),
@@ -89,22 +89,22 @@ class SearchService:
                 "created_at": r.get("created_at"),
                 "tags": r.get("tags")
             })
-            
+
             if len(filtered_results) >= limit:
                 break
-        
+
         return {
             "query": query,
             "results": filtered_results,
             "total": len(filtered_results),
             "filters_applied": filters_applied
         }
-    
+
     async def get_related_memories(
         self,
         memory_id: str,
         limit: int = 5
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get memories related to a specific memory.
         Uses the memory's content to find similar items.
@@ -112,14 +112,14 @@ class SearchService:
         # Get source memory content (requires memory_repo)
         if not self.memory_repo:
             return []
-        
+
         # Search for similar memories
         similar = await self.vector_repo.similarity_search(
             query=memory_id,  # This should be the content, will need to fetch
             limit=limit + 1,
             threshold=0.3
         )
-        
+
         # Filter out the source memory
         related = []
         for item in similar:
@@ -131,5 +131,5 @@ class SearchService:
                 })
             if len(related) >= limit:
                 break
-        
+
         return related

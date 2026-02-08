@@ -2,11 +2,10 @@
 Core Configuration for Memoir AI Backend
 Pydantic Settings for environment variable management
 """
+from functools import lru_cache
 from uuid import UUID
 
 from pydantic_settings import BaseSettings
-from functools import lru_cache
-from typing import Optional
 
 # Single source of truth for the development mock user ID.
 # TODO: Remove once real JWT authentication is implemented.
@@ -19,34 +18,34 @@ class Settings(BaseSettings):
     # App info
     APP_NAME: str = "Memoir AI"
     DEBUG: bool = False
-    
+
     # OpenAI
     OPENAI_API_KEY: str
-    
+
     # Supabase
     SUPABASE_URL: str
     SUPABASE_ANON_KEY: str
-    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
-    
+    SUPABASE_SERVICE_ROLE_KEY: str | None = None
+
     # Neo4j (Optional for Phase 1)
-    NEO4J_URI: Optional[str] = None
-    NEO4J_USER: Optional[str] = None
-    NEO4J_PASSWORD: Optional[str] = None
-    
+    NEO4J_URI: str | None = None
+    NEO4J_USER: str | None = None
+    NEO4J_PASSWORD: str | None = None
+
     # Upstage (PDF Parsing)
-    UPSTAGE_API_KEY: Optional[str] = None
-    
+    UPSTAGE_API_KEY: str | None = None
+
     # Kakao API (KakaoTalk notifications)
-    KAKAO_REST_API_KEY: Optional[str] = None
+    KAKAO_REST_API_KEY: str | None = None
     KAKAO_REDIRECT_URI: str = "http://localhost:8000/api/v1/integrations/kakao/callback"
-    
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
         extra = "ignore"
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Cached settings instance (Singleton pattern)"""
     return Settings()

@@ -2,18 +2,17 @@
 Common Schemas
 Shared DTOs used across multiple endpoints
 """
-from pydantic import BaseModel
-from typing import Optional, List, TypeVar, Generic
-from uuid import UUID
 from datetime import datetime
+from typing import Generic, TypeVar
 
+from pydantic import BaseModel
 
 T = TypeVar('T')
 
 
 class PaginatedResponse(BaseModel, Generic[T]):
     """Generic paginated response wrapper"""
-    items: List[T]
+    items: list[T]
     total: int
     page: int
     limit: int
@@ -23,7 +22,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
 class ErrorResponse(BaseModel):
     """Standard error response"""
     detail: str
-    code: Optional[str] = None
+    code: str | None = None
     timestamp: datetime = None
 
     def __init__(self, **data):

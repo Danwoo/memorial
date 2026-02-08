@@ -2,11 +2,11 @@
 Stats Router
 API endpoints for dashboard statistics
 """
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Depends, Query
 
-from app.schemas.stats import StatsOverviewResponse, ActivityData
-from app.services.stats_service import StatsService
 from app.dependencies import get_stats_service
+from app.schemas.stats import StatsOverviewResponse
+from app.services.stats_service import StatsService
 
 router = APIRouter(prefix="/stats", tags=["stats"])
 

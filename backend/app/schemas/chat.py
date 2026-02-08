@@ -2,15 +2,15 @@
 Chat Schemas
 Request/Response DTOs for chat endpoints
 """
-from pydantic import BaseModel
-from typing import Optional, List
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel
 
 
 class ChatSessionCreate(BaseModel):
     """Request to create a new chat session"""
-    title: Optional[str] = None
+    title: str | None = None
 
 
 class ChatSessionResponse(BaseModel):
@@ -23,7 +23,7 @@ class ChatSessionResponse(BaseModel):
 class ChatMessageRequest(BaseModel):
     """Request to send a chat message"""
     content: str
-    mode: Optional[str] = None  # insight, counter, summary, evening
+    mode: str | None = None  # insight, counter, summary, evening
 
 
 class ChatMessageResponse(BaseModel):
@@ -35,12 +35,12 @@ class ChatMessageResponse(BaseModel):
 
 class ChatStreamEvent(BaseModel):
     """SSE event during chat streaming"""
-    content: Optional[str] = None
-    done: Optional[bool] = None
-    error: Optional[str] = None
+    content: str | None = None
+    done: bool | None = None
+    error: str | None = None
 
 
 class ChatHistoryResponse(BaseModel):
     """Chat history response"""
     session_id: UUID
-    messages: List[ChatMessageResponse]
+    messages: list[ChatMessageResponse]

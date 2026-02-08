@@ -2,8 +2,8 @@
 Stats Schemas
 Request/Response DTOs for statistics/dashboard endpoints
 """
+
 from pydantic import BaseModel
-from typing import Optional, List
 
 
 class OverviewStats(BaseModel):
@@ -11,7 +11,7 @@ class OverviewStats(BaseModel):
     total_memories: int
     total_this_week: int
     total_this_month: int
-    most_active_day: Optional[str] = None
+    most_active_day: str | None = None
 
 
 class ActivityData(BaseModel):
@@ -36,20 +36,20 @@ class TagStats(BaseModel):
 class StatsOverviewResponse(BaseModel):
     """Complete stats overview for dashboard"""
     overview: OverviewStats
-    recent_activity: List[ActivityData]
-    sources: List[SourceStats]
-    top_tags: List[TagStats]
+    recent_activity: list[ActivityData]
+    sources: list[SourceStats]
+    top_tags: list[TagStats]
 
 
 class TimelineGroup(BaseModel):
     """Memories grouped by date"""
     date: str
-    memories: List[dict]
+    memories: list[dict]
 
 
 class TimelineResponse(BaseModel):
     """Paginated timeline response"""
     page: int
     limit: int
-    timeline: List[TimelineGroup]
+    timeline: list[TimelineGroup]
     has_more: bool

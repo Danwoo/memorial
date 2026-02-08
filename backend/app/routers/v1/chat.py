@@ -2,20 +2,20 @@
 Chat Router
 API endpoints for chat and Socratic dialogue
 """
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import StreamingResponse
-from typing import List
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+
+from app.config.settings import DEFAULT_USER_ID
+from app.dependencies import get_chat_service
 from app.schemas.chat import (
-    ChatSessionCreate,
-    ChatSessionResponse,
     ChatMessageRequest,
     ChatMessageResponse,
+    ChatSessionCreate,
+    ChatSessionResponse,
 )
 from app.services.chat_service import ChatService
-from app.dependencies import get_chat_service
-from app.config.settings import DEFAULT_USER_ID
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -30,7 +30,7 @@ async def create_session(
 ):
     """Create a new chat session."""
     session = await chat_service.create_session(MOCK_USER_ID, data.title)
-    
+
     return ChatSessionResponse(
         id=UUID(session["id"]),
         title=session["title"],
@@ -38,13 +38,13 @@ async def create_session(
     )
 
 
-@router.get("/sessions", response_model=List[ChatSessionResponse])
+@router.get("/sessions", response_model=list[ChatSessionResponse])
 async def list_sessions(
     chat_service: ChatService = Depends(get_chat_service)
 ):
     """List all chat sessions for the current user."""
     sessions = await chat_service.list_sessions(MOCK_USER_ID)
-    
+
     return [
         ChatSessionResponse(
             id=UUID(s["id"]),
@@ -65,7 +65,7 @@ async def send_message(
     session = await chat_service.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     return StreamingResponse(
         chat_service.send_message(session_id, MOCK_USER_ID, data.content, data.mode),
         media_type="text/event-stream",
@@ -77,7 +77,7 @@ async def send_message(
     )
 
 
-@router.get("/sessions/{session_id}/history", response_model=List[ChatMessageResponse])
+@router.get("/sessions/{session_id}/history", response_model=list[ChatMessageResponse])
 async def get_history(
     session_id: UUID,
     chat_service: ChatService = Depends(get_chat_service)
@@ -86,9 +86,9 @@ async def get_history(
     session = await chat_service.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     history = await chat_service.get_history(session_id)
-    
+
     return [
         ChatMessageResponse(
             role=h["role"],

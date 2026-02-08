@@ -3,23 +3,16 @@ Memory Router
 API endpoints for memory operations
 """
 import logging
-
-from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks
-from typing import Optional
 from uuid import UUID
 
-from app.schemas.memory import (
-    MemoryCreate,
-    MemoryCreateResponse,
-    MemoryListResponse,
-    MemoryListItem,
-    MemoryDetail
-)
-from app.services.memory_service import MemoryService
-from app.services.ingest_service import process_web_content, process_note_content
-from app.dependencies import get_memory_service
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+
 from app.agents.librarian import librarian_graph
 from app.config.settings import DEFAULT_USER_ID
+from app.dependencies import get_memory_service
+from app.schemas.memory import MemoryCreate, MemoryCreateResponse, MemoryDetail, MemoryListItem, MemoryListResponse
+from app.services.ingest_service import process_note_content, process_web_content
+from app.services.memory_service import MemoryService
 
 logger = logging.getLogger(__name__)
 
@@ -50,11 +43,11 @@ async def process_with_librarian(memory_id: str, content: str, user_id: str):
             "next_step": None,
             "error": None
         }
-        
+
         result = await librarian_graph.ainvoke(initial_state)
         logger.info("Librarian processed memory %s: classification=%s", memory_id, result.get('classification'))
 
-    except Exception as e:
+    except Exception:
         logger.exception("Librarian error for memory %s", memory_id)
 
 
@@ -71,17 +64,17 @@ async def create_memory(
             if not data.url:
                 raise HTTPException(status_code=400, detail="URL is required for WEB type")
             processed = await process_web_content(data.url)
-            
+
         elif data.source_type == "PDF":
             raise HTTPException(status_code=501, detail="PDF parsing not implemented yet")
-            
+
         elif data.source_type == "NOTE":
             if not data.content:
                 raise HTTPException(status_code=400, detail="Content is required for NOTE type")
             processed = await process_note_content(data.content, data.memo)
         else:
             raise HTTPException(status_code=400, detail=f"Unknown source type: {data.source_type}")
-        
+
         # Create memory via service
         memory = await memory_service.create_memory(
             user_id=MOCK_USER_ID,
@@ -90,7 +83,7 @@ async def create_memory(
             source_type=data.source_type,
             source_url=processed.get("source_url")
         )
-        
+
         # Trigger Librarian in background for AI processing
         background_tasks.add_task(
             process_with_librarian,
@@ -98,20 +91,20 @@ async def create_memory(
             processed["content"],
             str(MOCK_USER_ID)
         )
-        
+
         return MemoryCreateResponse(id=memory.id, status="processing")
-        
+
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("", response_model=MemoryListResponse)
 async def list_memories(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    search: Optional[str] = None,
+    search: str | None = None,
     memory_service: MemoryService = Depends(get_memory_service)
 ):
     """Get paginated list of memories."""
@@ -121,7 +114,7 @@ async def list_memories(
         limit=limit,
         search=search
     )
-    
+
     return MemoryListResponse(
         items=[
             MemoryListItem(
@@ -144,10 +137,10 @@ async def get_memory(
 ):
     """Get single memory by ID."""
     memory = await memory_service.get_memory(memory_id, MOCK_USER_ID)
-    
+
     if not memory:
         raise HTTPException(status_code=404, detail="Memory not found")
-    
+
     return MemoryDetail(
         id=memory.id,
         title=memory.title,
@@ -168,8 +161,8 @@ async def delete_memory(
 ):
     """Delete a memory by ID."""
     success = await memory_service.delete_memory(memory_id, MOCK_USER_ID)
-    
+
     if not success:
         raise HTTPException(status_code=404, detail="Memory not found")
-    
+
     return None

@@ -14,9 +14,10 @@ Workflow:
                    |
                    +-------> END (if SPAM)
 """
-from langgraph.graph import StateGraph, END
-from app.agents.state import AgentState
+from langgraph.graph import END, StateGraph
+
 from app.agents.librarian.nodes import curator_node, ontologist_node, save_node
+from app.agents.state import AgentState
 
 
 def route_after_curator(state: AgentState) -> str:
@@ -24,7 +25,7 @@ def route_after_curator(state: AgentState) -> str:
     Conditional edge: Determine next step based on curator's classification.
     """
     next_step = state.get("next_step", "save")
-    
+
     if next_step == "ontologist":
         return "ontologist"
     elif next_step == "end":
@@ -36,21 +37,21 @@ def route_after_curator(state: AgentState) -> str:
 def create_librarian_graph() -> StateGraph:
     """
     Creates the Librarian Subgraph.
-    
+
     Returns a compiled LangGraph that can be invoked with:
         result = await graph.ainvoke(initial_state)
     """
     # Create the graph
     graph = StateGraph(AgentState)
-    
+
     # Add nodes
     graph.add_node("curator", curator_node)
     graph.add_node("ontologist", ontologist_node)
     graph.add_node("save", save_node)
-    
+
     # Set entry point
     graph.set_entry_point("curator")
-    
+
     # Add conditional edge from curator
     graph.add_conditional_edges(
         "curator",
@@ -61,13 +62,13 @@ def create_librarian_graph() -> StateGraph:
             "end": END
         }
     )
-    
+
     # Ontologist always goes to save
     graph.add_edge("ontologist", "save")
-    
+
     # Save always ends
     graph.add_edge("save", END)
-    
+
     return graph.compile()
 
 

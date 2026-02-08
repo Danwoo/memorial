@@ -2,11 +2,11 @@
 Pydantic Schemas for Memory (지식 저장소)
 API Request/Response DTOs - Based on API_Spec.md
 """
-from pydantic import BaseModel, Field, HttpUrl
-from typing import Optional, List, Literal
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
+from pydantic import BaseModel, Field
 
 # ========================================
 # Enums
@@ -21,10 +21,10 @@ MemoryStatus = Literal["pending", "processing", "completed", "failed"]
 class MemoryCreate(BaseModel):
     """POST /memories - Request Body"""
     source_type: SourceType = Field(alias="sourceType")
-    url: Optional[str] = None  # Required for WEB/PDF
-    content: Optional[str] = None  # Required for NOTE
-    memo: Optional[str] = None  # User's initial thought
-    
+    url: str | None = None  # Required for WEB/PDF
+    content: str | None = None  # Required for NOTE
+    memo: str | None = None  # User's initial thought
+
     class Config:
         populate_by_name = True
 
@@ -42,17 +42,17 @@ class MemoryListItem(BaseModel):
     """GET /memories - List Item"""
     id: UUID
     title: str
-    summary: Optional[str] = None
+    summary: str | None = None
     source_type: SourceType
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 class MemoryListResponse(BaseModel):
     """GET /memories - Response"""
-    items: List[MemoryListItem]
+    items: list[MemoryListItem]
     total: int
 
 
@@ -61,13 +61,13 @@ class MemoryDetail(BaseModel):
     id: UUID
     title: str
     content: str
-    summary: Optional[str] = None
-    source_url: Optional[str] = None
+    summary: str | None = None
+    source_url: str | None = None
     source_type: SourceType
-    tags: Optional[List[str]] = None
+    tags: list[str] | None = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
-    
+    updated_at: datetime | None = None
+
     class Config:
         from_attributes = True
 
@@ -81,13 +81,13 @@ class MemoryInDB(BaseModel):
     user_id: UUID
     title: str
     content: str
-    summary: Optional[str] = None
-    source_url: Optional[str] = None
+    summary: str | None = None
+    source_url: str | None = None
     source_type: SourceType
     status: MemoryStatus = "pending"
-    tags: Optional[List[str]] = None
+    tags: list[str] | None = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
-    
+    updated_at: datetime | None = None
+
     class Config:
         from_attributes = True

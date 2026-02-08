@@ -2,8 +2,8 @@
 Search Schemas
 Request/Response DTOs for search endpoints
 """
+
 from pydantic import BaseModel
-from typing import Optional, List
 
 
 class SearchResult(BaseModel):
@@ -11,17 +11,17 @@ class SearchResult(BaseModel):
     id: str
     title: str
     content: str
-    summary: Optional[str] = None
+    summary: str | None = None
     source_type: str
     similarity: float
-    created_at: Optional[str] = None
-    tags: Optional[List[str]] = None
+    created_at: str | None = None
+    tags: list[str] | None = None
 
 
 class SearchResponse(BaseModel):
     """Search response with results and metadata"""
     query: str
-    results: List[SearchResult]
+    results: list[SearchResult]
     total: int
     filters_applied: dict
 
@@ -36,4 +36,4 @@ class RelatedMemory(BaseModel):
 class RelatedMemoriesResponse(BaseModel):
     """Response for related memories endpoint"""
     source_id: str
-    related: List[RelatedMemory]
+    related: list[RelatedMemory]
