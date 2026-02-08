@@ -7,38 +7,19 @@ import logging
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 
 from app.config.settings import get_settings
+from app.schemas.auth_schema import (
+    AuthResponse,
+    LoginRequest,
+    SignupRequest,
+    UserResponse,
+)
 from app.security.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-
-class LoginRequest(BaseModel):
-    email: str  # Supabase validates email format
-    password: str
-
-
-class SignupRequest(BaseModel):
-    email: str  # Supabase validates email format
-    password: str
-
-
-class AuthResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: dict
-
-
-class UserResponse(BaseModel):
-    id: str
-    email: str
-    role: str
-    full_name: str | None = None
-    avatar_url: str | None = None
 
 
 @router.post("/login", response_model=AuthResponse)

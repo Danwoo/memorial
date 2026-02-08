@@ -6,40 +6,19 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel
 
 from app.config.settings import get_settings
+from app.dependencies import get_kakao_service
+from app.schemas.kakao_schema import (
+    KakaoAuthResponse,
+    KakaoStatusResponse,
+    SendMessageRequest,
+    SendMessageResponse,
+)
 from app.security.auth import get_user_id
-from app.services import kakao
-from app.services.kakao import _get_default_service
+from app.services.kakao_service import KakaoService
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
-
-
-# ------------------------------------------------------------------
-# Schemas (TODO: Move to schemas/integrations.py)
-# ------------------------------------------------------------------
-
-
-class KakaoAuthResponse(BaseModel):
-    auth_url: str
-    message: str
-
-
-class SendMessageRequest(BaseModel):
-    title: str
-    content: str
-    memory_id: str | None = None
-
-
-class SendMessageResponse(BaseModel):
-    success: bool
-    message: str
-
-
-class KakaoStatusResponse(BaseModel):
-    connected: bool
-    message: str
 
 
 # ------------------------------------------------------------------
@@ -50,9 +29,10 @@ class KakaoStatusResponse(BaseModel):
 @router.get("/kakao/auth", response_model=KakaoAuthResponse)
 async def get_kakao_auth_url(
     user_id: UUID = Depends(get_user_id),
+    kakao_service: KakaoService = Depends(get_kakao_service),
 ):
     """Get Kakao OAuth authorization URL."""
-    auth_url = kakao.get_auth_url()
+    auth_url = kakao_service.get_auth_url()
     return KakaoAuthResponse(
         auth_url=auth_url,
         message="Redirect user to auth_url to connect KakaoTalk",
@@ -60,13 +40,16 @@ async def get_kakao_auth_url(
 
 
 @router.get("/kakao/callback")
-async def kakao_oauth_callback(code: str = Query(...)):
+async def kakao_oauth_callback(
+    code: str = Query(...),
+    kakao_service: KakaoService = Depends(get_kakao_service),
+):
     """Handle Kakao OAuth callback (public -- Kakao redirects here)."""
     settings = get_settings()
     frontend_url = settings.FRONTEND_URL
 
     try:
-        await kakao.exchange_code_for_token(code)
+        await kakao_service.exchange_code_for_token(code, "default_user")
         return RedirectResponse(
             url=f"{frontend_url}/settings?kakao=connected",
             status_code=302,
@@ -81,10 +64,10 @@ async def kakao_oauth_callback(code: str = Query(...)):
 @router.get("/kakao/status", response_model=KakaoStatusResponse)
 async def get_kakao_status(
     user_id: UUID = Depends(get_user_id),
+    kakao_service: KakaoService = Depends(get_kakao_service),
 ):
     """Check if Kakao is connected."""
-    service = _get_default_service()
-    token = await service.get_stored_token(str(user_id))
+    token = await kakao_service.get_stored_token(str(user_id))
     return KakaoStatusResponse(
         connected=token is not None,
         message="Kakao connected" if token else "Kakao not connected",
@@ -95,10 +78,10 @@ async def get_kakao_status(
 async def send_kakao_message(
     request: SendMessageRequest,
     user_id: UUID = Depends(get_user_id),
+    kakao_service: KakaoService = Depends(get_kakao_service),
 ):
     """Send a message to user's KakaoTalk."""
-    service = _get_default_service()
-    token = await service.get_stored_token(str(user_id))
+    token = await kakao_service.get_stored_token(str(user_id))
 
     if not token:
         raise HTTPException(
@@ -115,7 +98,7 @@ async def send_kakao_message(
     )
 
     try:
-        await service.send_message_to_me(
+        await kakao_service.send_message_to_me(
             access_token=token,
             text=f"{request.title}\n\n{request.content}",
             link_title="Memoir에서 보기",
@@ -131,8 +114,8 @@ async def send_kakao_message(
 @router.post("/kakao/disconnect")
 async def disconnect_kakao(
     user_id: UUID = Depends(get_user_id),
+    kakao_service: KakaoService = Depends(get_kakao_service),
 ):
     """Disconnect Kakao (remove stored token)."""
-    service = _get_default_service()
-    await service.delete_token(str(user_id))
+    await kakao_service.delete_token(str(user_id))
     return {"success": True, "message": "Kakao disconnected"}

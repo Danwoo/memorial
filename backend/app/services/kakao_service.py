@@ -17,7 +17,6 @@ import httpx
 from supabase import Client
 
 from app.config.settings import get_settings
-from app.infrastructure.database import get_supabase_client
 
 logger = logging.getLogger(__name__)
 
@@ -240,44 +239,3 @@ class KakaoService:
         except Exception:
             logger.exception("Failed to send Kakao message")
             return False
-
-
-# Legacy functions for backward compatibility
-# These will use a default singleton instance
-
-_default_service: KakaoService | None = None
-
-def _get_default_service() -> KakaoService:
-    global _default_service
-    if _default_service is None:
-        _default_service = KakaoService(get_supabase_client())
-    return _default_service
-
-def get_auth_url(state: str | None = None) -> str:
-    """Legacy: Generate Kakao OAuth authorization URL."""
-    return _get_default_service().get_auth_url(state)
-
-async def exchange_code_for_token(code: str) -> dict:
-    """Legacy: Exchange code for token (uses default_user)."""
-    return await _get_default_service().exchange_code_for_token(code, "default_user")
-
-def get_stored_token(user_id: str = "default_user") -> str | None:
-    """Legacy: Sync wrapper (not recommended)."""
-    import asyncio
-    try:
-        loop = asyncio.get_event_loop()
-        return loop.run_until_complete(_get_default_service().get_stored_token(user_id))
-    except Exception:
-        logger.exception("Error in legacy get_stored_token")
-        return None
-
-async def send_memoir_notification(
-    memory_title: str,
-    memory_summary: str,
-    memory_id: str | None = None,
-    user_id: str = "default_user"
-) -> bool:
-    """Legacy: Send notification."""
-    return await _get_default_service().send_memoir_notification(
-        user_id, memory_title, memory_summary, memory_id
-    )
