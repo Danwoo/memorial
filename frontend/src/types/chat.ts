@@ -30,6 +30,8 @@ export interface ChatMessagePayload {
 /** Shape of a single SSE data chunk from the streaming response */
 export interface ChatStreamChunk {
   content?: string
+  done?: boolean
+  error?: string
 }
 
 /** Response from creating a new chat session */

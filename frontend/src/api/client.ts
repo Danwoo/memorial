@@ -51,7 +51,11 @@ async function handleErrorResponse(res: Response): Promise<never> {
   try {
     const body: ApiError = await res.json()
     if (body.detail) {
-      detail = body.detail
+      if (typeof body.detail === 'string') {
+        detail = body.detail
+      } else if (Array.isArray(body.detail)) {
+        detail = body.detail.map(e => e.msg).join('; ')
+      }
     }
   } catch {
     // Response body was not JSON; use the default message

@@ -1,5 +1,5 @@
-/** Source types for memory entries */
-export type SourceType = 'WEB' | 'PDF' | 'NOTE'
+/** Source types for memory entries (matches backend SourceType) */
+export type SourceType = 'WEB' | 'PDF' | 'NOTE' | 'KAKAO' | 'CHAT_HISTORY' | 'JOURNAL'
 
 /** A stored memory item */
 export interface Memory {

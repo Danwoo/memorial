@@ -46,11 +46,16 @@ export async function readSSEStream(
 
         try {
           const data: ChatStreamChunk = JSON.parse(line.slice(6))
+          if (data.error) {
+            throw new Error(data.error)
+          }
+          if (data.done) break
           if (data.content) {
             content += data.content
             onChunk(content)
           }
-        } catch {
+        } catch (e) {
+          if (e instanceof Error && e.message !== '') throw e
           // Ignore unparseable SSE lines
         }
       }
