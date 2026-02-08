@@ -27,27 +27,30 @@ const NODE_SIZES: Record<string, number> = {
   'default': 6
 }
 
+/** Minimal shape for force-graph node with coordinates (optional before simulation) */
+interface ForceNode extends GraphNode {
+  x?: number
+  y?: number
+}
+
 export default function GraphView() {
   const [data, setData] = useState<GraphData>({ nodes: [], links: [] })
   const [loading, setLoading] = useState(true)
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
   const [highlightNodes, setHighlightNodes] = useState<Set<string>>(new Set())
   const [highlightLinks, setHighlightLinks] = useState<Set<GraphLink>>(new Set())
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>()
 
-  useEffect(() => {
-    fetchGraphData()
-  }, [])
-
-  const processNodes = (nodes: { id: string; label: string; properties: Record<string, unknown>; name?: string }[]): GraphNode[] =>
+  const processNodes = useCallback((nodes: { id: string; label: string; properties: Record<string, unknown>; name?: string }[]): GraphNode[] =>
     nodes.map(n => ({
       ...n,
       val: NODE_SIZES[n.label] || NODE_SIZES['default'],
       color: NODE_COLORS[n.label] || NODE_COLORS['default'],
       name: (n.properties?.title as string) || (n.properties?.name as string) || n.name || n.id,
-    }))
+    })), [])
 
-  const fetchGraphData = async () => {
+  const fetchGraphData = useCallback(async () => {
     try {
       setLoading(true)
       const json = await fetchGraph()
@@ -63,27 +66,33 @@ export default function GraphView() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [processNodes])
+
+  useEffect(() => {
+    fetchGraphData()
+  }, [fetchGraphData])
 
   // Custom node canvas rendering for better labels
-  const paintNode = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+  const paintNode = useCallback((node: ForceNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const label = node.name || node.id
     const fontSize = Math.max(12 / globalScale, 3)
     const nodeSize = node.val || 6
     const isHighlighted = highlightNodes.has(node.id)
     const isSelected = selectedNode?.id === node.id
-    
+    const nx = node.x ?? 0
+    const ny = node.y ?? 0
+
     // Draw node circle
     ctx.beginPath()
-    ctx.arc(node.x, node.y, nodeSize, 0, 2 * Math.PI, false)
-    ctx.fillStyle = node.color
+    ctx.arc(nx, ny, nodeSize, 0, 2 * Math.PI, false)
+    ctx.fillStyle = node.color || NODE_COLORS['default']
     if (isHighlighted || isSelected) {
-      ctx.shadowColor = node.color
+      ctx.shadowColor = node.color || NODE_COLORS['default']
       ctx.shadowBlur = 15
     }
     ctx.fill()
     ctx.shadowBlur = 0
-    
+
     // Draw border for selected/highlighted nodes
     if (isSelected) {
       ctx.strokeStyle = '#fff'
@@ -94,26 +103,26 @@ export default function GraphView() {
       ctx.lineWidth = 1 / globalScale
       ctx.stroke()
     }
-    
+
     // Draw label if zoomed in enough
     if (globalScale > 0.8) {
       ctx.font = `${fontSize}px Inter, sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      
+
       // Text background
       const textWidth = ctx.measureText(label.substring(0, 20)).width
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
       ctx.fillRect(
-        node.x - textWidth / 2 - 2,
-        node.y + nodeSize + 3,
+        nx - textWidth / 2 - 2,
+        ny + nodeSize + 3,
         textWidth + 4,
         fontSize + 2
       )
-      
+
       // Text
       ctx.fillStyle = '#fff'
-      ctx.fillText(label.substring(0, 20), node.x, node.y + nodeSize + 3 + fontSize / 2)
+      ctx.fillText(label.substring(0, 20), nx, ny + nodeSize + 3 + fontSize / 2)
     }
   }, [highlightNodes, selectedNode])
 
@@ -121,28 +130,28 @@ export default function GraphView() {
   const handleNodeHover = useCallback((node: GraphNode | null) => {
     setHighlightNodes(new Set())
     setHighlightLinks(new Set())
-    
+
     if (node) {
       const connectedNodeIds = new Set<string>()
       const connectedLinks = new Set<GraphLink>()
-      
+
       data.links.forEach(link => {
         const sourceId = typeof link.source === 'object' ? link.source.id : link.source
         const targetId = typeof link.target === 'object' ? link.target.id : link.target
-        
+
         if (sourceId === node.id || targetId === node.id) {
           connectedNodeIds.add(sourceId)
           connectedNodeIds.add(targetId)
           connectedLinks.add(link)
         }
       })
-      
+
       setHighlightNodes(connectedNodeIds)
       setHighlightLinks(connectedLinks)
     }
   }, [data.links])
 
-  const handleNodeClick = useCallback((node: any) => {
+  const handleNodeClick = useCallback((node: ForceNode) => {
     setSelectedNode(node)
     if (node.url) {
       window.open(node.url, '_blank')
@@ -167,23 +176,23 @@ export default function GraphView() {
           <p>Loading Knowledge Graph...</p>
         </div>
       )}
-      
+
       {!loading && (
         <ForceGraph2D
           ref={fgRef}
           graphData={data}
           nodeCanvasObject={paintNode}
-          nodePointerAreaPaint={(node: any, color, ctx) => {
+          nodePointerAreaPaint={(node: ForceNode, color: string, ctx: CanvasRenderingContext2D) => {
             ctx.fillStyle = color
             ctx.beginPath()
-            ctx.arc(node.x, node.y, node.val || 6, 0, 2 * Math.PI)
+            ctx.arc(node.x ?? 0, node.y ?? 0, node.val || 6, 0, 2 * Math.PI)
             ctx.fill()
           }}
-          linkColor={(link: any) => 
+          linkColor={(link: GraphLink) =>
             highlightLinks.has(link) ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.15)'
           }
-          linkWidth={(link: any) => highlightLinks.has(link) ? 2 : 0.5}
-          linkDirectionalParticles={(link: any) => highlightLinks.has(link) ? 4 : 0}
+          linkWidth={(link: GraphLink) => highlightLinks.has(link) ? 2 : 0.5}
+          linkDirectionalParticles={(link: GraphLink) => highlightLinks.has(link) ? 4 : 0}
           linkDirectionalParticleWidth={2}
           backgroundColor="#0f0f0f"
           onNodeClick={handleNodeClick}
@@ -197,15 +206,15 @@ export default function GraphView() {
           d3VelocityDecay={0.3}
         />
       )}
-      
+
       {/* Legend */}
       <div className="graph-legend">
         <h4>Node Types</h4>
         <div className="legend-items">
           {nodeTypes.map(type => (
             <div key={type} className="legend-item">
-              <span 
-                className="legend-dot" 
+              <span
+                className="legend-dot"
                 style={{ backgroundColor: NODE_COLORS[type] || NODE_COLORS['default'] }}
               />
               <span className="legend-label">{type}</span>
@@ -218,7 +227,7 @@ export default function GraphView() {
       {selectedNode && (
         <div className="node-info-panel">
           <div className="node-info-header">
-            <span 
+            <span
               className="node-type-badge"
               style={{ backgroundColor: selectedNode.color }}
             >
@@ -239,7 +248,7 @@ export default function GraphView() {
           )}
         </div>
       )}
-      
+
       <div className="graph-controls">
         <span>🖱️ Scroll: Zoom</span>
         <span>✋ Drag: Pan</span>
@@ -249,4 +258,3 @@ export default function GraphView() {
     </div>
   )
 }
-
