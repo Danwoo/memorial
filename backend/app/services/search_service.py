@@ -69,7 +69,7 @@ class SearchService:
                     try:
                         created_at = datetime.fromisoformat(
                             created_at_str.replace("Z", "+00:00")
-                        ).replace(tzinfo=None)
+                        )
                         if (now - created_at) > timedelta(days=days):
                             continue
                     except Exception:

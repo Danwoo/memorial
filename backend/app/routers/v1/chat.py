@@ -65,6 +65,8 @@ async def send_message(
     session = await chat_service.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    if session.get("user_id") != str(user_id):
+        raise HTTPException(status_code=403, detail="Access denied")
 
     return StreamingResponse(
         chat_service.send_message(session_id, user_id, data.content, data.mode),
@@ -90,6 +92,8 @@ async def get_history(
     session = await chat_service.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    if session.get("user_id") != str(user_id):
+        raise HTTPException(status_code=403, detail="Access denied")
 
     history = await chat_service.get_history(session_id)
 

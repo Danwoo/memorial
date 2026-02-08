@@ -6,7 +6,7 @@ All public methods are async and delegate synchronous Supabase calls
 to a thread via ``asyncio.to_thread`` so that the event loop is never blocked.
 """
 import asyncio
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -35,8 +35,8 @@ class JournalRepository:
             "content": content,
             "mood": mood,
             "tags": tags or [],
-            "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
         }
 
         if user_id:
@@ -66,7 +66,7 @@ class JournalRepository:
         """Update a journal entry."""
         data: dict[str, Any] = {
             "content": content,
-            "updated_at": datetime.now().isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
         }
         if mood:
             data["mood"] = mood

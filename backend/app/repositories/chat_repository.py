@@ -7,7 +7,7 @@ to a thread via ``asyncio.to_thread`` so that the event loop is never blocked.
 """
 import asyncio
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
@@ -32,7 +32,7 @@ class ChatRepository:
         title: str | None = None,
     ) -> dict:
         """Create a new chat session in Supabase."""
-        title = title or f"Chat {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        title = title or f"Chat {datetime.now(UTC).strftime('%Y-%m-%d %H:%M')}"
 
         data = {"user_id": str(user_id), "title": title}
 
@@ -53,7 +53,7 @@ class ChatRepository:
             "id": session_id,
             "user_id": str(user_id),
             "title": title,
-            "created_at": datetime.now().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
 
     async def get_session(self, session_id: UUID) -> dict | None:

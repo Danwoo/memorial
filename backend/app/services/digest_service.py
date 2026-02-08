@@ -3,7 +3,7 @@ Digest Service
 Business logic for daily digest - aggregates today's memories, chats, and journals
 """
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -42,9 +42,9 @@ class DigestService:
             - chats: Today's chat sessions (if available)
             - insights: AI-generated questions and topics
         """
-        today = datetime.now().date()
-        today_start = datetime.combine(today, datetime.min.time())
-        today_end = datetime.combine(today, datetime.max.time())
+        today = datetime.now(UTC).date()
+        today_start = datetime.combine(today, datetime.min.time(), tzinfo=UTC)
+        today_end = datetime.combine(today, datetime.max.time(), tzinfo=UTC)
 
         # 1. Get today's memories
         memories = await self._get_today_memories(today_start, today_end, user_id=user_id)
@@ -107,7 +107,7 @@ class DigestService:
                     try:
                         created_at = datetime.fromisoformat(
                             created_at_str.replace("Z", "+00:00")
-                        ).replace(tzinfo=None)
+                        )
                         if start <= created_at <= end:
                             today_memories.append(m)
                     except (ValueError, TypeError) as e:
@@ -134,7 +134,7 @@ class DigestService:
                     try:
                         created_at = datetime.fromisoformat(
                             created_at_str.replace("Z", "+00:00")
-                        ).replace(tzinfo=None)
+                        )
                         if created_at.date() == today:
                             today_journals.append(j)
                     except (ValueError, TypeError) as e:

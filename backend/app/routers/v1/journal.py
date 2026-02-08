@@ -109,6 +109,7 @@ async def get_related_memories(
             query=request.content,
             limit=5,
             threshold=0.4,
+            filters={"user_id": str(user_id)},
         )
 
         memories = [

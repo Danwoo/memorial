@@ -2,7 +2,7 @@
 Common Schemas
 Shared DTOs used across multiple endpoints
 """
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Generic, TypeVar
 
 from pydantic import BaseModel
@@ -27,7 +27,7 @@ class ErrorResponse(BaseModel):
 
     def __init__(self, **data):
         if 'timestamp' not in data or data['timestamp'] is None:
-            data['timestamp'] = datetime.utcnow()
+            data['timestamp'] = datetime.now(UTC)
         super().__init__(**data)
 
 

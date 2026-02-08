@@ -226,7 +226,8 @@ class KakaoService:
         if len(text) > 200:
             text = text[:197] + "..."
 
-        link_url = f"http://localhost:5173/memories/{memory_id}" if memory_id else None
+        settings = get_settings()
+        link_url = f"{settings.FRONTEND_URL}/memories/{memory_id}" if memory_id else None
 
         try:
             await self.send_message_to_me(

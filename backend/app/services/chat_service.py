@@ -6,7 +6,7 @@ import asyncio
 import json
 import logging
 from collections.abc import AsyncGenerator
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from langchain_core.messages import AIMessage, HumanMessage
@@ -124,13 +124,13 @@ class ChatService:
                 result.append({
                     "role": "user",
                     "content": msg.content,
-                    "created_at": datetime.now().isoformat(),
+                    "created_at": datetime.now(UTC).isoformat(),
                 })
             elif isinstance(msg, AIMessage):
                 result.append({
                     "role": "assistant",
                     "content": msg.content,
-                    "created_at": datetime.now().isoformat(),
+                    "created_at": datetime.now(UTC).isoformat(),
                 })
 
         return result
