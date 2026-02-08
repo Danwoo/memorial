@@ -2,14 +2,20 @@
 Core Configuration for Memoir AI Backend
 Pydantic Settings for environment variable management
 """
+from uuid import UUID
+
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 from typing import Optional
 
+# Single source of truth for the development mock user ID.
+# TODO: Remove once real JWT authentication is implemented.
+DEFAULT_USER_ID: UUID = UUID("00000000-0000-0000-0000-000000000001")
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
-    
+
     # App info
     APP_NAME: str = "Memoir AI"
     DEBUG: bool = False

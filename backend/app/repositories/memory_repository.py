@@ -65,6 +65,31 @@ class MemoryRepository:
             return self._row_to_model(result.data)
         return None
     
+    async def get_all(
+        self,
+        user_id: Optional[UUID] = None,
+        limit: int = 1000
+    ) -> List[dict]:
+        """
+        Get all memories as raw dicts for internal services (digest, graph).
+
+        Args:
+            user_id: Optional user filter. If None, returns all memories.
+            limit: Maximum number of records to return.
+
+        Returns:
+            List of memory dicts from Supabase.
+        """
+        query = self.db.table("memories").select("*")
+
+        if user_id:
+            query = query.eq("user_id", str(user_id))
+
+        query = query.order("created_at", desc=True).limit(limit)
+        result = query.execute()
+
+        return result.data or []
+
     async def get_by_user(
         self,
         user_id: UUID,
@@ -83,7 +108,9 @@ class MemoryRepository:
         )
         
         if search:
-            query = query.or_(f"title.ilike.%{search}%,content.ilike.%{search}%")
+            # Escape special SQL LIKE characters to prevent filter injection
+            escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            query = query.or_(f"title.ilike.%{escaped}%,content.ilike.%{escaped}%")
         
         query = query.order("created_at", desc=True).range(offset, offset + limit - 1)
         result = query.execute()

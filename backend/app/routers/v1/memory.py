@@ -2,6 +2,8 @@
 Memory Router
 API endpoints for memory operations
 """
+import logging
+
 from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks
 from typing import Optional
 from uuid import UUID
@@ -17,11 +19,14 @@ from app.services.memory_service import MemoryService
 from app.services.ingest_service import process_web_content, process_note_content
 from app.dependencies import get_memory_service
 from app.agents.librarian import librarian_graph
+from app.config.settings import DEFAULT_USER_ID
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/memories", tags=["memories"])
 
 # TODO: Replace with actual user from JWT token
-MOCK_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
+MOCK_USER_ID = DEFAULT_USER_ID
 
 
 async def process_with_librarian(memory_id: str, content: str, user_id: str):
@@ -47,10 +52,10 @@ async def process_with_librarian(memory_id: str, content: str, user_id: str):
         }
         
         result = await librarian_graph.ainvoke(initial_state)
-        print(f"Librarian processed memory {memory_id}: classification={result.get('classification')}")
-        
+        logger.info("Librarian processed memory %s: classification=%s", memory_id, result.get('classification'))
+
     except Exception as e:
-        print(f"Librarian error for memory {memory_id}: {e}")
+        logger.exception("Librarian error for memory %s", memory_id)
 
 
 @router.post("", response_model=MemoryCreateResponse, status_code=201)

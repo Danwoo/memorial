@@ -8,10 +8,14 @@ The Curator is the "Gatekeeper" that:
 3. Creates a one-line summary
 """
 import json
+import logging
+
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from app.agents.state import AgentState
 from app.config.settings import get_settings
+
+logger = logging.getLogger(__name__)
 
 CURATOR_SYSTEM_PROMPT = """You are the Curator of Memoir AI. Your job is to classify and evaluate incoming text.
 
@@ -62,7 +66,7 @@ async def curator_node(state: AgentState) -> dict:
     if target_text.startswith("http://") or target_text.startswith("https://"):
         from app.utils.scraper import extract_content_from_url
         
-        print(f"[Curator] Detected URL: {target_text}")
+        logger.info("Curator detected URL: %s", target_text)
         scraped_data = await extract_content_from_url(target_text)
         
         source_url = target_text

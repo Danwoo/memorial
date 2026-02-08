@@ -9,11 +9,14 @@ Features:
 4. Evening Ritual Mode - Daily reflection session
 """
 import json
+import logging
 from typing import Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from app.agents.state import AgentState
-from app.config.settings import get_settings
+from app.config.settings import get_settings, DEFAULT_USER_ID
+
+logger = logging.getLogger(__name__)
 
 # Base system prompt
 SOCRATES_BASE_PROMPT = """You are Socrates, the intellectual companion for the user.
@@ -158,22 +161,21 @@ async def socrates_node(state: AgentState) -> dict:
                     for m in results
                 ])
         except Exception as e:
-            print(f"Vector search failed: {e}")
+            logger.exception("Vector search failed")
         
         # Retrieve recent journals for additional context
         journal_context = ""
         try:
             from app.repositories.journal_repository import JournalRepository
-            from uuid import UUID
             journal_repo = JournalRepository()
-            recent_journals = journal_repo.get_journals(UUID("00000000-0000-0000-0000-000000000001"), limit=3)
+            recent_journals = journal_repo.get_journals(DEFAULT_USER_ID, limit=3)
             if recent_journals:
                 journal_context = "\n".join([
                     f"- [Journal {j.get('created_at', '')[:10]}] Mood: {j.get('mood', 'N/A')} - {j.get('content', '')[:80]}..."
                     for j in recent_journals
                 ])
         except Exception as e:
-            print(f"Journal context fetch failed: {e}")
+            logger.exception("Journal context fetch failed")
         
         # For counter-argument mode, find contradicting memories
         if mode == "counter" and current_memories:
@@ -185,7 +187,7 @@ async def socrates_node(state: AgentState) -> dict:
                         for m in contradicting
                     ])
             except Exception as e:
-                print(f"Contradiction search failed: {e}")
+                logger.exception("Contradiction search failed")
     
     # Create LLM instance
     llm = ChatOpenAI(

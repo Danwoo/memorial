@@ -10,6 +10,8 @@ Kakao OAuth Flow:
 5. We exchange code for access_token
 6. Store token in Supabase for sending messages
 """
+import logging
+
 import httpx
 from typing import Optional
 from urllib.parse import urlencode
@@ -17,6 +19,8 @@ from supabase import Client
 
 from app.config.settings import get_settings
 from app.infrastructure.database import get_supabase_client
+
+logger = logging.getLogger(__name__)
 
 # Kakao API endpoints
 KAKAO_AUTH_URL = "https://kauth.kakao.com/oauth/authorize"
@@ -105,7 +109,7 @@ class KakaoService:
                 on_conflict="user_id"
             ).execute()
         except Exception as e:
-            print(f"Error saving Kakao token to Supabase: {e}")
+            logger.exception("Error saving Kakao token to Supabase")
             raise
     
     async def get_stored_token(self, user_id: str) -> Optional[str]:
@@ -120,7 +124,7 @@ class KakaoService:
                 return result.data[0].get("access_token")
             return None
         except Exception as e:
-            print(f"Error getting Kakao token from Supabase: {e}")
+            logger.exception("Error getting Kakao token from Supabase")
             return None
     
     async def delete_token(self, user_id: str) -> bool:
@@ -132,7 +136,7 @@ class KakaoService:
                 .execute()
             return True
         except Exception as e:
-            print(f"Error deleting Kakao token: {e}")
+            logger.exception("Error deleting Kakao token")
             return False
     
     async def is_connected(self, user_id: str) -> bool:
@@ -234,7 +238,7 @@ class KakaoService:
             )
             return True
         except Exception as e:
-            print(f"Failed to send Kakao message: {e}")
+            logger.exception("Failed to send Kakao message")
             return False
 
 
@@ -263,7 +267,8 @@ def get_stored_token(user_id: str = "default_user") -> Optional[str]:
     try:
         loop = asyncio.get_event_loop()
         return loop.run_until_complete(_get_default_service().get_stored_token(user_id))
-    except:
+    except Exception as e:
+        logger.exception("Error in legacy get_stored_token")
         return None
 
 async def send_memoir_notification(

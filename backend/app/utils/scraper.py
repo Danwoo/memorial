@@ -2,9 +2,13 @@
 Web Scraper Utility for Auto-Archivist
 Extracts title and main content from URLs using BeautifulSoup.
 """
+import logging
+
 import httpx
 from bs4 import BeautifulSoup
 from typing import Optional, Dict
+
+logger = logging.getLogger(__name__)
 
 async def extract_content_from_url(url: str) -> Dict[str, str]:
     """
@@ -26,7 +30,7 @@ async def extract_content_from_url(url: str) -> Dict[str, str]:
     }
     
     try:
-        async with httpx.AsyncClient(follow_redirects=True, verify=False) as client:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
             response = await client.get(url, headers=headers, timeout=10.0)
             response.raise_for_status()
             
@@ -64,7 +68,7 @@ async def extract_content_from_url(url: str) -> Dict[str, str]:
             }
             
     except Exception as e:
-        print(f"Scraper Error: {e}")
+        logger.exception("Scraper error for URL: %s", url)
         return {
             "title": "Failed to load",
             "content": f"Error loading URL: {str(e)}",

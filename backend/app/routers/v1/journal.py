@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict, Any
 from pydantic import BaseModel
@@ -5,6 +7,9 @@ from uuid import UUID
 
 from app.services.journal_service import JournalService
 from app.dependencies import get_journal_service
+from app.config.settings import DEFAULT_USER_ID
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/journals", tags=["journals"])
 
@@ -30,17 +35,15 @@ def create_journal(
             raise HTTPException(status_code=500, detail="Failed to create journal entry - no result returned")
         return result
     except Exception as e:
-        import traceback
-        error_detail = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
-        print(f"[JOURNAL ERROR] {error_detail}")
-        raise HTTPException(status_code=500, detail=error_detail)
+        logger.exception("Failed to create journal entry")
+        raise HTTPException(status_code=500, detail="Internal server error while creating journal entry")
 
 @router.get("", response_model=List[Dict[str, Any]])
 def list_journals(
     limit: int = 10,
     service: JournalService = Depends(get_journal_service)
 ):
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = DEFAULT_USER_ID
     return service.get_entries(user_id, limit)
 
 class ReviewRequest(BaseModel):
@@ -56,9 +59,7 @@ def get_review_questions(
         questions = service.generate_review_questions(request.content)
         return {"questions": questions}
     except Exception as e:
-        import traceback
-        error_detail = f"{type(e).__name__}: {str(e)}"
-        print(f"[REVIEW ERROR] {error_detail}\n{traceback.format_exc()}")
+        logger.exception("Failed to generate review questions")
         return {"questions": ["이 경험에서 어떤 인사이트를 얻었나요?"]}
 
 @router.post("/insights", response_model=Dict[str, Any])
@@ -71,9 +72,7 @@ def analyze_insights(
         insights = service.detect_cognitive_distortions(request.content)
         return insights
     except Exception as e:
-        import traceback
-        error_detail = f"{type(e).__name__}: {str(e)}"
-        print(f"[INSIGHT ERROR] {error_detail}\n{traceback.format_exc()}")
+        logger.exception("Failed to analyze cognitive distortions")
         return {"has_distortions": False, "distortions": [], "wellness_score": 100}
 
 @router.post("/related-memories", response_model=Dict[str, Any])
@@ -111,7 +110,5 @@ async def get_related_memories(
         
         return {"memories": memories}
     except Exception as e:
-        import traceback
-        error_detail = f"{type(e).__name__}: {str(e)}"
-        print(f"[RELATED ERROR] {error_detail}\n{traceback.format_exc()}")
+        logger.exception("Failed to fetch related memories")
         return {"memories": []}

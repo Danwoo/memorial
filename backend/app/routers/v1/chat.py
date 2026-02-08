@@ -15,11 +15,12 @@ from app.schemas.chat import (
 )
 from app.services.chat_service import ChatService
 from app.dependencies import get_chat_service
+from app.config.settings import DEFAULT_USER_ID
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 # TODO: Replace with actual user from JWT token
-MOCK_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
+MOCK_USER_ID = DEFAULT_USER_ID
 
 
 @router.post("/sessions", response_model=ChatSessionResponse, status_code=201)

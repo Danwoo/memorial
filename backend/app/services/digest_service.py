@@ -2,6 +2,7 @@
 Digest Service
 Business logic for daily digest - aggregates today's memories, chats, and journals
 """
+import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from uuid import UUID
@@ -9,7 +10,9 @@ from uuid import UUID
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from app.config.settings import get_settings
+from app.config.settings import get_settings, DEFAULT_USER_ID
+
+logger = logging.getLogger(__name__)
 
 
 DIGEST_QUESTION_PROMPT = """Based on the user's collected memories from today, generate 1-2 thoughtful questions 
@@ -109,12 +112,12 @@ class DigestService:
                         ).replace(tzinfo=None)
                         if start <= created_at <= end:
                             today_memories.append(m)
-                    except:
-                        pass
-            
+                    except (ValueError, TypeError) as e:
+                        logger.debug("Skipping memory with unparseable date: %s", e)
+
             return today_memories
         except Exception as e:
-            print(f"Error fetching today's memories: {e}")
+            logger.exception("Error fetching today's memories")
             return []
     
     def _get_today_journals(self, user_id: Optional[UUID], today: datetime) -> List[Dict]:
@@ -122,7 +125,7 @@ class DigestService:
         try:
             # Get recent journals and filter by today
             journals = self.journal_repo.get_journals(
-                user_id or UUID("00000000-0000-0000-0000-000000000001"),
+                user_id or DEFAULT_USER_ID,
                 limit=20
             )
             
@@ -136,12 +139,12 @@ class DigestService:
                         ).replace(tzinfo=None)
                         if created_at.date() == today:
                             today_journals.append(j)
-                    except:
-                        pass
-            
+                    except (ValueError, TypeError) as e:
+                        logger.debug("Skipping journal with unparseable date: %s", e)
+
             return today_journals
         except Exception as e:
-            print(f"Error fetching today's journals: {e}")
+            logger.exception("Error fetching today's journals")
             return []
     
     def _extract_topics(self, memories: List[Dict]) -> List[str]:
@@ -197,5 +200,5 @@ class DigestService:
             return questions[:2]
             
         except Exception as e:
-            print(f"Error generating questions: {e}")
+            logger.exception("Error generating questions")
             return ["오늘 저장한 내용들에서 어떤 인사이트를 얻으셨나요?"]
