@@ -8,16 +8,25 @@ from uuid import UUID
 from pydantic_settings import BaseSettings
 
 # Single source of truth for the development mock user ID.
-# TODO: Remove once real JWT authentication is implemented.
+# Used by the DEBUG auth bypass when no JWT token is provided.
 DEFAULT_USER_ID: UUID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from environment variables"""
+    """Application settings loaded from environment variables."""
 
     # App info
     APP_NAME: str = "Memoir AI"
     DEBUG: bool = False
+
+    # Frontend
+    FRONTEND_URL: str = "http://localhost:5173"
+
+    # CORS
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+    ]
 
     # OpenAI
     OPENAI_API_KEY: str
@@ -47,5 +56,5 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Cached settings instance (Singleton pattern)"""
+    """Cached settings instance (Singleton pattern)."""
     return Settings()

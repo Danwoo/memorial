@@ -14,19 +14,22 @@ from app.routers.v1.router import api_router
 
 logger = logging.getLogger(__name__)
 
+settings = get_settings()
+
 app = FastAPI(
     title="Memoir AI",
     description="지능형 인지 장부 - Backend API",
     version="0.1.0",
 )
 
-# CORS 설정 (Frontend 연동 위해)
+# CORS middleware (origins from settings, wildcard fallback in DEBUG)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow Extension & Frontend
+    allow_origins=["*"] if settings.DEBUG else settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    max_age=600,
 )
 
 
@@ -84,7 +87,6 @@ async def unhandled_exception_handler(
         traceback.format_exc(),
     )
 
-    settings = get_settings()
     detail = str(exc) if settings.DEBUG else "Internal server error"
 
     return JSONResponse(
@@ -103,8 +105,8 @@ async def unhandled_exception_handler(
 
 @app.get("/health")
 async def health_check():
+    """Public health check endpoint (no auth required)."""
     return {"status": "ok"}
 
 
-# API Router 연결
 app.include_router(api_router)
