@@ -20,7 +20,7 @@ async def get_overview_stats(
     stats_service: StatsService = Depends(get_stats_service),
 ):
     """Get complete dashboard statistics overview."""
-    return await stats_service.get_overview()
+    return await stats_service.get_overview(user_id)
 
 
 @router.get("/activity")
@@ -30,7 +30,7 @@ async def get_activity_data(
     stats_service: StatsService = Depends(get_stats_service),
 ):
     """Get daily activity data for a range."""
-    activity = await stats_service.get_activity(days)
+    activity = await stats_service.get_activity(user_id, days)
     return {"days": days, "activity": activity}
 
 
@@ -42,4 +42,4 @@ async def get_timeline_data(
     stats_service: StatsService = Depends(get_stats_service),
 ):
     """Get memories grouped by date for timeline view."""
-    return await stats_service.get_timeline(page, limit)
+    return await stats_service.get_timeline(user_id, page, limit)

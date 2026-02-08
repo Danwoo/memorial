@@ -42,7 +42,7 @@ async def get_graph(
     - Memory <-> Entity (extracted entities)
     """
     if mock:
-        return await _build_graph_from_memories(memory_repo, limit)
+        return await _build_graph_from_memories(memory_repo, user_id, limit)
 
     if not graph_service.is_available:
         return {"nodes": [], "links": []}
@@ -60,11 +60,12 @@ async def get_graph(
 
 async def _build_graph_from_memories(
     memory_repo: MemoryRepository,
+    user_id: UUID,
     limit: int,
 ) -> dict[str, list[Any]]:
     """Generate graph data dynamically from actual memories."""
     try:
-        memories = await memory_repo.get_all()
+        memories = await memory_repo.get_all(user_id=user_id)
 
         nodes: list[dict[str, Any]] = []
         links: list[dict[str, Any]] = []

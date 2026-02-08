@@ -29,6 +29,7 @@ async def advanced_search(
     tag_list = [t.strip() for t in tags.split(",")] if tags else None
 
     result = await search_service.search(
+        user_id=user_id,
         query=q,
         limit=limit,
         threshold=threshold,
@@ -53,5 +54,5 @@ async def get_related_memories(
     search_service: SearchService = Depends(get_search_service),
 ):
     """Get memories related to a specific memory."""
-    related = await search_service.get_related_memories(memory_id, limit)
+    related = await search_service.get_related_memories(user_id, memory_id, limit)
     return [RelatedMemory(**r) for r in related]

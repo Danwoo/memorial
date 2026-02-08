@@ -4,6 +4,7 @@ Business logic for semantic search and recommendations
 """
 from datetime import datetime, timedelta
 from typing import Any
+from uuid import UUID
 
 from app.repositories.memory_repository import MemoryRepository
 from app.repositories.vector_repository import VectorRepository
@@ -22,20 +23,21 @@ class SearchService:
 
     async def search(
         self,
+        user_id: UUID,
         query: str,
         limit: int = 10,
         threshold: float = 0.3,
         source_type: str | None = None,
         days: int | None = None,
-        tags: list[str] | None = None
+        tags: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Advanced semantic search with filtering.
         Returns search results with applied filters.
         """
         # Build filters for vector search
-        filters = {}
-        filters_applied = {}
+        filters: dict[str, Any] = {"user_id": str(user_id)}
+        filters_applied: dict[str, Any] = {}
 
         if source_type:
             filters["source_type"] = source_type
@@ -52,7 +54,7 @@ class SearchService:
             query=query,
             limit=limit * 2,
             threshold=threshold,
-            filters=filters if filters else None
+            filters=filters,
         )
 
         # Apply additional filters
@@ -102,8 +104,9 @@ class SearchService:
 
     async def get_related_memories(
         self,
+        user_id: UUID,
         memory_id: str,
-        limit: int = 5
+        limit: int = 5,
     ) -> list[dict[str, Any]]:
         """
         Get memories related to a specific memory.
@@ -117,7 +120,8 @@ class SearchService:
         similar = await self.vector_repo.similarity_search(
             query=memory_id,  # This should be the content, will need to fetch
             limit=limit + 1,
-            threshold=0.3
+            threshold=0.3,
+            filters={"user_id": str(user_id)},
         )
 
         # Filter out the source memory

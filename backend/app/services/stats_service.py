@@ -4,6 +4,7 @@ Business logic for dashboard statistics
 """
 from datetime import datetime, timedelta
 from typing import Any
+from uuid import UUID
 
 from app.repositories.stats_repository import StatsRepository
 from app.schemas.stats import (
@@ -22,9 +23,9 @@ class StatsService:
     def __init__(self, stats_repo: StatsRepository):
         self.stats_repo = stats_repo
 
-    async def get_overview(self) -> StatsOverviewResponse:
+    async def get_overview(self, user_id: UUID) -> StatsOverviewResponse:
         """Get complete dashboard statistics."""
-        memories = await self.stats_repo.get_all_memories()
+        memories = await self.stats_repo.get_all_memories(user_id)
 
         now = datetime.now()
         week_ago = now - timedelta(days=7)
@@ -109,13 +110,14 @@ class StatsService:
 
     async def get_activity(
         self,
-        days: int = 30
+        user_id: UUID,
+        days: int = 30,
     ) -> list[ActivityData]:
         """Get daily activity data for a range."""
         now = datetime.now()
         start_date = now - timedelta(days=days)
 
-        memories = await self.stats_repo.get_memories_in_range(start_date, now)
+        memories = await self.stats_repo.get_memories_in_range(user_id, start_date, now)
 
         day_counts: dict[str, int] = {}
         for memory in memories:
@@ -140,11 +142,12 @@ class StatsService:
 
     async def get_timeline(
         self,
+        user_id: UUID,
         page: int = 1,
-        limit: int = 20
+        limit: int = 20,
     ) -> dict[str, Any]:
         """Get memories grouped by date for timeline view."""
-        memories = await self.stats_repo.get_memories_by_date(page, limit)
+        memories = await self.stats_repo.get_memories_by_date(user_id, page, limit)
 
         grouped: dict[str, list] = {}
         for memory in memories:
