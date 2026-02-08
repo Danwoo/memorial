@@ -22,23 +22,23 @@ interface User {
 function App() {
   const [currentView, setCurrentView] = useState<View>('chat')
   const [sessionId, setSessionId] = useState<string | null>(null)
-  // DEVELOPMENT: Bypass auth
-  const [isAuthenticated, setIsAuthenticated] = useState(true)
-  const [user, setUser] = useState<User | null>({
-    id: "dev-user",
-    email: "dev@example.com",
-    full_name: "Developer",
-    avatar_url: ""
-  })
-  const [isLoading, setIsLoading] = useState(false)
+  // In development mode, bypass auth with a dev user.
+  // In production, require real authentication.
+  const isDev = import.meta.env.DEV
+  const [isAuthenticated, setIsAuthenticated] = useState(isDev)
+  const [user, setUser] = useState<User | null>(
+    isDev
+      ? { id: "dev-user", email: "dev@example.com", full_name: "Developer", avatar_url: "" }
+      : null
+  )
+  const [isLoading, setIsLoading] = useState(!isDev)
 
-  // Check for existing auth token on mount
-  // Check for existing auth token on mount
-  /*
+  // Check for existing auth token on mount (production only)
   useEffect(() => {
+    if (isDev) return
+
     const token = localStorage.getItem('auth_token')
     if (token) {
-      // Verify token with backend
       fetch('/api/v1/auth/me', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -59,8 +59,7 @@ function App() {
     } else {
       setIsLoading(false)
     }
-  }, [])
-  */
+  }, [isDev])
 
   const handleLogin = (_token: string, userData: User) => {
     setUser(userData)

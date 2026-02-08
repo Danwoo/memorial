@@ -19,6 +19,7 @@ export default function JournalView() {
   const [isSaving, setIsSaving] = useState(false)
   const [relatedMemories, setRelatedMemories] = useState<RelatedMemory[]>([])
   const [isLoadingContext, setIsLoadingContext] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   // Debounced fetch for related memories
   const fetchRelatedMemories = useCallback(async (text: string) => {
@@ -52,6 +53,11 @@ export default function JournalView() {
     return () => clearTimeout(timer)
   }, [content, fetchRelatedMemories])
 
+  const showSaveStatus = (type: 'success' | 'error', message: string) => {
+    setSaveStatus({ type, message })
+    setTimeout(() => setSaveStatus(null), 3000)
+  }
+
   const handleSave = async () => {
     if (!content.trim()) return
     setIsSaving(true)
@@ -62,14 +68,14 @@ export default function JournalView() {
             body: JSON.stringify({ content })
         })
         if (res.ok) {
-            alert('저장되었습니다!')
+            showSaveStatus('success', '저장되었습니다!')
         } else {
             console.error('Failed to save')
-            alert('저장 실패')
+            showSaveStatus('error', '저장에 실패했습니다.')
         }
     } catch (e) {
         console.error(e)
-        alert('에러 발생')
+        showSaveStatus('error', '네트워크 오류가 발생했습니다.')
     } finally {
         setIsSaving(false)
     }
@@ -81,8 +87,13 @@ export default function JournalView() {
         <div className="editor-header">
             <h2>Today's Journal</h2>
             <div className="editor-actions">
-                <button 
-                    className="save-btn" 
+                {saveStatus && (
+                    <span className={`save-status save-status--${saveStatus.type}`}>
+                        {saveStatus.message}
+                    </span>
+                )}
+                <button
+                    className="save-btn"
                     onClick={handleSave}
                     disabled={isSaving}
                 >

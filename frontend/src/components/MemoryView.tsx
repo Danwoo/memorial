@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './MemoryView.css'
 
 interface Memory {
@@ -56,9 +56,9 @@ export default function MemoryView() {
   }
 
   // Load on mount
-  useState(() => {
+  useEffect(() => {
     loadMemories()
-  })
+  }, [])
 
   return (
     <div className="memory-view">

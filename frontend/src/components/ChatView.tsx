@@ -30,6 +30,14 @@ export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) 
   const [mode, setMode] = useState<ChatMode>('')
   const [showModes, setShowModes] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Cleanup: abort any in-flight SSE stream on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort()
+    }
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -51,11 +59,15 @@ export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) 
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return
-    
+
     const userMessage = input.trim()
     setInput('')
     setMessages(prev => [...prev, { role: 'user', content: userMessage }])
     setIsLoading(true)
+
+    // AbortController for cleanup on unmount or cancellation
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
 
     try {
       // Create session if needed
@@ -69,56 +81,72 @@ export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) 
       const res = await fetch(`${API_BASE}/chat/sessions/${currentSessionId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           content: userMessage,
           mode: mode || undefined
-        })
+        }),
+        signal: abortController.signal
       })
 
       if (!res.ok) throw new Error('Failed to send message')
 
       // Read SSE stream
       const reader = res.body?.getReader()
-      const decoder = new TextDecoder()
+      const decoder = new TextDecoder('utf-8')
       let assistantContent = ''
+      // Buffer for incomplete SSE lines across chunks
+      let sseBuffer = ''
 
       if (reader) {
         // Add placeholder for assistant message
         setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
 
-          const chunk = decoder.decode(value)
-          const lines = chunk.split('\n')
+            const chunk = decoder.decode(value, { stream: true })
+            sseBuffer += chunk
+            const lines = sseBuffer.split('\n')
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6))
-                if (data.content) {
-                  assistantContent += data.content
-                  setMessages(prev => {
-                    const updated = [...prev]
-                    updated[updated.length - 1] = { role: 'assistant', content: assistantContent }
-                    return updated
-                  })
+            // Keep the last (potentially incomplete) line in the buffer
+            sseBuffer = lines.pop() || ''
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6))
+                  if (data.content) {
+                    assistantContent += data.content
+                    setMessages(prev => {
+                      const updated = [...prev]
+                      updated[updated.length - 1] = { role: 'assistant', content: assistantContent }
+                      return updated
+                    })
+                  }
+                } catch (parseError) {
+                  console.warn('SSE JSON parse error:', parseError)
                 }
-              } catch {
-                // Ignore parse errors
               }
             }
           }
+        } finally {
+          reader.releaseLock()
         }
       }
     } catch (error) {
+      // Suppress abort errors (expected on cleanup)
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return
+      }
       console.error('Error sending message:', error)
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: '죄송합니다, 오류가 발생했습니다. 다시 시도해주세요.' 
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: '죄송합니다, 오류가 발생했습니다. 다시 시도해주세요.'
       }])
     } finally {
+      abortControllerRef.current = null
       setIsLoading(false)
     }
   }

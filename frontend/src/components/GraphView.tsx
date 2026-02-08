@@ -62,9 +62,14 @@ export default function GraphView() {
   const fetchGraphData = async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/v1/graph?limit=200&mock=true')
+      const res = await fetch('/api/v1/graph?limit=200')
+
+      if (!res.ok) {
+        throw new Error(`API responded with status ${res.status}`)
+      }
+
       const json = await res.json()
-      
+
       // Process nodes with proper styling
       const processedNodes = json.nodes.map((n: any) => ({
         ...n,
@@ -78,7 +83,21 @@ export default function GraphView() {
         links: json.links
       })
     } catch (err) {
-      console.error("Failed to fetch graph data:", err)
+      console.error("Failed to fetch graph data, falling back to mock:", err)
+      // Fallback: fetch with mock=true only when real API fails
+      try {
+        const mockRes = await fetch('/api/v1/graph?limit=200&mock=true')
+        const mockJson = await mockRes.json()
+        const processedNodes = mockJson.nodes.map((n: any) => ({
+          ...n,
+          val: NODE_SIZES[n.label] || NODE_SIZES['default'],
+          color: NODE_COLORS[n.label] || NODE_COLORS['default'],
+          name: n.properties?.title || n.properties?.name || n.name || n.id
+        }))
+        setData({ nodes: processedNodes, links: mockJson.links })
+      } catch (mockErr) {
+        console.error("Mock fallback also failed:", mockErr)
+      }
     } finally {
       setLoading(false)
     }
