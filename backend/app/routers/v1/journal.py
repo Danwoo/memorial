@@ -81,13 +81,16 @@ async def get_related_memories(
     request: ReviewRequest,
 ):
     """Find memories related to the current journal content for context sidebar."""
-    from app.services.vector_store import vector_store
+    from app.infrastructure.database import get_supabase_client
+    from app.repositories.vector_repository import VectorRepository
+
+    vector_repo = VectorRepository(get_supabase_client())
     try:
         # Search for similar memories based on journal content
         if not request.content or len(request.content.strip()) < 10:
             return {"memories": []}
-        
-        results = await vector_store.similarity_search(
+
+        results = await vector_repo.similarity_search(
             query=request.content,
             limit=5,
             threshold=0.4

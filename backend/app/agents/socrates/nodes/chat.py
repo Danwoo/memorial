@@ -82,8 +82,11 @@ def get_mode_prompt(mode: Optional[str]) -> str:
 
 async def find_contradicting_memories(query: str, current_memories: list) -> list:
     """Find memories that might contradict the current topic."""
-    from app.services.vector_store import vector_store
-    
+    from app.infrastructure.database import get_supabase_client
+    from app.repositories.vector_repository import VectorRepository
+
+    vector_repo = VectorRepository(get_supabase_client())
+
     # Search for potentially contradicting content
     contradiction_queries = [
         f"disadvantages of {query}",
@@ -91,17 +94,17 @@ async def find_contradicting_memories(query: str, current_memories: list) -> lis
         f"criticism of {query}",
         f"opposite of {query}"
     ]
-    
+
     contradicting = []
     for cq in contradiction_queries[:2]:  # Limit queries
         try:
-            results = await vector_store.similarity_search(cq, limit=2, threshold=0.4)
+            results = await vector_repo.similarity_search(cq, limit=2, threshold=0.4)
             for r in results:
                 if r.get("id") not in [m.get("id") for m in current_memories]:
                     contradicting.append(r)
         except Exception:
             pass
-    
+
     return contradicting[:3]  # Return top 3
 
 
@@ -141,10 +144,13 @@ async def socrates_node(state: AgentState) -> dict:
         query = last_message.content
         
         # Perform Vector Search (RAG)
-        from app.services.vector_store import vector_store
-        
+        from app.infrastructure.database import get_supabase_client
+        from app.repositories.vector_repository import VectorRepository
+
+        vector_repo = VectorRepository(get_supabase_client())
+
         try:
-            results = await vector_store.similarity_search(query, limit=3, threshold=0.5)
+            results = await vector_repo.similarity_search(query, limit=3, threshold=0.5)
             if results:
                 current_memories = results
                 context_memories = "\n".join([
