@@ -57,7 +57,7 @@ def get_vector_repository(db: Client = Depends(get_db)) -> VectorRepository:
 
 @lru_cache
 def get_graph_repository() -> GraphRepository:
-    """Get GraphRepository singleton instance."""
+    """Get GraphRepository singleton (Neo4j connection is expensive to create)."""
     return GraphRepository()
 
 
