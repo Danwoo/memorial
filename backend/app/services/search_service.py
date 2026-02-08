@@ -2,7 +2,7 @@
 Search Service
 Business logic for semantic search and recommendations
 """
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -59,7 +59,7 @@ class SearchService:
 
         # Apply additional filters
         filtered_results = []
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         for r in results:
             # Time filter
@@ -112,13 +112,18 @@ class SearchService:
         Get memories related to a specific memory.
         Uses the memory's content to find similar items.
         """
-        # Get source memory content (requires memory_repo)
         if not self.memory_repo:
             return []
 
-        # Search for similar memories
+        # Fetch the source memory's content for vector similarity
+        source = await self.memory_repo.get_by_id(UUID(memory_id), user_id)
+        if not source:
+            return []
+
+        query_text = source.content or source.title
+
         similar = await self.vector_repo.similarity_search(
-            query=memory_id,  # This should be the content, will need to fetch
+            query=query_text,
             limit=limit + 1,
             threshold=0.3,
             filters={"user_id": str(user_id)},

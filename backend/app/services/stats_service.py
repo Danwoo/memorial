@@ -2,7 +2,7 @@
 Stats Service
 Business logic for dashboard statistics
 """
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -27,7 +27,7 @@ class StatsService:
         """Get complete dashboard statistics."""
         memories = await self.stats_repo.get_all_memories(user_id)
 
-        now = datetime.now()
+        now = datetime.now(UTC)
         week_ago = now - timedelta(days=7)
         month_ago = now - timedelta(days=30)
 
@@ -44,7 +44,7 @@ class StatsService:
                 try:
                     created_at = datetime.fromisoformat(
                         created_at_str.replace("Z", "+00:00")
-                    ).replace(tzinfo=None)
+                    )
 
                     if created_at >= week_ago:
                         weekly_count += 1
@@ -114,7 +114,7 @@ class StatsService:
         days: int = 30,
     ) -> list[ActivityData]:
         """Get daily activity data for a range."""
-        now = datetime.now()
+        now = datetime.now(UTC)
         start_date = now - timedelta(days=days)
 
         memories = await self.stats_repo.get_memories_in_range(user_id, start_date, now)
@@ -126,7 +126,7 @@ class StatsService:
                 try:
                     created_at = datetime.fromisoformat(
                         created_at_str.replace("Z", "+00:00")
-                    ).replace(tzinfo=None)
+                    )
                     day_key = created_at.strftime("%Y-%m-%d")
                     day_counts[day_key] = day_counts.get(day_key, 0) + 1
                 except Exception:
@@ -156,7 +156,7 @@ class StatsService:
                 try:
                     created_at = datetime.fromisoformat(
                         created_at_str.replace("Z", "+00:00")
-                    ).replace(tzinfo=None)
+                    )
                     day_key = created_at.strftime("%Y-%m-%d")
                     if day_key not in grouped:
                         grouped[day_key] = []

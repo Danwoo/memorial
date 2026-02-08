@@ -84,7 +84,7 @@ async def get_kakao_status(
 ):
     """Check if Kakao is connected."""
     service = _get_default_service()
-    token = await service.get_stored_token("default_user")
+    token = await service.get_stored_token(str(user_id))
     return KakaoStatusResponse(
         connected=token is not None,
         message="Kakao connected" if token else "Kakao not connected",
@@ -98,7 +98,7 @@ async def send_kakao_message(
 ):
     """Send a message to user's KakaoTalk."""
     service = _get_default_service()
-    token = await service.get_stored_token("default_user")
+    token = await service.get_stored_token(str(user_id))
 
     if not token:
         raise HTTPException(
@@ -133,5 +133,6 @@ async def disconnect_kakao(
     user_id: UUID = Depends(get_user_id),
 ):
     """Disconnect Kakao (remove stored token)."""
-    kakao.set_stored_token("default_user", None)
+    service = _get_default_service()
+    await service.delete_token(str(user_id))
     return {"success": True, "message": "Kakao disconnected"}
