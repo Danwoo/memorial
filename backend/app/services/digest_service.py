@@ -8,9 +8,9 @@ from typing import Any
 from uuid import UUID
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 
-from app.config.settings import DEFAULT_USER_ID, get_settings
+from app.config.llm import get_creative_llm
+from app.config.settings import DEFAULT_USER_ID
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,6 @@ class DigestService:
         self.memory_repo = memory_repo
         self.journal_repo = journal_repo
         self.chat_repo = chat_repo
-        self.settings = get_settings()
 
     async def get_today_digest(self, user_id: UUID | None = None) -> dict[str, Any]:
         """
@@ -183,15 +182,11 @@ class DigestService:
             return ["오늘 저장한 내용들을 돌아보면서 어떤 생각이 드시나요?"]
 
         try:
-            llm = ChatOpenAI(
-                model="gpt-4o-mini",
-                temperature=0.7,
-                api_key=self.settings.OPENAI_API_KEY
-            )
+            llm = get_creative_llm()
 
             messages = [
                 SystemMessage(content=DIGEST_QUESTION_PROMPT),
-                HumanMessage(content="Today's content:\n" + "\n".join(context_parts))
+                HumanMessage(content="Today's content:\n" + "\n".join(context_parts)),
             ]
 
             response = llm.invoke(messages)

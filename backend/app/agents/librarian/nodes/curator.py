@@ -10,10 +10,10 @@ The Curator is the "Gatekeeper" that:
 import json
 import logging
 
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import HumanMessage, SystemMessage
+
 from app.agents.state import AgentState
-from app.config.settings import get_settings
+from app.config.llm import get_analytical_llm
 
 logger = logging.getLogger(__name__)
 
@@ -43,15 +43,13 @@ IMPORTANT: Return ONLY valid JSON. No explanation, no markdown code blocks."""
 async def curator_node(state: AgentState) -> dict:
     """
     Curator Node: Classifies content and generates tags/summary.
-    
+
     Input: state.target_text
     Output: classification, tags, summary, next_step
     """
-    settings = get_settings()
-    
     # Get target text from state
     target_text = state.get("target_text", "")
-    
+
     if not target_text:
         return {
             "classification": "SPAM",
@@ -60,56 +58,52 @@ async def curator_node(state: AgentState) -> dict:
             "next_step": "end",
             "error": "No target text provided"
         }
-    
+
     # Detect if input is a URL
     source_url = None
     if target_text.startswith("http://") or target_text.startswith("https://"):
         from app.utils.scraper import extract_content_from_url
-        
+
         logger.info("Curator detected URL: %s", target_text)
         scraped_data = await extract_content_from_url(target_text)
-        
+
         source_url = target_text
         # Update target_text with scraped content
         target_text = f"Title: {scraped_data['title']}\n\nContent:\n{scraped_data['content']}"
         state["source_url"] = source_url  # Save URL to state
-        
+
     # Truncate if too long (save tokens)
     max_chars = 12000 # Increased limit
     if len(target_text) > max_chars:
         target_text = target_text[:max_chars] + "\n\n[Content truncated...]"
-    
-    # Create LLM instance
-    llm = ChatOpenAI(
-        model="gpt-4o-mini",
-        temperature=0,
-        api_key=settings.OPENAI_API_KEY
-    )
-    
+
+    # Get shared LLM instance
+    llm = get_analytical_llm()
+
     # Build messages
     messages = [
         SystemMessage(content=CURATOR_SYSTEM_PROMPT),
         HumanMessage(content=f"Analyze this content:\n\n{target_text}")
     ]
-    
+
     try:
         # Call LLM
         response = await llm.ainvoke(messages)
         content = response.content.strip()
-        
+
         # Parse JSON response
         # Handle potential markdown code blocks
         if content.startswith("```"):
             content = content.split("```")[1]
             if content.startswith("json"):
                 content = content[4:]
-        
+
         result = json.loads(content)
-        
+
         category = result.get("category", "FACT")
         tags = result.get("tags", [])
         summary = result.get("summary", "")
-        
+
         # Determine next step based on classification
         if category == "SPAM":
             next_step = "end"
@@ -117,14 +111,14 @@ async def curator_node(state: AgentState) -> dict:
             next_step = "ontologist"
         else:  # FACT
             next_step = "save"
-        
+
         return {
             "classification": category,
             "tags": tags,
             "summary": summary,
             "next_step": next_step
         }
-        
+
     except json.JSONDecodeError as e:
         return {
             "classification": "FACT",

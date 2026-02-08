@@ -8,10 +8,11 @@ The Ontologist builds the Knowledge Graph by:
 3. Using canonical names for deduplication
 """
 import json
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage
+
+from langchain_core.messages import HumanMessage, SystemMessage
+
 from app.agents.state import AgentState
-from app.config.settings import get_settings
+from app.config.llm import get_analytical_llm
 
 ONTOLOGIST_SYSTEM_PROMPT = """You are the Ontologist. You build the Knowledge Graph.
 
@@ -42,77 +43,71 @@ If no meaningful entities/relations found, return empty arrays."""
 async def ontologist_node(state: AgentState) -> dict:
     """
     Ontologist Node: Extracts entities and relations from content.
-    
+
     Input: state.target_text, state.summary
     Output: extracted_entities, extracted_relations, next_step
     """
-    settings = get_settings()
-    
     # Get target text and context from state
     target_text = state.get("target_text", "")
     summary = state.get("summary", "")
     tags = state.get("tags", [])
-    
+
     if not target_text:
         return {
             "extracted_entities": [],
             "extracted_relations": [],
             "next_step": "save"
         }
-    
+
     # Truncate if too long
     max_chars = 6000
     if len(target_text) > max_chars:
         target_text = target_text[:max_chars] + "\n\n[Content truncated...]"
-    
+
     # Create context hint from curator's analysis
     context_hint = ""
     if summary:
         context_hint += f"Summary: {summary}\n"
     if tags:
         context_hint += f"Tags: {', '.join(tags)}\n"
-    
-    # Create LLM instance
-    llm = ChatOpenAI(
-        model="gpt-4o-mini",
-        temperature=0,
-        api_key=settings.OPENAI_API_KEY
-    )
-    
+
+    # Get shared LLM instance
+    llm = get_analytical_llm()
+
     # Build messages
     user_content = f"""Analyze this content and extract entities/relations:
 
 {context_hint}
 ---
 {target_text}"""
-    
+
     messages = [
         SystemMessage(content=ONTOLOGIST_SYSTEM_PROMPT),
         HumanMessage(content=user_content)
     ]
-    
+
     try:
         # Call LLM
         response = await llm.ainvoke(messages)
         content = response.content.strip()
-        
+
         # Parse JSON response
         if content.startswith("```"):
             content = content.split("```")[1]
             if content.startswith("json"):
                 content = content[4:]
-        
+
         result = json.loads(content)
-        
+
         entities = result.get("entities", [])
         relations = result.get("relations", [])
-        
+
         return {
             "extracted_entities": entities,
             "extracted_relations": relations,
             "next_step": "save"
         }
-        
+
     except json.JSONDecodeError as e:
         return {
             "extracted_entities": [],

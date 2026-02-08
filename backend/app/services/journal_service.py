@@ -7,9 +7,8 @@ from typing import Any
 from uuid import UUID
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 
-from app.config.settings import get_settings
+from app.config.llm import get_creative_llm
 from app.repositories.graph_repository import GraphRepository
 from app.repositories.journal_repository import JournalRepository
 
@@ -28,7 +27,6 @@ class JournalService:
     def __init__(self, journal_repo: JournalRepository, graph_repo: GraphRepository):
         self.journal_repo = journal_repo
         self.graph_repo = graph_repo
-        self.settings = get_settings()
 
     def _analyze_sentiment(self, content: str) -> str:
         """
@@ -73,11 +71,7 @@ class JournalService:
             return ["오늘 하루 중 가장 기억에 남는 순간은 무엇인가요?"]
 
         try:
-            llm = ChatOpenAI(
-                model="gpt-4o-mini",
-                temperature=0.7,
-                api_key=self.settings.OPENAI_API_KEY,
-            )
+            llm = get_creative_llm()
 
             messages = [
                 SystemMessage(content=REVIEWER_PROMPT),

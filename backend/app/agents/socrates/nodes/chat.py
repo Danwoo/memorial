@@ -8,13 +8,13 @@ Features:
 3. Interactive Summary - Collaborative summarization
 4. Evening Ritual Mode - Daily reflection session
 """
-import json
 import logging
-from typing import Optional
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+
 from app.agents.state import AgentState
-from app.config.settings import get_settings, DEFAULT_USER_ID
+from app.config.llm import get_streaming_llm
+from app.config.settings import DEFAULT_USER_ID
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ You are helping the user reflect on their day and consolidate learning.
 """
 
 
-def get_mode_prompt(mode: Optional[str]) -> str:
+def get_mode_prompt(mode: str | None) -> str:
     """Get additional prompt based on conversation mode."""
     mode_prompts = {
         "insight": INSIGHT_PROMPT,
@@ -114,19 +114,17 @@ async def find_contradicting_memories(query: str, current_memories: list) -> lis
 async def socrates_node(state: AgentState) -> dict:
     """
     Enhanced Socrates Node with multiple dialogue modes.
-    
-    Input: 
+
+    Input:
         state.messages (conversation history)
         state.context.mode (optional: insight, counter, summary, evening)
     Output: Updated messages with AI response
     """
-    settings = get_settings()
-    
     # Get messages and mode from state
     messages = state.get("messages", [])
     context = state.get("context", {})
     mode = context.get("mode") if isinstance(context, dict) else None
-    
+
     if not messages:
         greeting = "안녕하세요! 무엇을 도와드릴까요?"
         if mode == "evening":
@@ -135,17 +133,17 @@ async def socrates_node(state: AgentState) -> dict:
             "messages": [AIMessage(content=greeting)],
             "next_step": "end"
         }
-    
+
     # Build context from retrieved memories
     context_memories = ""
     contradicting_memories = ""
     current_memories = []
-    
+
     # Extract last user message
     last_message = messages[-1]
     if isinstance(last_message, HumanMessage):
         query = last_message.content
-        
+
         # Perform Vector Search (RAG)
         from app.infrastructure.database import get_supabase_client
         from app.repositories.vector_repository import VectorRepository
@@ -157,12 +155,12 @@ async def socrates_node(state: AgentState) -> dict:
             if results:
                 current_memories = results
                 context_memories = "\n".join([
-                    f"- [{m.get('created_at', '')[:10]}] {m.get('title', 'Untitled')}: {m.get('summary') or m.get('content', '')[:100]}..." 
+                    f"- [{m.get('created_at', '')[:10]}] {m.get('title', 'Untitled')}: {m.get('summary') or m.get('content', '')[:100]}..."
                     for m in results
                 ])
-        except Exception as e:
+        except Exception:
             logger.exception("Vector search failed")
-        
+
         # Retrieve recent journals for additional context
         journal_context = ""
         try:
@@ -175,9 +173,9 @@ async def socrates_node(state: AgentState) -> dict:
                     f"- [Journal {j.get('created_at', '')[:10]}] Mood: {j.get('mood', 'N/A')} - {j.get('content', '')[:80]}..."
                     for j in recent_journals
                 ])
-        except Exception as e:
+        except Exception:
             logger.exception("Journal context fetch failed")
-        
+
         # For counter-argument mode, find contradicting memories
         if mode == "counter" and current_memories:
             try:
@@ -187,44 +185,39 @@ async def socrates_node(state: AgentState) -> dict:
                         f"- [{m.get('created_at', '')[:10]}] {m.get('title', 'Untitled')}: {m.get('summary') or m.get('content', '')[:100]}..."
                         for m in contradicting
                     ])
-            except Exception as e:
+            except Exception:
                 logger.exception("Contradiction search failed")
-    
-    # Create LLM instance
-    llm = ChatOpenAI(
-        model="gpt-4o-mini",
-        temperature=0.7,
-        api_key=settings.OPENAI_API_KEY,
-        streaming=True
-    )
-    
+
+    # Get shared streaming LLM instance
+    llm = get_streaming_llm()
+
     # Build system message with context and mode
     system_content = SOCRATES_BASE_PROMPT
     system_content += get_mode_prompt(mode)
-    
+
     if context_memories:
         system_content += f"\n\n**Retrieved Memories:**\n{context_memories}"
-    
+
     if contradicting_memories:
         system_content += f"\n\n**Potentially Contradicting Memories:**\n{contradicting_memories}"
-    
+
     if journal_context:
         system_content += f"\n\n**Recent Journal Entries:**\n{journal_context}"
-    
+
     # Convert to langchain messages
     lc_messages = [SystemMessage(content=system_content)]
     for msg in messages:
         lc_messages.append(msg)
-    
+
     try:
         # Call LLM
         response = await llm.ainvoke(lc_messages)
-        
+
         return {
             "messages": [response],
             "next_step": "end"
         }
-        
+
     except Exception as e:
         return {
             "messages": [AIMessage(content=f"죄송합니다, 오류가 발생했습니다: {str(e)}")],
