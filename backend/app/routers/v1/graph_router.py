@@ -7,8 +7,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.dependencies import get_graph_service
-from app.security.auth import get_user_id
+from app.config.auth import get_user_id
+from app.config.dependencies import get_graph_service
 from app.services.graph_service import GraphService
 
 router = APIRouter(prefix="/graph", tags=["graph"])

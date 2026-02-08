@@ -4,7 +4,7 @@ Simple single-node graph for chat responses
 """
 from langgraph.graph import END, StateGraph
 
-from app.agents.socrates.nodes import socrates_node
+from app.agents.socrates.nodes.chat import socrates_node
 from app.agents.state import AgentState
 
 

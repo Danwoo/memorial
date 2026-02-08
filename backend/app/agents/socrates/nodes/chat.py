@@ -85,7 +85,7 @@ def get_mode_prompt(mode: str | None) -> str:
 
 async def find_contradicting_memories(query: str, current_memories: list) -> list:
     """Find memories that might contradict the current topic."""
-    from app.infrastructure.database import get_supabase_client
+    from app.config.database import get_supabase_client
     from app.repositories.vector_repository import VectorRepository
 
     vector_repo = VectorRepository(get_supabase_client())
@@ -145,7 +145,7 @@ async def socrates_node(state: AgentState) -> dict:
         query = last_message.content
 
         # Perform Vector Search (RAG)
-        from app.infrastructure.database import get_supabase_client
+        from app.config.database import get_supabase_client
         from app.repositories.vector_repository import VectorRepository
 
         vector_repo = VectorRepository(get_supabase_client())
@@ -164,7 +164,7 @@ async def socrates_node(state: AgentState) -> dict:
         # Retrieve recent journals for additional context
         journal_context = ""
         try:
-            from app.infrastructure.database import get_supabase_client as _get_db
+            from app.config.database import get_supabase_client as _get_db
             from app.repositories.journal_repository import JournalRepository
             journal_repo = JournalRepository(_get_db())
             recent_journals = await journal_repo.get_journals(DEFAULT_USER_ID, limit=3)

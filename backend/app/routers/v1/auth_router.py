@@ -8,6 +8,7 @@ import logging
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.config.auth import get_current_user
 from app.config.settings import get_settings
 from app.schemas.auth_schema import (
     AuthResponse,
@@ -15,7 +16,6 @@ from app.schemas.auth_schema import (
     SignupRequest,
     UserResponse,
 )
-from app.security.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 

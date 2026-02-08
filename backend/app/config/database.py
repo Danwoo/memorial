@@ -34,7 +34,3 @@ def get_supabase_client() -> Client:
         key
     )
 
-
-def get_supabase() -> Client:
-    """Dependency injection helper for FastAPI"""
-    return get_supabase_client()

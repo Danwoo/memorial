@@ -7,7 +7,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.dependencies import get_journal_service
+from app.config.auth import get_user_id
+from app.config.dependencies import get_journal_service
 from app.schemas.journal_schema import (
     InsightsResponse,
     JournalCreate,
@@ -16,7 +17,6 @@ from app.schemas.journal_schema import (
     ReviewQuestionsResponse,
     ReviewRequest,
 )
-from app.security.auth import get_user_id
 from app.services.journal_service import JournalService
 
 logger = logging.getLogger(__name__)

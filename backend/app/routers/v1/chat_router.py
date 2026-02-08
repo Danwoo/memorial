@@ -7,14 +7,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
-from app.dependencies import get_chat_service
+from app.config.auth import get_user_id
+from app.config.dependencies import get_chat_service
 from app.schemas.chat_schema import (
     ChatMessageRequest,
     ChatMessageResponse,
     ChatSessionCreate,
     ChatSessionResponse,
 )
-from app.security.auth import get_user_id
 from app.services.chat_service import ChatService
 
 router = APIRouter(prefix="/chat", tags=["chat"])

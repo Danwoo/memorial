@@ -7,15 +7,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
 
+from app.config.auth import get_user_id
+from app.config.dependencies import get_kakao_service
 from app.config.settings import get_settings
-from app.dependencies import get_kakao_service
 from app.schemas.kakao_schema import (
     KakaoAuthResponse,
     KakaoStatusResponse,
     SendMessageRequest,
     SendMessageResponse,
 )
-from app.security.auth import get_user_id
 from app.services.kakao_service import KakaoService
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])

@@ -16,7 +16,9 @@ Workflow:
 """
 from langgraph.graph import END, StateGraph
 
-from app.agents.librarian.nodes import curator_node, ontologist_node, save_node
+from app.agents.librarian.nodes.curator import curator_node
+from app.agents.librarian.nodes.ontologist import ontologist_node
+from app.agents.librarian.nodes.save import save_node
 from app.agents.state import AgentState
 
 

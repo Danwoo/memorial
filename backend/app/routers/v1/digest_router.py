@@ -6,9 +6,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from app.dependencies import get_digest_service
+from app.config.auth import get_user_id
+from app.config.dependencies import get_digest_service
 from app.schemas.digest_schema import DigestResponse
-from app.security.auth import get_user_id
 from app.services.digest_service import DigestService
 
 router = APIRouter(prefix="/digest", tags=["digest"])

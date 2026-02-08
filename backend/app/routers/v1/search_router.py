@@ -6,9 +6,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from app.dependencies import get_search_service
+from app.config.auth import get_user_id
+from app.config.dependencies import get_search_service
 from app.schemas.search_schema import RelatedMemory, SearchResponse, SearchResult
-from app.security.auth import get_user_id
 from app.services.search_service import SearchService
 
 router = APIRouter(prefix="/search", tags=["search"])

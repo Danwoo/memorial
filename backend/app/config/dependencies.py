@@ -10,7 +10,7 @@ from functools import lru_cache
 from fastapi import Depends
 from supabase import Client
 
-from app.infrastructure.database import get_supabase_client
+from app.config.database import get_supabase_client
 
 # ========================================
 # Repositories

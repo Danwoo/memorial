@@ -5,7 +5,7 @@ Updates memory with classification results and triggers graph sync
 from uuid import UUID
 
 from app.agents.state import AgentState
-from app.infrastructure.database import get_supabase_client
+from app.config.database import get_supabase_client
 from app.repositories.graph_repository import GraphRepository
 from app.repositories.memory_repository import MemoryRepository
 from app.repositories.vector_repository import VectorRepository

@@ -7,8 +7,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 
-from app.agents.librarian import librarian_graph
-from app.dependencies import get_memory_service
+from app.agents.librarian.graph import librarian_graph
+from app.config.auth import get_user_id
+from app.config.dependencies import get_memory_service
 from app.schemas.memory_schema import (
     MemoryCreate,
     MemoryCreateResponse,
@@ -16,7 +17,6 @@ from app.schemas.memory_schema import (
     MemoryListItem,
     MemoryListResponse,
 )
-from app.security.auth import get_user_id
 from app.services.ingest_service import process_note_content, process_web_content
 from app.services.memory_service import MemoryService
 

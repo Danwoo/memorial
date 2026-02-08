@@ -11,7 +11,7 @@ from uuid import UUID
 
 from langchain_core.messages import AIMessage, HumanMessage
 
-from app.agents.socrates import socrates_graph
+from app.agents.socrates.graph import socrates_graph
 from app.agents.state import AgentState
 from app.repositories.chat_repository import ChatRepository
 

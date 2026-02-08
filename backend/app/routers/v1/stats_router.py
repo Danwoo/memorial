@@ -6,9 +6,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from app.dependencies import get_stats_service
+from app.config.auth import get_user_id
+from app.config.dependencies import get_stats_service
 from app.schemas.stats_schema import StatsOverviewResponse, TimelineResponse
-from app.security.auth import get_user_id
 from app.services.stats_service import StatsService
 
 router = APIRouter(prefix="/stats", tags=["stats"])
