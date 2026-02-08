@@ -36,13 +36,13 @@ class ReviewRequest(BaseModel):
 
 
 @router.post("", response_model=dict[str, Any], status_code=status.HTTP_201_CREATED)
-def create_journal(
+async def create_journal(
     journal: JournalCreate,
     service: JournalService = Depends(get_journal_service),
 ):
     try:
         # Dev mode: skip user_id (FK constraint)
-        result = service.create_entry(None, journal.content)
+        result = await service.create_entry(None, journal.content)
         if not result:
             raise HTTPException(status_code=500, detail="Failed to create journal entry - no result returned")
         return result
@@ -54,12 +54,12 @@ def create_journal(
 
 
 @router.get("", response_model=list[dict[str, Any]])
-def list_journals(
+async def list_journals(
     limit: int = 10,
     service: JournalService = Depends(get_journal_service),
 ):
     user_id = DEFAULT_USER_ID
-    return service.get_entries(user_id, limit)
+    return await service.get_entries(user_id, limit)
 
 
 @router.post("/review-questions", response_model=dict[str, Any])

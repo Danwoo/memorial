@@ -166,9 +166,10 @@ async def socrates_node(state: AgentState) -> dict:
         # Retrieve recent journals for additional context
         journal_context = ""
         try:
+            from app.infrastructure.database import get_supabase_client as _get_db
             from app.repositories.journal_repository import JournalRepository
-            journal_repo = JournalRepository()
-            recent_journals = journal_repo.get_journals(DEFAULT_USER_ID, limit=3)
+            journal_repo = JournalRepository(_get_db())
+            recent_journals = await journal_repo.get_journals(DEFAULT_USER_ID, limit=3)
             if recent_journals:
                 journal_context = "\n".join([
                     f"- [Journal {j.get('created_at', '')[:10]}] Mood: {j.get('mood', 'N/A')} - {j.get('content', '')[:80]}..."

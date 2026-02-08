@@ -51,7 +51,7 @@ class DigestService:
         memories = await self._get_today_memories(today_start, today_end, user_id=user_id)
 
         # 2. Get today's journals
-        journals = self._get_today_journals(user_id, today)
+        journals = await self._get_today_journals(user_id, today)
 
         # 3. Get today's chats (placeholder - requires chat history implementation)
         chats = []  # TODO: Implement when chat history is available
@@ -119,13 +119,13 @@ class DigestService:
             logger.exception("Error fetching today's memories")
             return []
 
-    def _get_today_journals(self, user_id: UUID | None, today: datetime) -> list[dict]:
+    async def _get_today_journals(self, user_id: UUID | None, today: datetime) -> list[dict]:
         """Get journals created today."""
         try:
             # Get recent journals and filter by today
-            journals = self.journal_repo.get_journals(
+            journals = await self.journal_repo.get_journals(
                 user_id or DEFAULT_USER_ID,
-                limit=20
+                limit=20,
             )
 
             today_journals = []
