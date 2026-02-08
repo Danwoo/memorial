@@ -7,8 +7,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.dependencies import get_journal_service, get_vector_repository
-from app.repositories.vector_repository import VectorRepository
+from app.dependencies import get_journal_service
 from app.schemas.journal_schema import (
     InsightsResponse,
     JournalCreate,
@@ -98,32 +97,12 @@ async def analyze_insights(
 async def get_related_memories(
     request: ReviewRequest,
     user_id: UUID = Depends(get_user_id),
-    vector_repo: VectorRepository = Depends(get_vector_repository),
+    service: JournalService = Depends(get_journal_service),
 ):
     """Find memories related to the current journal content for context sidebar."""
     try:
-        if not request.content or len(request.content.strip()) < 10:
-            return RelatedMemoriesResponse(memories=[])
-
-        results = await vector_repo.similarity_search(
-            query=request.content,
-            limit=5,
-            threshold=0.4,
-            filters={"user_id": str(user_id)},
-        )
-
-        memories = [
-            RelatedMemoryItem(
-                id=m.get("id"),
-                title=m.get("title", "Untitled"),
-                summary=m.get("summary") or m.get("content", "")[:100],
-                type=m.get("type", "memory"),
-                created_at=m.get("created_at"),
-                similarity=m.get("similarity", 0),
-            )
-            for m in results
-        ]
-
+        results = await service.get_related_memories(user_id, request.content)
+        memories = [RelatedMemoryItem(**m) for m in results]
         return RelatedMemoriesResponse(memories=memories)
     except Exception:
         logger.exception("Failed to fetch related memories")

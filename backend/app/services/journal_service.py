@@ -11,6 +11,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from app.config.llm import get_creative_llm
 from app.repositories.graph_repository import GraphRepository
 from app.repositories.journal_repository import JournalRepository
+from app.repositories.vector_repository import VectorRepository
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +25,15 @@ Format: Return only the questions, one per line, numbered."""
 
 
 class JournalService:
-    def __init__(self, journal_repo: JournalRepository, graph_repo: GraphRepository):
+    def __init__(
+        self,
+        journal_repo: JournalRepository,
+        graph_repo: GraphRepository,
+        vector_repo: VectorRepository | None = None,
+    ):
         self.journal_repo = journal_repo
         self.graph_repo = graph_repo
+        self.vector_repo = vector_repo
 
     def _analyze_sentiment(self, content: str) -> str:
         """
@@ -139,3 +146,35 @@ class JournalService:
             "distortions": detected,
             "wellness_score": max(0, 100 - len(detected) * 20),
         }
+
+    async def get_related_memories(
+        self, user_id: UUID, content: str
+    ) -> list[dict[str, Any]]:
+        """Find memories related to journal content via vector similarity search."""
+        if not self.vector_repo:
+            return []
+
+        if not content or len(content.strip()) < 10:
+            return []
+
+        try:
+            results = await self.vector_repo.similarity_search(
+                query=content,
+                limit=5,
+                threshold=0.4,
+                filters={"user_id": str(user_id)},
+            )
+            return [
+                {
+                    "id": m.get("id"),
+                    "title": m.get("title", "Untitled"),
+                    "summary": m.get("summary") or m.get("content", "")[:100],
+                    "type": m.get("type", "memory"),
+                    "created_at": m.get("created_at"),
+                    "similarity": m.get("similarity", 0),
+                }
+                for m in results
+            ]
+        except Exception:
+            logger.exception("Failed to fetch related memories")
+            return []
