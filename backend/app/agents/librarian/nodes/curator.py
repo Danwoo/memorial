@@ -62,10 +62,10 @@ async def curator_node(state: AgentState) -> dict:
     # Detect if input is a URL
     source_url = None
     if target_text.startswith("http://") or target_text.startswith("https://"):
-        from app.utils.scraper import extract_content_from_url
+        from app.services.ingest_service import process_web_content
 
         logger.info("Curator detected URL: %s", target_text)
-        scraped_data = await extract_content_from_url(target_text)
+        scraped_data = await process_web_content(target_text)
 
         source_url = target_text
         # Update target_text with scraped content

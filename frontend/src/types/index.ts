@@ -36,6 +36,7 @@ export type {
   TagStats,
   StatsData,
   DigestMemory,
+  DigestJournal,
   DigestData,
 } from './dashboard'
 

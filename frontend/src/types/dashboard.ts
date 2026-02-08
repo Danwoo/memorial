@@ -42,6 +42,14 @@ export interface DigestMemory {
   tags: string[]
 }
 
+/** Single journal entry within today's digest */
+export interface DigestJournal {
+  id: string
+  mood: string
+  preview: string
+  created_at: string
+}
+
 /** Today's digest data */
 export interface DigestData {
   date: string
@@ -51,6 +59,8 @@ export interface DigestData {
     chat_count: number
   }
   memories: DigestMemory[]
+  journals: DigestJournal[]
+  chats: Record<string, unknown>[]
   insights: {
     main_topics: string[]
     suggested_questions: string[]

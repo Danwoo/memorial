@@ -37,4 +37,6 @@ export interface ChatStreamChunk {
 /** Response from creating a new chat session */
 export interface ChatSessionResponse {
   id: string
+  title: string
+  created_at: string
 }
