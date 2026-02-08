@@ -7,9 +7,12 @@ export interface PaginatedResponse<T> {
   has_more?: boolean
 }
 
-/** Search results response */
+/** Search results response (matches backend SearchResponse schema) */
 export interface SearchResponse<T> {
+  query: string
   results: T[]
+  total: number
+  filters_applied: Record<string, string | number | string[]>
 }
 
 /** Related memories response */
