@@ -1,15 +1,14 @@
 import { useState } from 'react'
 import type { SearchResult } from '../types'
+import { searchMemories } from '../api'
 import './SearchView.css'
-
-const API_BASE = '/api/v1'
 
 export default function SearchView() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [searched, setSearched] = useState(false)
-  
+
   // Filter states
   const [showFilters, setShowFilters] = useState(false)
   const [sourceFilter, setSourceFilter] = useState<string>('')
@@ -17,22 +16,16 @@ export default function SearchView() {
 
   const handleSearch = async () => {
     if (!query.trim()) return
-    
+
     setIsSearching(true)
     setSearched(true)
-    
+
     try {
-      // Build query params
-      const params = new URLSearchParams({
+      const data = await searchMemories({
         q: query,
-        limit: '20'
+        source_type: sourceFilter || undefined,
+        days: daysFilter || undefined,
       })
-      
-      if (sourceFilter) params.append('source_type', sourceFilter)
-      if (daysFilter) params.append('days', daysFilter)
-      
-      const res = await fetch(`${API_BASE}/search?${params}`)
-      const data = await res.json()
       setResults(data.results || [])
     } catch (error) {
       console.error('Search failed:', error)

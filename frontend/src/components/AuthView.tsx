@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import type { User } from '../types'
+import { login, signup, ApiResponseError } from '../api'
 import './AuthView.css'
 
 interface AuthViewProps {
   onLogin: (token: string, user: User) => void
 }
-
-const API_BASE = '/api/v1'
 
 export default function AuthView({ onLogin }: AuthViewProps) {
   const [isLogin, setIsLogin] = useState(true)
@@ -21,23 +20,16 @@ export default function AuthView({ onLogin }: AuthViewProps) {
     setIsLoading(true)
 
     try {
-      const endpoint = isLogin ? '/auth/login' : '/auth/signup'
-      const res = await fetch(`${API_BASE}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      })
-
-      const data = await res.json()
-
-      if (res.ok) {
-        localStorage.setItem('auth_token', data.access_token)
-        onLogin(data.access_token, data.user)
-      } else {
-        setError(data.detail || 'Authentication failed')
-      }
+      const authFn = isLogin ? login : signup
+      const data = await authFn({ email, password })
+      localStorage.setItem('auth_token', data.access_token)
+      onLogin(data.access_token, data.user)
     } catch (err) {
-      setError('Network error. Please try again.')
+      if (err instanceof ApiResponseError) {
+        setError(err.detail || 'Authentication failed')
+      } else {
+        setError('Network error. Please try again.')
+      }
     } finally {
       setIsLoading(false)
     }

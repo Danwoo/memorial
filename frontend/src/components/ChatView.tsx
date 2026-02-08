@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import type { ChatMessage, ChatMode, ChatModeOption, ChatViewProps } from '../types'
+import { createChatSession, sendChatMessage, readSSEStream } from '../api'
 import './ChatView.css'
 
 const MODES: ChatModeOption[] = [
@@ -9,8 +10,6 @@ const MODES: ChatModeOption[] = [
   { value: 'summary', label: '요약', icon: '📋', desc: '대화 내용 정리' },
   { value: 'evening', label: '저녁 회고', icon: '🌙', desc: '하루 돌아보기' }
 ]
-
-const API_BASE = '/api/v1'
 
 export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -36,17 +35,7 @@ export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) 
     scrollToBottom()
   }, [messages])
 
-  const createSession = async (): Promise<string> => {
-    const res = await fetch(`${API_BASE}/chat/sessions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
-    })
-    const data = await res.json()
-    return data.id
-  }
-
-  const sendMessage = async () => {
+  const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return
 
     const userMessage = input.trim()
@@ -54,7 +43,6 @@ export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) 
     setMessages(prev => [...prev, { role: 'user', content: userMessage }])
     setIsLoading(true)
 
-    // AbortController for cleanup on unmount or cancellation
     const abortController = new AbortController()
     abortControllerRef.current = abortController
 
@@ -62,68 +50,29 @@ export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) 
       // Create session if needed
       let currentSessionId = sessionId
       if (!currentSessionId) {
-        currentSessionId = await createSession()
+        const session = await createChatSession()
+        currentSessionId = session.id
         onSessionCreate(currentSessionId)
       }
 
-      // Send message via SSE with mode
-      const res = await fetch(`${API_BASE}/chat/sessions/${currentSessionId}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: userMessage,
-          mode: mode || undefined
-        }),
-        signal: abortController.signal
+      // Send message and get SSE response
+      const response = await sendChatMessage(
+        currentSessionId,
+        { content: userMessage, mode: mode || undefined },
+        abortController.signal,
+      )
+
+      // Add placeholder for assistant message
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }])
+
+      // Stream the response
+      await readSSEStream(response, (accumulated) => {
+        setMessages(prev => {
+          const updated = [...prev]
+          updated[updated.length - 1] = { role: 'assistant', content: accumulated }
+          return updated
+        })
       })
-
-      if (!res.ok) throw new Error('Failed to send message')
-
-      // Read SSE stream
-      const reader = res.body?.getReader()
-      const decoder = new TextDecoder('utf-8')
-      let assistantContent = ''
-      // Buffer for incomplete SSE lines across chunks
-      let sseBuffer = ''
-
-      if (reader) {
-        // Add placeholder for assistant message
-        setMessages(prev => [...prev, { role: 'assistant', content: '' }])
-
-        try {
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-
-            const chunk = decoder.decode(value, { stream: true })
-            sseBuffer += chunk
-            const lines = sseBuffer.split('\n')
-
-            // Keep the last (potentially incomplete) line in the buffer
-            sseBuffer = lines.pop() || ''
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const data = JSON.parse(line.slice(6))
-                  if (data.content) {
-                    assistantContent += data.content
-                    setMessages(prev => {
-                      const updated = [...prev]
-                      updated[updated.length - 1] = { role: 'assistant', content: assistantContent }
-                      return updated
-                    })
-                  }
-                } catch (parseError) {
-                  console.warn('SSE JSON parse error:', parseError)
-                }
-              }
-            }
-          }
-        } finally {
-          reader.releaseLock()
-        }
-      }
     } catch (error) {
       // Suppress abort errors (expected on cleanup)
       if (error instanceof DOMException && error.name === 'AbortError') {
@@ -143,7 +92,7 @@ export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      sendMessage()
+      handleSendMessage()
     }
   }
 
@@ -157,7 +106,7 @@ export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) 
           <p className="chat-subtitle">당신의 지적 동반자</p>
         </div>
         <div className="mode-selector">
-          <button 
+          <button
             className="mode-toggle"
             onClick={() => setShowModes(!showModes)}
           >
@@ -199,8 +148,8 @@ export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) 
           </div>
         ) : (
           messages.map((msg, idx) => (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               className={`message ${msg.role}`}
             >
               <div className="message-avatar">
@@ -226,9 +175,9 @@ export default function ChatView({ sessionId, onSessionCreate }: ChatViewProps) 
             rows={1}
             disabled={isLoading}
           />
-          <button 
+          <button
             className="send-button"
-            onClick={sendMessage}
+            onClick={handleSendMessage}
             disabled={!input.trim() || isLoading}
           >
             {isLoading ? '...' : '→'}

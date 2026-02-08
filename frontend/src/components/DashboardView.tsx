@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { StatsData, DigestData } from '../types'
+import { fetchStats, fetchDigest } from '../api'
 import './DashboardView.css'
-
-const API_BASE = '/api/v1'
 
 export default function DashboardView() {
   const [stats, setStats] = useState<StatsData | null>(null)
@@ -17,20 +16,21 @@ export default function DashboardView() {
   const loadData = async () => {
     try {
       setLoading(true)
-      
+
       // Load stats and digest in parallel
-      const [statsRes, digestRes] = await Promise.all([
-        fetch(`${API_BASE}/stats/overview`),
-        fetch(`${API_BASE}/digest/today`)
+      const [statsData, digestData] = await Promise.allSettled([
+        fetchStats(),
+        fetchDigest(),
       ])
-      
-      if (!statsRes.ok) throw new Error('Failed to load stats')
-      const statsData = await statsRes.json()
-      setStats(statsData)
-      
-      if (digestRes.ok) {
-        const digestData = await digestRes.json()
-        setDigest(digestData)
+
+      if (statsData.status === 'fulfilled') {
+        setStats(statsData.value)
+      } else {
+        throw new Error('Failed to load stats')
+      }
+
+      if (digestData.status === 'fulfilled') {
+        setDigest(digestData.value)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')

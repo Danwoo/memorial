@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import ChatView from './ChatView'
 import type { RelatedMemory } from '../types'
+import { saveJournal, fetchRelatedMemories as fetchRelatedMemoriesApi } from '../api'
 import './JournalView.css'
 
 export default function JournalView() {
@@ -14,22 +15,15 @@ export default function JournalView() {
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   // Debounced fetch for related memories
-  const fetchRelatedMemories = useCallback(async (text: string) => {
+  const loadRelatedMemories = useCallback(async (text: string) => {
     if (!text || text.trim().length < 20) {
       setRelatedMemories([])
       return
     }
     setIsLoadingContext(true)
     try {
-      const res = await fetch('/api/v1/journals/related-memories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: text })
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setRelatedMemories(data.memories || [])
-      }
+      const data = await fetchRelatedMemoriesApi(text)
+      setRelatedMemories(data.memories || [])
     } catch (e) {
       console.error('Failed to fetch related memories', e)
     } finally {
@@ -40,10 +34,10 @@ export default function JournalView() {
   // Debounce content changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchRelatedMemories(content)
+      loadRelatedMemories(content)
     }, 1500) // 1.5초 후 검색
     return () => clearTimeout(timer)
-  }, [content, fetchRelatedMemories])
+  }, [content, loadRelatedMemories])
 
   const showSaveStatus = (type: 'success' | 'error', message: string) => {
     setSaveStatus({ type, message })
@@ -54,22 +48,13 @@ export default function JournalView() {
     if (!content.trim()) return
     setIsSaving(true)
     try {
-        const res = await fetch('/api/v1/journals', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content })
-        })
-        if (res.ok) {
-            showSaveStatus('success', '저장되었습니다!')
-        } else {
-            console.error('Failed to save')
-            showSaveStatus('error', '저장에 실패했습니다.')
-        }
+      await saveJournal(content)
+      showSaveStatus('success', '저장되었습니다!')
     } catch (e) {
-        console.error(e)
-        showSaveStatus('error', '네트워크 오류가 발생했습니다.')
+      console.error(e)
+      showSaveStatus('error', '저장에 실패했습니다.')
     } finally {
-        setIsSaving(false)
+      setIsSaving(false)
     }
   }
   

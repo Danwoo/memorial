@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
-import type { Memory, SourceType } from '../types'
+import type { Memory, SourceType, MemoryCreatePayload } from '../types'
+import { fetchMemories, createMemory } from '../api'
 import './MemoryView.css'
-
-const API_BASE = '/api/v1'
 
 export default function MemoryView() {
   const [memories, setMemories] = useState<Memory[]>([])
@@ -15,8 +14,7 @@ export default function MemoryView() {
   const loadMemories = async () => {
     setIsLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/memories`)
-      const data = await res.json()
+      const data = await fetchMemories()
       setMemories(data.items || [])
     } catch (error) {
       console.error('Failed to load memories:', error)
@@ -27,22 +25,15 @@ export default function MemoryView() {
 
   const addMemory = async () => {
     try {
-      const body = addType === 'WEB' 
+      const payload: MemoryCreatePayload = addType === 'WEB'
         ? { sourceType: 'WEB', url: newUrl }
         : { sourceType: 'NOTE', content: newNote }
 
-      const res = await fetch(`${API_BASE}/memories`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-
-      if (res.ok) {
-        setShowAddModal(false)
-        setNewUrl('')
-        setNewNote('')
-        loadMemories()
-      }
+      await createMemory(payload)
+      setShowAddModal(false)
+      setNewUrl('')
+      setNewNote('')
+      loadMemories()
     } catch (error) {
       console.error('Failed to add memory:', error)
     }

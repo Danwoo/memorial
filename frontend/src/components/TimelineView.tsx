@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { TimelineData } from '../types'
+import { fetchTimeline } from '../api'
 import './TimelineView.css'
-
-const API_BASE = '/api/v1'
 
 export default function TimelineView() {
   const [data, setData] = useState<TimelineData | null>(null)
@@ -18,11 +17,8 @@ export default function TimelineView() {
       if (pageNum === 1) setLoading(true)
       else setLoadingMore(true)
 
-      const res = await fetch(`${API_BASE}/stats/timeline?page=${pageNum}&limit=20`)
-      if (!res.ok) throw new Error('Failed to load timeline')
-      
-      const newData: TimelineData = await res.json()
-      
+      const newData = await fetchTimeline(pageNum)
+
       if (append && data) {
         // Merge timeline groups by date
         const merged = [...data.timeline]

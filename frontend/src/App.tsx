@@ -10,6 +10,7 @@ import DashboardView from './components/DashboardView'
 import TimelineView from './components/TimelineView'
 import AuthView from './components/AuthView'
 import type { View, User } from './types'
+import { fetchCurrentUser } from './api'
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('chat')
@@ -31,17 +32,9 @@ function App() {
 
     const token = localStorage.getItem('auth_token')
     if (token) {
-      fetch('/api/v1/auth/me', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-        .then(res => {
-          if (res.ok) {
-            return res.json()
-          }
-          throw new Error('Invalid token')
-        })
-        .then(data => {
-          setUser(data)
+      fetchCurrentUser()
+        .then(userData => {
+          setUser(userData)
           setIsAuthenticated(true)
         })
         .catch(() => {
