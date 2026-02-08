@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { TimelineData } from '../types'
 import { fetchTimeline } from '../api'
+import { getSourceIcon, formatRelativeDate } from '../utils'
 import './TimelineView.css'
 
 export default function TimelineView() {
@@ -71,34 +72,6 @@ export default function TimelineView() {
     return () => observerRef.current?.disconnect()
   }, [data?.has_more, loadingMore, page, loadTimeline])
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-
-    if (date.toDateString() === today.toDateString()) {
-      return '오늘'
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return '어제'
-    } else {
-      return date.toLocaleDateString('ko-KR', {
-        month: 'long',
-        day: 'numeric',
-        weekday: 'short'
-      })
-    }
-  }
-
-  const getSourceIcon = (type: string) => {
-    switch (type) {
-      case 'WEB': return '🌐'
-      case 'PDF': return '📄'
-      case 'NOTE': return '📝'
-      default: return '📋'
-    }
-  }
-
   if (loading) {
     return (
       <div className="timeline-view">
@@ -150,7 +123,7 @@ export default function TimelineView() {
         {data.timeline.map((group, groupIdx) => (
           <div key={groupIdx} className="timeline-group">
             <div className="timeline-date-marker">
-              <span className="date-label">{formatDate(group.date)}</span>
+              <span className="date-label">{formatRelativeDate(group.date)}</span>
             </div>
             
             <div className="timeline-items">

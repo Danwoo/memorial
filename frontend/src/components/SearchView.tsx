@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { SearchResult } from '../types'
 import { searchMemories } from '../api'
+import { getSourceIcon, getSimilarityLevel, formatDateKR } from '../utils'
 import './SearchView.css'
 
 export default function SearchView() {
@@ -44,26 +45,6 @@ export default function SearchView() {
   const clearFilters = () => {
     setSourceFilter('')
     setDaysFilter('')
-  }
-
-  const getSimilarityColor = (similarity: number) => {
-    if (similarity >= 0.8) return 'high'
-    if (similarity >= 0.5) return 'medium'
-    return 'low'
-  }
-
-  const getSourceIcon = (type: string) => {
-    switch (type) {
-      case 'WEB': return '🌐'
-      case 'PDF': return '📄'
-      case 'NOTE': return '📝'
-      default: return '📋'
-    }
-  }
-
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return ''
-    return new Date(dateStr).toLocaleDateString('ko-KR')
   }
 
   const hasFilters = sourceFilter || daysFilter
@@ -156,7 +137,7 @@ export default function SearchView() {
               <div className="result-header">
                 <span className="source-badge">{getSourceIcon(result.source_type)}</span>
                 <h3 className="result-title">{result.title}</h3>
-                <span className={`similarity-badge ${getSimilarityColor(result.similarity)}`}>
+                <span className={`similarity-badge ${getSimilarityLevel(result.similarity)}`}>
                   {Math.round(result.similarity * 100)}% 일치
                 </span>
               </div>
@@ -167,7 +148,7 @@ export default function SearchView() {
               )}
               <div className="result-meta">
                 {result.created_at && (
-                  <span className="result-date">{formatDate(result.created_at)}</span>
+                  <span className="result-date">{formatDateKR(result.created_at)}</span>
                 )}
                 {result.tags && result.tags.length > 0 && (
                   <div className="result-tags">

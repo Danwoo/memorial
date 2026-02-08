@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { StatsData, DigestData } from '../types'
 import { fetchStats, fetchDigest } from '../api'
+import { getSourceIcon } from '../utils'
 import './DashboardView.css'
 
 export default function DashboardView() {
@@ -36,15 +37,6 @@ export default function DashboardView() {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const getSourceIcon = (type: string) => {
-    switch (type) {
-      case 'WEB': return '🌐'
-      case 'PDF': return '📄'
-      case 'NOTE': return '📝'
-      default: return '📋'
     }
   }
 
