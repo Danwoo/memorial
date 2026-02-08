@@ -22,9 +22,10 @@ env/
 node_modules/
 npm-debug.log*
 
-# IDE
+# IDE & tools
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 
