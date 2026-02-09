@@ -2,15 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import ChatView from './ChatView'
-import type { RelatedMemory } from '../types'
+import type { RelatedMemory, ChatSessionItem } from '../types'
 import { saveJournal, fetchRelatedMemories as fetchRelatedMemoriesApi, generateJournalDraft, fetchChatSessions } from '../api'
 import './JournalView.css'
-
-interface ChatSession {
-  id: string
-  title: string
-  created_at: string
-}
 
 export default function JournalView() {
   const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -20,7 +14,7 @@ export default function JournalView() {
   const [isLoadingContext, setIsLoadingContext] = useState(false)
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [sessions, setSessions] = useState<ChatSessionItem[]>([])
   const [showSessionPicker, setShowSessionPicker] = useState(false)
 
   // Debounced fetch for related memories

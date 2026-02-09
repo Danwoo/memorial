@@ -26,6 +26,10 @@ ALLOWED_REL_TYPES = frozenset({
     "USES", "USED_FOR", "BUILT_WITH", "INSPIRED_BY", "CONTAINS",
 })
 
+MAX_GRAPH_QUERY_LIMIT = 1000
+MAX_GRAPH_TRAVERSAL_DEPTH = 3
+MAX_RELATED_CONTEXT_RESULTS = 15
+
 
 def _validate_label(label: str) -> str:
     """Validate a Neo4j node label against the whitelist. Rejects unknown labels."""
@@ -147,7 +151,7 @@ class GraphRepository:
 
     def _sync_get_graph_data(self, limit: int) -> dict[str, list]:
         """Synchronous implementation of get_graph_data."""
-        safe_limit = max(1, min(int(limit), 1000))
+        safe_limit = max(1, min(int(limit), MAX_GRAPH_QUERY_LIMIT))
         query = f"""
         MATCH (n)-[r]->(m)
         WHERE NOT n:Memory AND NOT m:Memory
@@ -201,7 +205,7 @@ class GraphRepository:
 
     def _sync_get_related_context(self, topic: str, depth: int) -> list[dict]:
         """Synchronous: find entities related to a topic within N hops."""
-        safe_depth = max(1, min(depth, 3))
+        safe_depth = max(1, min(depth, MAX_GRAPH_TRAVERSAL_DEPTH))
         query = f"""
         MATCH (start {{name: $topic}})
         MATCH path = (start)-[r*1..{safe_depth}]-(related)
@@ -212,7 +216,7 @@ class GraphRepository:
             type(last(relationships(path))) AS rel_type,
             length(path) AS distance
         ORDER BY distance
-        LIMIT 15
+        LIMIT {MAX_RELATED_CONTEXT_RESULTS}
         """
         return self.graph.query(query, {"topic": topic})
 

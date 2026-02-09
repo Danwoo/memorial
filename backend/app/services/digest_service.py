@@ -11,9 +11,14 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.config.llm import get_creative_llm
 from app.config.settings import DEFAULT_USER_ID
+from app.repositories.chat_repository import ChatRepository
+from app.repositories.journal_repository import JournalRepository
+from app.repositories.memory_repository import MemoryRepository
 
 logger = logging.getLogger(__name__)
 
+MAX_MEMORIES_IN_DIGEST = 10
+MAX_JOURNALS_IN_DIGEST = 5
 
 DIGEST_QUESTION_PROMPT = """Based on the user's collected memories from today, generate 1-2 thoughtful questions
 to help them reflect on their day. Focus on:
@@ -27,10 +32,19 @@ Respond in Korean. Return only the questions, one per line."""
 class DigestService:
     """Service for daily digest aggregation and AI-powered insights."""
 
-    def __init__(self, memory_repo, journal_repo, chat_repo=None):
+    def __init__(
+        self,
+        memory_repo: MemoryRepository,
+        journal_repo: JournalRepository,
+        chat_repo: ChatRepository | None = None,
+    ):
         self.memory_repo = memory_repo
         self.journal_repo = journal_repo
         self.chat_repo = chat_repo
+
+    @staticmethod
+    def _parse_iso_datetime(iso_str: str) -> datetime:
+        return datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
 
     async def get_today_digest(self, user_id: UUID | None = None, target_date: datetime | None = None) -> dict[str, Any]:
         """
@@ -76,23 +90,23 @@ class DigestService:
             },
             "memories": [
                 {
-                    "id": str(m.get("id", "")),
-                    "title": m.get("title", "Untitled"),
-                    "type": m.get("source_type", "UNKNOWN"),
-                    "summary": m.get("summary") or m.get("content", "")[:150],
-                    "tags": m.get("tags") or [],
-                    "created_at": m.get("created_at", "")
+                    "id": str(memory.get("id", "")),
+                    "title": memory.get("title", "Untitled"),
+                    "type": memory.get("source_type", "UNKNOWN"),
+                    "summary": memory.get("summary") or memory.get("content", "")[:150],
+                    "tags": memory.get("tags") or [],
+                    "created_at": memory.get("created_at", "")
                 }
-                for m in memories[:10]  # Limit to 10
+                for memory in memories[:MAX_MEMORIES_IN_DIGEST]
             ],
             "journals": [
                 {
-                    "id": str(j.get("id", "")),
-                    "mood": j.get("mood", "NEUTRAL"),
-                    "preview": j.get("content", "")[:100],
-                    "created_at": j.get("created_at", "")
+                    "id": str(journal.get("id", "")),
+                    "mood": journal.get("mood", "NEUTRAL"),
+                    "preview": journal.get("content", "")[:100],
+                    "created_at": journal.get("created_at", "")
                 }
-                for j in journals[:5]  # Limit to 5
+                for journal in journals[:MAX_JOURNALS_IN_DIGEST]
             ],
             "chats": chats,
             "insights": {
@@ -107,15 +121,13 @@ class DigestService:
             all_memories = await self.memory_repo.get_all(user_id=user_id)
 
             today_memories = []
-            for m in all_memories:
-                created_at_str = m.get("created_at", "")
+            for memory in all_memories:
+                created_at_str = memory.get("created_at", "")
                 if created_at_str:
                     try:
-                        created_at = datetime.fromisoformat(
-                            created_at_str.replace("Z", "+00:00")
-                        )
+                        created_at = self._parse_iso_datetime(created_at_str)
                         if start <= created_at <= end:
-                            today_memories.append(m)
+                            today_memories.append(memory)
                     except (ValueError, TypeError) as e:
                         logger.debug("Skipping memory with unparseable date: %s", e)
 
@@ -134,15 +146,13 @@ class DigestService:
             )
 
             today_journals = []
-            for j in journals:
-                created_at_str = j.get("created_at", "")
+            for journal in journals:
+                created_at_str = journal.get("created_at", "")
                 if created_at_str:
                     try:
-                        created_at = datetime.fromisoformat(
-                            created_at_str.replace("Z", "+00:00")
-                        )
+                        created_at = self._parse_iso_datetime(created_at_str)
                         if created_at.date() == today:
-                            today_journals.append(j)
+                            today_journals.append(journal)
                     except (ValueError, TypeError) as e:
                         logger.debug("Skipping journal with unparseable date: %s", e)
 
@@ -154,8 +164,8 @@ class DigestService:
     def _extract_topics(self, memories: list[dict]) -> list[str]:
         """Extract main topics from memories based on tags."""
         tag_counts = {}
-        for m in memories:
-            for tag in m.get("tags", []) or []:
+        for memory in memories:
+            for tag in memory.get("tags", []) or []:
                 tag_counts[tag] = tag_counts.get(tag, 0) + 1
 
         # Sort by count and return top tags
@@ -174,14 +184,14 @@ class DigestService:
         # Build context from memories and journals
         context_parts = []
 
-        for m in memories[:5]:
-            title = m.get("title", "Untitled")
-            summary = m.get("summary") or m.get("content", "")[:100]
+        for memory in memories[:5]:
+            title = memory.get("title", "Untitled")
+            summary = memory.get("summary") or memory.get("content", "")[:100]
             context_parts.append(f"- {title}: {summary}")
 
-        for j in journals[:2]:
-            mood = j.get("mood", "NEUTRAL")
-            preview = j.get("content", "")[:100]
+        for journal in journals[:2]:
+            mood = journal.get("mood", "NEUTRAL")
+            preview = journal.get("content", "")[:100]
             context_parts.append(f"- [Journal, Mood: {mood}] {preview}")
 
         if not context_parts:

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import type { ChatMessage, ChatMode, ChatModeOption } from '../types'
+import type { ChatMessage, ChatMode, ChatModeOption, ChatLocationState } from '../types'
 import { createChatSession, sendChatMessage, readSSEStream } from '../api'
 import './ChatView.css'
 
@@ -27,7 +27,7 @@ export default function ChatView() {
   // Reset session when Sidebar's "New Chat" navigates with { newSession: true }
   // Or start a topic-based chat from GraphView
   useEffect(() => {
-    const state = location.state as { newSession?: boolean; topic?: string; mode?: string } | null
+    const state = location.state as ChatLocationState | null
     if (state?.newSession) {
       setSessionId(null)
       setMessages([])

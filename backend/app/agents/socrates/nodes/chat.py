@@ -111,6 +111,72 @@ async def find_contradicting_memories(query: str, current_memories: list) -> lis
     return contradicting[:3]  # Return top 3
 
 
+async def _search_vector_memories(query: str, vector_repo, limit: int = 3) -> tuple[str, list]:
+    """Search vector store for relevant memories. Returns (formatted_text, raw_results)."""
+    try:
+        results = await vector_repo.similarity_search(query, limit=limit, threshold=0.5)
+        if results:
+            formatted = "\n".join([
+                f"- [{memory.get('created_at', '')[:10]}] {memory.get('title', 'Untitled')}: {memory.get('summary') or memory.get('content', '')[:100]}..."
+                for memory in results
+            ])
+            return formatted, results
+    except Exception:
+        logger.exception("Vector search failed")
+    return "", []
+
+
+async def _fetch_graph_context(query: str, limit: int = 8) -> str:
+    """Fetch related entities from knowledge graph. Returns formatted text."""
+    try:
+        from app.config.dependencies import get_graph_repository
+        graph_repo = get_graph_repository()
+
+        keywords = [word for word in query.split() if len(word) > 2][:3]
+        graph_results = []
+        for keyword in keywords:
+            related = await graph_repo.get_related_context(keyword, depth=2)
+            graph_results.extend(related)
+
+        if not graph_results:
+            return ""
+
+        # Deduplicate by name
+        seen = set()
+        unique_results = []
+        for entity in graph_results:
+            name = entity.get("name", "")
+            if name and name not in seen:
+                seen.add(name)
+                unique_results.append(entity)
+
+        graph_lines = []
+        for entity in unique_results[:limit]:
+            name = entity.get("name", "")
+            label = entity.get("label", "")
+            rel = entity.get("rel_type", "RELATED_TO")
+            dist = entity.get("distance", 1)
+            graph_lines.append(f"- {name} ({label}) — {rel} (depth: {dist})")
+        return "\n".join(graph_lines)
+    except Exception:
+        logger.exception("Graph context fetch failed")
+        return ""
+
+
+async def _fetch_journal_context(user_id, journal_repo, limit: int = 3) -> str:
+    """Fetch recent journal entries. Returns formatted text."""
+    try:
+        recent_journals = await journal_repo.get_journals(user_id, limit=limit)
+        if recent_journals:
+            return "\n".join([
+                f"- [Journal {journal.get('created_at', '')[:10]}] Mood: {journal.get('mood', 'N/A')} - {journal.get('content', '')[:80]}..."
+                for journal in recent_journals
+            ])
+    except Exception:
+        logger.exception("Journal context fetch failed")
+    return ""
+
+
 async def prepare_socrates_context(
     messages: list,
     mode: str | None = None,
@@ -124,6 +190,7 @@ async def prepare_socrates_context(
     context_memories = ""
     contradicting_memories = ""
     graph_context = ""
+    journal_context = ""
     current_memories: list = []
 
     last_message = messages[-1] if messages else None
@@ -135,70 +202,22 @@ async def prepare_socrates_context(
 
         vector_repo = VectorRepository(get_supabase_client())
 
-        try:
-            results = await vector_repo.similarity_search(query, limit=3, threshold=0.5)
-            if results:
-                current_memories = results
-                context_memories = "\n".join([
-                    f"- [{m.get('created_at', '')[:10]}] {m.get('title', 'Untitled')}: {m.get('summary') or m.get('content', '')[:100]}..."
-                    for m in results
-                ])
-        except Exception:
-            logger.exception("Vector search failed")
+        context_memories, current_memories = await _search_vector_memories(query, vector_repo)
 
-        # Graph traversal: find related entities from knowledge graph
-        try:
-            from app.config.dependencies import get_graph_repository
-            graph_repo = get_graph_repository()
-            # Extract key terms from query for graph lookup
-            keywords = [w for w in query.split() if len(w) > 2][:3]
-            graph_results = []
-            for kw in keywords:
-                related = await graph_repo.get_related_context(kw, depth=2)
-                graph_results.extend(related)
+        graph_context = await _fetch_graph_context(query)
 
-            if graph_results:
-                # Deduplicate by name
-                seen = set()
-                unique_results = []
-                for r in graph_results:
-                    name = r.get("name", "")
-                    if name and name not in seen:
-                        seen.add(name)
-                        unique_results.append(r)
-
-                graph_lines = []
-                for r in unique_results[:8]:
-                    name = r.get("name", "")
-                    label = r.get("label", "")
-                    rel = r.get("rel_type", "RELATED_TO")
-                    dist = r.get("distance", 1)
-                    graph_lines.append(f"- {name} ({label}) — {rel} (depth: {dist})")
-                graph_context = "\n".join(graph_lines)
-        except Exception:
-            logger.exception("Graph context fetch failed")
-
-        journal_context = ""
-        try:
-            from app.config.database import get_supabase_client as _get_db
-            from app.repositories.journal_repository import JournalRepository
-            journal_repo = JournalRepository(_get_db())
-            recent_journals = await journal_repo.get_journals(DEFAULT_USER_ID, limit=3)
-            if recent_journals:
-                journal_context = "\n".join([
-                    f"- [Journal {j.get('created_at', '')[:10]}] Mood: {j.get('mood', 'N/A')} - {j.get('content', '')[:80]}..."
-                    for j in recent_journals
-                ])
-        except Exception:
-            logger.exception("Journal context fetch failed")
+        from app.config.database import get_supabase_client as _get_db
+        from app.repositories.journal_repository import JournalRepository
+        journal_repo = JournalRepository(_get_db())
+        journal_context = await _fetch_journal_context(DEFAULT_USER_ID, journal_repo)
 
         if mode == "counter" and current_memories:
             try:
                 contradicting = await find_contradicting_memories(query, current_memories)
                 if contradicting:
                     contradicting_memories = "\n".join([
-                        f"- [{m.get('created_at', '')[:10]}] {m.get('title', 'Untitled')}: {m.get('summary') or m.get('content', '')[:100]}..."
-                        for m in contradicting
+                        f"- [{memory.get('created_at', '')[:10]}] {memory.get('title', 'Untitled')}: {memory.get('summary') or memory.get('content', '')[:100]}..."
+                        for memory in contradicting
                     ])
             except Exception:
                 logger.exception("Contradiction search failed")

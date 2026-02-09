@@ -40,3 +40,15 @@ export interface ChatSessionResponse {
   title: string
   created_at: string
 }
+
+export interface ChatSessionItem {
+  id: string
+  title: string
+  created_at: string
+}
+
+export interface ChatLocationState {
+  newSession?: boolean
+  topic?: string
+  mode?: string
+}

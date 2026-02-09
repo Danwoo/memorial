@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { Memory, MemoryCreatePayload } from '../types'
+import type { Memory, MemoryCreatePayload, SourceType } from '../types'
 import { fetchMemories, createMemory, uploadPdfMemory } from '../api'
 import './MemoryView.css'
 
@@ -10,7 +10,7 @@ export default function MemoryView() {
   const [newUrl, setNewUrl] = useState('')
   const [newNote, setNewNote] = useState('')
   const [pdfFile, setPdfFile] = useState<File | null>(null)
-  const [addType, setAddType] = useState<'WEB' | 'NOTE' | 'PDF'>('WEB')
+  const [addType, setAddType] = useState<Extract<SourceType, 'WEB' | 'NOTE' | 'PDF'>>('WEB')
 
   const loadMemories = async () => {
     setIsLoading(true)

@@ -65,8 +65,8 @@ class ChatService:
             return
 
         # Persist user message
-        user_msg = HumanMessage(content=content)
-        await self.chat_repo.add_message(session_id, user_msg)
+        user_message = HumanMessage(content=content)
+        await self.chat_repo.add_message(session_id, user_message)
 
         try:
             # Retrieve conversation history
@@ -80,10 +80,10 @@ class ChatService:
             full_response = ""
 
             async for chunk in llm.astream(lc_messages):
-                token = chunk.content
-                if token:
-                    full_response += token
-                    yield f"data: {json.dumps({'content': token})}\n\n"
+                chunk_text = chunk.content
+                if chunk_text:
+                    full_response += chunk_text
+                    yield f"data: {json.dumps({'content': chunk_text})}\n\n"
 
             # Persist complete response
             if full_response:

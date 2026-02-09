@@ -1,5 +1,5 @@
 import { get, post } from './client'
-import type { RelatedMemoriesResponse } from '../types'
+import type { RelatedMemoriesResponse, ChatSessionItem } from '../types'
 
 /** Save a journal entry */
 export function saveJournal(content: string): Promise<void> {
@@ -17,6 +17,6 @@ export function generateJournalDraft(sessionId: string): Promise<{ draft: string
 }
 
 /** Fetch chat sessions for the current user */
-export function fetchChatSessions(): Promise<{ id: string; title: string; created_at: string }[]> {
-  return get<{ id: string; title: string; created_at: string }[]>('/chat/sessions')
+export function fetchChatSessions(): Promise<ChatSessionItem[]> {
+  return get<ChatSessionItem[]>('/chat/sessions')
 }

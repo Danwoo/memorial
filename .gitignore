@@ -32,7 +32,7 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
-_ul
+nul
 
 # Build outputs
 frontend/dist/

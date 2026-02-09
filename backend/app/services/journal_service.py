@@ -6,7 +6,7 @@ import logging
 from typing import Any
 from uuid import UUID
 
-from langchain_core.messages import AIMessage, HumanMessage as LCHumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from app.config.llm import get_creative_llm
 from app.repositories.chat_repository import ChatRepository
@@ -39,6 +39,45 @@ DRAFT_PROMPT = """You are a reflective journal writing assistant. Based on the e
 **Output:** A well-structured journal entry draft in markdown format."""
 
 
+POSITIVE_SENTIMENT_WORDS = [
+    "happy", "good", "great", "excited", "proud", "calm",
+    "평온", "행복", "좋아", "성취", "뿌듯",
+]
+
+NEGATIVE_SENTIMENT_WORDS = [
+    "sad", "bad", "angry", "anxious", "tired",
+    "우울", "슬퍼", "힘들", "피곤", "짜증", "불안",
+]
+
+COGNITIVE_DISTORTION_PATTERNS = {
+    "all_or_nothing": {
+        "name": "흑백논리 (All-or-Nothing)",
+        "keywords": ["항상", "절대", "전혀", "never", "always", "완전히", "100%"],
+        "feedback": "상황에 중간 지대가 있을 수 있어요. '때때로' 또는 '어떤 경우에는'으로 표현해보면 어떨까요?",
+    },
+    "overgeneralization": {
+        "name": "과잉일반화 (Overgeneralization)",
+        "keywords": ["매번", "언제나", "늘", "이런 식이야", "맨날", "every time"],
+        "feedback": "구체적인 이번 상황에 집중해보면 어떨까요? 실제로 매번 그랬나요?",
+    },
+    "personalization": {
+        "name": "개인화 (Personalization)",
+        "keywords": ["내 탓", "내가 잘못", "내 책임", "나 때문에", "my fault"],
+        "feedback": "상황에 영향을 준 다른 요인들도 있지 않았을까요?",
+    },
+    "catastrophizing": {
+        "name": "파국화 (Catastrophizing)",
+        "keywords": ["끔찍", "최악", "재앙", "망했", "terrible", "disaster", "worst"],
+        "feedback": "현실적으로 가장 가능성 높은 결과는 무엇일까요?",
+    },
+    "mind_reading": {
+        "name": "독심술 (Mind Reading)",
+        "keywords": ["~라고 생각할 거야", "분명히 ~일 거야", "나를 싫어", "무시하", "think I'm"],
+        "feedback": "실제로 상대방에게 확인해보셨나요? 다른 해석도 가능할 수 있어요.",
+    },
+}
+
+
 class JournalService:
     def __init__(
         self,
@@ -57,17 +96,14 @@ class JournalService:
         Simple keyword-based sentiment analysis for MVP.
         TODO: Replace with LLM or VADER.
         """
-        pos_words = ["happy", "good", "great", "excited", "proud", "calm", "평온", "행복", "좋아", "성취", "뿌듯"]
-        neg_words = ["sad", "bad", "angry", "anxious", "tired", "우울", "슬퍼", "힘들", "피곤", "짜증", "불안"]
-
         score = 0
         content_lower = content.lower()
 
-        for w in pos_words:
-            if w in content_lower:
+        for word in POSITIVE_SENTIMENT_WORDS:
+            if word in content_lower:
                 score += 1
-        for w in neg_words:
-            if w in content_lower:
+        for word in NEGATIVE_SENTIMENT_WORDS:
+            if word in content_lower:
                 score -= 1
 
         if score > 0:
@@ -119,35 +155,7 @@ class JournalService:
         content_lower = content.lower()
         detected = []
 
-        patterns = {
-            "all_or_nothing": {
-                "name": "흑백논리 (All-or-Nothing)",
-                "keywords": ["항상", "절대", "전혀", "never", "always", "완전히", "100%"],
-                "feedback": "상황에 중간 지대가 있을 수 있어요. '때때로' 또는 '어떤 경우에는'으로 표현해보면 어떨까요?",
-            },
-            "overgeneralization": {
-                "name": "과잉일반화 (Overgeneralization)",
-                "keywords": ["매번", "언제나", "늘", "이런 식이야", "맨날", "every time"],
-                "feedback": "구체적인 이번 상황에 집중해보면 어떨까요? 실제로 매번 그랬나요?",
-            },
-            "personalization": {
-                "name": "개인화 (Personalization)",
-                "keywords": ["내 탓", "내가 잘못", "내 책임", "나 때문에", "my fault"],
-                "feedback": "상황에 영향을 준 다른 요인들도 있지 않았을까요?",
-            },
-            "catastrophizing": {
-                "name": "파국화 (Catastrophizing)",
-                "keywords": ["끔찍", "최악", "재앙", "망했", "terrible", "disaster", "worst"],
-                "feedback": "현실적으로 가장 가능성 높은 결과는 무엇일까요?",
-            },
-            "mind_reading": {
-                "name": "독심술 (Mind Reading)",
-                "keywords": ["~라고 생각할 거야", "분명히 ~일 거야", "나를 싫어", "무시하", "think I'm"],
-                "feedback": "실제로 상대방에게 확인해보셨나요? 다른 해석도 가능할 수 있어요.",
-            },
-        }
-
-        for pattern_id, pattern in patterns.items():
+        for pattern_id, pattern in COGNITIVE_DISTORTION_PATTERNS.items():
             for keyword in pattern["keywords"]:
                 if keyword in content_lower:
                     detected.append({
@@ -179,7 +187,7 @@ class JournalService:
         # Build conversation transcript
         transcript_lines = []
         for msg in messages:
-            if isinstance(msg, LCHumanMessage):
+            if isinstance(msg, HumanMessage):
                 transcript_lines.append(f"사용자: {msg.content}")
             elif isinstance(msg, AIMessage):
                 transcript_lines.append(f"AI: {msg.content}")
@@ -193,7 +201,7 @@ class JournalService:
         llm = get_creative_llm()
         lc_messages = [
             SystemMessage(content=DRAFT_PROMPT),
-            LCHumanMessage(content=f"다음 evening 대화를 바탕으로 저널 초안을 작성해주세요:\n\n{transcript}"),
+            HumanMessage(content=f"다음 evening 대화를 바탕으로 저널 초안을 작성해주세요:\n\n{transcript}"),
         ]
 
         response = await llm.ainvoke(lc_messages)

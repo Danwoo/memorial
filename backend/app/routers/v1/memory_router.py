@@ -22,7 +22,31 @@ from app.services.memory_service import MemoryService
 
 logger = logging.getLogger(__name__)
 
+MAX_PDF_FILE_SIZE_BYTES = 20 * 1024 * 1024
+
 router = APIRouter(prefix="/memories", tags=["memories"])
+
+
+def _build_librarian_initial_state(
+    memory_id: str,
+    content: str,
+    user_id: str,
+) -> dict:
+    return {
+        "messages": [],
+        "user_id": user_id,
+        "context": {},
+        "target_memory_id": memory_id,
+        "target_text": content,
+        "classification": None,
+        "summary": None,
+        "tags": None,
+        "extracted_entities": None,
+        "extracted_relations": None,
+        "is_streaming": False,
+        "next_step": None,
+        "error": None,
+    }
 
 
 async def _process_with_librarian(
@@ -32,21 +56,7 @@ async def _process_with_librarian(
 ) -> None:
     """Background task: classify, tag, extract entities via Librarian agent."""
     try:
-        initial_state = {
-            "messages": [],
-            "user_id": user_id,
-            "context": {},
-            "target_memory_id": memory_id,
-            "target_text": content,
-            "classification": None,
-            "summary": None,
-            "tags": None,
-            "extracted_entities": None,
-            "extracted_relations": None,
-            "is_streaming": False,
-            "next_step": None,
-            "error": None,
-        }
+        initial_state = _build_librarian_initial_state(memory_id, content, user_id)
 
         result = await librarian_graph.ainvoke(initial_state)
         logger.info(
@@ -128,7 +138,7 @@ async def upload_pdf(
 
     try:
         file_bytes = await file.read()
-        if len(file_bytes) > 20 * 1024 * 1024:
+        if len(file_bytes) > MAX_PDF_FILE_SIZE_BYTES:
             raise HTTPException(status_code=400, detail="File size exceeds 20MB limit")
 
         processed = await process_pdf_content(file_bytes, file.filename)
