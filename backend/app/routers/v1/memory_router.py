@@ -5,7 +5,7 @@ API endpoints for memory operations
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, UploadFile, File
 
 from app.agents.librarian.graph import librarian_graph
 from app.config.auth import get_user_id
@@ -17,7 +17,7 @@ from app.schemas.memory_schema import (
     MemoryListItem,
     MemoryListResponse,
 )
-from app.services.ingest_service import process_note_content, process_web_content
+from app.services.ingest_service import process_note_content, process_pdf_content, process_web_content
 from app.services.memory_service import MemoryService
 
 logger = logging.getLogger(__name__)
@@ -76,7 +76,8 @@ async def create_memory(
 
         elif data.source_type == "PDF":
             raise HTTPException(
-                status_code=501, detail="PDF parsing not implemented yet"
+                status_code=400,
+                detail="PDF must be uploaded via POST /memories/upload-pdf",
             )
 
         elif data.source_type == "NOTE":
@@ -112,6 +113,74 @@ async def create_memory(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/upload-pdf", response_model=MemoryCreateResponse, status_code=201)
+async def upload_pdf(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    user_id: UUID = Depends(get_user_id),
+    memory_service: MemoryService = Depends(get_memory_service),
+):
+    """Upload and ingest a PDF file."""
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are accepted")
+
+    try:
+        file_bytes = await file.read()
+        if len(file_bytes) > 20 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File size exceeds 20MB limit")
+
+        processed = await process_pdf_content(file_bytes, file.filename)
+
+        memory = await memory_service.create_memory(
+            user_id=user_id,
+            title=processed["title"],
+            content=processed["content"],
+            source_type="PDF",
+            source_url=None,
+        )
+
+        background_tasks.add_task(
+            _process_with_librarian,
+            str(memory.id),
+            processed["content"],
+            str(user_id),
+        )
+
+        return MemoryCreateResponse(id=memory.id, status="processing")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/backfill", status_code=200)
+async def backfill_memories(
+    background_tasks: BackgroundTasks,
+    force: bool = Query(False),
+    user_id: UUID = Depends(get_user_id),
+    memory_service: MemoryService = Depends(get_memory_service),
+):
+    """Re-process memories through Librarian pipeline. Use force=true to re-process all."""
+    items, total = await memory_service.list_memories(
+        user_id=user_id, page=1, limit=100
+    )
+
+    queued = 0
+    for item in items:
+        if not force and item.tags is not None:
+            continue
+        background_tasks.add_task(
+            _process_with_librarian,
+            str(item.id),
+            item.content,
+            str(user_id),
+        )
+        queued += 1
+
+    return {"queued": queued, "total": total}
 
 
 @router.get("", response_model=MemoryListResponse)

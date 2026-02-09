@@ -89,6 +89,49 @@ async def process_web_content(url: str) -> dict:
     }
 
 
+async def process_pdf_content(file_bytes: bytes, filename: str) -> dict:
+    """
+    Process a PDF file using Upstage Document Parse API.
+
+    Returns:
+        {
+            "title": str,
+            "content": str,
+            "source_url": None
+        }
+    """
+    from app.config.settings import get_settings
+
+    settings = get_settings()
+    if not settings.UPSTAGE_API_KEY:
+        raise ValueError("UPSTAGE_API_KEY is not configured")
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            "https://api.upstage.ai/v1/document-ai/document-parse",
+            headers={"Authorization": f"Bearer {settings.UPSTAGE_API_KEY}"},
+            files={"document": (filename, file_bytes, "application/pdf")},
+            data={"output_formats": '["text"]'},
+        )
+        response.raise_for_status()
+        result = response.json()
+
+    # Extract text from response
+    content = result.get("content", {}).get("text", "")
+    if not content:
+        # Fallback: try elements
+        elements = result.get("elements", [])
+        content = "\n".join(el.get("text", "") for el in elements if el.get("text"))
+
+    title = filename.rsplit(".", 1)[0] if "." in filename else filename
+
+    return {
+        "title": title,
+        "content": content,
+        "source_url": None,
+    }
+
+
 async def process_note_content(content: str, memo: str | None = None) -> dict:
     """
     Process raw text/note content.

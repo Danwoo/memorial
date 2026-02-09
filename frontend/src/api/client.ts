@@ -112,6 +112,26 @@ export async function postRaw(
 }
 
 /**
+ * POST request that sends FormData (multipart) and returns parsed JSON.
+ */
+export async function postFormData<T>(path: string, formData: FormData): Promise<T> {
+  const headers = new Headers()
+  const token = getAuthToken()
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  })
+
+  if (!res.ok) await handleErrorResponse(res)
+  return res.json() as Promise<T>
+}
+
+/**
  * Type-safe PUT request that sends JSON and returns parsed JSON.
  */
 export async function put<T>(path: string, body?: unknown): Promise<T> {

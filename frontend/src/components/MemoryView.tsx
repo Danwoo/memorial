@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import type { Memory, SourceType, MemoryCreatePayload } from '../types'
-import { fetchMemories, createMemory } from '../api'
+import type { Memory, MemoryCreatePayload } from '../types'
+import { fetchMemories, createMemory, uploadPdfMemory } from '../api'
 import './MemoryView.css'
 
 export default function MemoryView() {
@@ -9,7 +9,8 @@ export default function MemoryView() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [newUrl, setNewUrl] = useState('')
   const [newNote, setNewNote] = useState('')
-  const [addType, setAddType] = useState<Extract<SourceType, 'WEB' | 'NOTE'>>('WEB')
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [addType, setAddType] = useState<'WEB' | 'NOTE' | 'PDF'>('WEB')
 
   const loadMemories = async () => {
     setIsLoading(true)
@@ -25,14 +26,19 @@ export default function MemoryView() {
 
   const addMemory = async () => {
     try {
-      const payload: MemoryCreatePayload = addType === 'WEB'
-        ? { sourceType: 'WEB', url: newUrl }
-        : { sourceType: 'NOTE', content: newNote }
-
-      await createMemory(payload)
+      if (addType === 'PDF') {
+        if (!pdfFile) return
+        await uploadPdfMemory(pdfFile)
+      } else {
+        const payload: MemoryCreatePayload = addType === 'WEB'
+          ? { sourceType: 'WEB', url: newUrl }
+          : { sourceType: 'NOTE', content: newNote }
+        await createMemory(payload)
+      }
       setShowAddModal(false)
       setNewUrl('')
       setNewNote('')
+      setPdfFile(null)
       loadMemories()
     } catch (error) {
       console.error('Failed to add memory:', error)
@@ -96,11 +102,17 @@ export default function MemoryView() {
               >
                 🌐 웹 URL
               </button>
-              <button 
+              <button
                 className={`tab ${addType === 'NOTE' ? 'active' : ''}`}
                 onClick={() => setAddType('NOTE')}
               >
                 📝 메모
+              </button>
+              <button
+                className={`tab ${addType === 'PDF' ? 'active' : ''}`}
+                onClick={() => setAddType('PDF')}
+              >
+                📄 PDF
               </button>
             </div>
 
@@ -112,7 +124,7 @@ export default function MemoryView() {
                 value={newUrl}
                 onChange={e => setNewUrl(e.target.value)}
               />
-            ) : (
+            ) : addType === 'NOTE' ? (
               <textarea
                 className="input"
                 placeholder="여기에 메모를 작성하세요..."
@@ -120,6 +132,18 @@ export default function MemoryView() {
                 onChange={e => setNewNote(e.target.value)}
                 rows={5}
               />
+            ) : (
+              <div className="pdf-upload-area">
+                <input
+                  type="file"
+                  accept=".pdf"
+                  id="pdf-input"
+                  onChange={e => setPdfFile(e.target.files?.[0] ?? null)}
+                />
+                <label htmlFor="pdf-input" className="pdf-drop-label">
+                  {pdfFile ? pdfFile.name : '📄 PDF 파일을 선택하세요 (최대 20MB)'}
+                </label>
+              </div>
             )}
 
             <div className="modal-actions">

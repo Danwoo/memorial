@@ -163,3 +163,34 @@
   justify-content: flex-end;
   gap: var(--space-sm);
 }
+
+/* PDF Upload */
+.pdf-upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pdf-upload-area input[type="file"] {
+  display: none;
+}
+
+.pdf-drop-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-xl) var(--space-lg);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.pdf-drop-label:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
