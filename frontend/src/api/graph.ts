@@ -18,8 +18,3 @@ interface GraphApiResponse {
 export function fetchGraph(limit = 200): Promise<GraphApiResponse> {
   return get<GraphApiResponse>(`/graph?limit=${limit}`)
 }
-
-/** Fetch knowledge graph data with mock fallback */
-export function fetchGraphMock(limit = 200): Promise<GraphApiResponse> {
-  return get<GraphApiResponse>(`/graph?limit=${limit}&mock=true`)
-}

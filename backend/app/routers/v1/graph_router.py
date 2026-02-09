@@ -16,7 +16,6 @@ router = APIRouter(prefix="/graph", tags=["graph"])
 
 @router.get("", response_model=dict[str, list[Any]])
 async def get_graph(
-    mock: bool = Query(True),
     limit: int = Query(100, ge=1, le=500),
     user_id: UUID = Depends(get_user_id),
     graph_service: GraphService = Depends(get_graph_service),
@@ -24,15 +23,8 @@ async def get_graph(
     """
     Get graph data for visualization.
 
-    Returns ``{nodes: [], links: []}`` with relationships:
-    - Resource <-> Concept (extracted topics)
-    - Chat <-> Concept (discussed topics)
-    - Resource <-> Chat (when chat references a resource)
-    - Memory <-> Entity (extracted entities)
+    Returns ``{nodes: [], links: []}`` from Neo4j knowledge graph.
     """
-    if mock:
-        return await graph_service.build_graph_from_memories(user_id, limit)
-
     if not graph_service.is_available:
         return {"nodes": [], "links": []}
 

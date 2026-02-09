@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import ForceGraph2D from 'react-force-graph-2d'
 import type { GraphNode, GraphLink, GraphData } from '../types'
-import { fetchGraph, fetchGraphMock } from '../api'
+import { fetchGraph } from '../api'
 import './GraphView.css'
 
 // Color palette for different node types
@@ -10,6 +11,13 @@ const NODE_COLORS: Record<string, string> = {
   'Entity': '#34d399',      // Emerald
   'Concept': '#60a5fa',     // Blue
   'Person': '#f472b6',      // Pink
+  'Organization': '#fb923c', // Orange
+  'Company': '#fb923c',     // Orange
+  'Technology': '#22d3ee',   // Cyan
+  'Platform': '#a3e635',     // Lime
+  'Product': '#e879f9',      // Fuchsia
+  'Location': '#fbbf24',     // Amber
+  'Event': '#f87171',        // Red
   'Project': '#fbbf24',     // Amber
   'Topic': '#818cf8',       // Indigo
   'Resource': '#2dd4bf',    // Teal
@@ -21,6 +29,13 @@ const NODE_SIZES: Record<string, number> = {
   'Entity': 8,
   'Concept': 10,
   'Person': 10,
+  'Organization': 11,
+  'Company': 11,
+  'Technology': 10,
+  'Platform': 10,
+  'Product': 10,
+  'Location': 9,
+  'Event': 9,
   'Project': 14,
   'Topic': 9,
   'Resource': 11,
@@ -34,6 +49,7 @@ interface ForceNode extends GraphNode {
 }
 
 export default function GraphView() {
+  const navigate = useNavigate()
   const [data, setData] = useState<GraphData>({ nodes: [], links: [] })
   const [loading, setLoading] = useState(true)
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
@@ -56,13 +72,7 @@ export default function GraphView() {
       const json = await fetchGraph()
       setData({ nodes: processNodes(json.nodes), links: json.links })
     } catch (err) {
-      console.error('Failed to fetch graph data, falling back to mock:', err)
-      try {
-        const mockJson = await fetchGraphMock()
-        setData({ nodes: processNodes(mockJson.nodes), links: mockJson.links })
-      } catch (mockErr) {
-        console.error('Mock fallback also failed:', mockErr)
-      }
+      console.error('Failed to fetch graph data:', err)
     } finally {
       setLoading(false)
     }
@@ -153,12 +163,14 @@ export default function GraphView() {
 
   const handleNodeClick = useCallback((node: ForceNode) => {
     setSelectedNode(node)
-    if (node.url) {
-      window.open(node.url, '_blank')
-    }
     fgRef.current?.centerAt(node.x, node.y, 500)
     fgRef.current?.zoom(3, 500)
   }, [])
+
+  const handleStartChat = useCallback((node: GraphNode) => {
+    const topic = node.name || node.id
+    navigate('/chat', { state: { topic, mode: 'insight' } })
+  }, [navigate])
 
   // Get unique node types for legend
   const nodeTypes = [...new Set(data.nodes.map(n => n.label))]
@@ -246,6 +258,9 @@ export default function GraphView() {
               ))}
             </div>
           )}
+          <button className="chat-with-topic-btn" onClick={() => handleStartChat(selectedNode)}>
+            💬 이 주제로 대화하기
+          </button>
         </div>
       )}
 
