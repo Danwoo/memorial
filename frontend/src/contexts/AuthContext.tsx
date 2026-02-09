@@ -13,10 +13,10 @@ interface AuthContextValue {
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
+  signInWithGoogle: () => Promise<void>
+  signInAsDev: () => void
   signOut: () => Promise<void>
 }
-
-// ─── Dev bypass user ─────────────────────────────────────────────────────────
 
 const DEV_USER: User = {
   id: 'dev-user',
@@ -29,10 +29,6 @@ const DEV_USER: User = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-/**
- * Hook to access auth state and methods.
- * Must be used within an AuthProvider.
- */
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext)
@@ -49,16 +45,10 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const isDev = import.meta.env.DEV
-
-  const [user, setUser] = useState<User | null>(isDev ? DEV_USER : null)
+  const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [isLoading, setIsLoading] = useState(!isDev)
+  const [isLoading, setIsLoading] = useState(true)
 
-  /**
-   * Syncs the access token to localStorage so the existing API client
-   * (which reads from localStorage) continues to work.
-   */
   const syncTokenToStorage = useCallback((accessToken: string | null) => {
     if (accessToken) {
       localStorage.setItem('auth_token', accessToken)
@@ -70,17 +60,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ── Supabase auth listener ──────────────────────────────────────────────
 
   useEffect(() => {
-    if (isDev || !supabase) return
+    // Check for persisted dev session
+    const devSession = localStorage.getItem('dev_session')
+    if (devSession === 'true') {
+      setUser(DEV_USER)
+      setIsLoading(false)
+      return
+    }
+
+    if (!supabase) {
+      setIsLoading(false)
+      return
+    }
 
     const client = supabase
 
-    // Get the initial session
     client.auth.getSession().then(({ data: { session: initialSession } }) => {
       if (initialSession) {
         setSession(initialSession)
         syncTokenToStorage(initialSession.access_token)
 
-        // Map Supabase user to our User type
         const supaUser = initialSession.user
         setUser({
           id: supaUser.id,
@@ -92,7 +91,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(false)
     })
 
-    // Listen for auth state changes (login, logout, token refresh)
     const { data: { subscription } } = client.auth.onAuthStateChange(
       (_event, newSession) => {
         setSession(newSession)
@@ -115,12 +113,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [isDev, syncTokenToStorage])
+  }, [syncTokenToStorage])
 
   // ── Fallback: token-based auth without Supabase ─────────────────────────
 
   useEffect(() => {
-    if (isDev || supabase) return
+    if (supabase || localStorage.getItem('dev_session') === 'true') return
 
     const token = localStorage.getItem('auth_token')
     if (token) {
@@ -132,10 +130,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           localStorage.removeItem('auth_token')
         })
         .finally(() => setIsLoading(false))
-    } else {
-      setIsLoading(false)
     }
-  }, [isDev])
+  }, [])
 
   // ── Auth methods ────────────────────────────────────────────────────────
 
@@ -144,7 +140,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
     } else {
-      // Fallback: use existing API login
       const { login } = await import('../api')
       const data = await login({ email, password })
       syncTokenToStorage(data.access_token)
@@ -157,7 +152,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { error } = await supabase.auth.signUp({ email, password })
       if (error) throw error
     } else {
-      // Fallback: use existing API signup
       const { signup } = await import('../api')
       const data = await signup({ email, password })
       syncTokenToStorage(data.access_token)
@@ -165,10 +159,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [syncTokenToStorage])
 
+  const signInWithGoogle = useCallback(async () => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured')
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    })
+    if (error) throw error
+  }, [])
+
+  const signInAsDev = useCallback(() => {
+    localStorage.setItem('dev_session', 'true')
+    setUser(DEV_USER)
+  }, [])
+
   const signOut = useCallback(async () => {
     if (supabase) {
       await supabase.auth.signOut()
     }
+    localStorage.removeItem('dev_session')
     syncTokenToStorage(null)
     setUser(null)
     setSession(null)
@@ -177,8 +190,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ── Memoized context value ──────────────────────────────────────────────
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, session, isLoading, signIn, signUp, signOut }),
-    [user, session, isLoading, signIn, signUp, signOut],
+    () => ({ user, session, isLoading, signIn, signUp, signInWithGoogle, signInAsDev, signOut }),
+    [user, session, isLoading, signIn, signUp, signInWithGoogle, signInAsDev, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
