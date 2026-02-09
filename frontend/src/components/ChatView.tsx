@@ -25,12 +25,21 @@ export default function ChatView() {
   const abortControllerRef = useRef<AbortController | null>(null)
 
   // Reset session when Sidebar's "New Chat" navigates with { newSession: true }
+  // Or start a topic-based chat from GraphView
   useEffect(() => {
-    const state = location.state as { newSession?: boolean } | null
+    const state = location.state as { newSession?: boolean; topic?: string; mode?: string } | null
     if (state?.newSession) {
       setSessionId(null)
       setMessages([])
-      // Clear the state to prevent re-triggering on re-renders
+      window.history.replaceState({}, '')
+    } else if (state?.topic) {
+      // Graph → Chat: start conversation about a specific topic
+      setSessionId(null)
+      setMessages([])
+      if (state.mode) setMode(state.mode as ChatMode)
+      // Auto-send the topic as first message
+      const topicMessage = `${state.topic}에 대해 이야기하고 싶어. 내가 저장한 관련 지식을 바탕으로 대화해줘.`
+      setInput(topicMessage)
       window.history.replaceState({}, '')
     }
   }, [location.state])
