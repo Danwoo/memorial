@@ -111,40 +111,25 @@ async def find_contradicting_memories(query: str, current_memories: list) -> lis
     return contradicting[:3]  # Return top 3
 
 
-async def socrates_node(state: AgentState) -> dict:
+async def prepare_socrates_context(
+    messages: list,
+    mode: str | None = None,
+) -> list:
     """
-    Enhanced Socrates Node with multiple dialogue modes.
+    Prepare LangChain message list with RAG context for Socrates.
 
-    Input:
-        state.messages (conversation history)
-        state.context.mode (optional: insight, counter, summary, evening)
-    Output: Updated messages with AI response
+    Performs vector search, journal retrieval, and mode-specific prompt
+    building. Returns a list of LangChain messages ready for LLM invocation.
     """
-    # Get messages and mode from state
-    messages = state.get("messages", [])
-    context = state.get("context", {})
-    mode = context.get("mode") if isinstance(context, dict) else None
-
-    if not messages:
-        greeting = "안녕하세요! 무엇을 도와드릴까요?"
-        if mode == "evening":
-            greeting = "🌙 오늘 하루 어떠셨나요? 오늘 저장한 내용들을 함께 돌아볼까요?"
-        return {
-            "messages": [AIMessage(content=greeting)],
-            "next_step": "end"
-        }
-
-    # Build context from retrieved memories
     context_memories = ""
     contradicting_memories = ""
-    current_memories = []
+    graph_context = ""
+    current_memories: list = []
 
-    # Extract last user message
-    last_message = messages[-1]
+    last_message = messages[-1] if messages else None
     if isinstance(last_message, HumanMessage):
         query = last_message.content
 
-        # Perform Vector Search (RAG)
         from app.config.database import get_supabase_client
         from app.repositories.vector_repository import VectorRepository
 
@@ -161,7 +146,38 @@ async def socrates_node(state: AgentState) -> dict:
         except Exception:
             logger.exception("Vector search failed")
 
-        # Retrieve recent journals for additional context
+        # Graph traversal: find related entities from knowledge graph
+        try:
+            from app.config.dependencies import get_graph_repository
+            graph_repo = get_graph_repository()
+            # Extract key terms from query for graph lookup
+            keywords = [w for w in query.split() if len(w) > 2][:3]
+            graph_results = []
+            for kw in keywords:
+                related = await graph_repo.get_related_context(kw, depth=2)
+                graph_results.extend(related)
+
+            if graph_results:
+                # Deduplicate by name
+                seen = set()
+                unique_results = []
+                for r in graph_results:
+                    name = r.get("name", "")
+                    if name and name not in seen:
+                        seen.add(name)
+                        unique_results.append(r)
+
+                graph_lines = []
+                for r in unique_results[:8]:
+                    name = r.get("name", "")
+                    label = r.get("label", "")
+                    rel = r.get("rel_type", "RELATED_TO")
+                    dist = r.get("distance", 1)
+                    graph_lines.append(f"- {name} ({label}) — {rel} (depth: {dist})")
+                graph_context = "\n".join(graph_lines)
+        except Exception:
+            logger.exception("Graph context fetch failed")
+
         journal_context = ""
         try:
             from app.config.database import get_supabase_client as _get_db
@@ -176,7 +192,6 @@ async def socrates_node(state: AgentState) -> dict:
         except Exception:
             logger.exception("Journal context fetch failed")
 
-        # For counter-argument mode, find contradicting memories
         if mode == "counter" and current_memories:
             try:
                 contradicting = await find_contradicting_memories(query, current_memories)
@@ -188,36 +203,56 @@ async def socrates_node(state: AgentState) -> dict:
             except Exception:
                 logger.exception("Contradiction search failed")
 
-    # Get shared streaming LLM instance
-    llm = get_streaming_llm()
-
-    # Build system message with context and mode
     system_content = SOCRATES_BASE_PROMPT
     system_content += get_mode_prompt(mode)
 
     if context_memories:
         system_content += f"\n\n**Retrieved Memories:**\n{context_memories}"
-
+    if graph_context:
+        system_content += f"\n\n**Knowledge Graph Context:**\n{graph_context}"
     if contradicting_memories:
         system_content += f"\n\n**Potentially Contradicting Memories:**\n{contradicting_memories}"
-
     if journal_context:
         system_content += f"\n\n**Recent Journal Entries:**\n{journal_context}"
 
-    # Convert to langchain messages
     lc_messages = [SystemMessage(content=system_content)]
     for msg in messages:
         lc_messages.append(msg)
 
-    try:
-        # Call LLM
-        response = await llm.ainvoke(lc_messages)
+    return lc_messages
 
+
+async def socrates_node(state: AgentState) -> dict:
+    """
+    Enhanced Socrates Node with multiple dialogue modes.
+
+    Input:
+        state.messages (conversation history)
+        state.context.mode (optional: insight, counter, summary, evening)
+    Output: Updated messages with AI response
+    """
+    messages = state.get("messages", [])
+    context = state.get("context", {})
+    mode = context.get("mode") if isinstance(context, dict) else None
+
+    if not messages:
+        greeting = "안녕하세요! 무엇을 도와드릴까요?"
+        if mode == "evening":
+            greeting = "🌙 오늘 하루 어떠셨나요? 오늘 저장한 내용들을 함께 돌아볼까요?"
+        return {
+            "messages": [AIMessage(content=greeting)],
+            "next_step": "end"
+        }
+
+    lc_messages = await prepare_socrates_context(messages, mode)
+    llm = get_streaming_llm()
+
+    try:
+        response = await llm.ainvoke(lc_messages)
         return {
             "messages": [response],
             "next_step": "end"
         }
-
     except Exception as e:
         return {
             "messages": [AIMessage(content=f"죄송합니다, 오류가 발생했습니다: {str(e)}")],

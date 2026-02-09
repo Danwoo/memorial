@@ -107,10 +107,9 @@ async def curator_node(state: AgentState) -> dict:
         # Determine next step based on classification
         if category == "SPAM":
             next_step = "end"
-        elif category == "INSIGHT":
+        else:
+            # Both INSIGHT and FACT go through Ontologist for entity extraction
             next_step = "ontologist"
-        else:  # FACT
-            next_step = "save"
 
         return {
             "classification": category,

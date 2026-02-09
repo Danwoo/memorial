@@ -1,6 +1,10 @@
 """
 Chat Service
 Business logic for chat and Socratic dialogue.
+
+Real-time token streaming: bypasses the LangGraph ``ainvoke`` path and
+calls ``llm.astream()`` directly so that each token is yielded to the
+client as an SSE event immediately.
 """
 import asyncio
 import json
@@ -11,8 +15,8 @@ from uuid import UUID
 
 from langchain_core.messages import AIMessage, HumanMessage
 
-from app.agents.socrates.graph import socrates_graph
-from app.agents.state import AgentState
+from app.agents.socrates.nodes.chat import prepare_socrates_context
+from app.config.llm import get_streaming_llm
 from app.repositories.chat_repository import ChatRepository
 
 logger = logging.getLogger(__name__)
@@ -49,12 +53,11 @@ class ChatService:
         mode: str | None = None,
     ) -> AsyncGenerator[str, None]:
         """
-        Send a message and get AI response via SSE streaming.
-        Yields SSE-formatted strings (``data: {...}\\n\\n``).
+        Send a message and get AI response via real-time SSE streaming.
 
-        NOTE: Current implementation uses simulated streaming -- the full
-        LLM response is obtained first, then split into chunks. Real
-        token-level streaming will be implemented in Phase 3.
+        Bypasses the LangGraph ``ainvoke`` path: context preparation (RAG,
+        journal, mode prompts) is done first, then ``llm.astream()`` yields
+        tokens one-by-one directly to the client.
         """
         session = await self.chat_repo.get_session(session_id)
         if not session:
@@ -69,46 +72,28 @@ class ChatService:
             # Retrieve conversation history
             messages = await self.chat_repo.get_messages(session_id)
 
-            # Build initial state for the Socrates agent
-            initial_state: AgentState = {
-                "messages": messages,
-                "user_id": str(user_id),
-                "context": {"mode": mode} if mode else {},
-                "target_memory_id": None,
-                "target_text": None,
-                "classification": None,
-                "summary": None,
-                "tags": None,
-                "extracted_entities": None,
-                "extracted_relations": None,
-                "is_streaming": True,
-                "next_step": None,
-                "error": None,
-            }
+            # Prepare context: RAG search, journal, mode prompts
+            lc_messages = await prepare_socrates_context(messages, mode)
 
-            # Run the Socrates LangGraph
-            result = await socrates_graph.ainvoke(initial_state)
+            # Stream tokens directly from LLM
+            llm = get_streaming_llm()
+            full_response = ""
 
-            # Extract AI response
-            new_messages = result.get("messages", [])
-            if new_messages:
-                ai_msg = new_messages[-1]
-                ai_content = ai_msg.content if hasattr(ai_msg, "content") else str(ai_msg)
+            async for chunk in llm.astream(lc_messages):
+                token = chunk.content
+                if token:
+                    full_response += token
+                    yield f"data: {json.dumps({'content': token})}\n\n"
 
-                # Persist assistant message
-                await self.chat_repo.add_message(session_id, AIMessage(content=ai_content))
+            # Persist complete response
+            if full_response:
+                await self.chat_repo.add_message(
+                    session_id, AIMessage(content=full_response)
+                )
 
-                # Stream in chunks (simulated streaming)
-                chunk_size = 50
-                for i in range(0, len(ai_content), chunk_size):
-                    chunk = ai_content[i : i + chunk_size]
-                    yield f"data: {json.dumps({'content': chunk})}\n\n"
-
-            # Signal completion
             yield f"data: {json.dumps({'done': True})}\n\n"
 
         except asyncio.CancelledError:
-            # Client disconnected -- clean up gracefully
             logger.info("SSE client disconnected for session %s", session_id)
         except Exception:
             logger.exception("Error during SSE streaming for session %s", session_id)

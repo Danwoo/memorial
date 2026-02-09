@@ -2,6 +2,7 @@
 Save Node - Persist processed data to database
 Updates memory with classification results and triggers graph sync
 """
+import logging
 from uuid import UUID
 
 from app.agents.state import AgentState
@@ -10,6 +11,8 @@ from app.repositories.graph_repository import GraphRepository
 from app.repositories.memory_repository import MemoryRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.memory_service import MemoryService
+
+logger = logging.getLogger(__name__)
 
 
 async def save_node(state: AgentState) -> dict:
@@ -40,6 +43,9 @@ async def save_node(state: AgentState) -> dict:
 
         entities = state.get("extracted_entities", [])
         relations = state.get("extracted_relations", [])
+
+        logger.info("Save node: %d entities, %d relations, graph=%s",
+                    len(entities), len(relations), graph_repo.is_connected)
 
         source_url = state.get("source_url")
         source_type = "WEB" if source_url else None
