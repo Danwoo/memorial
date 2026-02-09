@@ -1,5 +1,7 @@
-import { NavLink, useNavigate } from 'react-router-dom'
-import type { User } from '../types'
+import { useState, useEffect } from 'react'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import type { User, ChatSessionResponse } from '../types'
+import { fetchChatSessions } from '../api'
 import './Sidebar.css'
 
 // ─── Navigation item definition ──────────────────────────────────────────────
@@ -20,6 +22,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/timeline',  icon: '📅', label: 'Timeline' },
 ]
 
+const MAX_SIDEBAR_SESSIONS = 8
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface SidebarProps {
@@ -29,11 +33,35 @@ interface SidebarProps {
 
 export default function Sidebar({ onLogout, user }: SidebarProps) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
+  const [showSessions, setShowSessions] = useState(true)
+
+  const loadSessions = async () => {
+    try {
+      const data = await fetchChatSessions()
+      setSessions(data)
+    } catch {
+      // Silently fail - sessions are a non-critical UI feature
+    }
+  }
+
+  useEffect(() => {
+    loadSessions()
+  }, [])
+
+  // Reload sessions when navigating to/from chat pages
+  useEffect(() => {
+    if (location.pathname.startsWith('/chat')) {
+      loadSessions()
+    }
+  }, [location.pathname])
 
   const handleNewChat = () => {
-    // Navigate to /chat without session state to start fresh
     navigate('/chat', { state: { newSession: true } })
   }
+
+  const isOnChatPage = location.pathname.startsWith('/chat')
 
   return (
     <aside className="sidebar">
@@ -49,7 +77,7 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end={to === '/' || to === '/chat'}
             className={({ isActive }) =>
               `nav-item ${isActive ? 'active' : ''}`
             }
@@ -58,6 +86,37 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
             <span>{label}</span>
           </NavLink>
         ))}
+
+        {/* Chat session list */}
+        {isOnChatPage && sessions.length > 0 && (
+          <div className="session-section">
+            <button
+              className="session-section-toggle"
+              onClick={() => setShowSessions(!showSessions)}
+            >
+              <span>최근 대화</span>
+              <span className="session-toggle-arrow">{showSessions ? '▾' : '▸'}</span>
+            </button>
+
+            {showSessions && (
+              <div className="session-list">
+                {sessions.slice(0, MAX_SIDEBAR_SESSIONS).map(session => {
+                  const isActive = location.pathname === `/chat/${session.id}`
+                  return (
+                    <button
+                      key={session.id}
+                      className={`session-item ${isActive ? 'active' : ''}`}
+                      onClick={() => navigate(`/chat/${session.id}`)}
+                      title={session.title}
+                    >
+                      <span className="session-title">{session.title}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </nav>
 
       <div className="sidebar-footer">

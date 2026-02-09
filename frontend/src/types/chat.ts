@@ -15,12 +15,6 @@ export interface ChatModeOption {
   desc: string
 }
 
-/** Props for the ChatView component */
-export interface ChatViewProps {
-  sessionId: string | null
-  onSessionCreate: (id: string) => void
-}
-
 /** Payload sent when creating a new chat message */
 export interface ChatMessagePayload {
   content: string
@@ -34,14 +28,8 @@ export interface ChatStreamChunk {
   error?: string
 }
 
-/** Response from creating a new chat session */
+/** Response from creating/listing a chat session */
 export interface ChatSessionResponse {
-  id: string
-  title: string
-  created_at: string
-}
-
-export interface ChatSessionItem {
   id: string
   title: string
   created_at: string

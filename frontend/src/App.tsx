@@ -30,6 +30,7 @@ function App() {
           >
             <Route index element={<DashboardView />} />
             <Route path="chat" element={<ChatView />} />
+            <Route path="chat/:sessionId" element={<ChatView />} />
             <Route path="memories" element={<MemoryView />} />
             <Route path="journal" element={<JournalView />} />
             <Route path="search" element={<SearchView />} />

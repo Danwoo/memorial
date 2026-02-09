@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { ChatMessage, ChatMode, ChatModeOption, ChatLocationState } from '../types'
-import { createChatSession, sendChatMessage, readSSEStream } from '../api'
+import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream } from '../api'
 import './ChatView.css'
 
 const MODES: ChatModeOption[] = [
@@ -14,18 +16,28 @@ const MODES: ChatModeOption[] = [
 
 export default function ChatView() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { sessionId: urlSessionId } = useParams<{ sessionId: string }>()
 
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(urlSessionId ?? null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [mode, setMode] = useState<ChatMode>('')
   const [showModes, setShowModes] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Reset session when Sidebar's "New Chat" navigates with { newSession: true }
-  // Or start a topic-based chat from GraphView
+  // Load history when entering via URL param (e.g. /chat/abc-123)
+  useEffect(() => {
+    if (urlSessionId && urlSessionId !== sessionId) {
+      setSessionId(urlSessionId)
+      loadHistory(urlSessionId)
+    }
+  }, [urlSessionId])
+
+  // Handle location state: newSession or topic from GraphView
   useEffect(() => {
     const state = location.state as ChatLocationState | null
     if (state?.newSession) {
@@ -33,11 +45,9 @@ export default function ChatView() {
       setMessages([])
       window.history.replaceState({}, '')
     } else if (state?.topic) {
-      // Graph → Chat: start conversation about a specific topic
       setSessionId(null)
       setMessages([])
       if (state.mode) setMode(state.mode as ChatMode)
-      // Auto-send the topic as first message
       const topicMessage = `${state.topic}에 대해 이야기하고 싶어. 내가 저장한 관련 지식을 바탕으로 대화해줘.`
       setInput(topicMessage)
       window.history.replaceState({}, '')
@@ -59,6 +69,18 @@ export default function ChatView() {
     scrollToBottom()
   }, [messages])
 
+  const loadHistory = async (sid: string) => {
+    setIsLoadingHistory(true)
+    try {
+      const history = await fetchChatHistory(sid)
+      setMessages(history)
+    } catch (error) {
+      console.error('Failed to load chat history:', error)
+    } finally {
+      setIsLoadingHistory(false)
+    }
+  }
+
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return
 
@@ -77,6 +99,8 @@ export default function ChatView() {
         const session = await createChatSession()
         currentSessionId = session.id
         setSessionId(currentSessionId)
+        // Update URL to include session ID (replace, not push)
+        navigate(`/chat/${currentSessionId}`, { replace: true })
       }
 
       // Send message and get SSE response
@@ -98,7 +122,6 @@ export default function ChatView() {
         })
       })
     } catch (error) {
-      // Suppress abort errors (expected on cleanup)
       if (error instanceof DOMException && error.name === 'AbortError') {
         return
       }
@@ -159,7 +182,12 @@ export default function ChatView() {
       </div>
 
       <div className="chat-messages">
-        {messages.length === 0 ? (
+        {isLoadingHistory ? (
+          <div className="chat-empty">
+            <div className="empty-icon">...</div>
+            <p>대화 기록을 불러오는 중...</p>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="chat-empty">
             <div className="empty-icon">🤔</div>
             <h2>무엇이 궁금하신가요?</h2>
@@ -180,7 +208,17 @@ export default function ChatView() {
                 {msg.role === 'user' ? '👤' : '🧠'}
               </div>
               <div className="message-content">
-                {msg.content || <span className="typing-indicator">...</span>}
+                {msg.role === 'assistant' ? (
+                  msg.content ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  ) : (
+                    <span className="typing-indicator">...</span>
+                  )
+                ) : (
+                  msg.content || <span className="typing-indicator">...</span>
+                )}
               </div>
             </div>
           ))

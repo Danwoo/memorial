@@ -10,7 +10,6 @@ import asyncio
 import json
 import logging
 from collections.abc import AsyncGenerator
-from datetime import UTC, datetime
 from uuid import UUID
 
 from langchain_core.messages import AIMessage, HumanMessage
@@ -100,22 +99,5 @@ class ChatService:
             yield f"data: {json.dumps({'error': 'An internal error occurred'})}\n\n"
 
     async def get_history(self, session_id: UUID) -> list[dict]:
-        """Get chat history for a session."""
-        messages = await self.chat_repo.get_messages(session_id)
-
-        result = []
-        for msg in messages:
-            if isinstance(msg, HumanMessage):
-                result.append({
-                    "role": "user",
-                    "content": msg.content,
-                    "created_at": datetime.now(UTC).isoformat(),
-                })
-            elif isinstance(msg, AIMessage):
-                result.append({
-                    "role": "assistant",
-                    "content": msg.content,
-                    "created_at": datetime.now(UTC).isoformat(),
-                })
-
-        return result
+        """Get chat history for a session with actual DB timestamps."""
+        return await self.chat_repo.get_messages_raw(session_id)

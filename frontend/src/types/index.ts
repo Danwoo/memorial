@@ -12,11 +12,9 @@ export type {
   ChatMessage,
   ChatMode,
   ChatModeOption,
-  ChatViewProps,
   ChatMessagePayload,
   ChatStreamChunk,
   ChatSessionResponse,
-  ChatSessionItem,
   ChatLocationState,
 } from './chat'
 

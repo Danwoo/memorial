@@ -103,7 +103,7 @@ class ChatRepository:
             return False
 
     async def get_messages(self, session_id: UUID) -> list[BaseMessage]:
-        """Get all messages in a session from Supabase."""
+        """Get all messages in a session from Supabase as LangChain messages."""
         result = await asyncio.to_thread(self._select_messages, str(session_id))
 
         messages: list[BaseMessage] = []
@@ -115,6 +115,22 @@ class ChatRepository:
                     messages.append(AIMessage(content=msg["content"]))
 
         return messages
+
+    async def get_messages_raw(self, session_id: UUID) -> list[dict]:
+        """Get all messages in a session as raw dicts with timestamps."""
+        result = await asyncio.to_thread(self._select_messages, str(session_id))
+
+        if not result.data:
+            return []
+
+        return [
+            {
+                "role": msg["role"],
+                "content": msg["content"],
+                "created_at": msg["created_at"],
+            }
+            for msg in result.data
+        ]
 
     async def delete_session(self, session_id: UUID) -> bool:
         """Delete a session and its messages from Supabase."""

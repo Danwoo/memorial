@@ -1,9 +1,19 @@
-import { post, postRaw } from './client'
-import type { ChatSessionResponse, ChatMessagePayload, ChatStreamChunk } from '../types'
+import { get, post, postRaw } from './client'
+import type { ChatSessionResponse, ChatMessage, ChatMessagePayload, ChatStreamChunk } from '../types'
 
 /** Create a new chat session */
 export function createChatSession(): Promise<ChatSessionResponse> {
   return post<ChatSessionResponse>('/chat/sessions', {})
+}
+
+/** List all chat sessions for the current user */
+export function fetchChatSessions(): Promise<ChatSessionResponse[]> {
+  return get<ChatSessionResponse[]>('/chat/sessions')
+}
+
+/** Get chat history for a specific session */
+export function fetchChatHistory(sessionId: string): Promise<ChatMessage[]> {
+  return get<ChatMessage[]>(`/chat/sessions/${sessionId}/history`)
 }
 
 /** Send a message and receive an SSE stream response */
