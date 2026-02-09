@@ -59,3 +59,16 @@ class RelatedMemoriesResponse(BaseModel):
     """Response containing related memories for the context sidebar."""
 
     memories: list[RelatedMemoryItem]
+
+
+class GenerateDraftRequest(BaseModel):
+    """Request to generate a journal draft from an evening chat session."""
+
+    session_id: UUID
+
+
+class GenerateDraftResponse(BaseModel):
+    """Response containing the AI-generated journal draft."""
+
+    draft: str
+    session_id: UUID

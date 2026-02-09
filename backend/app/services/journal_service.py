@@ -6,9 +6,10 @@ import logging
 from typing import Any
 from uuid import UUID
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage as LCHumanMessage, SystemMessage
 
 from app.config.llm import get_creative_llm
+from app.repositories.chat_repository import ChatRepository
 from app.repositories.graph_repository import GraphRepository
 from app.repositories.journal_repository import JournalRepository
 from app.repositories.vector_repository import VectorRepository
@@ -24,16 +25,32 @@ Respond in the same language as the journal entry.
 Format: Return only the questions, one per line, numbered."""
 
 
+DRAFT_PROMPT = """You are a reflective journal writing assistant. Based on the evening conversation between the user and their AI thinking partner, write a journal entry draft.
+
+**Guidelines:**
+- Write in the same language the user used during the conversation
+- Structure the journal as a first-person reflection (use "나는", "오늘은" etc. for Korean)
+- Include key topics, feelings, and insights discussed
+- Add a brief reflection or takeaway at the end
+- Use markdown formatting with headers
+- Keep it concise but meaningful (200-400 words)
+- Do NOT add fictional details; only reflect what was actually discussed
+
+**Output:** A well-structured journal entry draft in markdown format."""
+
+
 class JournalService:
     def __init__(
         self,
         journal_repo: JournalRepository,
         graph_repo: GraphRepository,
         vector_repo: VectorRepository | None = None,
+        chat_repo: ChatRepository | None = None,
     ):
         self.journal_repo = journal_repo
         self.graph_repo = graph_repo
         self.vector_repo = vector_repo
+        self.chat_repo = chat_repo
 
     def _analyze_sentiment(self, content: str) -> str:
         """
@@ -146,6 +163,41 @@ class JournalService:
             "distortions": detected,
             "wellness_score": max(0, 100 - len(detected) * 20),
         }
+
+    async def generate_draft_from_conversation(self, session_id: UUID) -> str:
+        """
+        Generate a journal draft from an evening chat session.
+        Reads the conversation history and asks LLM to write a reflective journal.
+        """
+        if not self.chat_repo:
+            raise ValueError("ChatRepository not available")
+
+        messages = await self.chat_repo.get_messages(session_id)
+        if not messages:
+            raise ValueError("No messages found in session")
+
+        # Build conversation transcript
+        transcript_lines = []
+        for msg in messages:
+            if isinstance(msg, LCHumanMessage):
+                transcript_lines.append(f"사용자: {msg.content}")
+            elif isinstance(msg, AIMessage):
+                transcript_lines.append(f"AI: {msg.content}")
+
+        transcript = "\n\n".join(transcript_lines)
+
+        # Truncate if too long
+        if len(transcript) > 10000:
+            transcript = transcript[:10000] + "\n\n[대화 내용 일부 생략...]"
+
+        llm = get_creative_llm()
+        lc_messages = [
+            SystemMessage(content=DRAFT_PROMPT),
+            LCHumanMessage(content=f"다음 evening 대화를 바탕으로 저널 초안을 작성해주세요:\n\n{transcript}"),
+        ]
+
+        response = await llm.ainvoke(lc_messages)
+        return response.content
 
     async def get_related_memories(
         self, user_id: UUID, content: str

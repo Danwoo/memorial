@@ -122,9 +122,10 @@ def get_journal_service(
     journal_repo: JournalRepository = Depends(get_journal_repository),
     graph_repo: GraphRepository = Depends(get_graph_repository),
     vector_repo: VectorRepository = Depends(get_vector_repository),
+    chat_repo: ChatRepository = Depends(get_chat_repository),
 ) -> JournalService:
     """Get JournalService instance."""
-    return JournalService(journal_repo, graph_repo, vector_repo)
+    return JournalService(journal_repo, graph_repo, vector_repo, chat_repo)
 
 
 def get_digest_service(

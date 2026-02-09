@@ -3,15 +3,25 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import ChatView from './ChatView'
 import type { RelatedMemory } from '../types'
-import { saveJournal, fetchRelatedMemories as fetchRelatedMemoriesApi } from '../api'
+import { saveJournal, fetchRelatedMemories as fetchRelatedMemoriesApi, generateJournalDraft, fetchChatSessions } from '../api'
 import './JournalView.css'
 
+interface ChatSession {
+  id: string
+  title: string
+  created_at: string
+}
+
 export default function JournalView() {
-  const [content, setContent] = useState('# 2024년 2월 7일 회고\n\n오늘은...\n\n')
+  const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+  const [content, setContent] = useState(`# ${today} 회고\n\n오늘은...\n\n`)
   const [isSaving, setIsSaving] = useState(false)
   const [relatedMemories, setRelatedMemories] = useState<RelatedMemory[]>([])
   const [isLoadingContext, setIsLoadingContext] = useState(false)
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [showSessionPicker, setShowSessionPicker] = useState(false)
 
   // Debounced fetch for related memories
   const loadRelatedMemories = useCallback(async (text: string) => {
@@ -43,6 +53,39 @@ export default function JournalView() {
     setTimeout(() => setSaveStatus(null), 3000)
   }
 
+  const handleGenerateDraft = async () => {
+    setIsGenerating(true)
+    try {
+      const sessionList = await fetchChatSessions()
+      if (sessionList.length === 0) {
+        showSaveStatus('error', '대화 세션이 없습니다. 먼저 Evening 모드로 대화해보세요.')
+        return
+      }
+      setSessions(sessionList)
+      setShowSessionPicker(true)
+    } catch (e) {
+      console.error(e)
+      showSaveStatus('error', '세션 목록을 불러오지 못했습니다.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleSelectSession = async (sessionId: string) => {
+    setShowSessionPicker(false)
+    setIsGenerating(true)
+    try {
+      const result = await generateJournalDraft(sessionId)
+      setContent(result.draft)
+      showSaveStatus('success', 'AI 초안이 생성되었습니다!')
+    } catch (e) {
+      console.error(e)
+      showSaveStatus('error', '초안 생성에 실패했습니다.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   const handleSave = async () => {
     if (!content.trim()) return
     setIsSaving(true)
@@ -68,6 +111,13 @@ export default function JournalView() {
                         {saveStatus.message}
                     </span>
                 )}
+                <button
+                    className="generate-btn"
+                    onClick={handleGenerateDraft}
+                    disabled={isGenerating}
+                >
+                    {isGenerating ? 'Generating...' : 'AI Draft'}
+                </button>
                 <button
                     className="save-btn"
                     onClick={handleSave}
@@ -113,6 +163,33 @@ export default function JournalView() {
         </div>
       </div>
       
+      {/* Session Picker Modal */}
+      {showSessionPicker && (
+        <div className="session-picker-overlay" onClick={() => setShowSessionPicker(false)}>
+          <div className="session-picker" onClick={(e) => e.stopPropagation()}>
+            <h3>대화 세션 선택</h3>
+            <p className="session-picker-desc">저널로 정리할 대화를 선택하세요</p>
+            <div className="session-list">
+              {sessions.map(session => (
+                <button
+                  key={session.id}
+                  className="session-item"
+                  onClick={() => handleSelectSession(session.id)}
+                >
+                  <span className="session-title">{session.title}</span>
+                  <span className="session-date">
+                    {new Date(session.created_at).toLocaleDateString('ko-KR')}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button className="session-cancel" onClick={() => setShowSessionPicker(false)}>
+              취소
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="companion-section">
         <div className="companion-header">
             <h3>Thinking Partner</h3>

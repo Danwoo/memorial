@@ -10,6 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.config.auth import get_user_id
 from app.config.dependencies import get_journal_service
 from app.schemas.journal_schema import (
+    GenerateDraftRequest,
+    GenerateDraftResponse,
     InsightsResponse,
     JournalCreate,
     RelatedMemoriesResponse,
@@ -91,6 +93,26 @@ async def analyze_insights(
         return InsightsResponse(
             has_distortions=False, distortions=[], wellness_score=100
         )
+
+
+@router.post("/generate-draft", response_model=GenerateDraftResponse)
+async def generate_draft(
+    request: GenerateDraftRequest,
+    user_id: UUID = Depends(get_user_id),
+    service: JournalService = Depends(get_journal_service),
+):
+    """Generate a journal draft from an evening chat session."""
+    try:
+        draft = await service.generate_draft_from_conversation(request.session_id)
+        return GenerateDraftResponse(draft=draft, session_id=request.session_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception:
+        logger.exception("Failed to generate journal draft")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to generate journal draft",
+        ) from None
 
 
 @router.post("/related-memories", response_model=RelatedMemoriesResponse)
