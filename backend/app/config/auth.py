@@ -60,11 +60,25 @@ async def get_current_user(
                     "role": user_data.get("role", "authenticated"),
                 }
 
+            # Dev bypass: treat invalid/expired tokens as dev user
+            if settings.DEBUG:
+                return {
+                    "id": DEFAULT_USER_ID,
+                    "email": "dev@example.com",
+                    "role": "authenticated",
+                }
+
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired token",
             )
     except httpx.RequestError:
+        if settings.DEBUG:
+            return {
+                "id": DEFAULT_USER_ID,
+                "email": "dev@example.com",
+                "role": "authenticated",
+            }
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Authentication service unavailable",

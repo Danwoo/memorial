@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 ALLOWED_NODE_LABELS = frozenset({
     "Concept", "Person", "Organization", "Location", "Event",
     "Technology", "Product", "Memory", "Topic", "Idea",
+    "Company", "Platform", "Framework", "Language", "Tool",
 })
 
 # Allowed relationship types
@@ -22,6 +23,7 @@ ALLOWED_REL_TYPES = frozenset({
     "RELATED_TO", "MENTIONS", "PART_OF", "CAUSED_BY", "DEPENDS_ON",
     "SIMILAR_TO", "OPPOSITE_OF", "DERIVED_FROM", "USED_BY", "CREATED_BY",
     "WORKS_AT", "LOCATED_IN", "BELONGS_TO", "HAS", "IS_A",
+    "USES", "USED_FOR", "BUILT_WITH", "INSPIRED_BY", "CONTAINS",
 })
 
 
@@ -148,6 +150,7 @@ class GraphRepository:
         safe_limit = max(1, min(int(limit), 1000))
         query = f"""
         MATCH (n)-[r]->(m)
+        WHERE NOT n:Memory AND NOT m:Memory
         RETURN
             n.name as source_name,
             n.id as source_id,
@@ -165,19 +168,23 @@ class GraphRepository:
 
         for record in results:
             source_id = record.get('source_id') or record.get('source_name')
+            source_label = record.get('source_label', 'Unknown')
             if source_id and source_id not in nodes:
                 nodes[source_id] = {
                     "id": source_id,
-                    "label": record.get('source_label', 'Unknown'),
-                    "name": record.get('source_name', source_id)
+                    "label": source_label,
+                    "group": source_label,
+                    "name": record.get('source_name', source_id),
                 }
 
             target_id = record.get('target_id') or record.get('target_name')
+            target_label = record.get('target_label', 'Unknown')
             if target_id and target_id not in nodes:
                 nodes[target_id] = {
                     "id": target_id,
-                    "label": record.get('target_label', 'Unknown'),
-                    "name": record.get('target_name', target_id)
+                    "label": target_label,
+                    "group": target_label,
+                    "name": record.get('target_name', target_id),
                 }
 
             if source_id and target_id:
@@ -191,6 +198,33 @@ class GraphRepository:
             "nodes": list(nodes.values()),
             "links": links
         }
+
+    def _sync_get_related_context(self, topic: str, depth: int) -> list[dict]:
+        """Synchronous: find entities related to a topic within N hops."""
+        safe_depth = max(1, min(depth, 3))
+        query = f"""
+        MATCH (start {{name: $topic}})
+        MATCH path = (start)-[r*1..{safe_depth}]-(related)
+        WHERE related.name IS NOT NULL AND related.name <> $topic
+        RETURN DISTINCT
+            related.name AS name,
+            labels(related)[0] AS label,
+            type(last(relationships(path))) AS rel_type,
+            length(path) AS distance
+        ORDER BY distance
+        LIMIT 15
+        """
+        return self.graph.query(query, {"topic": topic})
+
+    async def get_related_context(self, topic: str, depth: int = 2) -> list[dict]:
+        """Find entities related to a topic within N hops in the knowledge graph."""
+        if not self.graph:
+            return []
+        try:
+            return await asyncio.to_thread(self._sync_get_related_context, topic, depth)
+        except Exception:
+            logger.exception("Error fetching related context for '%s'", topic)
+            return []
 
     async def get_graph_data(self, limit: int = 100) -> dict[str, list]:
         """

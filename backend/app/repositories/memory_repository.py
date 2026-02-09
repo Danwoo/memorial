@@ -58,12 +58,14 @@ class MemoryRepository:
 
     async def get_by_id(self, memory_id: UUID, user_id: UUID) -> MemoryInDB | None:
         """Get a single memory by ID (with user_id for RLS)."""
-        result = await asyncio.to_thread(
-            self._select_single, str(memory_id), str(user_id)
-        )
-
-        if result.data:
-            return self._row_to_model(result.data)
+        try:
+            result = await asyncio.to_thread(
+                self._select_single, str(memory_id), str(user_id)
+            )
+            if result.data:
+                return self._row_to_model(result.data)
+        except Exception:
+            pass
         return None
 
     async def get_all(
