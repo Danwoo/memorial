@@ -32,17 +32,23 @@ class DigestService:
         self.journal_repo = journal_repo
         self.chat_repo = chat_repo
 
-    async def get_today_digest(self, user_id: UUID | None = None) -> dict[str, Any]:
+    async def get_today_digest(self, user_id: UUID | None = None, target_date: datetime | None = None) -> dict[str, Any]:
         """
-        Get comprehensive digest of today's activities.
+        Get comprehensive digest of a day's activities.
+
+        Args:
+            user_id: The user to fetch digest for
+            target_date: Specific date to get digest for (defaults to today)
 
         Returns:
-            - memories: Today's saved memories/resources
-            - journals: Today's journal entries
-            - chats: Today's chat sessions (if available)
+            - memories: Day's saved memories/resources
+            - journals: Day's journal entries
+            - chats: Day's chat sessions (if available)
             - insights: AI-generated questions and topics
         """
-        today = datetime.now(UTC).date()
+        today = target_date or datetime.now(UTC).date()
+        if isinstance(today, datetime):
+            today = today.date()
         today_start = datetime.combine(today, datetime.min.time(), tzinfo=UTC)
         today_end = datetime.combine(today, datetime.max.time(), tzinfo=UTC)
 
@@ -74,7 +80,7 @@ class DigestService:
                     "title": m.get("title", "Untitled"),
                     "type": m.get("source_type", "UNKNOWN"),
                     "summary": m.get("summary") or m.get("content", "")[:150],
-                    "tags": m.get("tags", []),
+                    "tags": m.get("tags") or [],
                     "created_at": m.get("created_at", "")
                 }
                 for m in memories[:10]  # Limit to 10

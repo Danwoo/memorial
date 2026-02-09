@@ -2,9 +2,10 @@
 Digest Router
 API endpoints for daily digest
 """
+from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.config.auth import get_user_id
 from app.config.dependencies import get_digest_service
@@ -36,5 +37,8 @@ async def get_digest_by_date(
     digest_service: DigestService = Depends(get_digest_service),
 ):
     """Get digest for a specific date (format: YYYY-MM-DD)."""
-    # TODO: Implement date-specific digest
-    return await digest_service.get_today_digest(user_id=user_id)
+    try:
+        target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD") from None
+    return await digest_service.get_today_digest(user_id=user_id, target_date=target_date)

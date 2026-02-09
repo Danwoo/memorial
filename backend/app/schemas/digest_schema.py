@@ -11,8 +11,8 @@ class DigestMemoryItem(BaseModel):
     id: str
     title: str
     type: str
-    summary: str
-    tags: list[str]
+    summary: str | None = None
+    tags: list[str] = []
     created_at: str
 
 
