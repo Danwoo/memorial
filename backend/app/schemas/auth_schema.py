@@ -1,25 +1,9 @@
 """
 Auth Schemas
-Pydantic models for authentication request/response payloads.
+Pydantic models for authentication response payloads.
 """
 
 from pydantic import BaseModel
-
-
-class LoginRequest(BaseModel):
-    email: str  # Supabase validates email format
-    password: str
-
-
-class SignupRequest(BaseModel):
-    email: str  # Supabase validates email format
-    password: str
-
-
-class AuthResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: dict
 
 
 class UserResponse(BaseModel):

@@ -1,10 +1,6 @@
 """
 Authentication Dependencies
 JWT token verification using Supabase Auth
-
-Dev bypass: When ``Settings.DEBUG`` is ``True`` and no Bearer token is
-provided, a default dev user (``DEFAULT_USER_ID``) is returned so the
-frontend can operate without a real login.
 """
 
 from uuid import UUID
@@ -13,7 +9,7 @@ import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.config.settings import DEFAULT_USER_ID, get_settings
+from app.config.settings import get_settings
 
 security = HTTPBearer(auto_error=False)
 
@@ -24,21 +20,12 @@ async def get_current_user(
     """
     Verify JWT token with Supabase and return user info.
 
-    - Returns ``None`` when no token is provided **and** debug mode is off
-      (for optional-auth endpoints).
-    - In ``DEBUG`` mode, returns a dev user when no token is provided.
+    - Returns ``None`` when no token is provided (for optional-auth endpoints).
     - Raises ``HTTPException(401)`` when a token is present but invalid.
     """
     settings = get_settings()
 
     if not credentials:
-        # Dev bypass: return mock user so dev frontend works without login
-        if settings.DEBUG:
-            return {
-                "id": DEFAULT_USER_ID,
-                "email": "dev@example.com",
-                "role": "authenticated",
-            }
         return None
 
     token = credentials.credentials
@@ -61,25 +48,11 @@ async def get_current_user(
                     "role": user_data.get("role", "authenticated"),
                 }
 
-            # Dev bypass: treat invalid/expired tokens as dev user
-            if settings.DEBUG:
-                return {
-                    "id": DEFAULT_USER_ID,
-                    "email": "dev@example.com",
-                    "role": "authenticated",
-                }
-
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired token",
             )
     except httpx.RequestError:
-        if settings.DEBUG:
-            return {
-                "id": DEFAULT_USER_ID,
-                "email": "dev@example.com",
-                "role": "authenticated",
-            }
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Authentication service unavailable",

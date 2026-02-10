@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import type { ReactNode } from 'react'
 import type { Session, UserIdentity } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import { fetchCurrentUser, storeProviderToken } from '../api'
+import { storeProviderToken } from '../api'
 import type { User } from '../types'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -11,21 +11,11 @@ interface AuthContextValue {
   user: User | null
   session: Session | null
   isLoading: boolean
-  signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
   signInWithGoogle: () => Promise<void>
   signInWithKakao: () => Promise<void>
-  signInAsDev: () => void
   signOut: () => Promise<void>
   linkProvider: (provider: 'google' | 'kakao') => Promise<void>
   unlinkProvider: (identity: UserIdentity) => Promise<void>
-}
-
-const DEV_USER: User = {
-  id: 'dev-user',
-  email: 'dev@example.com',
-  full_name: 'Developer',
-  avatar_url: '',
 }
 
 // ─── Context ─────────────────────────────────────────────────────────────────
@@ -63,14 +53,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ── Supabase auth listener ──────────────────────────────────────────────
 
   useEffect(() => {
-    // Check for persisted dev session
-    const devSession = localStorage.getItem('dev_session')
-    if (devSession === 'true') {
-      setUser(DEV_USER)
-      setIsLoading(false)
-      return
-    }
-
     if (!supabase) {
       setIsLoading(false)
       return
@@ -128,49 +110,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [syncTokenToStorage])
 
-  // ── Fallback: token-based auth without Supabase ─────────────────────────
-
-  useEffect(() => {
-    if (supabase || localStorage.getItem('dev_session') === 'true') return
-
-    const token = localStorage.getItem('auth_token')
-    if (token) {
-      fetchCurrentUser()
-        .then((userData) => {
-          setUser(userData)
-        })
-        .catch(() => {
-          localStorage.removeItem('auth_token')
-        })
-        .finally(() => setIsLoading(false))
-    }
-  }, [])
-
   // ── Auth methods ────────────────────────────────────────────────────────
-
-  const signIn = useCallback(async (email: string, password: string) => {
-    if (supabase) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) throw error
-    } else {
-      const { login } = await import('../api')
-      const data = await login({ email, password })
-      syncTokenToStorage(data.access_token)
-      setUser(data.user)
-    }
-  }, [syncTokenToStorage])
-
-  const signUp = useCallback(async (email: string, password: string) => {
-    if (supabase) {
-      const { error } = await supabase.auth.signUp({ email, password })
-      if (error) throw error
-    } else {
-      const { signup } = await import('../api')
-      const data = await signup({ email, password })
-      syncTokenToStorage(data.access_token)
-      setUser(data.user)
-    }
-  }, [syncTokenToStorage])
 
   const signInWithGoogle = useCallback(async () => {
     if (!supabase) {
@@ -199,16 +139,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (error) throw error
   }, [])
 
-  const signInAsDev = useCallback(() => {
-    localStorage.setItem('dev_session', 'true')
-    setUser(DEV_USER)
-  }, [])
-
   const signOut = useCallback(async () => {
     if (supabase) {
       await supabase.auth.signOut()
     }
-    localStorage.removeItem('dev_session')
     syncTokenToStorage(null)
     setUser(null)
     setSession(null)
@@ -246,10 +180,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const value = useMemo<AuthContextValue>(
     () => ({
       user, session, isLoading,
-      signIn, signUp, signInWithGoogle, signInWithKakao, signInAsDev, signOut,
+      signInWithGoogle, signInWithKakao, signOut,
       linkProvider, unlinkProvider,
     }),
-    [user, session, isLoading, signIn, signUp, signInWithGoogle, signInWithKakao, signInAsDev, signOut, linkProvider, unlinkProvider],
+    [user, session, isLoading, signInWithGoogle, signInWithKakao, signOut, linkProvider, unlinkProvider],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

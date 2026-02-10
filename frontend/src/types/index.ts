@@ -54,7 +54,5 @@ export type {
 
 export type {
   User,
-  AuthCredentials,
-  AuthResponse,
   View,
 } from './auth'

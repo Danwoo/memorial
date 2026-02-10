@@ -4,13 +4,8 @@ Pydantic Settings for environment variable management
 """
 
 from functools import lru_cache
-from uuid import UUID
 
 from pydantic_settings import BaseSettings
-
-# Single source of truth for the development mock user ID.
-# Used by the DEBUG auth bypass when no JWT token is provided.
-DEFAULT_USER_ID: UUID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 class Settings(BaseSettings):
