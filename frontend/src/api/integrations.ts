@@ -1,4 +1,4 @@
-import { get, post } from './client'
+import { get, post, put } from './client'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -14,6 +14,32 @@ export interface IntegrationStatus {
   providers: ProviderInfo[]
   kakao_channel: string
   chrome_extension: string
+  bot_enabled: boolean
+  bot_delivery_hour: number | null
+}
+
+export interface DeliveryLogEntry {
+  digest_date: string
+  status: 'success' | 'failed' | 'token_expired' | 'no_content'
+  error_message: string | null
+  delivered_at: string
+}
+
+export interface BotSettings {
+  enabled: boolean
+  delivery_hour: number
+  include_memories: boolean
+  include_journals: boolean
+  include_insights: boolean
+  last_delivery: DeliveryLogEntry | null
+}
+
+export interface BotSettingsUpdate {
+  enabled?: boolean
+  delivery_hour?: number
+  include_memories?: boolean
+  include_journals?: boolean
+  include_insights?: boolean
 }
 
 // ─── API Functions ───────────────────────────────────────────────────────────
@@ -30,4 +56,12 @@ export async function storeProviderToken(
     provider_token: providerToken,
     provider_refresh_token: providerRefreshToken ?? null,
   })
+}
+
+export async function getBotSettings(): Promise<BotSettings> {
+  return get<BotSettings>('/integrations/bot-settings')
+}
+
+export async function updateBotSettings(settings: BotSettingsUpdate): Promise<BotSettings> {
+  return put<BotSettings>('/integrations/bot-settings', settings)
 }

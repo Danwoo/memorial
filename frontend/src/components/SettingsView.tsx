@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getIntegrationStatus } from '../api'
-import type { ProviderInfo } from '../api/integrations'
+import { getIntegrationStatus, getBotSettings, updateBotSettings } from '../api'
+import type { ProviderInfo, BotSettings, BotSettingsUpdate } from '../api/integrations'
 import './SettingsView.css'
 
 const PROVIDER_LABELS: Record<string, string> = {
@@ -20,6 +20,8 @@ export default function SettingsView() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [botSettings, setBotSettings] = useState<BotSettings | null>(null)
+  const [botLoading, setBotLoading] = useState(false)
 
   // Check for link callback result in URL params
   useEffect(() => {
@@ -38,13 +40,21 @@ export default function SettingsView() {
     return () => clearTimeout(timer)
   }, [toast])
 
-  // Load integration status
+  // Load integration status + bot settings
   const loadStatus = useCallback(async () => {
     try {
       setLoading(true)
       const status = await getIntegrationStatus()
       setProviders(status.providers)
       setEmail(status.email)
+
+      // Load bot settings in parallel
+      try {
+        const bot = await getBotSettings()
+        setBotSettings(bot)
+      } catch {
+        setBotSettings(null)
+      }
     } catch {
       setProviders([])
     } finally {
@@ -98,6 +108,21 @@ export default function SettingsView() {
     }
   }
 
+  const handleBotSettingChange = async (update: BotSettingsUpdate) => {
+    try {
+      setBotLoading(true)
+      const updated = await updateBotSettings(update)
+      setBotSettings(updated)
+      setToast({ type: 'success', message: '다이제스트 설정이 저장되었습니다' })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '설정 저장에 실패했습니다'
+      setToast({ type: 'error', message })
+    } finally {
+      setBotLoading(false)
+    }
+  }
+
+  const kakaoLinked = isProviderLinked('kakao')
   const primaryProvider = providers.length > 0 ? providers[0].provider : null
 
   return (
@@ -202,11 +227,11 @@ export default function SettingsView() {
         )}
       </section>
 
-      {/* Section 3: Service Integration (placeholder) */}
+      {/* Section 3: KakaoTalk Daily Digest */}
       <section className="settings-section">
         <h2 className="section-title">서비스 연동</h2>
         <div className="provider-list">
-          <div className="provider-card glass-card">
+          <div className="bot-settings-card glass-card">
             <div className="provider-info">
               <div className="provider-icon kakao-icon">
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
@@ -214,13 +239,95 @@ export default function SettingsView() {
                 </svg>
               </div>
               <div className="provider-details">
-                <h3>카카오톡 채널 봇</h3>
-                <p>카카오톡 채널을 통해 리마인더와 다이제스트를 받을 수 있습니다</p>
+                <h3>카카오톡 일일 다이제스트</h3>
+                <p>매일 정해진 시간에 오늘의 기록을 카카오톡으로 받아보세요</p>
               </div>
             </div>
-            <div className="provider-actions">
-              <span className="status-badge upcoming">준비 중</span>
-            </div>
+
+            {!kakaoLinked ? (
+              <div className="bot-prereq-notice">
+                카카오 계정 연결이 필요합니다. 위에서 Kakao 계정을 먼저 연결해주세요.
+              </div>
+            ) : (
+              <div className="bot-controls">
+                {/* Enable toggle */}
+                <div className="bot-setting-row">
+                  <span className="bot-setting-label">다이제스트 활성화</span>
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={botSettings?.enabled ?? false}
+                      onChange={(e) => handleBotSettingChange({ enabled: e.target.checked })}
+                      disabled={botLoading}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+
+                {/* Delivery hour */}
+                <div className="bot-setting-row">
+                  <span className="bot-setting-label">발송 시간</span>
+                  <select
+                    value={botSettings?.delivery_hour ?? 21}
+                    onChange={(e) => handleBotSettingChange({ delivery_hour: Number(e.target.value) })}
+                    disabled={botLoading || !botSettings?.enabled}
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>{String(i).padStart(2, '0')}:00</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Content checkboxes */}
+                <div className="bot-setting-row">
+                  <span className="bot-setting-label">포함 항목</span>
+                  <div className="bot-checkboxes">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={botSettings?.include_memories ?? true}
+                        onChange={(e) => handleBotSettingChange({ include_memories: e.target.checked })}
+                        disabled={botLoading || !botSettings?.enabled}
+                      />
+                      기억
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={botSettings?.include_journals ?? true}
+                        onChange={(e) => handleBotSettingChange({ include_journals: e.target.checked })}
+                        disabled={botLoading || !botSettings?.enabled}
+                      />
+                      일기
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={botSettings?.include_insights ?? true}
+                        onChange={(e) => handleBotSettingChange({ include_insights: e.target.checked })}
+                        disabled={botLoading || !botSettings?.enabled}
+                      />
+                      인사이트
+                    </label>
+                  </div>
+                </div>
+
+                {/* Last delivery status */}
+                {botSettings?.last_delivery && (
+                  <div className="bot-setting-row">
+                    <span className="bot-setting-label">최근 발송</span>
+                    <span className={`delivery-status ${botSettings.last_delivery.status}`}>
+                      {botSettings.last_delivery.status === 'success' && '발송 완료'}
+                      {botSettings.last_delivery.status === 'failed' && '발송 실패'}
+                      {botSettings.last_delivery.status === 'token_expired' && '토큰 만료'}
+                      {botSettings.last_delivery.status === 'no_content' && '콘텐츠 없음'}
+                      {' — '}
+                      {new Date(botSettings.last_delivery.delivered_at).toLocaleString('ko-KR')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="provider-card glass-card">
