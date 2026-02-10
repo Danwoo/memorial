@@ -67,6 +67,7 @@ class MemoryService:
         relations: list[dict] | None = None,
         source_url: str | None = None,
         source_type: str | None = None,
+        user_id: str | None = None,
     ) -> bool:
         """
         Update memory after Librarian agent processing.
@@ -82,9 +83,9 @@ class MemoryService:
             source_type=source_type,
         )
 
-        # Save graph data if available
+        # Save graph data if available (pass user_id for graph filtering)
         if self.graph_repo and entities:
-            await self.graph_repo.save_entities(entities, str(memory_id))
+            await self.graph_repo.save_entities(entities, str(memory_id), user_id)
 
         if self.graph_repo and relations:
             await self.graph_repo.save_relations(relations)

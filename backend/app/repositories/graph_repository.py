@@ -117,7 +117,7 @@ class GraphRepository:
         """Check if Neo4j is connected."""
         return self.graph is not None
 
-    def _sync_save_entities(self, entities: list[dict], source_id: str) -> None:
+    def _sync_save_entities(self, entities: list[dict], source_id: str, user_id: str | None = None) -> None:
         """Synchronous implementation of save_entities."""
         for entity in entities:
             label = _validate_label(entity.get("type", "Concept"))
@@ -128,8 +128,14 @@ class GraphRepository:
             query = f"MERGE (e:{label} {{name: $name}})"
             self.graph.query(query, {"name": name})
 
-        # Link entities to source memory
-        self.graph.query("MERGE (m:Memory {id: $id})", {"id": str(source_id)})
+        # Link entities to source memory (with user_id for filtering)
+        if user_id:
+            self.graph.query(
+                "MERGE (m:Memory {id: $id}) SET m.user_id = $user_id",
+                {"id": str(source_id), "user_id": user_id},
+            )
+        else:
+            self.graph.query("MERGE (m:Memory {id: $id})", {"id": str(source_id)})
 
         for entity in entities:
             name = entity.get("name")
@@ -142,11 +148,11 @@ class GraphRepository:
             """
             self.graph.query(query, {"id": str(source_id), "name": name})
 
-    async def save_entities(self, entities: list[dict], source_id: str) -> None:
+    async def save_entities(self, entities: list[dict], source_id: str, user_id: str | None = None) -> None:
         """Save entities to Neo4j graph."""
         if not self.graph:
             return
-        await asyncio.to_thread(self._sync_save_entities, entities, source_id)
+        await asyncio.to_thread(self._sync_save_entities, entities, source_id, user_id)
 
     def _sync_save_relations(self, relations: list[dict]) -> None:
         """Synchronous implementation of save_relations."""
@@ -170,50 +176,101 @@ class GraphRepository:
             return
         await asyncio.to_thread(self._sync_save_relations, relations)
 
-    def _sync_get_graph_data(self, limit: int) -> dict[str, list]:
+    def _sync_get_graph_data(self, limit: int, user_id: str | None = None) -> dict[str, list]:
         """Synchronous implementation of get_graph_data."""
         safe_limit = max(1, min(int(limit), MAX_GRAPH_QUERY_LIMIT))
-        query = f"""
-        MATCH (n)-[r]->(m)
-        WHERE NOT n:Memory AND NOT m:Memory
-        RETURN
-            n.name as source_name,
-            n.id as source_id,
-            labels(n)[0] as source_label,
-            m.name as target_name,
-            m.id as target_id,
-            labels(m)[0] as target_label,
-            type(r) as rel_type
-        LIMIT {safe_limit}
-        """
-        results = self.graph.query(query)
 
-        nodes = {}
+        if user_id:
+            # Filter entities connected to this user's Memory nodes
+            query = f"""
+            MATCH (mem:Memory {{user_id: $user_id}})-[:MENTIONS]->(e)
+            WITH COLLECT(DISTINCT e) AS userEntities
+            UNWIND userEntities AS n
+            MATCH (n)-[r]->(m)
+            WHERE m IN userEntities
+            RETURN
+                n.name AS source_name,
+                labels(n)[0] AS source_label,
+                m.name AS target_name,
+                labels(m)[0] AS target_label,
+                type(r) AS rel_type
+            LIMIT {safe_limit}
+            """
+            results = self.graph.query(query, {"user_id": user_id})
+        else:
+            query = f"""
+            MATCH (n)-[r]->(m)
+            WHERE NOT n:Memory AND NOT m:Memory
+            RETURN
+                n.name AS source_name,
+                labels(n)[0] AS source_label,
+                m.name AS target_name,
+                labels(m)[0] AS target_label,
+                type(r) AS rel_type
+            LIMIT {safe_limit}
+            """
+            results = self.graph.query(query)
+
+        nodes: dict[str, dict] = {}
         links = []
 
         for record in results:
-            source_id = record.get("source_id") or record.get("source_name")
+            source_name = record.get("source_name")
             source_label = record.get("source_label", "Unknown")
-            if source_id and source_id not in nodes:
-                nodes[source_id] = {
-                    "id": source_id,
+            if source_name and source_name not in nodes:
+                nodes[source_name] = {
+                    "id": source_name,
                     "label": source_label,
                     "group": source_label,
-                    "name": record.get("source_name", source_id),
+                    "name": source_name,
+                    "val": 1,
+                    "properties": {},
                 }
 
-            target_id = record.get("target_id") or record.get("target_name")
+            target_name = record.get("target_name")
             target_label = record.get("target_label", "Unknown")
-            if target_id and target_id not in nodes:
-                nodes[target_id] = {
-                    "id": target_id,
+            if target_name and target_name not in nodes:
+                nodes[target_name] = {
+                    "id": target_name,
                     "label": target_label,
                     "group": target_label,
-                    "name": record.get("target_name", target_id),
+                    "name": target_name,
+                    "val": 1,
+                    "properties": {},
                 }
 
-            if source_id and target_id:
-                links.append({"source": source_id, "target": target_id, "type": record.get("rel_type", "RELATED_TO")})
+            if source_name and target_name:
+                links.append(
+                    {
+                        "source": source_name,
+                        "target": target_name,
+                        "type": record.get("rel_type", "RELATED_TO"),
+                    }
+                )
+                # Increment degree for node sizing
+                nodes[source_name]["val"] += 1
+                nodes[target_name]["val"] += 1
+
+        # Also include orphan entities (connected to user's memories but no inter-entity relations)
+        if user_id:
+            orphan_query = """
+            MATCH (mem:Memory {user_id: $user_id})-[:MENTIONS]->(e)
+            WHERE NOT (e)-[]->() AND NOT ()-[]->(e)
+            RETURN DISTINCT e.name AS name, labels(e)[0] AS label
+            """
+            orphan_results = self.graph.query(orphan_query, {"user_id": user_id})
+            for record in orphan_results:
+                name = record.get("name")
+                label = record.get("label", "Unknown")
+                if name and name not in nodes:
+                    nodes[name] = {
+                        "id": name,
+                        "label": label,
+                        "group": label,
+                        "name": name,
+                        "val": 1,
+                        "properties": {},
+                    }
 
         return {"nodes": list(nodes.values()), "links": links}
 
@@ -260,16 +317,17 @@ class GraphRepository:
         except Exception:
             logger.exception("Error deleting memory node '%s' from Neo4j", memory_id)
 
-    async def get_graph_data(self, limit: int = 100) -> dict[str, list]:
+    async def get_graph_data(self, limit: int = 100, user_id: str | None = None) -> dict[str, list]:
         """
         Retrieve graph data for visualization.
         Returns nodes and links in D3 compatible format.
+        Filters by user_id when provided.
         """
         if not self.graph:
             return {"nodes": [], "links": []}
 
         try:
-            return await asyncio.to_thread(self._sync_get_graph_data, limit)
+            return await asyncio.to_thread(self._sync_get_graph_data, limit, user_id)
         except Exception:
             logger.exception("Error fetching graph data")
             return {"nodes": [], "links": []}

@@ -30,6 +30,6 @@ async def get_graph(
         return {"nodes": [], "links": []}
 
     try:
-        return await graph_service.get_visualization_data(limit)
+        return await graph_service.get_visualization_data(limit, str(user_id))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

@@ -13,6 +13,9 @@ class GraphNode(BaseModel):
 
     id: str
     label: str
+    name: str = ""
+    group: str = ""
+    val: int = 1
     properties: dict[str, Any] = {}
 
 

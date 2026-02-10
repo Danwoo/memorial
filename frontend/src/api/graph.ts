@@ -6,6 +6,8 @@ interface GraphApiResponse {
     label: string
     properties: Record<string, unknown>
     name?: string
+    group?: string
+    val?: number
   }[]
   links: {
     source: string
@@ -15,6 +17,6 @@ interface GraphApiResponse {
 }
 
 /** Fetch knowledge graph data */
-export function fetchGraph(limit = 200): Promise<GraphApiResponse> {
+export function fetchGraph(limit = 300): Promise<GraphApiResponse> {
   return get<GraphApiResponse>(`/graph?limit=${limit}`)
 }

@@ -42,12 +42,12 @@ class GraphService:
             logger.exception("Error saving to graph")
             return False
 
-    async def get_visualization_data(self, limit: int = 100) -> dict[str, Any]:
+    async def get_visualization_data(self, limit: int = 100, user_id: str | None = None) -> dict[str, Any]:
         """
         Get graph data for D3 visualization.
-        Returns nodes and links from Neo4j.
+        Returns nodes and links from Neo4j, filtered by user_id.
         """
         if not self.is_available:
             return {"nodes": [], "links": []}
 
-        return await self.graph_repo.get_graph_data(limit)
+        return await self.graph_repo.get_graph_data(limit, user_id)

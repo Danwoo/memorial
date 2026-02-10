@@ -50,12 +50,10 @@ async def save_node(state: AgentState) -> dict:
 
         source_url = state.get("source_url")
         source_type = "WEB" if source_url else None
+        user_id = state.get("user_id")
 
         # Determine status
         if classification == "SPAM":
-            # For SPAM, we might want to delete or mark as discarded
-            # Service currently doesn't simulate "discard" logic in update_memory_after_processing
-            # So we might need to handle it or just mark completed with SPAM tag
             tags.append("SPAM")
             await memory_service.update_memory_after_processing(
                 memory_id=UUID(memory_id),
@@ -63,9 +61,8 @@ async def save_node(state: AgentState) -> dict:
                 tags=tags,
                 source_url=source_url,
                 source_type=source_type,
+                user_id=str(user_id) if user_id else None,
             )
-            # Maybe delete embedding? Service creates embedding on create.
-            pass
         else:
             # Normal Flow
             await memory_service.update_memory_after_processing(
@@ -76,6 +73,7 @@ async def save_node(state: AgentState) -> dict:
                 relations=relations,
                 source_url=source_url,
                 source_type=source_type,
+                user_id=str(user_id) if user_id else None,
             )
 
         return {"next_step": "end"}

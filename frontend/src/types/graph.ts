@@ -13,13 +13,14 @@ export interface GraphNodeProperties {
 export interface GraphNode {
   id: string
   label: string
+  group?: string
   properties: GraphNodeProperties
   val?: number
   color?: string
   name?: string
   x?: number
   y?: number
-  url?: string
+  z?: number
 }
 
 /** A link (edge) between two graph nodes */

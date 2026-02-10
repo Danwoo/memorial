@@ -188,6 +188,36 @@ async def backfill_memories(
     return {"queued": queued, "total": total}
 
 
+@router.post("/reprocess-all", status_code=200)
+async def reprocess_all_memories(
+    background_tasks: BackgroundTasks,
+    user_id: UUID = Depends(get_user_id),
+    memory_service: MemoryService = Depends(get_memory_service),
+):
+    """Re-process ALL memories through Librarian pipeline (for Neo4j graph backfill)."""
+    page = 1
+    queued = 0
+    total = 0
+    while True:
+        items, count = await memory_service.list_memories(user_id=user_id, page=page, limit=100)
+        total = count
+        if not items:
+            break
+        for item in items:
+            background_tasks.add_task(
+                _process_with_librarian,
+                str(item.id),
+                item.content,
+                str(user_id),
+            )
+            queued += 1
+        if queued >= total:
+            break
+        page += 1
+
+    return {"queued": queued, "total": total}
+
+
 @router.get("", response_model=MemoryListResponse)
 async def list_memories(
     page: int = Query(1, ge=1),

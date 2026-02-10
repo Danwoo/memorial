@@ -1,241 +1,371 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import ForceGraph2D from 'react-force-graph-2d'
+import ForceGraph3D from 'react-force-graph-3d'
+import SpriteText from 'three-spritetext'
+import * as THREE from 'three'
 import type { GraphNode, GraphLink, GraphData } from '../types'
 import { fetchGraph } from '../api'
 import './GraphView.css'
 
 // Color palette for different node types
 const NODE_COLORS: Record<string, string> = {
-  'Memory': '#a78bfa',      // Purple
-  'Entity': '#34d399',      // Emerald
-  'Concept': '#60a5fa',     // Blue
-  'Person': '#f472b6',      // Pink
-  'Organization': '#fb923c', // Orange
-  'Company': '#fb923c',     // Orange
-  'Technology': '#22d3ee',   // Cyan
-  'Platform': '#a3e635',     // Lime
-  'Product': '#e879f9',      // Fuchsia
-  'Location': '#fbbf24',     // Amber
-  'Event': '#f87171',        // Red
-  'Project': '#fbbf24',     // Amber
-  'Topic': '#818cf8',       // Indigo
-  'Resource': '#2dd4bf',    // Teal
-  'default': '#9ca3af'      // Gray
+  Memory: '#a78bfa',
+  Entity: '#34d399',
+  Concept: '#60a5fa',
+  Person: '#f472b6',
+  Organization: '#fb923c',
+  Company: '#fb923c',
+  Technology: '#22d3ee',
+  Platform: '#a3e635',
+  Product: '#e879f9',
+  Location: '#fbbf24',
+  Event: '#f87171',
+  Topic: '#818cf8',
+  Idea: '#818cf8',
+  Framework: '#22d3ee',
+  Language: '#60a5fa',
+  Tool: '#34d399',
+  default: '#9ca3af',
 }
 
-const NODE_SIZES: Record<string, number> = {
-  'Memory': 12,
-  'Entity': 8,
-  'Concept': 10,
-  'Person': 10,
-  'Organization': 11,
-  'Company': 11,
-  'Technology': 10,
-  'Platform': 10,
-  'Product': 10,
-  'Location': 9,
-  'Event': 9,
-  'Project': 14,
-  'Topic': 9,
-  'Resource': 11,
-  'default': 6
-}
-
-/** Minimal shape for force-graph node with coordinates (optional before simulation) */
-interface ForceNode extends GraphNode {
-  x?: number
-  y?: number
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyNode = GraphNode & { x?: number; y?: number; z?: number; [k: string]: any }
 
 export default function GraphView() {
   const navigate = useNavigate()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fgRef = useRef<any>(null)
+  const nodeMaterials = useRef<Map<string, THREE.MeshLambertMaterial>>(new Map())
+
   const [data, setData] = useState<GraphData>({ nodes: [], links: [] })
   const [loading, setLoading] = useState(true)
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
-  const [highlightNodes, setHighlightNodes] = useState<Set<string>>(new Set())
-  const [highlightLinks, setHighlightLinks] = useState<Set<GraphLink>>(new Set())
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const fgRef = useRef<any>()
+  const [highlightLinks, setHighlightLinks] = useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = useState('')
+  const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
 
-  const processNodes = useCallback((nodes: { id: string; label: string; properties: Record<string, unknown>; name?: string }[]): GraphNode[] =>
-    nodes.map(n => ({
-      ...n,
-      val: NODE_SIZES[n.label] || NODE_SIZES['default'],
-      color: NODE_COLORS[n.label] || NODE_COLORS['default'],
-      name: (n.properties?.title as string) || (n.properties?.name as string) || n.name || n.id,
-    })), [])
-
+  // Fetch graph data
   const fetchGraphData = useCallback(async () => {
     try {
       setLoading(true)
-      const json = await fetchGraph()
-      setData({ nodes: processNodes(json.nodes), links: json.links })
+      const json = await fetchGraph(300)
+      const processedNodes: GraphNode[] = json.nodes.map(n => ({
+        ...n,
+        val: n.val || 1,
+        color: NODE_COLORS[n.label] || NODE_COLORS['default'],
+        name: n.name || (n.properties?.name as string) || (n.properties?.title as string) || n.id,
+      }))
+      setData({ nodes: processedNodes, links: json.links })
     } catch (err) {
       console.error('Failed to fetch graph data:', err)
     } finally {
       setLoading(false)
     }
-  }, [processNodes])
+  }, [])
 
   useEffect(() => {
     fetchGraphData()
   }, [fetchGraphData])
 
-  // Custom node canvas rendering for better labels
-  const paintNode = useCallback((node: ForceNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
-    const label = node.name || node.id
-    const fontSize = Math.max(12 / globalScale, 3)
-    const nodeSize = node.val || 6
-    const isHighlighted = highlightNodes.has(node.id)
-    const isSelected = selectedNode?.id === node.id
-    const nx = node.x ?? 0
-    const ny = node.y ?? 0
+  // Filtered data based on hidden types
+  const filteredData = useMemo(() => {
+    if (hiddenTypes.size === 0) return data
+    const visibleNodes = data.nodes.filter(n => !hiddenTypes.has(n.label))
+    const visibleIds = new Set(visibleNodes.map(n => n.id))
+    const visibleLinks = data.links.filter(l => {
+      const sid = typeof l.source === 'object' ? l.source.id : l.source
+      const tid = typeof l.target === 'object' ? l.target.id : l.target
+      return visibleIds.has(sid) && visibleIds.has(tid)
+    })
+    return { nodes: visibleNodes, links: visibleLinks }
+  }, [data, hiddenTypes])
 
-    // Draw node circle
-    ctx.beginPath()
-    ctx.arc(nx, ny, nodeSize, 0, 2 * Math.PI, false)
-    ctx.fillStyle = node.color || NODE_COLORS['default']
-    if (isHighlighted || isSelected) {
-      ctx.shadowColor = node.color || NODE_COLORS['default']
-      ctx.shadowBlur = 15
-    }
-    ctx.fill()
-    ctx.shadowBlur = 0
+  // Unique node types for legend
+  const nodeTypes = useMemo(
+    () => [...new Set(data.nodes.map(n => n.label))].sort(),
+    [data.nodes],
+  )
 
-    // Draw border for selected/highlighted nodes
-    if (isSelected) {
-      ctx.strokeStyle = '#fff'
-      ctx.lineWidth = 2 / globalScale
-      ctx.stroke()
-    } else if (isHighlighted) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)'
-      ctx.lineWidth = 1 / globalScale
-      ctx.stroke()
-    }
+  // 3D node rendering: sphere + label
+  const nodeThreeObject = useCallback((node: AnyNode) => {
+    const val = node.val || 1
+    const size = Math.max(1.5, Math.sqrt(val) * 1.5)
+    const color = node.color || NODE_COLORS['default']
 
-    // Draw label if zoomed in enough
-    if (globalScale > 0.8) {
-      ctx.font = `${fontSize}px Inter, sans-serif`
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
+    const group = new THREE.Group()
 
-      // Text background
-      const textWidth = ctx.measureText(label.substring(0, 20)).width
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
-      ctx.fillRect(
-        nx - textWidth / 2 - 2,
-        ny + nodeSize + 3,
-        textWidth + 4,
-        fontSize + 2
-      )
+    // Sphere
+    const geo = new THREE.SphereGeometry(size, 16, 12)
+    const mat = new THREE.MeshLambertMaterial({
+      color,
+      transparent: true,
+      opacity: 0.9,
+    })
+    const mesh = new THREE.Mesh(geo, mat)
+    group.add(mesh)
 
-      // Text
-      ctx.fillStyle = '#fff'
-      ctx.fillText(label.substring(0, 20), nx, ny + nodeSize + 3 + fontSize / 2)
-    }
-  }, [highlightNodes, selectedNode])
+    // Store material ref for hover highlighting
+    nodeMaterials.current.set(node.id, mat)
 
-  // Handle node hover for highlighting connections
-  const handleNodeHover = useCallback((node: GraphNode | null) => {
-    setHighlightNodes(new Set())
-    setHighlightLinks(new Set())
+    // Label sprite
+    const label = (node.name || node.id).substring(0, 24)
+    const sprite = new SpriteText(label)
+    sprite.color = '#ffffff'
+    sprite.textHeight = Math.max(1.2, size * 0.5)
+    sprite.backgroundColor = 'rgba(0,0,0,0.6)'
+    sprite.padding = [0.5, 1] as unknown as number
+    sprite.borderRadius = 1
+    sprite.position.y = -(size + 2)
+    group.add(sprite)
 
+    return group
+  }, [])
+
+  // Get link key for highlight matching
+  const getLinkKey = useCallback((link: GraphLink) => {
+    const sid = typeof link.source === 'object' ? link.source.id : link.source
+    const tid = typeof link.target === 'object' ? link.target.id : link.target
+    return `${sid}-${tid}`
+  }, [])
+
+  // Hover: highlight connected nodes/links via direct Three.js material manipulation
+  const handleNodeHover = useCallback((node: AnyNode | null) => {
     if (node) {
-      const connectedNodeIds = new Set<string>()
-      const connectedLinks = new Set<GraphLink>()
+      const connectedIds = new Set<string>([node.id])
+      const connectedLinkKeys = new Set<string>()
 
-      data.links.forEach(link => {
-        const sourceId = typeof link.source === 'object' ? link.source.id : link.source
-        const targetId = typeof link.target === 'object' ? link.target.id : link.target
-
-        if (sourceId === node.id || targetId === node.id) {
-          connectedNodeIds.add(sourceId)
-          connectedNodeIds.add(targetId)
-          connectedLinks.add(link)
+      filteredData.links.forEach(link => {
+        const sid = typeof link.source === 'object' ? link.source.id : link.source
+        const tid = typeof link.target === 'object' ? link.target.id : link.target
+        if (sid === node.id || tid === node.id) {
+          connectedIds.add(sid)
+          connectedIds.add(tid)
+          connectedLinkKeys.add(`${sid}-${tid}`)
         }
       })
 
-      setHighlightNodes(connectedNodeIds)
-      setHighlightLinks(connectedLinks)
-    }
-  }, [data.links])
+      // Dim non-connected nodes
+      nodeMaterials.current.forEach((mat, id) => {
+        mat.opacity = connectedIds.has(id) ? 1.0 : 0.1
+      })
 
-  const handleNodeClick = useCallback((node: ForceNode) => {
+      setHighlightLinks(connectedLinkKeys)
+    } else {
+      // Restore all nodes
+      nodeMaterials.current.forEach(mat => {
+        mat.opacity = 0.9
+      })
+      setHighlightLinks(new Set())
+    }
+  }, [filteredData.links])
+
+  // Click: fly camera to node
+  const handleNodeClick = useCallback((node: AnyNode) => {
     setSelectedNode(node)
-    fgRef.current?.centerAt(node.x, node.y, 500)
-    fgRef.current?.zoom(3, 500)
+    const distance = 60
+    const distRatio = 1 + distance / Math.hypot(node.x || 1, node.y || 1, node.z || 1)
+    fgRef.current?.cameraPosition(
+      { x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio },
+      { x: node.x || 0, y: node.y || 0, z: node.z || 0 },
+      1000,
+    )
   }, [])
 
-  const handleStartChat = useCallback((node: GraphNode) => {
-    const topic = node.name || node.id
-    navigate('/chat', { state: { topic, mode: 'insight' } })
-  }, [navigate])
+  // Background click: deselect
+  const handleBackgroundClick = useCallback(() => {
+    setSelectedNode(null)
+    setHighlightLinks(new Set())
+    nodeMaterials.current.forEach(mat => {
+      mat.opacity = 0.9
+    })
+  }, [])
 
-  // Get unique node types for legend
-  const nodeTypes = [...new Set(data.nodes.map(n => n.label))]
+  // Search: find node and fly to it
+  const handleSearch = useCallback(
+    (query: string) => {
+      if (!query.trim()) return
+      const q = query.toLowerCase()
+      const match = filteredData.nodes.find(n =>
+        (n.name || n.id).toLowerCase().includes(q),
+      )
+      if (match && fgRef.current) {
+        const node = match as AnyNode
+        setSelectedNode(match)
+        const distance = 60
+        const distRatio = 1 + distance / Math.hypot(node.x || 1, node.y || 1, node.z || 1)
+        fgRef.current.cameraPosition(
+          { x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio },
+          { x: node.x || 0, y: node.y || 0, z: node.z || 0 },
+          1000,
+        )
+      }
+    },
+    [filteredData.nodes],
+  )
+
+  // Toggle type visibility
+  const toggleType = useCallback((type: string) => {
+    setHiddenTypes(prev => {
+      const next = new Set(prev)
+      if (next.has(type)) next.delete(type)
+      else next.add(type)
+      return next
+    })
+  }, [])
+
+  // Start chat with topic
+  const handleStartChat = useCallback(
+    (node: GraphNode) => {
+      navigate('/chat', { state: { topic: node.name || node.id, mode: 'insight' } })
+    },
+    [navigate],
+  )
+
+  // Connections for selected node
+  const selectedConnections = useMemo(() => {
+    if (!selectedNode) return []
+    return filteredData.links
+      .filter(l => {
+        const sid = typeof l.source === 'object' ? l.source.id : l.source
+        const tid = typeof l.target === 'object' ? l.target.id : l.target
+        return sid === selectedNode.id || tid === selectedNode.id
+      })
+      .map(l => {
+        const sid = typeof l.source === 'object' ? l.source.id : l.source
+        const tid = typeof l.target === 'object' ? l.target.id : l.target
+        const otherId = sid === selectedNode.id ? tid : sid
+        const other = filteredData.nodes.find(n => n.id === otherId)
+        return {
+          id: otherId,
+          name: other?.name || otherId,
+          label: other?.label || '',
+          type: l.type,
+          color: other?.color || NODE_COLORS['default'],
+        }
+      })
+  }, [selectedNode, filteredData])
+
+  const isEmptyGraph = !loading && data.nodes.length === 0
 
   return (
     <div className="graph-view-container">
-      <div className="graph-header">
-        <h2>🕸️ Knowledge Graph</h2>
-        <span className="node-count">{data.nodes.length} nodes · {data.links.length} connections</span>
-      </div>
+      {/* Search bar */}
+      {!loading && !isEmptyGraph && (
+        <div className="graph-search">
+          <div className="search-input-wrapper">
+            <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search nodes..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearch(searchQuery)}
+            />
+          </div>
+        </div>
+      )}
 
+      {/* Stats */}
+      {!loading && !isEmptyGraph && (
+        <div className="graph-stats">
+          {filteredData.nodes.length} nodes &middot; {filteredData.links.length} connections
+        </div>
+      )}
+
+      {/* Loading */}
       {loading && (
         <div className="graph-loader">
-          <div className="loader-spinner"></div>
+          <div className="loader-spinner" />
           <p>Loading Knowledge Graph...</p>
         </div>
       )}
 
-      {!loading && (
-        <ForceGraph2D
+      {/* Empty state */}
+      {isEmptyGraph && (
+        <div className="graph-empty">
+          <div className="empty-icon">
+            <svg viewBox="0 0 120 120" fill="none" width="80" height="80">
+              <circle cx="30" cy="40" r="8" fill="#a78bfa" opacity="0.6" />
+              <circle cx="90" cy="35" r="6" fill="#34d399" opacity="0.6" />
+              <circle cx="60" cy="80" r="10" fill="#60a5fa" opacity="0.6" />
+              <circle cx="45" cy="25" r="5" fill="#f472b6" opacity="0.6" />
+              <circle cx="80" cy="70" r="7" fill="#fb923c" opacity="0.6" />
+              <line x1="30" y1="40" x2="60" y2="80" stroke="#555" strokeWidth="1" opacity="0.4" />
+              <line x1="90" y1="35" x2="60" y2="80" stroke="#555" strokeWidth="1" opacity="0.4" />
+              <line x1="30" y1="40" x2="45" y2="25" stroke="#555" strokeWidth="1" opacity="0.4" />
+              <line x1="90" y1="35" x2="80" y2="70" stroke="#555" strokeWidth="1" opacity="0.4" />
+            </svg>
+          </div>
+          <h3>Knowledge Graph is empty</h3>
+          <p>
+            Add memories to build your knowledge graph.<br />
+            Entities and connections will be automatically extracted.
+          </p>
+          <button onClick={() => navigate('/memories')} className="add-memory-btn">
+            + Add Memory
+          </button>
+        </div>
+      )}
+
+      {/* 3D Graph */}
+      {!loading && !isEmptyGraph && (
+        <ForceGraph3D
           ref={fgRef}
-          graphData={data}
-          nodeCanvasObject={paintNode}
-          nodePointerAreaPaint={(node: ForceNode, color: string, ctx: CanvasRenderingContext2D) => {
-            ctx.fillStyle = color
-            ctx.beginPath()
-            ctx.arc(node.x ?? 0, node.y ?? 0, node.val || 6, 0, 2 * Math.PI)
-            ctx.fill()
-          }}
+          graphData={filteredData}
+          nodeThreeObject={nodeThreeObject}
+          nodeThreeObjectExtend={false}
           linkColor={(link: GraphLink) =>
-            highlightLinks.has(link) ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.15)'
+            highlightLinks.has(getLinkKey(link))
+              ? 'rgba(255,255,255,0.8)'
+              : 'rgba(255,255,255,0.12)'
           }
-          linkWidth={(link: GraphLink) => highlightLinks.has(link) ? 2 : 0.5}
-          linkDirectionalParticles={(link: GraphLink) => highlightLinks.has(link) ? 4 : 0}
-          linkDirectionalParticleWidth={2}
-          backgroundColor="#0f0f0f"
+          linkWidth={(link: GraphLink) => (highlightLinks.has(getLinkKey(link)) ? 1.5 : 0.3)}
+          linkDirectionalArrowLength={3}
+          linkDirectionalArrowRelPos={1}
+          linkDirectionalParticles={(link: GraphLink) =>
+            highlightLinks.has(getLinkKey(link)) ? 3 : 0
+          }
+          linkDirectionalParticleWidth={1.5}
+          linkDirectionalParticleSpeed={0.006}
+          backgroundColor="#0a0a0f"
           onNodeClick={handleNodeClick}
           onNodeHover={handleNodeHover}
+          onBackgroundClick={handleBackgroundClick}
           cooldownTicks={100}
-          onEngineStop={() => fgRef.current?.zoomToFit(400, 50)}
-          enableNodeDrag={true}
-          enableZoomInteraction={true}
-          enablePanInteraction={true}
-          d3AlphaDecay={0.02}
-          d3VelocityDecay={0.3}
+          onEngineStop={() => fgRef.current?.zoomToFit(400, 100)}
         />
       )}
 
       {/* Legend */}
-      <div className="graph-legend">
-        <h4>Node Types</h4>
-        <div className="legend-items">
-          {nodeTypes.map(type => (
-            <div key={type} className="legend-item">
-              <span
-                className="legend-dot"
-                style={{ backgroundColor: NODE_COLORS[type] || NODE_COLORS['default'] }}
-              />
-              <span className="legend-label">{type}</span>
-            </div>
-          ))}
+      {!loading && nodeTypes.length > 0 && (
+        <div className="graph-legend">
+          <h4>Node Types</h4>
+          <div className="legend-items">
+            {nodeTypes.map(type => (
+              <div
+                key={type}
+                className={`legend-item ${hiddenTypes.has(type) ? 'legend-item-hidden' : ''}`}
+                onClick={() => toggleType(type)}
+              >
+                <span
+                  className="legend-dot"
+                  style={{
+                    backgroundColor: hiddenTypes.has(type)
+                      ? '#444'
+                      : NODE_COLORS[type] || NODE_COLORS['default'],
+                  }}
+                />
+                <span className="legend-label">{type}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Selected Node Info */}
+      {/* Selected Node Info Panel */}
       {selectedNode && (
         <div className="node-info-panel">
           <div className="node-info-header">
@@ -245,31 +375,62 @@ export default function GraphView() {
             >
               {selectedNode.label}
             </span>
-            <button className="close-btn" onClick={() => setSelectedNode(null)}>×</button>
+            <button className="close-btn" onClick={() => setSelectedNode(null)}>
+              &times;
+            </button>
           </div>
           <h3>{selectedNode.name}</h3>
+
           {selectedNode.properties?.summary && (
-            <p className="node-summary">{selectedNode.properties.summary}</p>
+            <p className="node-summary">{selectedNode.properties.summary as string}</p>
           )}
+
           {selectedNode.properties?.tags && (
             <div className="node-tags">
-              {selectedNode.properties.tags.map((tag: string, i: number) => (
-                <span key={i} className="node-tag">#{tag}</span>
+              {(selectedNode.properties.tags as string[]).map((tag: string, i: number) => (
+                <span key={i} className="node-tag">
+                  #{tag}
+                </span>
               ))}
             </div>
           )}
-          <button className="chat-with-topic-btn" onClick={() => handleStartChat(selectedNode)}>
-            💬 이 주제로 대화하기
+
+          {selectedConnections.length > 0 && (
+            <div className="node-connections">
+              <h4>Connections ({selectedConnections.length})</h4>
+              <ul>
+                {selectedConnections.slice(0, 10).map((conn, i) => (
+                  <li key={i}>
+                    <span className="conn-dot" style={{ backgroundColor: conn.color }} />
+                    <span className="conn-type">{conn.type}</span>
+                    <span className="conn-name">{conn.name}</span>
+                  </li>
+                ))}
+                {selectedConnections.length > 10 && (
+                  <li className="conn-more">+{selectedConnections.length - 10} more</li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          <button
+            className="chat-with-topic-btn"
+            onClick={() => handleStartChat(selectedNode)}
+          >
+            이 주제로 대화하기
           </button>
         </div>
       )}
 
-      <div className="graph-controls">
-        <span>🖱️ Scroll: Zoom</span>
-        <span>✋ Drag: Pan</span>
-        <span>👆 Click: Focus</span>
-        <span>🔍 Hover: Highlight</span>
-      </div>
+      {/* Controls hint */}
+      {!loading && !isEmptyGraph && (
+        <div className="graph-controls">
+          <span>Drag: Rotate</span>
+          <span>Scroll: Zoom</span>
+          <span>Click: Focus</span>
+          <span>Right-drag: Pan</span>
+        </div>
+      )}
     </div>
   )
 }
