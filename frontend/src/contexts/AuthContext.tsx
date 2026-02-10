@@ -14,6 +14,7 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
   signInWithGoogle: () => Promise<void>
+  signInWithKakao: () => Promise<void>
   signInAsDev: () => void
   signOut: () => Promise<void>
 }
@@ -172,6 +173,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (error) throw error
   }, [])
 
+  const signInWithKakao = useCallback(async () => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured')
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+        scopes: 'account_email profile_nickname talk_message',
+      },
+    })
+    if (error) throw error
+  }, [])
+
   const signInAsDev = useCallback(() => {
     localStorage.setItem('dev_session', 'true')
     setUser(DEV_USER)
@@ -190,8 +205,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ── Memoized context value ──────────────────────────────────────────────
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, session, isLoading, signIn, signUp, signInWithGoogle, signInAsDev, signOut }),
-    [user, session, isLoading, signIn, signUp, signInWithGoogle, signInAsDev, signOut],
+    () => ({ user, session, isLoading, signIn, signUp, signInWithGoogle, signInWithKakao, signInAsDev, signOut }),
+    [user, session, isLoading, signIn, signUp, signInWithGoogle, signInWithKakao, signInAsDev, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

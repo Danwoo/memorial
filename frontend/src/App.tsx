@@ -10,6 +10,7 @@ import JournalView from './components/JournalView'
 import SearchView from './components/SearchView'
 import DashboardView from './components/DashboardView'
 import TimelineView from './components/TimelineView'
+import SettingsView from './components/SettingsView'
 import './App.css'
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
             <Route path="search" element={<SearchView />} />
             <Route path="graph" element={<GraphView />} />
             <Route path="timeline" element={<TimelineView />} />
+            <Route path="settings" element={<SettingsView />} />
           </Route>
         </Routes>
       </AuthProvider>

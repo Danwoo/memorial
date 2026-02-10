@@ -20,6 +20,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/graph',     icon: '🕸️', label: 'Graph' },
   { to: '/',          icon: '📊', label: 'Dashboard' },
   { to: '/timeline',  icon: '📅', label: 'Timeline' },
+  { to: '/settings',  icon: '⚙️', label: 'Settings' },
 ]
 
 const MAX_SIDEBAR_SESSIONS = 8

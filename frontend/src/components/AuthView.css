@@ -147,6 +147,18 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+.kakao-btn {
+  background: #fee500;
+  color: #3c1e1e;
+  border: none;
+  margin-top: 10px;
+}
+
+.kakao-btn:hover:not(:disabled) {
+  background: #fdd835;
+  box-shadow: 0 2px 8px rgba(254, 229, 0, 0.3);
+}
+
 .auth-divider {
   display: flex;
   align-items: center;

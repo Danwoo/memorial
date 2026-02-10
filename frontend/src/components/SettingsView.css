@@ -1,0 +1,159 @@
+.settings-view {
+  padding: var(--space-2xl);
+  max-width: 720px;
+  margin: 0 auto;
+  animation: fadeIn var(--transition-normal) ease-out;
+}
+
+/* Header */
+.settings-header {
+  margin-bottom: var(--space-2xl);
+}
+
+.settings-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: var(--space-xs);
+}
+
+.settings-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Section */
+.settings-section {
+  margin-bottom: var(--space-2xl);
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-md);
+}
+
+/* Integration card */
+.integration-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg) var(--space-xl);
+  gap: var(--space-lg);
+}
+
+.integration-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.integration-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kakao-icon {
+  background: #fee500;
+  color: #3c1e1e;
+}
+
+.integration-details h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.integration-details p {
+  font-size: 0.813rem;
+  color: var(--text-secondary);
+}
+
+/* Status */
+.integration-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+.status-badge.connected {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+}
+
+/* Kakao connect button */
+.kakao-connect-btn {
+  background: #fee500 !important;
+  color: #3c1e1e !important;
+  font-weight: 600 !important;
+}
+
+.kakao-connect-btn:hover:not(:disabled) {
+  background: #fdd835 !important;
+  transform: translateY(-1px);
+}
+
+.kakao-connect-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Toast */
+.settings-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  z-index: 1000;
+  animation: fadeIn var(--transition-fast) ease-out;
+}
+
+.settings-toast.success {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.settings-toast.error {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .settings-view {
+    padding: var(--space-lg);
+  }
+
+  .integration-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .integration-status {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
