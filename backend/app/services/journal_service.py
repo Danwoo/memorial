@@ -2,6 +2,7 @@
 Journal Service
 Business logic for journal operations (sentiment, Socratic questions, distortions).
 """
+
 import logging
 from typing import Any
 from uuid import UUID
@@ -40,13 +41,31 @@ DRAFT_PROMPT = """You are a reflective journal writing assistant. Based on the e
 
 
 POSITIVE_SENTIMENT_WORDS = [
-    "happy", "good", "great", "excited", "proud", "calm",
-    "평온", "행복", "좋아", "성취", "뿌듯",
+    "happy",
+    "good",
+    "great",
+    "excited",
+    "proud",
+    "calm",
+    "평온",
+    "행복",
+    "좋아",
+    "성취",
+    "뿌듯",
 ]
 
 NEGATIVE_SENTIMENT_WORDS = [
-    "sad", "bad", "angry", "anxious", "tired",
-    "우울", "슬퍼", "힘들", "피곤", "짜증", "불안",
+    "sad",
+    "bad",
+    "angry",
+    "anxious",
+    "tired",
+    "우울",
+    "슬퍼",
+    "힘들",
+    "피곤",
+    "짜증",
+    "불안",
 ]
 
 COGNITIVE_DISTORTION_PATTERNS = {
@@ -122,7 +141,7 @@ class JournalService:
         """Get journal entries for a user."""
         return await self.journal_repo.get_journals(user_id, limit)
 
-    def generate_review_questions(self, content: str) -> list[str]:
+    async def generate_review_questions(self, content: str) -> list[str]:
         """
         Generate Socratic review questions based on journal content.
         Uses LLM to create thoughtful, reflective questions.
@@ -138,7 +157,7 @@ class JournalService:
                 HumanMessage(content=f"Journal Entry:\n{content}"),
             ]
 
-            response = llm.invoke(messages)
+            response = await llm.ainvoke(messages)
 
             questions = [q.strip() for q in response.content.split("\n") if q.strip()]
             return questions[:3]
@@ -158,12 +177,14 @@ class JournalService:
         for pattern_id, pattern in COGNITIVE_DISTORTION_PATTERNS.items():
             for keyword in pattern["keywords"]:
                 if keyword in content_lower:
-                    detected.append({
-                        "type": pattern_id,
-                        "name": pattern["name"],
-                        "trigger": keyword,
-                        "feedback": pattern["feedback"],
-                    })
+                    detected.append(
+                        {
+                            "type": pattern_id,
+                            "name": pattern["name"],
+                            "trigger": keyword,
+                            "feedback": pattern["feedback"],
+                        }
+                    )
                     break  # One match per pattern is enough
 
         return {
@@ -207,9 +228,7 @@ class JournalService:
         response = await llm.ainvoke(lc_messages)
         return response.content
 
-    async def get_related_memories(
-        self, user_id: UUID, content: str
-    ) -> list[dict[str, Any]]:
+    async def get_related_memories(self, user_id: UUID, content: str) -> list[dict[str, Any]]:
         """Find memories related to journal content via vector similarity search."""
         if not self.vector_repo:
             return []

@@ -7,6 +7,7 @@ This is a deterministic (non-agent) service that:
 2. Generates embeddings (TODO: Phase 2)
 3. Triggers Librarian agent for classification (TODO: Phase 2)
 """
+
 import re
 from urllib.parse import urlparse
 
@@ -23,9 +24,7 @@ async def fetch_url_content(url: str) -> tuple[str, str]:
     For production, consider using @mozilla/readability via Node subprocess.
     """
     async with httpx.AsyncClient(timeout=30.0) as client:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        }
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         response = await client.get(url, headers=headers, follow_redirects=True)
         response.raise_for_status()
         html = response.text
@@ -50,7 +49,7 @@ async def fetch_url_content(url: str) -> tuple[str, str]:
         text = article.get_text(separator="\n", strip=True)
 
         # Clean up multiple newlines
-        text = re.sub(r'\n{3,}', '\n\n', text)
+        text = re.sub(r"\n{3,}", "\n\n", text)
     else:
         text = ""
 
@@ -81,12 +80,7 @@ async def process_web_content(url: str) -> dict:
     if not title:
         title = f"Page from {extract_domain(url)}"
 
-    return {
-        "title": title,
-        "content": content,
-        "source_url": url,
-        "source_domain": extract_domain(url)
-    }
+    return {"title": title, "content": content, "source_url": url, "source_domain": extract_domain(url)}
 
 
 async def process_pdf_content(file_bytes: bytes, filename: str) -> dict:
@@ -154,8 +148,4 @@ async def process_note_content(content: str, memo: str | None = None) -> dict:
     if memo:
         final_content = f"{content}\n\n---\n**My thoughts:**\n{memo}"
 
-    return {
-        "title": title,
-        "content": final_content,
-        "source_url": None
-    }
+    return {"title": title, "content": final_content, "source_url": None}

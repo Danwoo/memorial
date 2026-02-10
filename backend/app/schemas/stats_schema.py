@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 class OverviewStats(BaseModel):
     """Overview statistics summary"""
+
     total_memories: int
     total_this_week: int
     total_this_month: int
@@ -16,12 +17,14 @@ class OverviewStats(BaseModel):
 
 class ActivityData(BaseModel):
     """Daily activity data point"""
+
     date: str
     count: int
 
 
 class SourceStats(BaseModel):
     """Statistics by source type"""
+
     source_type: str
     count: int
     percentage: float
@@ -29,12 +32,14 @@ class SourceStats(BaseModel):
 
 class TagStats(BaseModel):
     """Tag usage statistics"""
+
     tag: str
     count: int
 
 
 class StatsOverviewResponse(BaseModel):
     """Complete stats overview for dashboard"""
+
     overview: OverviewStats
     recent_activity: list[ActivityData]
     sources: list[SourceStats]
@@ -43,12 +48,14 @@ class StatsOverviewResponse(BaseModel):
 
 class TimelineGroup(BaseModel):
     """Memories grouped by date"""
+
     date: str
     memories: list[dict]
 
 
 class TimelineResponse(BaseModel):
     """Paginated timeline response"""
+
     page: int
     limit: int
     timeline: list[TimelineGroup]

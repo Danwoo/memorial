@@ -8,13 +8,13 @@ Features:
 3. Interactive Summary - Collaborative summarization
 4. Evening Ritual Mode - Daily reflection session
 """
+
 import logging
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from app.agents.state import AgentState
 from app.config.llm import get_streaming_llm
-from app.config.settings import DEFAULT_USER_ID
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ def get_mode_prompt(mode: str | None) -> str:
         "insight": INSIGHT_PROMPT,
         "counter": COUNTER_ARGUMENT_PROMPT,
         "summary": SUMMARY_PROMPT,
-        "evening": EVENING_RITUAL_PROMPT
+        "evening": EVENING_RITUAL_PROMPT,
     }
     return mode_prompts.get(mode, "")
 
@@ -95,7 +95,7 @@ async def find_contradicting_memories(query: str, current_memories: list) -> lis
         f"disadvantages of {query}",
         f"problems with {query}",
         f"criticism of {query}",
-        f"opposite of {query}"
+        f"opposite of {query}",
     ]
 
     contradicting = []
@@ -116,10 +116,12 @@ async def _search_vector_memories(query: str, vector_repo, limit: int = 3) -> tu
     try:
         results = await vector_repo.similarity_search(query, limit=limit, threshold=0.5)
         if results:
-            formatted = "\n".join([
-                f"- [{memory.get('created_at', '')[:10]}] {memory.get('title', 'Untitled')}: {memory.get('summary') or memory.get('content', '')[:100]}..."
-                for memory in results
-            ])
+            formatted = "\n".join(
+                [
+                    f"- [{memory.get('created_at', '')[:10]}] {memory.get('title', 'Untitled')}: {memory.get('summary') or memory.get('content', '')[:100]}..."
+                    for memory in results
+                ]
+            )
             return formatted, results
     except Exception:
         logger.exception("Vector search failed")
@@ -129,7 +131,8 @@ async def _search_vector_memories(query: str, vector_repo, limit: int = 3) -> tu
 async def _fetch_graph_context(query: str, limit: int = 8) -> str:
     """Fetch related entities from knowledge graph. Returns formatted text."""
     try:
-        from app.config.dependencies import get_graph_repository
+        from app.config.dependencies import get_graph_repository  # noqa: F811
+
         graph_repo = get_graph_repository()
 
         keywords = [word for word in query.split() if len(word) > 2][:3]
@@ -168,10 +171,12 @@ async def _fetch_journal_context(user_id, journal_repo, limit: int = 3) -> str:
     try:
         recent_journals = await journal_repo.get_journals(user_id, limit=limit)
         if recent_journals:
-            return "\n".join([
-                f"- [Journal {journal.get('created_at', '')[:10]}] Mood: {journal.get('mood', 'N/A')} - {journal.get('content', '')[:80]}..."
-                for journal in recent_journals
-            ])
+            return "\n".join(
+                [
+                    f"- [Journal {journal.get('created_at', '')[:10]}] Mood: {journal.get('mood', 'N/A')} - {journal.get('content', '')[:80]}..."
+                    for journal in recent_journals
+                ]
+            )
     except Exception:
         logger.exception("Journal context fetch failed")
     return ""
@@ -180,6 +185,7 @@ async def _fetch_journal_context(user_id, journal_repo, limit: int = 3) -> str:
 async def prepare_socrates_context(
     messages: list,
     mode: str | None = None,
+    user_id: str | None = None,
 ) -> list:
     """
     Prepare LangChain message list with RAG context for Socrates.
@@ -206,19 +212,22 @@ async def prepare_socrates_context(
 
         graph_context = await _fetch_graph_context(query)
 
-        from app.config.database import get_supabase_client as _get_db
-        from app.repositories.journal_repository import JournalRepository
-        journal_repo = JournalRepository(_get_db())
-        journal_context = await _fetch_journal_context(DEFAULT_USER_ID, journal_repo)
+        if user_id:
+            from app.repositories.journal_repository import JournalRepository
+
+            journal_repo = JournalRepository(get_supabase_client())
+            journal_context = await _fetch_journal_context(user_id, journal_repo)
 
         if mode == "counter" and current_memories:
             try:
                 contradicting = await find_contradicting_memories(query, current_memories)
                 if contradicting:
-                    contradicting_memories = "\n".join([
-                        f"- [{memory.get('created_at', '')[:10]}] {memory.get('title', 'Untitled')}: {memory.get('summary') or memory.get('content', '')[:100]}..."
-                        for memory in contradicting
-                    ])
+                    contradicting_memories = "\n".join(
+                        [
+                            f"- [{memory.get('created_at', '')[:10]}] {memory.get('title', 'Untitled')}: {memory.get('summary') or memory.get('content', '')[:100]}..."
+                            for memory in contradicting
+                        ]
+                    )
             except Exception:
                 logger.exception("Contradiction search failed")
 
@@ -258,23 +267,17 @@ async def socrates_node(state: AgentState) -> dict:
         greeting = "안녕하세요! 무엇을 도와드릴까요?"
         if mode == "evening":
             greeting = "🌙 오늘 하루 어떠셨나요? 오늘 저장한 내용들을 함께 돌아볼까요?"
-        return {
-            "messages": [AIMessage(content=greeting)],
-            "next_step": "end"
-        }
+        return {"messages": [AIMessage(content=greeting)], "next_step": "end"}
 
     lc_messages = await prepare_socrates_context(messages, mode)
     llm = get_streaming_llm()
 
     try:
         response = await llm.ainvoke(lc_messages)
-        return {
-            "messages": [response],
-            "next_step": "end"
-        }
+        return {"messages": [response], "next_step": "end"}
     except Exception as e:
         return {
             "messages": [AIMessage(content=f"죄송합니다, 오류가 발생했습니다: {str(e)}")],
             "next_step": "end",
-            "error": str(e)
+            "error": str(e),
         }

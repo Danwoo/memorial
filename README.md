@@ -9,12 +9,13 @@
 
 ## 🚀 Quick Start
 
-### Backend (FastAPI)
+### Backend (FastAPI + uv)
 ```bash
 cd backend
-poetry install
-poetry run uvicorn app.main:app --reload
+uv sync
+uv run uvicorn app.main:app --reload
 ```
+> **주의**: 반드시 `uv`를 사용합니다. `pip`, `python` 직접 실행 금지.
 
 ### Frontend (React + Vite)
 ```bash
@@ -22,6 +23,19 @@ cd frontend
 npm install
 npm run dev
 ```
+
+---
+
+## 🔧 Development Conventions
+
+| 항목 | 규칙 |
+|------|------|
+| Backend 패키지 관리 | `uv` (pip/python 직접 사용 금지) |
+| Frontend 스크립트 | `npm run` |
+| Backend Lint | `ruff check --fix` + `ruff format` |
+| Frontend Lint | `eslint --max-warnings=0` |
+| Pre-commit | `.pre-commit-config.yaml` (ruff + eslint 자동 적용) |
+| Commit 메시지 | 한국어, Co-Authored-By 미포함 |
 
 ---
 

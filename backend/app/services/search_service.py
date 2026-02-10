@@ -2,22 +2,20 @@
 Search Service
 Business logic for semantic search and recommendations
 """
+
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
 from app.repositories.memory_repository import MemoryRepository
 from app.repositories.vector_repository import VectorRepository
+from app.utils import parse_iso_datetime
 
 
 class SearchService:
     """Service for search business logic"""
 
-    def __init__(
-        self,
-        vector_repo: VectorRepository,
-        memory_repo: MemoryRepository | None = None
-    ):
+    def __init__(self, vector_repo: VectorRepository, memory_repo: MemoryRepository | None = None):
         self.vector_repo = vector_repo
         self.memory_repo = memory_repo
 
@@ -67,9 +65,7 @@ class SearchService:
                 created_at_str = r.get("created_at")
                 if created_at_str:
                     try:
-                        created_at = datetime.fromisoformat(
-                            created_at_str.replace("Z", "+00:00")
-                        )
+                        created_at = parse_iso_datetime(created_at_str)
                         if (now - created_at) > timedelta(days=days):
                             continue
                     except Exception:
@@ -81,16 +77,18 @@ class SearchService:
                 if not any(t in memory_tags for t in tags):
                     continue
 
-            filtered_results.append({
-                "id": str(r.get("id", "")),
-                "title": r.get("title", "Untitled"),
-                "content": r.get("content", "")[:500],
-                "summary": r.get("summary"),
-                "source_type": r.get("source_type", "NOTE"),
-                "similarity": r.get("similarity", 0),
-                "created_at": r.get("created_at"),
-                "tags": r.get("tags")
-            })
+            filtered_results.append(
+                {
+                    "id": str(r.get("id", "")),
+                    "title": r.get("title", "Untitled"),
+                    "content": r.get("content", "")[:500],
+                    "summary": r.get("summary"),
+                    "source_type": r.get("source_type", "NOTE"),
+                    "similarity": r.get("similarity", 0),
+                    "created_at": r.get("created_at"),
+                    "tags": r.get("tags"),
+                }
+            )
 
             if len(filtered_results) >= limit:
                 break
@@ -99,7 +97,7 @@ class SearchService:
             "query": query,
             "results": filtered_results,
             "total": len(filtered_results),
-            "filters_applied": filters_applied
+            "filters_applied": filters_applied,
         }
 
     async def get_related_memories(
@@ -133,11 +131,13 @@ class SearchService:
         related = []
         for item in similar:
             if str(item.get("id")) != memory_id:
-                related.append({
-                    "id": str(item.get("id", "")),
-                    "title": item.get("title", "Untitled"),
-                    "similarity": item.get("similarity", 0)
-                })
+                related.append(
+                    {
+                        "id": str(item.get("id", "")),
+                        "title": item.get("title", "Untitled"),
+                        "similarity": item.get("similarity", 0),
+                    }
+                )
             if len(related) >= limit:
                 break
 

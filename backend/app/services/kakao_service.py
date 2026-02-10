@@ -4,13 +4,16 @@ Handles KakaoTalk "Send to Me" messaging via REST API with Supabase token persis
 
 Kakao OAuth Flow:
 1. User clicks "Connect Kakao" -> Frontend redirects to /kakao/auth
-2. Server returns Kakao OAuth URL
+2. Server returns Kakao OAuth URL (with user_id in state param)
 3. User authorizes in Kakao
-4. Kakao redirects back to our callback with code
+4. Kakao redirects back to our callback with code + state(user_id)
 5. We exchange code for access_token
 6. Store token in Supabase for sending messages
 """
+
+import asyncio
 import logging
+import time
 from urllib.parse import urlencode
 
 import httpx
@@ -45,7 +48,7 @@ class KakaoService:
             "client_id": settings.KAKAO_REST_API_KEY,
             "redirect_uri": settings.KAKAO_REDIRECT_URI,
             "response_type": "code",
-            "scope": "talk_message"  # Required for sending messages
+            "scope": "talk_message",  # Required for sending messages
         }
 
         if state:
@@ -74,8 +77,8 @@ class KakaoService:
                     "grant_type": "authorization_code",
                     "client_id": settings.KAKAO_REST_API_KEY,
                     "redirect_uri": settings.KAKAO_REDIRECT_URI,
-                    "code": code
-                }
+                    "code": code,
+                },
             )
 
             if response.status_code != 200:
@@ -89,49 +92,99 @@ class KakaoService:
 
             return token_data
 
-    async def _save_token(self, user_id: str, token_data: dict) -> None:
-        """Save or update token in Supabase."""
+    def _sync_save_token(self, user_id: str, token_data: dict) -> None:
+        """Synchronous token save (runs in thread)."""
+        expires_in = token_data.get("expires_in", 21600)
         data = {
             "user_id": user_id,
             "access_token": token_data.get("access_token"),
             "refresh_token": token_data.get("refresh_token"),
             "token_type": token_data.get("token_type", "bearer"),
-            "expires_in": token_data.get("expires_in"),
-            "scope": token_data.get("scope")
+            "expires_in": expires_in,
+            "expires_at": int(time.time()) + expires_in,
+            "scope": token_data.get("scope"),
         }
+        self.db.table("kakao_tokens").upsert(data, on_conflict="user_id").execute()
 
+    async def _save_token(self, user_id: str, token_data: dict) -> None:
+        """Save or update token in Supabase."""
         try:
-            # Upsert - insert or update if user_id exists
-            self.db.table("kakao_tokens").upsert(
-                data,
-                on_conflict="user_id"
-            ).execute()
+            await asyncio.to_thread(self._sync_save_token, user_id, token_data)
         except Exception:
             logger.exception("Error saving Kakao token to Supabase")
             raise
 
-    async def get_stored_token(self, user_id: str) -> str | None:
-        """Get stored access token for a user from Supabase."""
-        try:
-            result = self.db.table("kakao_tokens") \
-                .select("access_token") \
-                .eq("user_id", user_id) \
-                .execute()
+    async def _refresh_token(self, user_id: str, refresh_token: str) -> str | None:
+        """Refresh an expired Kakao access token."""
+        settings = get_settings()
 
-            if result.data and len(result.data) > 0:
-                return result.data[0].get("access_token")
-            return None
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                KAKAO_TOKEN_URL,
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                data={
+                    "grant_type": "refresh_token",
+                    "client_id": settings.KAKAO_REST_API_KEY,
+                    "refresh_token": refresh_token,
+                },
+            )
+
+            if response.status_code != 200:
+                logger.error("Kakao token refresh failed: %s", response.text)
+                return None
+
+            token_data = response.json()
+            # Kakao may or may not return a new refresh_token
+            if "refresh_token" not in token_data:
+                token_data["refresh_token"] = refresh_token
+            await self._save_token(user_id, token_data)
+            return token_data.get("access_token")
+
+    def _sync_get_token_row(self, user_id: str) -> dict | None:
+        """Synchronous token fetch (runs in thread)."""
+        result = (
+            self.db.table("kakao_tokens")
+            .select("access_token, refresh_token, expires_at")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        return result.data[0] if result.data else None
+
+    async def get_stored_token(self, user_id: str) -> str | None:
+        """Get stored access token for a user, refreshing if expired."""
+        try:
+            row = await asyncio.to_thread(self._sync_get_token_row, user_id)
+            if not row:
+                return None
+
+            access_token = row.get("access_token")
+            refresh_token = row.get("refresh_token")
+            expires_at = row.get("expires_at", 0)
+
+            # Check if token is expired (with 5 min buffer)
+            if expires_at and int(time.time()) > (expires_at - 300):
+                if refresh_token:
+                    logger.info("Kakao token expired for user %s, refreshing...", user_id)
+                    refreshed = await self._refresh_token(user_id, refresh_token)
+                    if refreshed:
+                        return refreshed
+                    logger.warning("Kakao token refresh failed for user %s", user_id)
+                    return None
+                return None
+
+            return access_token
         except Exception:
             logger.exception("Error getting Kakao token from Supabase")
             return None
 
+    def _sync_delete_token(self, user_id: str) -> None:
+        """Synchronous token delete (runs in thread)."""
+        self.db.table("kakao_tokens").delete().eq("user_id", user_id).execute()
+
     async def delete_token(self, user_id: str) -> bool:
         """Delete stored token for a user."""
         try:
-            self.db.table("kakao_tokens") \
-                .delete() \
-                .eq("user_id", user_id) \
-                .execute()
+            await asyncio.to_thread(self._sync_delete_token, user_id)
             return True
         except Exception:
             logger.exception("Error deleting Kakao token")
@@ -143,11 +196,7 @@ class KakaoService:
         return token is not None
 
     async def send_message_to_me(
-        self,
-        access_token: str,
-        text: str,
-        link_title: str | None = None,
-        link_url: str | None = None
+        self, access_token: str, text: str, link_title: str | None = None, link_url: str | None = None
     ) -> dict:
         """
         Send a message to user's "나와의 채팅" (KakaoTalk Me).
@@ -167,10 +216,7 @@ class KakaoService:
         template_object = {
             "object_type": "text",
             "text": text,
-            "link": {
-                "web_url": link_url or "https://memoir.ai",
-                "mobile_web_url": link_url or "https://memoir.ai"
-            }
+            "link": {"web_url": link_url or "https://memoir.ai", "mobile_web_url": link_url or "https://memoir.ai"},
         }
 
         if link_title:
@@ -181,11 +227,9 @@ class KakaoService:
                 KAKAO_MESSAGE_URL,
                 headers={
                     "Authorization": f"Bearer {access_token}",
-                    "Content-Type": "application/x-www-form-urlencoded"
+                    "Content-Type": "application/x-www-form-urlencoded",
                 },
-                data={
-                    "template_object": json.dumps(template_object)
-                }
+                data={"template_object": json.dumps(template_object)},
             )
 
             result = response.json()
@@ -196,11 +240,7 @@ class KakaoService:
             return result
 
     async def send_memoir_notification(
-        self,
-        user_id: str,
-        memory_title: str,
-        memory_summary: str,
-        memory_id: str | None = None
+        self, user_id: str, memory_title: str, memory_summary: str, memory_id: str | None = None
     ) -> bool:
         """
         Send a Memoir notification to user's KakaoTalk.
@@ -230,10 +270,7 @@ class KakaoService:
 
         try:
             await self.send_message_to_me(
-                access_token=token,
-                text=text,
-                link_title="Memoir에서 보기",
-                link_url=link_url
+                access_token=token, text=text, link_title="Memoir에서 보기", link_url=link_url
             )
             return True
         except Exception:

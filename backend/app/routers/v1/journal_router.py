@@ -2,6 +2,7 @@
 Journal Router
 API endpoints for journal operations
 """
+
 import logging
 from uuid import UUID
 
@@ -69,13 +70,11 @@ async def get_review_questions(
 ):
     """Generate Socratic review questions based on journal content."""
     try:
-        questions = service.generate_review_questions(request.content)
+        questions = await service.generate_review_questions(request.content)
         return ReviewQuestionsResponse(questions=questions)
     except Exception:
         logger.exception("Failed to generate review questions")
-        return ReviewQuestionsResponse(
-            questions=["이 경험에서 어떤 인사이트를 얻었나요?"]
-        )
+        return ReviewQuestionsResponse(questions=["이 경험에서 어떤 인사이트를 얻었나요?"])
 
 
 @router.post("/insights", response_model=InsightsResponse)
@@ -90,9 +89,7 @@ async def analyze_insights(
         return InsightsResponse(**insights)
     except Exception:
         logger.exception("Failed to analyze cognitive distortions")
-        return InsightsResponse(
-            has_distortions=False, distortions=[], wellness_score=100
-        )
+        return InsightsResponse(has_distortions=False, distortions=[], wellness_score=100)
 
 
 @router.post("/generate-draft", response_model=GenerateDraftResponse)

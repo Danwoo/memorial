@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import ChatView from './ChatView'
+import ChatWidget from './ChatWidget'
 import type { RelatedMemory, ChatSessionResponse } from '../types'
 import { saveJournal, fetchRelatedMemories as fetchRelatedMemoriesApi, generateJournalDraft, fetchChatSessions } from '../api'
 import './JournalView.css'
@@ -189,7 +189,7 @@ export default function JournalView() {
             <h3>Thinking Partner</h3>
         </div>
         <div className="chat-wrapper">
-             <ChatView />
+             <ChatWidget />
         </div>
       </div>
     </div>

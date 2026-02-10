@@ -3,6 +3,7 @@ Auth Router
 Authentication endpoints (login, signup, user info)
 Note: Auth endpoints are pass-through to Supabase Auth, so not using Service layer
 """
+
 import logging
 
 import httpx
@@ -30,30 +31,19 @@ async def login(request: LoginRequest):
     async with httpx.AsyncClient() as client:
         response = await client.post(
             f"{settings.SUPABASE_URL}/auth/v1/token?grant_type=password",
-            headers={
-                "apikey": settings.SUPABASE_ANON_KEY,
-                "Content-Type": "application/json"
-            },
-            json={
-                "email": request.email,
-                "password": request.password
-            }
+            headers={"apikey": settings.SUPABASE_ANON_KEY, "Content-Type": "application/json"},
+            json={"email": request.email, "password": request.password},
         )
 
         if response.status_code == 200:
             data = response.json()
             return AuthResponse(
-                access_token=data["access_token"],
-                user={
-                    "id": data["user"]["id"],
-                    "email": data["user"]["email"]
-                }
+                access_token=data["access_token"], user={"id": data["user"]["id"], "email": data["user"]["email"]}
             )
         else:
             error = response.json()
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=error.get("error_description", "Invalid credentials")
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=error.get("error_description", "Invalid credentials")
             )
 
 
@@ -65,47 +55,30 @@ async def signup(request: SignupRequest):
     async with httpx.AsyncClient() as client:
         response = await client.post(
             f"{settings.SUPABASE_URL}/auth/v1/signup",
-            headers={
-                "apikey": settings.SUPABASE_ANON_KEY,
-                "Content-Type": "application/json"
-            },
-            json={
-                "email": request.email,
-                "password": request.password
-            }
+            headers={"apikey": settings.SUPABASE_ANON_KEY, "Content-Type": "application/json"},
+            json={"email": request.email, "password": request.password},
         )
 
         if response.status_code == 200:
             data = response.json()
             if data.get("access_token"):
                 return AuthResponse(
-                    access_token=data["access_token"],
-                    user={
-                        "id": data["user"]["id"],
-                        "email": data["user"]["email"]
-                    }
+                    access_token=data["access_token"], user={"id": data["user"]["id"], "email": data["user"]["email"]}
                 )
             else:
                 raise HTTPException(
-                    status_code=status.HTTP_200_OK,
-                    detail="Please check your email to confirm your account"
+                    status_code=status.HTTP_200_OK, detail="Please check your email to confirm your account"
                 )
         else:
             error = response.json()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=error.get("msg", "Signup failed")
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error.get("msg", "Signup failed"))
 
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(user: dict = Depends(get_current_user)):
     """Get current user info."""
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
     # Fetch profile data
     settings = get_settings()
@@ -115,10 +88,7 @@ async def get_me(user: dict = Depends(get_current_user)):
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{settings.SUPABASE_URL}/rest/v1/profiles?id=eq.{user['id']}&select=*",
-                headers={
-                    "apikey": settings.SUPABASE_ANON_KEY,
-                    "Authorization": f"Bearer {settings.SUPABASE_ANON_KEY}"
-                }
+                headers={"apikey": settings.SUPABASE_ANON_KEY, "Authorization": f"Bearer {settings.SUPABASE_ANON_KEY}"},
             )
             if response.status_code == 200:
                 profiles = response.json()
@@ -132,5 +102,5 @@ async def get_me(user: dict = Depends(get_current_user)):
         email=user["email"],
         role=user.get("role", "authenticated"),
         full_name=profile.get("full_name"),
-        avatar_url=profile.get("avatar_url")
+        avatar_url=profile.get("avatar_url"),
     )

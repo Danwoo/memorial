@@ -2,6 +2,7 @@
 Auth Schemas
 Pydantic models for authentication request/response payloads.
 """
+
 from pydantic import BaseModel
 
 

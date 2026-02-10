@@ -2,10 +2,11 @@
 Memory Router
 API endpoints for memory operations
 """
+
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile
 
 from app.agents.librarian.graph import librarian_graph
 from app.config.auth import get_user_id
@@ -79,9 +80,7 @@ async def create_memory(
     try:
         if data.source_type == "WEB":
             if not data.url:
-                raise HTTPException(
-                    status_code=400, detail="URL is required for WEB type"
-                )
+                raise HTTPException(status_code=400, detail="URL is required for WEB type")
             processed = await process_web_content(data.url)
 
         elif data.source_type == "PDF":
@@ -92,9 +91,7 @@ async def create_memory(
 
         elif data.source_type == "NOTE":
             if not data.content:
-                raise HTTPException(
-                    status_code=400, detail="Content is required for NOTE type"
-                )
+                raise HTTPException(status_code=400, detail="Content is required for NOTE type")
             processed = await process_note_content(data.content, data.memo)
         else:
             raise HTTPException(
@@ -174,9 +171,7 @@ async def backfill_memories(
     memory_service: MemoryService = Depends(get_memory_service),
 ):
     """Re-process memories through Librarian pipeline. Use force=true to re-process all."""
-    items, total = await memory_service.list_memories(
-        user_id=user_id, page=1, limit=100
-    )
+    items, total = await memory_service.list_memories(user_id=user_id, page=1, limit=100)
 
     queued = 0
     for item in items:

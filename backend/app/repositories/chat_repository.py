@@ -5,6 +5,7 @@ Data access layer for chat sessions - Supabase implementation.
 All public methods are async and delegate synchronous Supabase calls
 to a thread via ``asyncio.to_thread`` so that the event loop is never blocked.
 """
+
 import asyncio
 import logging
 from datetime import UTC, datetime
@@ -74,15 +75,19 @@ class ChatRepository:
         """Get all sessions for a user from Supabase."""
         result = await asyncio.to_thread(self._select_sessions_by_user, str(user_id))
 
-        return [
-            {
-                "id": s["id"],
-                "user_id": s["user_id"],
-                "title": s["title"],
-                "created_at": s["created_at"],
-            }
-            for s in result.data
-        ] if result.data else []
+        return (
+            [
+                {
+                    "id": s["id"],
+                    "user_id": s["user_id"],
+                    "title": s["title"],
+                    "created_at": s["created_at"],
+                }
+                for s in result.data
+            ]
+            if result.data
+            else []
+        )
 
     async def add_message(self, session_id: UUID, message: BaseMessage) -> bool:
         """Add a message to a session in Supabase."""
@@ -149,20 +154,11 @@ class ChatRepository:
         return self.db.table("chat_sessions").insert(data).execute()
 
     def _select_session(self, session_id: str):
-        return (
-            self.db.table("chat_sessions")
-            .select("*")
-            .eq("id", session_id)
-            .execute()
-        )
+        return self.db.table("chat_sessions").select("*").eq("id", session_id).execute()
 
     def _select_sessions_by_user(self, user_id: str):
         return (
-            self.db.table("chat_sessions")
-            .select("*")
-            .eq("user_id", user_id)
-            .order("created_at", desc=True)
-            .execute()
+            self.db.table("chat_sessions").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
         )
 
     def _insert_message(self, data: dict):
@@ -179,9 +175,4 @@ class ChatRepository:
 
     def _delete_session(self, session_id: str):
         # Messages are deleted via CASCADE in DB
-        return (
-            self.db.table("chat_sessions")
-            .delete()
-            .eq("id", session_id)
-            .execute()
-        )
+        return self.db.table("chat_sessions").delete().eq("id", session_id).execute()

@@ -2,6 +2,7 @@
 Search Router
 API endpoints for semantic search
 """
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query

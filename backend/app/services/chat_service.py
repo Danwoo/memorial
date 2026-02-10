@@ -6,6 +6,7 @@ Real-time token streaming: bypasses the LangGraph ``ainvoke`` path and
 calls ``llm.astream()`` directly so that each token is yielded to the
 client as an SSE event immediately.
 """
+
 import asyncio
 import json
 import logging
@@ -72,7 +73,7 @@ class ChatService:
             messages = await self.chat_repo.get_messages(session_id)
 
             # Prepare context: RAG search, journal, mode prompts
-            lc_messages = await prepare_socrates_context(messages, mode)
+            lc_messages = await prepare_socrates_context(messages, mode, user_id=str(user_id))
 
             # Stream tokens directly from LLM
             llm = get_streaming_llm()
@@ -86,9 +87,7 @@ class ChatService:
 
             # Persist complete response
             if full_response:
-                await self.chat_repo.add_message(
-                    session_id, AIMessage(content=full_response)
-                )
+                await self.chat_repo.add_message(session_id, AIMessage(content=full_response))
 
             yield f"data: {json.dumps({'done': True})}\n\n"
 

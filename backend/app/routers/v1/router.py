@@ -2,6 +2,7 @@
 API v1 Router Aggregator
 Combines all v1 routers into a single router
 """
+
 from fastapi import APIRouter
 
 from app.routers.v1 import (
@@ -28,4 +29,3 @@ api_router.include_router(integrations_router.router)
 api_router.include_router(stats_router.router)
 api_router.include_router(journal_router.router)
 api_router.include_router(digest_router.router)
-

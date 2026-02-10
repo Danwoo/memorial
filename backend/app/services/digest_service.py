@@ -2,6 +2,7 @@
 Digest Service
 Business logic for daily digest - aggregates today's memories, chats, and journals
 """
+
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -10,10 +11,10 @@ from uuid import UUID
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.config.llm import get_creative_llm
-from app.config.settings import DEFAULT_USER_ID
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.journal_repository import JournalRepository
 from app.repositories.memory_repository import MemoryRepository
+from app.utils import parse_iso_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +45,9 @@ class DigestService:
 
     @staticmethod
     def _parse_iso_datetime(iso_str: str) -> datetime:
-        return datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        return parse_iso_datetime(iso_str)
 
-    async def get_today_digest(self, user_id: UUID | None = None, target_date: datetime | None = None) -> dict[str, Any]:
+    async def get_today_digest(self, user_id: UUID, target_date: datetime | None = None) -> dict[str, Any]:
         """
         Get comprehensive digest of a day's activities.
 
@@ -83,11 +84,7 @@ class DigestService:
 
         return {
             "date": today.isoformat(),
-            "summary": {
-                "memory_count": len(memories),
-                "journal_count": len(journals),
-                "chat_count": len(chats)
-            },
+            "summary": {"memory_count": len(memories), "journal_count": len(journals), "chat_count": len(chats)},
             "memories": [
                 {
                     "id": str(memory.get("id", "")),
@@ -95,7 +92,7 @@ class DigestService:
                     "type": memory.get("source_type", "UNKNOWN"),
                     "summary": memory.get("summary") or memory.get("content", "")[:150],
                     "tags": memory.get("tags") or [],
-                    "created_at": memory.get("created_at", "")
+                    "created_at": memory.get("created_at", ""),
                 }
                 for memory in memories[:MAX_MEMORIES_IN_DIGEST]
             ],
@@ -104,15 +101,12 @@ class DigestService:
                     "id": str(journal.get("id", "")),
                     "mood": journal.get("mood", "NEUTRAL"),
                     "preview": journal.get("content", "")[:100],
-                    "created_at": journal.get("created_at", "")
+                    "created_at": journal.get("created_at", ""),
                 }
                 for journal in journals[:MAX_JOURNALS_IN_DIGEST]
             ],
             "chats": chats,
-            "insights": {
-                "main_topics": main_topics[:5],
-                "suggested_questions": suggested_questions
-            }
+            "insights": {"main_topics": main_topics[:5], "suggested_questions": suggested_questions},
         }
 
     async def _get_today_memories(self, start: datetime, end: datetime, user_id: UUID | None = None) -> list[dict]:
@@ -136,12 +130,11 @@ class DigestService:
             logger.exception("Error fetching today's memories")
             return []
 
-    async def _get_today_journals(self, user_id: UUID | None, today: datetime) -> list[dict]:
+    async def _get_today_journals(self, user_id: UUID, today: datetime) -> list[dict]:
         """Get journals created today."""
         try:
-            # Get recent journals and filter by today
             journals = await self.journal_repo.get_journals(
-                user_id or DEFAULT_USER_ID,
+                user_id,
                 limit=20,
             )
 
@@ -172,11 +165,7 @@ class DigestService:
         sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
         return [tag for tag, _ in sorted_tags]
 
-    async def _generate_questions(
-        self,
-        memories: list[dict],
-        journals: list[dict]
-    ) -> list[str]:
+    async def _generate_questions(self, memories: list[dict], journals: list[dict]) -> list[str]:
         """Generate AI-powered reflection questions based on today's content."""
         if not memories and not journals:
             return ["오늘 하루는 어떠셨나요?"]
@@ -205,8 +194,8 @@ class DigestService:
                 HumanMessage(content="Today's content:\n" + "\n".join(context_parts)),
             ]
 
-            response = llm.invoke(messages)
-            questions = [q.strip() for q in response.content.split('\n') if q.strip()]
+            response = await llm.ainvoke(messages)
+            questions = [q.strip() for q in response.content.split("\n") if q.strip()]
             return questions[:2]
 
         except Exception:

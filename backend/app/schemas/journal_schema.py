@@ -2,6 +2,7 @@
 Journal Schemas
 Request/Response DTOs for journal endpoints
 """
+
 from typing import Any
 from uuid import UUID
 

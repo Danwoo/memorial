@@ -2,6 +2,7 @@
 Supabase Client Singleton
 Provides authenticated Supabase client for database operations
 """
+
 import logging
 from functools import lru_cache
 
@@ -29,8 +30,4 @@ def get_supabase_client() -> Client:
     # Use service role key if available, otherwise anon key
     key = settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_ANON_KEY
 
-    return create_client(
-        settings.SUPABASE_URL,
-        key
-    )
-
+    return create_client(settings.SUPABASE_URL, key)

@@ -2,6 +2,7 @@
 Integrations Router
 External service connections (Kakao, etc.)
 """
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -32,7 +33,7 @@ async def get_kakao_auth_url(
     kakao_service: KakaoService = Depends(get_kakao_service),
 ):
     """Get Kakao OAuth authorization URL."""
-    auth_url = kakao_service.get_auth_url()
+    auth_url = kakao_service.get_auth_url(state=str(user_id))
     return KakaoAuthResponse(
         auth_url=auth_url,
         message="Redirect user to auth_url to connect KakaoTalk",
@@ -42,14 +43,21 @@ async def get_kakao_auth_url(
 @router.get("/kakao/callback")
 async def kakao_oauth_callback(
     code: str = Query(...),
+    state: str = Query(""),
     kakao_service: KakaoService = Depends(get_kakao_service),
 ):
     """Handle Kakao OAuth callback (public -- Kakao redirects here)."""
     settings = get_settings()
     frontend_url = settings.FRONTEND_URL
 
+    if not state:
+        return RedirectResponse(
+            url=f"{frontend_url}/settings?kakao=error&message=missing+user+state",
+            status_code=302,
+        )
+
     try:
-        await kakao_service.exchange_code_for_token(code, "default_user")
+        await kakao_service.exchange_code_for_token(code, state)
         return RedirectResponse(
             url=f"{frontend_url}/settings?kakao=connected",
             status_code=302,
@@ -91,11 +99,7 @@ async def send_kakao_message(
 
     settings = get_settings()
     frontend_url = settings.FRONTEND_URL
-    link_url = (
-        f"{frontend_url}/memories/{request.memory_id}"
-        if request.memory_id
-        else None
-    )
+    link_url = f"{frontend_url}/memories/{request.memory_id}" if request.memory_id else None
 
     try:
         await kakao_service.send_message_to_me(
@@ -106,9 +110,7 @@ async def send_kakao_message(
         )
         return SendMessageResponse(success=True, message="Message sent to KakaoTalk")
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to send message: {e!s}"
-        ) from e
+        raise HTTPException(status_code=500, detail=f"Failed to send message: {e!s}") from e
 
 
 @router.post("/kakao/disconnect")

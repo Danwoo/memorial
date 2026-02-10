@@ -2,6 +2,7 @@
 Kakao Integration Schemas
 Pydantic models for Kakao API request/response payloads.
 """
+
 from pydantic import BaseModel
 
 

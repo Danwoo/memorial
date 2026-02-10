@@ -2,6 +2,7 @@
 Memory Service
 Business logic for memory operations
 """
+
 from uuid import UUID
 
 from app.repositories.graph_repository import GraphRepository
@@ -14,10 +15,7 @@ class MemoryService:
     """Service for memory business logic"""
 
     def __init__(
-        self,
-        memory_repo: MemoryRepository,
-        vector_repo: VectorRepository,
-        graph_repo: GraphRepository | None = None
+        self, memory_repo: MemoryRepository, vector_repo: VectorRepository, graph_repo: GraphRepository | None = None
     ):
         self.memory_repo = memory_repo
         self.vector_repo = vector_repo
@@ -46,35 +44,19 @@ class MemoryService:
         )
 
         # Generate and save embedding
-        await self.vector_repo.save_embedding(
-            memory_id=str(memory.id),
-            content=f"{memory.title}\n\n{memory.content}"
-        )
+        await self.vector_repo.save_embedding(memory_id=str(memory.id), content=f"{memory.title}\n\n{memory.content}")
 
         return memory
 
-    async def get_memory(
-        self,
-        memory_id: UUID,
-        user_id: UUID
-    ) -> MemoryInDB | None:
+    async def get_memory(self, memory_id: UUID, user_id: UUID) -> MemoryInDB | None:
         """Get a memory by ID."""
         return await self.memory_repo.get_by_id(memory_id, user_id)
 
     async def list_memories(
-        self,
-        user_id: UUID,
-        page: int = 1,
-        limit: int = 20,
-        search: str | None = None
+        self, user_id: UUID, page: int = 1, limit: int = 20, search: str | None = None
     ) -> tuple[list[MemoryInDB], int]:
         """Get paginated list of memories."""
-        return await self.memory_repo.get_by_user(
-            user_id=user_id,
-            page=page,
-            limit=limit,
-            search=search
-        )
+        return await self.memory_repo.get_by_user(user_id=user_id, page=page, limit=limit, search=search)
 
     async def update_memory_after_processing(
         self,
@@ -84,7 +66,7 @@ class MemoryService:
         entities: list[dict] | None = None,
         relations: list[dict] | None = None,
         source_url: str | None = None,
-        source_type: str | None = None
+        source_type: str | None = None,
     ) -> bool:
         """
         Update memory after Librarian agent processing.
@@ -97,7 +79,7 @@ class MemoryService:
             summary=summary,
             tags=tags,
             source_url=source_url,
-            source_type=source_type
+            source_type=source_type,
         )
 
         # Save graph data if available
@@ -109,11 +91,9 @@ class MemoryService:
 
         return success
 
-    async def delete_memory(
-        self,
-        memory_id: UUID,
-        user_id: UUID
-    ) -> bool:
-        """Delete a memory."""
-        # TODO: Also delete from Neo4j graph
-        return await self.memory_repo.delete(memory_id, user_id)
+    async def delete_memory(self, memory_id: UUID, user_id: UUID) -> bool:
+        """Delete a memory and its associated graph data."""
+        deleted = await self.memory_repo.delete(memory_id, user_id)
+        if deleted and self.graph_repo:
+            await self.graph_repo.delete_memory_node(str(memory_id))
+        return deleted

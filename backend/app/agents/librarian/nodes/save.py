@@ -2,12 +2,13 @@
 Save Node - Persist processed data to database
 Updates memory with classification results and triggers graph sync
 """
+
 import logging
 from uuid import UUID
 
 from app.agents.state import AgentState
 from app.config.database import get_supabase_client
-from app.repositories.graph_repository import GraphRepository
+from app.config.dependencies import get_graph_repository
 from app.repositories.memory_repository import MemoryRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.memory_service import MemoryService
@@ -28,11 +29,10 @@ async def save_node(state: AgentState) -> dict:
         return {"next_step": "end", "error": "No memory_id provided"}
 
     try:
-        # Dependency Injection (Manual)
         db = get_supabase_client()
         memory_repo = MemoryRepository(db)
         vector_repo = VectorRepository(db)
-        graph_repo = GraphRepository()
+        graph_repo = get_graph_repository()
 
         memory_service = MemoryService(memory_repo, vector_repo, graph_repo)
 
@@ -44,8 +44,9 @@ async def save_node(state: AgentState) -> dict:
         entities = state.get("extracted_entities", [])
         relations = state.get("extracted_relations", [])
 
-        logger.info("Save node: %d entities, %d relations, graph=%s",
-                    len(entities), len(relations), graph_repo.is_connected)
+        logger.info(
+            "Save node: %d entities, %d relations, graph=%s", len(entities), len(relations), graph_repo.is_connected
+        )
 
         source_url = state.get("source_url")
         source_type = "WEB" if source_url else None
@@ -61,7 +62,7 @@ async def save_node(state: AgentState) -> dict:
                 summary="Spam detected",
                 tags=tags,
                 source_url=source_url,
-                source_type=source_type
+                source_type=source_type,
             )
             # Maybe delete embedding? Service creates embedding on create.
             pass
@@ -74,7 +75,7 @@ async def save_node(state: AgentState) -> dict:
                 entities=entities,
                 relations=relations,
                 source_url=source_url,
-                source_type=source_type
+                source_type=source_type,
             )
 
         return {"next_step": "end"}

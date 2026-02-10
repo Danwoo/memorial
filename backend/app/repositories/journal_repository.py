@@ -5,6 +5,7 @@ Data access layer for journals table in Supabase.
 All public methods are async and delegate synchronous Supabase calls
 to a thread via ``asyncio.to_thread`` so that the event loop is never blocked.
 """
+
 import asyncio
 from datetime import UTC, datetime
 from typing import Any
@@ -52,9 +53,7 @@ class JournalRepository:
         offset: int = 0,
     ) -> list[dict[str, Any]]:
         """Get list of journals for a user."""
-        response = await asyncio.to_thread(
-            self._select_by_user, str(user_id), limit, offset
-        )
+        response = await asyncio.to_thread(self._select_by_user, str(user_id), limit, offset)
         return response.data
 
     async def update_journal(
@@ -71,9 +70,7 @@ class JournalRepository:
         if mood:
             data["mood"] = mood
 
-        response = await asyncio.to_thread(
-            self._update, str(journal_id), data
-        )
+        response = await asyncio.to_thread(self._update, str(journal_id), data)
         return response.data[0] if response.data else None
 
     # ------------------------------------------------------------------
@@ -94,9 +91,4 @@ class JournalRepository:
         )
 
     def _update(self, journal_id: str, data: dict):
-        return (
-            self.db.table("journals")
-            .update(data)
-            .eq("id", journal_id)
-            .execute()
-        )
+        return self.db.table("journals").update(data).eq("id", journal_id).execute()

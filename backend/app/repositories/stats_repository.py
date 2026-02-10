@@ -5,6 +5,7 @@ Data access layer for statistics queries from Supabase.
 All public methods are async and delegate synchronous Supabase calls
 to a thread via ``asyncio.to_thread`` so that the event loop is never blocked.
 """
+
 import asyncio
 from datetime import datetime
 from typing import Any
@@ -35,9 +36,7 @@ class StatsRepository:
         end_date: datetime,
     ) -> list[dict[str, Any]]:
         """Get memories created within a date range."""
-        result = await asyncio.to_thread(
-            self._select_range, str(user_id), start_date.isoformat(), end_date.isoformat()
-        )
+        result = await asyncio.to_thread(self._select_range, str(user_id), start_date.isoformat(), end_date.isoformat())
         return result.data or []
 
     async def get_memories_by_date(
@@ -48,9 +47,7 @@ class StatsRepository:
     ) -> list[dict[str, Any]]:
         """Get memories ordered by date for timeline."""
         offset = (page - 1) * limit
-        result = await asyncio.to_thread(
-            self._select_by_date, str(user_id), offset, limit
-        )
+        result = await asyncio.to_thread(self._select_by_date, str(user_id), offset, limit)
         return result.data or []
 
     async def count_by_source_type(self, user_id: UUID) -> dict[str, int]:
@@ -82,12 +79,7 @@ class StatsRepository:
     # ------------------------------------------------------------------
 
     def _select_all(self, user_id: str):
-        return (
-            self.db.table("memories")
-            .select("*")
-            .eq("user_id", user_id)
-            .execute()
-        )
+        return self.db.table("memories").select("*").eq("user_id", user_id).execute()
 
     def _select_range(self, user_id: str, start_iso: str, end_iso: str):
         return (
@@ -110,17 +102,7 @@ class StatsRepository:
         )
 
     def _select_source_types(self, user_id: str):
-        return (
-            self.db.table("memories")
-            .select("source_type")
-            .eq("user_id", user_id)
-            .execute()
-        )
+        return self.db.table("memories").select("source_type").eq("user_id", user_id).execute()
 
     def _select_tags(self, user_id: str):
-        return (
-            self.db.table("memories")
-            .select("tags")
-            .eq("user_id", user_id)
-            .execute()
-        )
+        return self.db.table("memories").select("tags").eq("user_id", user_id).execute()

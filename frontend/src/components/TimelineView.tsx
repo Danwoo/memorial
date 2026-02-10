@@ -20,22 +20,24 @@ export default function TimelineView() {
 
       const newData = await fetchTimeline(pageNum)
 
-      if (append && data) {
-        // Merge timeline groups by date
-        const merged = [...data.timeline]
-        
-        for (const group of newData.timeline) {
-          const existing = merged.find(g => g.date === group.date)
-          if (existing) {
-            existing.memories.push(...group.memories)
-          } else {
-            merged.push(group)
+      if (append) {
+        setData(prev => {
+          if (!prev) return newData
+          const merged = prev.timeline.map(g => ({
+            ...g,
+            memories: [...g.memories],
+          }))
+
+          for (const group of newData.timeline) {
+            const existing = merged.find(g => g.date === group.date)
+            if (existing) {
+              existing.memories = [...existing.memories, ...group.memories]
+            } else {
+              merged.push(group)
+            }
           }
-        }
-        
-        setData({
-          ...newData,
-          timeline: merged
+
+          return { ...newData, timeline: merged }
         })
       } else {
         setData(newData)
@@ -46,12 +48,11 @@ export default function TimelineView() {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [data])
+  }, [])
 
   useEffect(() => {
     loadTimeline(1)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [loadTimeline])
 
   // Infinite scroll observer
   useEffect(() => {
@@ -120,8 +121,8 @@ export default function TimelineView() {
       <div className="timeline-container">
         <div className="timeline-line"></div>
         
-        {data.timeline.map((group, groupIdx) => (
-          <div key={groupIdx} className="timeline-group">
+        {data.timeline.map((group) => (
+          <div key={group.date} className="timeline-group">
             <div className="timeline-date-marker">
               <span className="date-label">{formatRelativeDate(group.date)}</span>
             </div>

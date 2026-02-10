@@ -5,6 +5,7 @@ Data access layer for vector embeddings and similarity search using Supabase pgv
 Embedding generation uses LangChain's native async API.
 Synchronous Supabase calls are delegated to a thread via ``asyncio.to_thread``.
 """
+
 import asyncio
 from typing import Any
 
@@ -43,9 +44,7 @@ class VectorRepository:
             return
 
         embedding = await self.embed_query(content)
-        await asyncio.to_thread(
-            self._update_embedding, memory_id, embedding
-        )
+        await asyncio.to_thread(self._update_embedding, memory_id, embedding)
 
     async def similarity_search(
         self,
@@ -72,12 +71,7 @@ class VectorRepository:
     # ------------------------------------------------------------------
 
     def _update_embedding(self, memory_id: str, embedding: list[float]):
-        return (
-            self.db.table("memories")
-            .update({"embedding": embedding})
-            .eq("id", memory_id)
-            .execute()
-        )
+        return self.db.table("memories").update({"embedding": embedding}).eq("id", memory_id).execute()
 
     def _rpc_match(self, rpc_params: dict):
         return self.db.rpc("match_memories", rpc_params).execute()

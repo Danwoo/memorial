@@ -1,6 +1,7 @@
 """
 Memoir AI - FastAPI Application Entry Point
 """
+
 from fastapi import FastAPI
 
 from app.config.error_handler import register_error_handlers

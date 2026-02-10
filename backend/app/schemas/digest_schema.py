@@ -2,6 +2,7 @@
 Digest Schemas
 Request/Response DTOs for daily digest endpoints
 """
+
 from pydantic import BaseModel
 
 

@@ -2,6 +2,7 @@
 Graph Service
 Business logic for knowledge graph operations
 """
+
 import logging
 from typing import Any
 
@@ -24,10 +25,7 @@ class GraphService:
         return self.graph_repo.is_connected
 
     async def save_knowledge_graph(
-        self,
-        memory_id: str,
-        entities: list[dict[str, Any]],
-        relations: list[dict[str, Any]]
+        self, memory_id: str, entities: list[dict[str, Any]], relations: list[dict[str, Any]]
     ) -> bool:
         """
         Save extracted entities and relations to the knowledge graph.
@@ -44,10 +42,7 @@ class GraphService:
             logger.exception("Error saving to graph")
             return False
 
-    async def get_visualization_data(
-        self,
-        limit: int = 100
-    ) -> dict[str, Any]:
+    async def get_visualization_data(self, limit: int = 100) -> dict[str, Any]:
         """
         Get graph data for D3 visualization.
         Returns nodes and links from Neo4j.

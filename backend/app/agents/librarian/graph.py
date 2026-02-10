@@ -14,6 +14,7 @@ Workflow:
                    |
                    +-------> END (if SPAM)
 """
+
 from langgraph.graph import END, StateGraph
 
 from app.agents.librarian.nodes.curator import curator_node
@@ -56,13 +57,7 @@ def create_librarian_graph() -> StateGraph:
 
     # Add conditional edge from curator
     graph.add_conditional_edges(
-        "curator",
-        route_after_curator,
-        {
-            "ontologist": "ontologist",
-            "save": "save",
-            "end": END
-        }
+        "curator", route_after_curator, {"ontologist": "ontologist", "save": "save", "end": END}
     )
 
     # Ontologist always goes to save

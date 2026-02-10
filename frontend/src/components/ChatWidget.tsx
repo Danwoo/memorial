@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import type { ChatMessage, ChatMode, ChatModeOption, ChatLocationState } from '../types'
-import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream } from '../api'
+import type { ChatMessage, ChatMode, ChatModeOption } from '../types'
+import { createChatSession, sendChatMessage, readSSEStream } from '../api'
 import './ChatView.css'
 
 const MODES: ChatModeOption[] = [
@@ -14,50 +13,20 @@ const MODES: ChatModeOption[] = [
   { value: 'evening', label: '저녁 회고', icon: '🌙', desc: '하루 돌아보기' }
 ]
 
-export default function ChatView() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { sessionId: urlSessionId } = useParams<{ sessionId: string }>()
-
-  const [sessionId, setSessionId] = useState<string | null>(urlSessionId ?? null)
+/**
+ * Embeddable chat component without routing.
+ * Used inside JournalView's "Thinking Partner" section.
+ */
+export default function ChatWidget() {
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [mode, setMode] = useState<ChatMode>('')
   const [showModes, setShowModes] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Load history when entering via URL param (e.g. /chat/abc-123)
-  // sessionId intentionally excluded: adding it would cause infinite loop
-  // since setSessionId inside triggers re-render
-  useEffect(() => {
-    if (urlSessionId && urlSessionId !== sessionId) {
-      setSessionId(urlSessionId)
-      loadHistory(urlSessionId)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlSessionId])
-
-  // Handle location state: newSession or topic from GraphView
-  useEffect(() => {
-    const state = location.state as ChatLocationState | null
-    if (state?.newSession) {
-      setSessionId(null)
-      setMessages([])
-      window.history.replaceState({}, '')
-    } else if (state?.topic) {
-      setSessionId(null)
-      setMessages([])
-      if (state.mode) setMode(state.mode as ChatMode)
-      const topicMessage = `${state.topic}에 대해 이야기하고 싶어. 내가 저장한 관련 지식을 바탕으로 대화해줘.`
-      setInput(topicMessage)
-      window.history.replaceState({}, '')
-    }
-  }, [location.state])
-
-  // Cleanup: abort any in-flight SSE stream on unmount
   useEffect(() => {
     return () => {
       abortControllerRef.current?.abort()
@@ -72,18 +41,6 @@ export default function ChatView() {
     scrollToBottom()
   }, [messages])
 
-  const loadHistory = async (sid: string) => {
-    setIsLoadingHistory(true)
-    try {
-      const history = await fetchChatHistory(sid)
-      setMessages(history)
-    } catch (error) {
-      console.error('Failed to load chat history:', error)
-    } finally {
-      setIsLoadingHistory(false)
-    }
-  }
-
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return
 
@@ -96,27 +53,21 @@ export default function ChatView() {
     abortControllerRef.current = abortController
 
     try {
-      // Create session if needed
       let currentSessionId = sessionId
       if (!currentSessionId) {
         const session = await createChatSession()
         currentSessionId = session.id
         setSessionId(currentSessionId)
-        // Update URL to include session ID (replace, not push)
-        navigate(`/chat/${currentSessionId}`, { replace: true })
       }
 
-      // Send message and get SSE response
       const response = await sendChatMessage(
         currentSessionId,
         { content: userMessage, mode: mode || undefined },
         abortController.signal,
       )
 
-      // Add placeholder for assistant message
       setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
-      // Stream the response
       await readSSEStream(response, (accumulated) => {
         setMessages(prev => {
           const updated = [...prev]
@@ -149,12 +100,8 @@ export default function ChatView() {
   const currentMode = MODES.find(m => m.value === mode) || MODES[0]
 
   return (
-    <div className="chat-view">
+    <div className="chat-view chat-widget">
       <div className="chat-header">
-        <div>
-          <h1>Socrates</h1>
-          <p className="chat-subtitle">당신의 지적 동반자</p>
-        </div>
         <div className="mode-selector">
           <button
             className="mode-toggle"
@@ -185,28 +132,14 @@ export default function ChatView() {
       </div>
 
       <div className="chat-messages">
-        {isLoadingHistory ? (
-          <div className="chat-empty">
-            <div className="empty-icon">...</div>
-            <p>대화 기록을 불러오는 중...</p>
-          </div>
-        ) : messages.length === 0 ? (
+        {messages.length === 0 ? (
           <div className="chat-empty">
             <div className="empty-icon">🤔</div>
-            <h2>무엇이 궁금하신가요?</h2>
-            <p>저장된 지식을 바탕으로 대화해보세요</p>
-            {mode && (
-              <div className="mode-active-hint">
-                {currentMode.icon} <strong>{currentMode.label}</strong> 모드 활성화됨
-              </div>
-            )}
+            <p>글 작성 중 궁금한 점을 물어보세요</p>
           </div>
         ) : (
           messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`message ${msg.role}`}
-            >
+            <div key={idx} className={`message ${msg.role}`}>
               <div className="message-avatar">
                 {msg.role === 'user' ? '👤' : '🧠'}
               </div>

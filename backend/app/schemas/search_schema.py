@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 class SearchResult(BaseModel):
     """Single search result item"""
+
     id: str
     title: str
     content: str
@@ -20,6 +21,7 @@ class SearchResult(BaseModel):
 
 class SearchResponse(BaseModel):
     """Search response with results and metadata"""
+
     query: str
     results: list[SearchResult]
     total: int
@@ -28,6 +30,7 @@ class SearchResponse(BaseModel):
 
 class RelatedMemory(BaseModel):
     """Related memory item for recommendations"""
+
     id: str
     title: str
     similarity: float
@@ -35,5 +38,6 @@ class RelatedMemory(BaseModel):
 
 class RelatedMemoriesResponse(BaseModel):
     """Response for related memories endpoint"""
+
     source_id: str
     related: list[RelatedMemory]

@@ -2,6 +2,7 @@
 Stats Service
 Business logic for dashboard statistics
 """
+
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -15,6 +16,7 @@ from app.schemas.stats_schema import (
     TagStats,
     TimelineGroup,
 )
+from app.utils import parse_iso_datetime
 
 
 class StatsService:
@@ -42,9 +44,7 @@ class StatsService:
             created_at_str = memory.get("created_at", "")
             if created_at_str:
                 try:
-                    created_at = datetime.fromisoformat(
-                        created_at_str.replace("Z", "+00:00")
-                    )
+                    created_at = parse_iso_datetime(created_at_str)
 
                     if created_at >= week_ago:
                         weekly_count += 1
@@ -74,26 +74,19 @@ class StatsService:
             total_memories=total,
             total_this_week=weekly_count,
             total_this_month=monthly_count,
-            most_active_day=most_active_day
+            most_active_day=most_active_day,
         )
 
         # Recent activity (last 30 days)
         recent_activity = []
         for i in range(30):
             date = (now - timedelta(days=i)).strftime("%Y-%m-%d")
-            recent_activity.append(ActivityData(
-                date=date,
-                count=day_counts.get(date, 0)
-            ))
+            recent_activity.append(ActivityData(date=date, count=day_counts.get(date, 0)))
         recent_activity.reverse()
 
         # Source stats
         sources = [
-            SourceStats(
-                source_type=st,
-                count=cnt,
-                percentage=cnt / total * 100 if total > 0 else 0
-            )
+            SourceStats(source_type=st, count=cnt, percentage=cnt / total * 100 if total > 0 else 0)
             for st, cnt in source_counts.items()
         ]
 
@@ -102,10 +95,7 @@ class StatsService:
         top_tags = [TagStats(tag=tag, count=cnt) for tag, cnt in sorted_tags]
 
         return StatsOverviewResponse(
-            overview=overview,
-            recent_activity=recent_activity,
-            sources=sources,
-            top_tags=top_tags
+            overview=overview, recent_activity=recent_activity, sources=sources, top_tags=top_tags
         )
 
     async def get_activity(
@@ -124,9 +114,7 @@ class StatsService:
             created_at_str = memory.get("created_at", "")
             if created_at_str:
                 try:
-                    created_at = datetime.fromisoformat(
-                        created_at_str.replace("Z", "+00:00")
-                    )
+                    created_at = parse_iso_datetime(created_at_str)
                     day_key = created_at.strftime("%Y-%m-%d")
                     day_counts[day_key] = day_counts.get(day_key, 0) + 1
                 except Exception:
@@ -154,9 +142,7 @@ class StatsService:
             created_at_str = memory.get("created_at", "")
             if created_at_str:
                 try:
-                    created_at = datetime.fromisoformat(
-                        created_at_str.replace("Z", "+00:00")
-                    )
+                    created_at = parse_iso_datetime(created_at_str)
                     day_key = created_at.strftime("%Y-%m-%d")
                     if day_key not in grouped:
                         grouped[day_key] = []
@@ -164,14 +150,6 @@ class StatsService:
                 except Exception:
                     pass
 
-        timeline = [
-            TimelineGroup(date=date, memories=mems)
-            for date, mems in sorted(grouped.items(), reverse=True)
-        ]
+        timeline = [TimelineGroup(date=date, memories=mems) for date, mems in sorted(grouped.items(), reverse=True)]
 
-        return {
-            "page": page,
-            "limit": limit,
-            "timeline": timeline,
-            "has_more": len(memories) == limit
-        }
+        return {"page": page, "limit": limit, "timeline": timeline, "has_more": len(memories) == limit}

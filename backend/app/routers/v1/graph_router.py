@@ -2,6 +2,7 @@
 Graph Router
 API endpoints for knowledge graph visualization
 """
+
 from typing import Any
 from uuid import UUID
 

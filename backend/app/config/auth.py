@@ -6,6 +6,7 @@ Dev bypass: When ``Settings.DEBUG`` is ``True`` and no Bearer token is
 provided, a default dev user (``DEFAULT_USER_ID``) is returned so the
 frontend can operate without a real login.
 """
+
 from uuid import UUID
 
 import httpx

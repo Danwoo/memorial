@@ -7,13 +7,14 @@ The Curator is the "Gatekeeper" that:
 2. Generates tags
 3. Creates a one-line summary
 """
-import json
+
 import logging
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.agents.state import AgentState
 from app.config.llm import get_analytical_llm
+from app.utils import parse_llm_json_response
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ async def curator_node(state: AgentState) -> dict:
             "summary": "Empty content",
             "tags": [],
             "next_step": "end",
-            "error": "No target text provided"
+            "error": "No target text provided",
         }
 
     # Detect if input is a URL
@@ -73,7 +74,7 @@ async def curator_node(state: AgentState) -> dict:
         state["source_url"] = source_url  # Save URL to state
 
     # Truncate if too long (save tokens)
-    max_chars = 12000 # Increased limit
+    max_chars = 12000  # Increased limit
     if len(target_text) > max_chars:
         target_text = target_text[:max_chars] + "\n\n[Content truncated...]"
 
@@ -83,7 +84,7 @@ async def curator_node(state: AgentState) -> dict:
     # Build messages
     messages = [
         SystemMessage(content=CURATOR_SYSTEM_PROMPT),
-        HumanMessage(content=f"Analyze this content:\n\n{target_text}")
+        HumanMessage(content=f"Analyze this content:\n\n{target_text}"),
     ]
 
     try:
@@ -91,40 +92,24 @@ async def curator_node(state: AgentState) -> dict:
         response = await llm.ainvoke(messages)
         content = response.content.strip()
 
-        # Parse JSON response
-        # Handle potential markdown code blocks
-        if content.startswith("```"):
-            content = content.split("```")[1]
-            if content.startswith("json"):
-                content = content[4:]
-
-        result = json.loads(content)
+        # Parse JSON response (strips markdown code fences)
+        result = parse_llm_json_response(content)
 
         category = result.get("category", "FACT")
         tags = result.get("tags", [])
         summary = result.get("summary", "")
 
-        # Determine next step based on classification
-        if category == "SPAM":
-            next_step = "end"
-        else:
-            # Both INSIGHT and FACT go through Ontologist for entity extraction
-            next_step = "ontologist"
+        next_step = "end" if category == "SPAM" else "ontologist"
 
-        return {
-            "classification": category,
-            "tags": tags,
-            "summary": summary,
-            "next_step": next_step
-        }
+        return {"classification": category, "tags": tags, "summary": summary, "next_step": next_step}
 
-    except json.JSONDecodeError as e:
+    except (ValueError, KeyError) as e:
         return {
             "classification": "FACT",
             "tags": [],
             "summary": "Failed to parse classification",
             "next_step": "save",
-            "error": f"JSON parse error: {str(e)}"
+            "error": f"JSON parse error: {str(e)}",
         }
     except Exception as e:
         return {
@@ -132,5 +117,5 @@ async def curator_node(state: AgentState) -> dict:
             "tags": [],
             "summary": "Error during classification",
             "next_step": "save",
-            "error": str(e)
+            "error": str(e),
         }

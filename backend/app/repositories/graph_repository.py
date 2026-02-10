@@ -2,6 +2,7 @@
 Graph Repository
 Data access layer for Neo4j knowledge graph
 """
+
 import asyncio
 import logging
 
@@ -12,19 +13,51 @@ from app.config.settings import get_settings
 logger = logging.getLogger(__name__)
 
 # Allowed node labels (extend as new entity types are added)
-ALLOWED_NODE_LABELS = frozenset({
-    "Concept", "Person", "Organization", "Location", "Event",
-    "Technology", "Product", "Memory", "Topic", "Idea",
-    "Company", "Platform", "Framework", "Language", "Tool",
-})
+ALLOWED_NODE_LABELS = frozenset(
+    {
+        "Concept",
+        "Person",
+        "Organization",
+        "Location",
+        "Event",
+        "Technology",
+        "Product",
+        "Memory",
+        "Topic",
+        "Idea",
+        "Company",
+        "Platform",
+        "Framework",
+        "Language",
+        "Tool",
+    }
+)
 
 # Allowed relationship types
-ALLOWED_REL_TYPES = frozenset({
-    "RELATED_TO", "MENTIONS", "PART_OF", "CAUSED_BY", "DEPENDS_ON",
-    "SIMILAR_TO", "OPPOSITE_OF", "DERIVED_FROM", "USED_BY", "CREATED_BY",
-    "WORKS_AT", "LOCATED_IN", "BELONGS_TO", "HAS", "IS_A",
-    "USES", "USED_FOR", "BUILT_WITH", "INSPIRED_BY", "CONTAINS",
-})
+ALLOWED_REL_TYPES = frozenset(
+    {
+        "RELATED_TO",
+        "MENTIONS",
+        "PART_OF",
+        "CAUSED_BY",
+        "DEPENDS_ON",
+        "SIMILAR_TO",
+        "OPPOSITE_OF",
+        "DERIVED_FROM",
+        "USED_BY",
+        "CREATED_BY",
+        "WORKS_AT",
+        "LOCATED_IN",
+        "BELONGS_TO",
+        "HAS",
+        "IS_A",
+        "USES",
+        "USED_FOR",
+        "BUILT_WITH",
+        "INSPIRED_BY",
+        "CONTAINS",
+    }
+)
 
 MAX_GRAPH_QUERY_LIMIT = 1000
 MAX_GRAPH_TRAVERSAL_DEPTH = 3
@@ -73,9 +106,7 @@ class GraphRepository:
 
         try:
             self.graph = Neo4jGraph(
-                url=settings.NEO4J_URI,
-                username=settings.NEO4J_USER or "neo4j",
-                password=settings.NEO4J_PASSWORD
+                url=settings.NEO4J_URI, username=settings.NEO4J_USER or "neo4j", password=settings.NEO4J_PASSWORD
             )
         except Exception:
             logger.exception("Failed to connect to Neo4j")
@@ -98,10 +129,7 @@ class GraphRepository:
             self.graph.query(query, {"name": name})
 
         # Link entities to source memory
-        self.graph.query(
-            "MERGE (m:Memory {id: $id})",
-            {"id": str(source_id)}
-        )
+        self.graph.query("MERGE (m:Memory {id: $id})", {"id": str(source_id)})
 
         for entity in entities:
             name = entity.get("name")
@@ -114,11 +142,7 @@ class GraphRepository:
             """
             self.graph.query(query, {"id": str(source_id), "name": name})
 
-    async def save_entities(
-        self,
-        entities: list[dict],
-        source_id: str
-    ) -> None:
+    async def save_entities(self, entities: list[dict], source_id: str) -> None:
         """Save entities to Neo4j graph."""
         if not self.graph:
             return
@@ -140,10 +164,7 @@ class GraphRepository:
             """
             self.graph.query(query, {"source": source, "target": target})
 
-    async def save_relations(
-        self,
-        relations: list[dict]
-    ) -> None:
+    async def save_relations(self, relations: list[dict]) -> None:
         """Save relations to Neo4j graph."""
         if not self.graph:
             return
@@ -171,37 +192,30 @@ class GraphRepository:
         links = []
 
         for record in results:
-            source_id = record.get('source_id') or record.get('source_name')
-            source_label = record.get('source_label', 'Unknown')
+            source_id = record.get("source_id") or record.get("source_name")
+            source_label = record.get("source_label", "Unknown")
             if source_id and source_id not in nodes:
                 nodes[source_id] = {
                     "id": source_id,
                     "label": source_label,
                     "group": source_label,
-                    "name": record.get('source_name', source_id),
+                    "name": record.get("source_name", source_id),
                 }
 
-            target_id = record.get('target_id') or record.get('target_name')
-            target_label = record.get('target_label', 'Unknown')
+            target_id = record.get("target_id") or record.get("target_name")
+            target_label = record.get("target_label", "Unknown")
             if target_id and target_id not in nodes:
                 nodes[target_id] = {
                     "id": target_id,
                     "label": target_label,
                     "group": target_label,
-                    "name": record.get('target_name', target_id),
+                    "name": record.get("target_name", target_id),
                 }
 
             if source_id and target_id:
-                links.append({
-                    "source": source_id,
-                    "target": target_id,
-                    "type": record.get('rel_type', 'RELATED_TO')
-                })
+                links.append({"source": source_id, "target": target_id, "type": record.get("rel_type", "RELATED_TO")})
 
-        return {
-            "nodes": list(nodes.values()),
-            "links": links
-        }
+        return {"nodes": list(nodes.values()), "links": links}
 
     def _sync_get_related_context(self, topic: str, depth: int) -> list[dict]:
         """Synchronous: find entities related to a topic within N hops."""
@@ -230,6 +244,22 @@ class GraphRepository:
             logger.exception("Error fetching related context for '%s'", topic)
             return []
 
+    def _sync_delete_memory_node(self, memory_id: str) -> None:
+        """Delete a Memory node and its MENTIONS relationships from Neo4j."""
+        self.graph.query(
+            "MATCH (m:Memory {id: $id})-[r:MENTIONS]->() DELETE r, m",
+            {"id": memory_id},
+        )
+
+    async def delete_memory_node(self, memory_id: str) -> None:
+        """Delete a Memory node and its relationships from the graph."""
+        if not self.graph:
+            return
+        try:
+            await asyncio.to_thread(self._sync_delete_memory_node, memory_id)
+        except Exception:
+            logger.exception("Error deleting memory node '%s' from Neo4j", memory_id)
+
     async def get_graph_data(self, limit: int = 100) -> dict[str, list]:
         """
         Retrieve graph data for visualization.
@@ -243,4 +273,3 @@ class GraphRepository:
         except Exception:
             logger.exception("Error fetching graph data")
             return {"nodes": [], "links": []}
-

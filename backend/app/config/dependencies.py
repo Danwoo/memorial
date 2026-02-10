@@ -5,6 +5,7 @@ Dependency injection configuration for repositories and services.
 All repository and service factory functions live here.
 Routers obtain instances exclusively via Depends(get_*).
 """
+
 from functools import lru_cache
 
 from fastapi import Depends
@@ -140,4 +141,5 @@ def get_digest_service(
 def get_kakao_service(db: Client = Depends(get_db)):
     """Get KakaoService instance."""
     from app.services.kakao_service import KakaoService
+
     return KakaoService(db)

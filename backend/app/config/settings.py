@@ -2,6 +2,7 @@
 Core Configuration for Memoir AI Backend
 Pydantic Settings for environment variable management
 """
+
 from functools import lru_cache
 from uuid import UUID
 

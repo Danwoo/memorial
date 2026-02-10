@@ -7,12 +7,12 @@ The Ontologist builds the Knowledge Graph by:
 2. Defining relationships between entities
 3. Using canonical names for deduplication
 """
-import json
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.agents.state import AgentState
 from app.config.llm import get_analytical_llm
+from app.utils import parse_llm_json_response
 
 ONTOLOGIST_SYSTEM_PROMPT = """You are the Ontologist. You build the Knowledge Graph.
 
@@ -53,11 +53,7 @@ async def ontologist_node(state: AgentState) -> dict:
     tags = state.get("tags", [])
 
     if not target_text:
-        return {
-            "extracted_entities": [],
-            "extracted_relations": [],
-            "next_step": "save"
-        }
+        return {"extracted_entities": [], "extracted_relations": [], "next_step": "save"}
 
     # Truncate if too long
     max_chars = 6000
@@ -81,44 +77,27 @@ async def ontologist_node(state: AgentState) -> dict:
 ---
 {target_text}"""
 
-    messages = [
-        SystemMessage(content=ONTOLOGIST_SYSTEM_PROMPT),
-        HumanMessage(content=user_content)
-    ]
+    messages = [SystemMessage(content=ONTOLOGIST_SYSTEM_PROMPT), HumanMessage(content=user_content)]
 
     try:
         # Call LLM
         response = await llm.ainvoke(messages)
         content = response.content.strip()
 
-        # Parse JSON response
-        if content.startswith("```"):
-            content = content.split("```")[1]
-            if content.startswith("json"):
-                content = content[4:]
-
-        result = json.loads(content)
+        # Parse JSON response (strips markdown code fences)
+        result = parse_llm_json_response(content)
 
         entities = result.get("entities", [])
         relations = result.get("relations", [])
 
-        return {
-            "extracted_entities": entities,
-            "extracted_relations": relations,
-            "next_step": "save"
-        }
+        return {"extracted_entities": entities, "extracted_relations": relations, "next_step": "save"}
 
-    except json.JSONDecodeError as e:
+    except (ValueError, KeyError) as e:
         return {
             "extracted_entities": [],
             "extracted_relations": [],
             "next_step": "save",
-            "error": f"JSON parse error: {str(e)}"
+            "error": f"JSON parse error: {str(e)}",
         }
     except Exception as e:
-        return {
-            "extracted_entities": [],
-            "extracted_relations": [],
-            "next_step": "save",
-            "error": str(e)
-        }
+        return {"extracted_entities": [], "extracted_relations": [], "next_step": "save", "error": str(e)}

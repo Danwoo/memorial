@@ -2,6 +2,7 @@
 Chat Router
 API endpoints for chat and Socratic dialogue
 """
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException

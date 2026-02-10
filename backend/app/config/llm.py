@@ -9,6 +9,7 @@ Two pre-configured profiles are available:
 Instances are cached per profile so that connection pooling and token
 counting overhead are paid only once.
 """
+
 from functools import lru_cache
 
 from langchain_openai import ChatOpenAI

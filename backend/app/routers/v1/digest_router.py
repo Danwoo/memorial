@@ -2,6 +2,7 @@
 Digest Router
 API endpoints for daily digest
 """
+
 from datetime import datetime
 from uuid import UUID
 

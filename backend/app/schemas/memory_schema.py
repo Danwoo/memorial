@@ -2,6 +2,7 @@
 Pydantic Schemas for Memory (지식 저장소)
 API Request/Response DTOs - Based on API_Spec.md
 """
+
 from datetime import datetime
 from typing import Literal
 from uuid import UUID
@@ -20,6 +21,7 @@ MemoryStatus = Literal["pending", "processing", "completed", "failed"]
 # ========================================
 class MemoryCreate(BaseModel):
     """POST /memories - Request Body"""
+
     source_type: SourceType = Field(alias="sourceType")
     url: str | None = None  # Required for WEB/PDF
     content: str | None = None  # Required for NOTE
@@ -34,12 +36,14 @@ class MemoryCreate(BaseModel):
 # ========================================
 class MemoryCreateResponse(BaseModel):
     """POST /memories - Response"""
+
     id: UUID
     status: MemoryStatus = "processing"
 
 
 class MemoryListItem(BaseModel):
     """GET /memories - List Item"""
+
     id: UUID
     title: str
     summary: str | None = None
@@ -52,12 +56,14 @@ class MemoryListItem(BaseModel):
 
 class MemoryListResponse(BaseModel):
     """GET /memories - Response"""
+
     items: list[MemoryListItem]
     total: int
 
 
 class MemoryDetail(BaseModel):
     """GET /memories/{id} - Response"""
+
     id: UUID
     title: str
     content: str
@@ -77,6 +83,7 @@ class MemoryDetail(BaseModel):
 # ========================================
 class MemoryInDB(BaseModel):
     """Database row representation"""
+
     id: UUID
     user_id: UUID
     title: str
