@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import type { ReactNode } from 'react'
-import type { Session } from '@supabase/supabase-js'
+import type { Session, UserIdentity } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import { fetchCurrentUser } from '../api'
+import { fetchCurrentUser, storeProviderToken } from '../api'
 import type { User } from '../types'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -17,6 +17,8 @@ interface AuthContextValue {
   signInWithKakao: () => Promise<void>
   signInAsDev: () => void
   signOut: () => Promise<void>
+  linkProvider: (provider: 'google' | 'kakao') => Promise<void>
+  unlinkProvider: (identity: UserIdentity) => Promise<void>
 }
 
 const DEV_USER: User = {
@@ -105,6 +107,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
             full_name: supaUser.user_metadata?.full_name,
             avatar_url: supaUser.user_metadata?.avatar_url,
           })
+
+          // Capture provider_token from Kakao OAuth and store it
+          if (newSession.provider_token) {
+            storeProviderToken(
+              newSession.provider_token,
+              newSession.provider_refresh_token,
+            ).catch(() => {
+              // Non-critical: token storage failure doesn't block auth
+            })
+          }
         } else {
           setUser(null)
         }
@@ -202,11 +214,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setSession(null)
   }, [syncTokenToStorage])
 
+  // ── Provider linking ──────────────────────────────────────────────────
+
+  const linkProvider = useCallback(async (provider: 'google' | 'kakao') => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured')
+    }
+    const options: { redirectTo: string; scopes?: string } = {
+      redirectTo: `${window.location.origin}/settings?linked=${provider}`,
+    }
+    if (provider === 'kakao') {
+      options.scopes = 'account_email profile_nickname talk_message'
+    }
+    const { error } = await supabase.auth.linkIdentity({
+      provider,
+      options,
+    })
+    if (error) throw error
+  }, [])
+
+  const unlinkProvider = useCallback(async (identity: UserIdentity) => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured')
+    }
+    const { error } = await supabase.auth.unlinkIdentity(identity)
+    if (error) throw error
+  }, [])
+
   // ── Memoized context value ──────────────────────────────────────────────
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, session, isLoading, signIn, signUp, signInWithGoogle, signInWithKakao, signInAsDev, signOut }),
-    [user, session, isLoading, signIn, signUp, signInWithGoogle, signInWithKakao, signInAsDev, signOut],
+    () => ({
+      user, session, isLoading,
+      signIn, signUp, signInWithGoogle, signInWithKakao, signInAsDev, signOut,
+      linkProvider, unlinkProvider,
+    }),
+    [user, session, isLoading, signIn, signUp, signInWithGoogle, signInWithKakao, signInAsDev, signOut, linkProvider, unlinkProvider],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

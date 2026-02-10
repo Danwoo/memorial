@@ -45,10 +45,6 @@ class Settings(BaseSettings):
     # Upstage (PDF Parsing)
     UPSTAGE_API_KEY: str | None = None
 
-    # Kakao API (KakaoTalk notifications)
-    KAKAO_REST_API_KEY: str | None = None
-    KAKAO_REDIRECT_URI: str = "http://localhost:8000/api/v1/integrations/kakao/callback"
-
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

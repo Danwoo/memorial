@@ -1,123 +1,94 @@
 """
 Integrations Router
-External service connections (Kakao, etc.)
+Account linking status and provider token storage.
 """
 
+import asyncio
+import logging
+import time
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import RedirectResponse
+import httpx
+from fastapi import APIRouter, Depends, HTTPException
+from supabase import Client
 
 from app.config.auth import get_user_id
-from app.config.dependencies import get_kakao_service
+from app.config.dependencies import get_db
 from app.config.settings import get_settings
-from app.schemas.kakao_schema import (
-    KakaoAuthResponse,
-    KakaoStatusResponse,
-    SendMessageRequest,
-    SendMessageResponse,
+from app.schemas.integration_schema import (
+    IntegrationStatusResponse,
+    ProviderInfo,
+    StoreProviderTokenRequest,
 )
-from app.services.kakao_service import KakaoService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 
 
-# ------------------------------------------------------------------
-# Kakao Endpoints
-# ------------------------------------------------------------------
-
-
-@router.get("/kakao/auth", response_model=KakaoAuthResponse)
-async def get_kakao_auth_url(
-    user_id: UUID = Depends(get_user_id),
-    kakao_service: KakaoService = Depends(get_kakao_service),
-):
-    """Get Kakao OAuth authorization URL."""
-    auth_url = kakao_service.get_auth_url(state=str(user_id))
-    return KakaoAuthResponse(
-        auth_url=auth_url,
-        message="Redirect user to auth_url to connect KakaoTalk",
-    )
-
-
-@router.get("/kakao/callback")
-async def kakao_oauth_callback(
-    code: str = Query(...),
-    state: str = Query(""),
-    kakao_service: KakaoService = Depends(get_kakao_service),
-):
-    """Handle Kakao OAuth callback (public -- Kakao redirects here)."""
+@router.get("/status", response_model=IntegrationStatusResponse)
+async def get_integration_status(user_id: UUID = Depends(get_user_id)):
+    """Get linked identity providers for the current user via Supabase Admin API."""
     settings = get_settings()
-    frontend_url = settings.FRONTEND_URL
 
-    if not state:
-        return RedirectResponse(
-            url=f"{frontend_url}/settings?kakao=error&message=missing+user+state",
-            status_code=302,
-        )
+    if not settings.SUPABASE_SERVICE_ROLE_KEY:
+        raise HTTPException(status_code=500, detail="Service role key not configured")
 
     try:
-        await kakao_service.exchange_code_for_token(code, state)
-        return RedirectResponse(
-            url=f"{frontend_url}/settings?kakao=connected",
-            status_code=302,
-        )
-    except Exception as e:
-        return RedirectResponse(
-            url=f"{frontend_url}/settings?kakao=error&message={e!s}",
-            status_code=302,
-        )
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{settings.SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                headers={
+                    "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}",
+                    "apikey": settings.SUPABASE_ANON_KEY,
+                },
+            )
+
+            if response.status_code != 200:
+                logger.error("Supabase admin API error: %s", response.text)
+                raise HTTPException(status_code=502, detail="Failed to fetch user info")
+
+            user_data = response.json()
+            identities = user_data.get("identities", [])
+
+            providers = [
+                ProviderInfo(
+                    provider=identity.get("provider", ""),
+                    identity_id=identity.get("id", ""),
+                    email=identity.get("identity_data", {}).get("email"),
+                    created_at=identity.get("created_at"),
+                )
+                for identity in identities
+            ]
+
+            return IntegrationStatusResponse(
+                email=user_data.get("email"),
+                providers=providers,
+            )
+    except httpx.RequestError as e:
+        logger.exception("Failed to contact Supabase admin API")
+        raise HTTPException(status_code=502, detail="Auth service unavailable") from e
 
 
-@router.get("/kakao/status", response_model=KakaoStatusResponse)
-async def get_kakao_status(
+@router.post("/store-provider-token")
+async def store_provider_token(
+    request: StoreProviderTokenRequest,
     user_id: UUID = Depends(get_user_id),
-    kakao_service: KakaoService = Depends(get_kakao_service),
+    db: Client = Depends(get_db),
 ):
-    """Check if Kakao is connected."""
-    token = await kakao_service.get_stored_token(str(user_id))
-    return KakaoStatusResponse(
-        connected=token is not None,
-        message="Kakao connected" if token else "Kakao not connected",
-    )
-
-
-@router.post("/kakao/send", response_model=SendMessageResponse)
-async def send_kakao_message(
-    request: SendMessageRequest,
-    user_id: UUID = Depends(get_user_id),
-    kakao_service: KakaoService = Depends(get_kakao_service),
-):
-    """Send a message to user's KakaoTalk."""
-    token = await kakao_service.get_stored_token(str(user_id))
-
-    if not token:
-        raise HTTPException(
-            status_code=401,
-            detail="Kakao not connected. Please authorize first via /kakao/auth",
-        )
-
-    settings = get_settings()
-    frontend_url = settings.FRONTEND_URL
-    link_url = f"{frontend_url}/memories/{request.memory_id}" if request.memory_id else None
-
+    """Store Kakao provider_token in kakao_tokens table for Phase 3 channel bot."""
     try:
-        await kakao_service.send_message_to_me(
-            access_token=token,
-            text=f"{request.title}\n\n{request.content}",
-            link_title="Memoir에서 보기",
-            link_url=link_url,
-        )
-        return SendMessageResponse(success=True, message="Message sent to KakaoTalk")
+        expires_in = 21600  # Kakao default: 6 hours
+        data = {
+            "user_id": str(user_id),
+            "access_token": request.provider_token,
+            "refresh_token": request.provider_refresh_token,
+            "token_type": "bearer",
+            "expires_in": expires_in,
+            "expires_at": int(time.time()) + expires_in,
+        }
+        await asyncio.to_thread(lambda: db.table("kakao_tokens").upsert(data, on_conflict="user_id").execute())
+        return {"success": True, "message": "Provider token stored"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send message: {e!s}") from e
-
-
-@router.post("/kakao/disconnect")
-async def disconnect_kakao(
-    user_id: UUID = Depends(get_user_id),
-    kakao_service: KakaoService = Depends(get_kakao_service),
-):
-    """Disconnect Kakao (remove stored token)."""
-    await kakao_service.delete_token(str(user_id))
-    return {"success": True, "message": "Kakao disconnected"}
+        logger.exception("Failed to store provider token")
+        raise HTTPException(status_code=500, detail="Failed to store token") from e

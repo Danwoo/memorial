@@ -2,41 +2,32 @@ import { get, post } from './client'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface KakaoAuthResponse {
-  auth_url: string
-  message: string
+export interface ProviderInfo {
+  provider: string
+  identity_id: string
+  email: string | null
+  created_at: string | null
 }
 
-interface KakaoStatusResponse {
-  connected: boolean
-  message: string
-}
-
-interface SendMessageRequest {
-  title: string
-  content: string
-  memory_id?: string
-}
-
-interface SendMessageResponse {
-  success: boolean
-  message: string
+export interface IntegrationStatus {
+  email: string | null
+  providers: ProviderInfo[]
+  kakao_channel: string
+  chrome_extension: string
 }
 
 // ─── API Functions ───────────────────────────────────────────────────────────
 
-export async function getKakaoAuthUrl(): Promise<KakaoAuthResponse> {
-  return get<KakaoAuthResponse>('/integrations/kakao/auth')
+export async function getIntegrationStatus(): Promise<IntegrationStatus> {
+  return get<IntegrationStatus>('/integrations/status')
 }
 
-export async function getKakaoStatus(): Promise<KakaoStatusResponse> {
-  return get<KakaoStatusResponse>('/integrations/kakao/status')
-}
-
-export async function disconnectKakao(): Promise<{ success: boolean; message: string }> {
-  return post<{ success: boolean; message: string }>('/integrations/kakao/disconnect')
-}
-
-export async function sendKakaoMessage(req: SendMessageRequest): Promise<SendMessageResponse> {
-  return post<SendMessageResponse>('/integrations/kakao/send', req)
+export async function storeProviderToken(
+  providerToken: string,
+  providerRefreshToken?: string | null,
+): Promise<{ success: boolean; message: string }> {
+  return post<{ success: boolean; message: string }>('/integrations/store-provider-token', {
+    provider_token: providerToken,
+    provider_refresh_token: providerRefreshToken ?? null,
+  })
 }

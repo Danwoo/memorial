@@ -136,10 +136,3 @@ def get_digest_service(
 ) -> DigestService:
     """Get DigestService instance."""
     return DigestService(memory_repo, journal_repo, chat_repo)
-
-
-def get_kakao_service(db: Client = Depends(get_db)):
-    """Get KakaoService instance."""
-    from app.services.kakao_service import KakaoService
-
-    return KakaoService(db)
