@@ -21,7 +21,7 @@
 | **FastAPI** | REST API 서버 |
 | **LangChain** | LLM 오케스트레이션, Agent 구현 |
 | **Supabase** | PostgreSQL + Vector Store (pgvector) |
-| **Neo4j** (Optional) | Knowledge Graph 저장소 |
+| **KuzuDB** | 임베디드 Knowledge Graph (파일 기반) |
 | **OpenAI GPT-4o** | LLM 모델 |
 
 ### Frontend
@@ -44,7 +44,7 @@ memorial/
 │   │   ├── agents/           # AI Agents
 │   │   │   ├── librarian/    # 자료 처리 Agent
 │   │   │   └── socrates/     # 대화 Agent
-│   │   ├── routers/v1/       # API 엔드포인트
+│   │   ├── routers/          # API 엔드포인트
 │   │   ├── services/         # 비즈니스 로직
 │   │   ├── repositories/     # 데이터 접근 계층
 │   │   └── config/           # 설정
@@ -115,10 +115,8 @@ SUPABASE_KEY=your-service-key
 # OpenAI
 OPENAI_API_KEY=sk-xxx
 
-# Neo4j (Optional)
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=password
+# KuzuDB (임베디드, 별도 설정 불필요)
+# KUZU_DB_PATH=./kuzu_data
 ```
 
 ### 실행 방법
@@ -198,7 +196,7 @@ npm run dev
 - **모드**: 일반 대화, Counter-argument, Insight Prompting
 
 ### 3. Graph Visualization
-- **Backend**: `routers/v1/graph.py` - 동적 그래프 생성
+- **Backend**: `routers/graph_router.py` - 동적 그래프 생성
 - **Frontend**: `components/GraphView.tsx` - react-force-graph-2d
 
 ### 4. Daily Digest
@@ -217,8 +215,8 @@ npm run dev
 
 ## 🐛 알려진 이슈
 
-1. **Neo4j 연결 경고**: `langchain-neo4j` 패키지로 마이그레이션 필요
-2. **브라우저 테스트**: 로컬 환경에서 browser subagent 연결 불안정
+1. **UI 리디자인 진행 중**: DESIGN_SPEC.md 참조 (NotebookLM 벤치마크 기반)
+2. **KuzuDB 마이그레이션 완료**: Neo4j → KuzuDB 임베디드 전환 (2025-02)
 
 ---
 

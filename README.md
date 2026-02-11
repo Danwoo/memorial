@@ -1,4 +1,4 @@
-# Memoir AI
+# Memoir
 
 > **"단순 기록(Record)이 아닌, 자산(Asset)으로의 전환"**
 
@@ -64,5 +64,5 @@ memorial/
 ## 🛠️ Tech Stack
 - **Frontend**: React, Vite, TypeScript
 - **Backend**: Python, FastAPI, LangGraph
-- **Database**: Supabase (Postgres + pgvector), Neo4j
+- **Database**: Supabase (Postgres + pgvector), KuzuDB
 - **AI**: OpenAI GPT, LangChain

@@ -9,5 +9,5 @@ lxml>=5.1.0
 langchain>=0.1.0
 langchain-openai>=0.0.5
 langgraph>=0.0.20
-neo4j>=5.16.0
+kuzu>=0.8.0
 python-dotenv>=1.0.0

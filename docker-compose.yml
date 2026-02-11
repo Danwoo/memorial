@@ -1,4 +1,4 @@
-# Memoir AI - Docker Compose
+# Memoir - Docker Compose
 # Run: docker-compose up --build
 
 services:
@@ -25,5 +25,5 @@ services:
       - backend
     restart: unless-stopped
 
-# Note: Neo4j and Supabase are external services
-# Configure their URLs in .env file
+# Note: KuzuDB는 임베디드 DB로 백엔드 컨테이너 내부에 포함
+# Supabase는 외부 서비스 - .env에서 URL 설정
