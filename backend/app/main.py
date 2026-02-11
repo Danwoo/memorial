@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from app.config.error_handler import register_error_handlers
 from app.config.middleware import register_middleware
-from app.routers.v1.router import api_router
+from app.routers.router import api_router
 
 app = FastAPI(
     title="Memoir AI",

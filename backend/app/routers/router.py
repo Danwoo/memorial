@@ -5,7 +5,7 @@ Combines all v1 routers into a single router
 
 from fastapi import APIRouter
 
-from app.routers.v1 import (
+from app.routers import (
     auth_router,
     chat_router,
     digest_router,
