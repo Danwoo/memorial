@@ -1,8 +1,3 @@
-"""
-Digest Service
-Business logic for daily digest - aggregates today's memories, chats, and journals
-"""
-
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -31,7 +26,7 @@ Respond in Korean. Return only the questions, one per line."""
 
 
 class DigestService:
-    """Service for daily digest aggregation and AI-powered insights."""
+    """일일 다이제스트 집계 및 AI 인사이트 생성 서비스."""
 
     def __init__(
         self,
@@ -48,18 +43,14 @@ class DigestService:
         return parse_iso_datetime(iso_str)
 
     async def get_today_digest(self, user_id: UUID, target_date: datetime | None = None) -> dict[str, Any]:
-        """
-        Get comprehensive digest of a day's activities.
+        """하루 활동 종합 다이제스트 조회.
 
         Args:
-            user_id: The user to fetch digest for
-            target_date: Specific date to get digest for (defaults to today)
+            user_id: 대상 사용자 ID
+            target_date: 조회 대상 날짜 (기본값: 오늘)
 
         Returns:
-            - memories: Day's saved memories/resources
-            - journals: Day's journal entries
-            - chats: Day's chat sessions (if available)
-            - insights: AI-generated questions and topics
+            memories, journals, chats, insights 포함 다이제스트 dict
         """
         today = target_date or datetime.now(UTC).date()
         if isinstance(today, datetime):
@@ -67,19 +58,11 @@ class DigestService:
         today_start = datetime.combine(today, datetime.min.time(), tzinfo=UTC)
         today_end = datetime.combine(today, datetime.max.time(), tzinfo=UTC)
 
-        # 1. Get today's memories
         memories = await self._get_today_memories(today_start, today_end, user_id=user_id)
-
-        # 2. Get today's journals
         journals = await self._get_today_journals(user_id, today)
+        chats = []  # TODO: 채팅 이력 구현 시 연동
 
-        # 3. Get today's chats (placeholder - requires chat history implementation)
-        chats = []  # TODO: Implement when chat history is available
-
-        # 4. Extract main topics
         main_topics = self._extract_topics(memories)
-
-        # 5. Generate AI questions
         suggested_questions = await self._generate_questions(memories, journals)
 
         return {
@@ -110,7 +93,7 @@ class DigestService:
         }
 
     async def _get_today_memories(self, start: datetime, end: datetime, user_id: UUID | None = None) -> list[dict]:
-        """Get memories created today."""
+        """오늘 생성된 Memory 조회."""
         try:
             all_memories = await self.memory_repo.get_all(user_id=user_id)
 
@@ -131,7 +114,7 @@ class DigestService:
             return []
 
     async def _get_today_journals(self, user_id: UUID, today: datetime) -> list[dict]:
-        """Get journals created today."""
+        """오늘 생성된 저널 조회."""
         try:
             journals = await self.journal_repo.get_journals(
                 user_id,
@@ -155,22 +138,20 @@ class DigestService:
             return []
 
     def _extract_topics(self, memories: list[dict]) -> list[str]:
-        """Extract main topics from memories based on tags."""
+        """Memory 태그에서 주요 토픽 추출."""
         tag_counts = {}
         for memory in memories:
             for tag in memory.get("tags", []) or []:
                 tag_counts[tag] = tag_counts.get(tag, 0) + 1
 
-        # Sort by count and return top tags
         sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
         return [tag for tag, _ in sorted_tags]
 
     async def _generate_questions(self, memories: list[dict], journals: list[dict]) -> list[str]:
-        """Generate AI-powered reflection questions based on today's content."""
+        """오늘 콘텐츠 기반 AI 성찰 질문 생성."""
         if not memories and not journals:
             return ["오늘 하루는 어떠셨나요?"]
 
-        # Build context from memories and journals
         context_parts = []
 
         for memory in memories[:5]:

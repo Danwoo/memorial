@@ -1,11 +1,3 @@
-"""
-Journal Repository
-Data access layer for journals table in Supabase.
-
-All public methods are async and delegate synchronous Supabase calls
-to a thread via ``asyncio.to_thread`` so that the event loop is never blocked.
-"""
-
 import asyncio
 from datetime import UTC, datetime
 from typing import Any
@@ -15,13 +7,13 @@ from supabase import Client
 
 
 class JournalRepository:
-    """Repository for journal CRUD operations."""
+    """journals 테이블 데이터 접근 계층."""
 
     def __init__(self, db: Client):
         self.db = db
 
     # ------------------------------------------------------------------
-    # Public async interface
+    # 공개 비동기 인터페이스
     # ------------------------------------------------------------------
 
     async def create_journal(
@@ -31,7 +23,7 @@ class JournalRepository:
         mood: str | None = None,
         tags: list[str] | None = None,
     ) -> dict[str, Any] | None:
-        """Create a new journal entry."""
+        """새 저널 항목 생성."""
         data: dict[str, Any] = {
             "content": content,
             "mood": mood,
@@ -52,7 +44,7 @@ class JournalRepository:
         limit: int = 10,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
-        """Get list of journals for a user."""
+        """사용자의 저널 목록 조회."""
         response = await asyncio.to_thread(self._select_by_user, str(user_id), limit, offset)
         return response.data
 
@@ -62,7 +54,7 @@ class JournalRepository:
         content: str,
         mood: str | None = None,
     ) -> dict[str, Any] | None:
-        """Update a journal entry."""
+        """저널 항목 수정."""
         data: dict[str, Any] = {
             "content": content,
             "updated_at": datetime.now(UTC).isoformat(),
@@ -74,7 +66,7 @@ class JournalRepository:
         return response.data[0] if response.data else None
 
     # ------------------------------------------------------------------
-    # Private synchronous helpers (run in thread)
+    # 동기 헬퍼 (스레드에서 실행)
     # ------------------------------------------------------------------
 
     def _insert(self, data: dict):

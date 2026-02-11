@@ -7,7 +7,7 @@ import type { GraphNode, GraphLink, GraphData } from '../types'
 import { fetchGraph } from '../api'
 import './GraphView.css'
 
-// Color palette for different node types
+// 노드 타입별 색상 팔레트
 const NODE_COLORS: Record<string, string> = {
   Memory: '#a78bfa',
   Entity: '#34d399',
@@ -44,7 +44,7 @@ export default function GraphView() {
   const [searchQuery, setSearchQuery] = useState('')
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
 
-  // Fetch graph data
+  // 그래프 데이터 조회 및 노드 가공
   const fetchGraphData = useCallback(async () => {
     try {
       setLoading(true)
@@ -67,7 +67,7 @@ export default function GraphView() {
     fetchGraphData()
   }, [fetchGraphData])
 
-  // Filtered data based on hidden types
+  // 숨겨진 타입을 제외한 필터링 데이터
   const filteredData = useMemo(() => {
     if (hiddenTypes.size === 0) return data
     const visibleNodes = data.nodes.filter(n => !hiddenTypes.has(n.label))
@@ -80,13 +80,13 @@ export default function GraphView() {
     return { nodes: visibleNodes, links: visibleLinks }
   }, [data, hiddenTypes])
 
-  // Unique node types for legend
+  // 범례용 고유 노드 타입 목록
   const nodeTypes = useMemo(
     () => [...new Set(data.nodes.map(n => n.label))].sort(),
     [data.nodes],
   )
 
-  // 3D node rendering: sphere + label
+  // 3D 노드 렌더링: 구체 + 라벨 스프라이트
   const nodeThreeObject = useCallback((node: AnyNode) => {
     const val = node.val || 1
     const size = Math.max(1.5, Math.sqrt(val) * 1.5)
@@ -94,7 +94,7 @@ export default function GraphView() {
 
     const group = new THREE.Group()
 
-    // Sphere
+    // 구체 메시
     const geo = new THREE.SphereGeometry(size, 16, 12)
     const mat = new THREE.MeshLambertMaterial({
       color,
@@ -104,10 +104,10 @@ export default function GraphView() {
     const mesh = new THREE.Mesh(geo, mat)
     group.add(mesh)
 
-    // Store material ref for hover highlighting
+    // 호버 하이라이트를 위해 재질 참조 저장
     nodeMaterials.current.set(node.id, mat)
 
-    // Label sprite
+    // 라벨 스프라이트
     const label = (node.name || node.id).substring(0, 24)
     const sprite = new SpriteText(label)
     sprite.color = '#ffffff'
@@ -121,14 +121,14 @@ export default function GraphView() {
     return group
   }, [])
 
-  // Get link key for highlight matching
+  // 하이라이트 매칭용 링크 키 생성
   const getLinkKey = useCallback((link: GraphLink) => {
     const sid = typeof link.source === 'object' ? link.source.id : link.source
     const tid = typeof link.target === 'object' ? link.target.id : link.target
     return `${sid}-${tid}`
   }, [])
 
-  // Hover: highlight connected nodes/links via direct Three.js material manipulation
+  // 호버 시 연결된 노드/링크 하이라이트 (Three.js 재질 직접 조작)
   const handleNodeHover = useCallback((node: AnyNode | null) => {
     if (node) {
       const connectedIds = new Set<string>([node.id])
@@ -144,14 +144,14 @@ export default function GraphView() {
         }
       })
 
-      // Dim non-connected nodes
+      // 연결되지 않은 노드 흐리게 처리
       nodeMaterials.current.forEach((mat, id) => {
         mat.opacity = connectedIds.has(id) ? 1.0 : 0.1
       })
 
       setHighlightLinks(connectedLinkKeys)
     } else {
-      // Restore all nodes
+      // 모든 노드 불투명도 복원
       nodeMaterials.current.forEach(mat => {
         mat.opacity = 0.9
       })
@@ -159,7 +159,7 @@ export default function GraphView() {
     }
   }, [filteredData.links])
 
-  // Click: fly camera to node
+  // 클릭 시 카메라를 해당 노드로 이동
   const handleNodeClick = useCallback((node: AnyNode) => {
     setSelectedNode(node)
     const distance = 60
@@ -171,7 +171,7 @@ export default function GraphView() {
     )
   }, [])
 
-  // Background click: deselect
+  // 배경 클릭 시 선택 해제
   const handleBackgroundClick = useCallback(() => {
     setSelectedNode(null)
     setHighlightLinks(new Set())
@@ -180,7 +180,7 @@ export default function GraphView() {
     })
   }, [])
 
-  // Search: find node and fly to it
+  // 검색: 노드를 찾아 카메라 이동
   const handleSearch = useCallback(
     (query: string) => {
       if (!query.trim()) return
@@ -203,7 +203,7 @@ export default function GraphView() {
     [filteredData.nodes],
   )
 
-  // Toggle type visibility
+  // 노드 타입 표시/숨김 토글
   const toggleType = useCallback((type: string) => {
     setHiddenTypes(prev => {
       const next = new Set(prev)
@@ -213,7 +213,7 @@ export default function GraphView() {
     })
   }, [])
 
-  // Start chat with topic
+  // 선택된 노드 주제로 채팅 시작
   const handleStartChat = useCallback(
     (node: GraphNode) => {
       navigate('/chat', { state: { topic: node.name || node.id, mode: 'insight' } })
@@ -221,7 +221,7 @@ export default function GraphView() {
     [navigate],
   )
 
-  // Connections for selected node
+  // 선택된 노드의 연결 관계 목록
   const selectedConnections = useMemo(() => {
     if (!selectedNode) return []
     return filteredData.links
@@ -249,7 +249,7 @@ export default function GraphView() {
 
   return (
     <div className="graph-view-container">
-      {/* Search bar */}
+      {/* 검색 바 */}
       {!loading && !isEmptyGraph && (
         <div className="graph-search">
           <div className="search-input-wrapper">
@@ -268,14 +268,14 @@ export default function GraphView() {
         </div>
       )}
 
-      {/* Stats */}
+      {/* 통계 정보 */}
       {!loading && !isEmptyGraph && (
         <div className="graph-stats">
           {filteredData.nodes.length} nodes &middot; {filteredData.links.length} connections
         </div>
       )}
 
-      {/* Loading */}
+      {/* 로딩 상태 */}
       {loading && (
         <div className="graph-loader">
           <div className="loader-spinner" />
@@ -283,7 +283,7 @@ export default function GraphView() {
         </div>
       )}
 
-      {/* Empty state */}
+      {/* 빈 상태 */}
       {isEmptyGraph && (
         <div className="graph-empty">
           <div className="empty-icon">
@@ -310,7 +310,7 @@ export default function GraphView() {
         </div>
       )}
 
-      {/* 3D Graph */}
+      {/* 3D 포스 그래프 */}
       {!loading && !isEmptyGraph && (
         <ForceGraph3D
           ref={fgRef}
@@ -339,7 +339,7 @@ export default function GraphView() {
         />
       )}
 
-      {/* Legend */}
+      {/* 범례 */}
       {!loading && nodeTypes.length > 0 && (
         <div className="graph-legend">
           <h4>Node Types</h4>
@@ -365,7 +365,7 @@ export default function GraphView() {
         </div>
       )}
 
-      {/* Selected Node Info Panel */}
+      {/* 선택된 노드 상세 패널 */}
       {selectedNode && (
         <div className="node-info-panel">
           <div className="node-info-header">
@@ -422,7 +422,7 @@ export default function GraphView() {
         </div>
       )}
 
-      {/* Controls hint */}
+      {/* 조작 안내 */}
       {!loading && !isEmptyGraph && (
         <div className="graph-controls">
           <span>Drag: Rotate</span>

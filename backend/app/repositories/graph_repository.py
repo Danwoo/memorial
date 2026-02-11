@@ -1,8 +1,3 @@
-"""
-Graph Repository
-Data access layer for KuzuDB knowledge graph
-"""
-
 import asyncio
 import logging
 
@@ -12,7 +7,7 @@ from app.config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
-# Allowed node labels (extend as new entity types are added)
+# 허용된 노드 라벨 화이트리스트
 ALLOWED_NODE_LABELS = frozenset(
     {
         "Concept",
@@ -33,7 +28,7 @@ ALLOWED_NODE_LABELS = frozenset(
     }
 )
 
-# Allowed relationship types
+# 허용된 관계 타입 화이트리스트
 ALLOWED_REL_TYPES = frozenset(
     {
         "RELATED_TO",
@@ -65,7 +60,7 @@ MAX_RELATED_CONTEXT_RESULTS = 15
 
 
 def _validate_label(label: str) -> str:
-    """Validate a node label against the whitelist. Rejects unknown labels."""
+    """노드 라벨을 화이트리스트에서 검증. 미등록 라벨은 'Concept'으로 폴백."""
     cleaned = label.replace(" ", "")
     if cleaned in ALLOWED_NODE_LABELS:
         return cleaned
@@ -74,7 +69,7 @@ def _validate_label(label: str) -> str:
 
 
 def _validate_rel_type(rel_type: str) -> str:
-    """Validate a relationship type against the whitelist. Rejects unknown types."""
+    """관계 타입을 화이트리스트에서 검증. 미등록 타입은 'RELATED_TO'로 폴백."""
     cleaned = rel_type.upper().replace(" ", "_")
     if cleaned in ALLOWED_REL_TYPES:
         return cleaned
@@ -83,13 +78,10 @@ def _validate_rel_type(rel_type: str) -> str:
 
 
 class GraphRepository:
-    """Repository for KuzuDB graph operations"""
+    """KuzuDB 그래프 데이터 접근 계층."""
 
     def __init__(self, db_path: str | None = None):
-        """
-        Initialize with optional database path.
-        If not provided, reads from settings.
-        """
+        """KuzuDB 초기화. db_path 미지정 시 설정에서 읽어옴."""
         self.db: kuzu.Database | None = None
         if db_path:
             self._init_db(db_path)
@@ -97,7 +89,7 @@ class GraphRepository:
             self._init_connection()
 
     def _init_connection(self):
-        """Initialize KuzuDB from settings."""
+        """설정 파일 기반 KuzuDB 초기화."""
         settings = get_settings()
         db_path = settings.KUZU_DB_PATH
         if not db_path:
@@ -106,7 +98,7 @@ class GraphRepository:
         self._init_db(db_path)
 
     def _init_db(self, path: str):
-        """Open (or create) the KuzuDB database and ensure schema exists."""
+        """KuzuDB 데이터베이스를 열고(또는 생성) 스키마 보장."""
         try:
             self.db = kuzu.Database(path)
             self._ensure_schema()
@@ -116,7 +108,7 @@ class GraphRepository:
             self.db = None
 
     def _ensure_schema(self):
-        """Create node/rel tables if they don't already exist."""
+        """노드/관계 테이블이 없으면 생성."""
         conn = kuzu.Connection(self.db)
         ddl_statements = [
             "CREATE NODE TABLE IF NOT EXISTS Entity(name STRING, type STRING, PRIMARY KEY(name))",
@@ -129,16 +121,16 @@ class GraphRepository:
 
     @property
     def is_connected(self) -> bool:
-        """Check if KuzuDB is connected."""
+        """KuzuDB 연결 여부 확인."""
         return self.db is not None
 
     def _get_conn(self) -> kuzu.Connection:
-        """Create a new Connection (not thread-safe, so one per sync call)."""
+        """새 Connection 생성 (스레드 안전하지 않으므로 호출마다 생성)."""
         return kuzu.Connection(self.db)
 
     @staticmethod
     def _result_to_dicts(result) -> list[dict]:
-        """Convert a KuzuDB QueryResult into a list of dicts."""
+        """KuzuDB QueryResult를 dict 리스트로 변환."""
         if result is None:
             return []
         columns = result.get_column_names()
@@ -149,10 +141,10 @@ class GraphRepository:
         return rows
 
     # ------------------------------------------------------------------
-    # Save entities
+    # 엔티티 저장
     # ------------------------------------------------------------------
     def _sync_save_entities(self, entities: list[dict], source_id: str, user_id: str | None = None) -> None:
-        """Synchronous implementation of save_entities."""
+        """엔티티 저장 동기 구현."""
         conn = self._get_conn()
 
         for entity in entities:
@@ -165,7 +157,7 @@ class GraphRepository:
                 {"name": name, "type": label},
             )
 
-        # Link entities to source memory (with user_id for filtering)
+        # 엔티티를 출처 Memory 노드에 연결 (user_id로 필터링용)
         if user_id:
             conn.execute(
                 "MERGE (m:Memory {id: $id}) SET m.user_id = $user_id",
@@ -188,16 +180,22 @@ class GraphRepository:
             )
 
     async def save_entities(self, entities: list[dict], source_id: str, user_id: str | None = None) -> None:
-        """Save entities to the knowledge graph."""
+        """엔티티를 Knowledge Graph에 저장.
+
+        Args:
+            entities: 저장할 엔티티 목록 ({name, type} dict)
+            source_id: 출처 Memory ID
+            user_id: 소유 사용자 ID (필터링용)
+        """
         if not self.db:
             return
         await asyncio.to_thread(self._sync_save_entities, entities, source_id, user_id)
 
     # ------------------------------------------------------------------
-    # Save relations
+    # 관계 저장
     # ------------------------------------------------------------------
     def _sync_save_relations(self, relations: list[dict]) -> None:
-        """Synchronous implementation of save_relations."""
+        """관계 저장 동기 구현."""
         conn = self._get_conn()
         for rel in relations:
             source = rel.get("source")
@@ -220,21 +218,24 @@ class GraphRepository:
             )
 
     async def save_relations(self, relations: list[dict]) -> None:
-        """Save relations to the knowledge graph."""
+        """관계를 Knowledge Graph에 저장.
+
+        Args:
+            relations: 관계 목록 ({source, target, type} dict)
+        """
         if not self.db:
             return
         await asyncio.to_thread(self._sync_save_relations, relations)
 
     # ------------------------------------------------------------------
-    # Get graph data (for visualization)
+    # 그래프 데이터 조회 (시각화용)
     # ------------------------------------------------------------------
     def _sync_get_graph_data(self, limit: int, user_id: str | None = None) -> dict[str, list]:
-        """Synchronous implementation of get_graph_data."""
+        """그래프 데이터 조회 동기 구현."""
         conn = self._get_conn()
         safe_limit = max(1, min(int(limit), MAX_GRAPH_QUERY_LIMIT))
 
         if user_id:
-            # Entities connected to this user's memories, with inter-entity relations
             query = f"""
             MATCH (mem:Memory {{user_id: $user_id}})-[:MENTIONS]->(n:Entity)-[r:ENTITY_REL]->(m:Entity)<-[:MENTIONS]-(mem2:Memory {{user_id: $user_id}})
             RETURN DISTINCT
@@ -295,11 +296,11 @@ class GraphRepository:
                         "type": record.get("rel_type", "RELATED_TO"),
                     }
                 )
-                # Increment degree for node sizing
+                # 노드 크기 산정을 위한 degree 증가
                 nodes[source_name]["val"] += 1
                 nodes[target_name]["val"] += 1
 
-        # Also include orphan entities (connected to user's memories but no inter-entity relations)
+        # 관계가 없는 고아 엔티티도 포함 (사용자 Memory에 연결된 것만)
         if user_id:
             orphan_query = """
             MATCH (mem:Memory {user_id: $user_id})-[:MENTIONS]->(e:Entity)
@@ -324,10 +325,10 @@ class GraphRepository:
         return {"nodes": list(nodes.values()), "links": links}
 
     # ------------------------------------------------------------------
-    # Get related context (for Socrates chat)
+    # 관련 컨텍스트 조회 (Socrates 챗용)
     # ------------------------------------------------------------------
     def _sync_get_related_context(self, topic: str, depth: int) -> list[dict]:
-        """Synchronous: find entities related to a topic within N hops."""
+        """주제와 N-hop 내 연관 엔티티 탐색 동기 구현."""
         conn = self._get_conn()
         safe_depth = max(1, min(depth, MAX_GRAPH_TRAVERSAL_DEPTH))
         query = f"""
@@ -344,7 +345,12 @@ class GraphRepository:
         return self._result_to_dicts(conn.execute(query, {"topic": topic}))
 
     async def get_related_context(self, topic: str, depth: int = 2) -> list[dict]:
-        """Find entities related to a topic within N hops in the knowledge graph."""
+        """Knowledge Graph에서 주제와 N-hop 이내 관련 엔티티 조회.
+
+        Args:
+            topic: 검색 주제 (엔티티 이름)
+            depth: 탐색 깊이 (기본 2)
+        """
         if not self.db:
             return []
         try:
@@ -354,10 +360,10 @@ class GraphRepository:
             return []
 
     # ------------------------------------------------------------------
-    # Delete memory node
+    # Memory 노드 삭제
     # ------------------------------------------------------------------
     def _sync_delete_memory_node(self, memory_id: str) -> None:
-        """Delete a Memory node and all its relationships from the graph."""
+        """Memory 노드와 연결된 관계를 그래프에서 삭제."""
         conn = self._get_conn()
         conn.execute(
             "MATCH (m:Memory {id: $id}) DETACH DELETE m",
@@ -365,7 +371,7 @@ class GraphRepository:
         )
 
     async def delete_memory_node(self, memory_id: str) -> None:
-        """Delete a Memory node and its relationships from the graph."""
+        """Memory 노드와 관계를 그래프에서 삭제."""
         if not self.db:
             return
         try:
@@ -374,10 +380,11 @@ class GraphRepository:
             logger.exception("Error deleting memory node '%s' from graph", memory_id)
 
     async def get_graph_data(self, limit: int = 100, user_id: str | None = None) -> dict[str, list]:
-        """
-        Retrieve graph data for visualization.
-        Returns nodes and links in D3 compatible format.
-        Filters by user_id when provided.
+        """시각화용 그래프 데이터 조회. D3 호환 {nodes, links} 포맷 반환.
+
+        Args:
+            limit: 최대 결과 수 (기본 100)
+            user_id: 사용자 ID (지정 시 해당 사용자 데이터만 필터링)
         """
         if not self.db:
             return {"nodes": [], "links": []}

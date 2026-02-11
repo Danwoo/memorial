@@ -13,6 +13,7 @@ export default function TimelineView() {
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
+  // 타임라인 데이터 로드 (append=true면 기존 데이터에 병합)
   const loadTimeline = useCallback(async (pageNum: number, append = false) => {
     try {
       if (pageNum === 1) setLoading(true)
@@ -54,7 +55,7 @@ export default function TimelineView() {
     loadTimeline(1)
   }, [loadTimeline])
 
-  // Infinite scroll observer
+  // 무한 스크롤: IntersectionObserver로 추가 데이터 로드
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect()
     
@@ -155,7 +156,7 @@ export default function TimelineView() {
           </div>
         ))}
 
-        {/* Load more trigger */}
+        {/* 무한 스크롤 트리거 */}
         <div ref={loadMoreRef} className="load-more-trigger">
           {loadingMore && (
             <div className="loading-more">

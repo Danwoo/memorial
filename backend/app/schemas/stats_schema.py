@@ -1,13 +1,8 @@
-"""
-Stats Schemas
-Request/Response DTOs for statistics/dashboard endpoints
-"""
-
 from pydantic import BaseModel
 
 
 class OverviewStats(BaseModel):
-    """Overview statistics summary"""
+    """전체 통계 요약."""
 
     total_memories: int
     total_this_week: int
@@ -16,14 +11,14 @@ class OverviewStats(BaseModel):
 
 
 class ActivityData(BaseModel):
-    """Daily activity data point"""
+    """일별 활동 데이터."""
 
     date: str
     count: int
 
 
 class SourceStats(BaseModel):
-    """Statistics by source type"""
+    """소스 유형별 통계."""
 
     source_type: str
     count: int
@@ -31,14 +26,14 @@ class SourceStats(BaseModel):
 
 
 class TagStats(BaseModel):
-    """Tag usage statistics"""
+    """태그 사용 통계."""
 
     tag: str
     count: int
 
 
 class StatsOverviewResponse(BaseModel):
-    """Complete stats overview for dashboard"""
+    """대시보드 통계 개요 응답."""
 
     overview: OverviewStats
     recent_activity: list[ActivityData]
@@ -47,14 +42,14 @@ class StatsOverviewResponse(BaseModel):
 
 
 class TimelineGroup(BaseModel):
-    """Memories grouped by date"""
+    """날짜별 메모리 그룹."""
 
     date: str
     memories: list[dict]
 
 
 class TimelineResponse(BaseModel):
-    """Paginated timeline response"""
+    """페이지네이션된 타임라인 응답."""
 
     page: int
     limit: int

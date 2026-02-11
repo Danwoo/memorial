@@ -1,13 +1,3 @@
-"""
-Curator Node - Content Classification & Tagging
-Based on Agent_Design_Spec.md - Section 2.2
-
-The Curator is the "Gatekeeper" that:
-1. Classifies content (INSIGHT / FACT / SPAM)
-2. Generates tags
-3. Creates a one-line summary
-"""
-
 import logging
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -42,13 +32,14 @@ IMPORTANT: Return ONLY valid JSON. No explanation, no markdown code blocks."""
 
 
 async def curator_node(state: AgentState) -> dict:
-    """
-    Curator Node: Classifies content and generates tags/summary.
+    """Curator 노드: 콘텐츠 분류 및 태그/요약 생성.
 
-    Input: state.target_text
-    Output: classification, tags, summary, next_step
+    Args:
+        state: target_text를 포함한 에이전트 상태
+
+    Returns:
+        classification, tags, summary, next_step을 포함한 dict
     """
-    # Get target text from state
     target_text = state.get("target_text", "")
 
     if not target_text:
@@ -60,7 +51,7 @@ async def curator_node(state: AgentState) -> dict:
             "error": "No target text provided",
         }
 
-    # Detect if input is a URL
+    # URL 입력 감지 시 웹 콘텐츠 스크래핑
     source_url = None
     if target_text.startswith("http://") or target_text.startswith("https://"):
         from app.services.ingest_service import process_web_content
@@ -69,30 +60,25 @@ async def curator_node(state: AgentState) -> dict:
         scraped_data = await process_web_content(target_text)
 
         source_url = target_text
-        # Update target_text with scraped content
         target_text = f"Title: {scraped_data['title']}\n\nContent:\n{scraped_data['content']}"
-        state["source_url"] = source_url  # Save URL to state
+        state["source_url"] = source_url
 
-    # Truncate if too long (save tokens)
-    max_chars = 12000  # Increased limit
+    # 토큰 절약을 위한 길이 제한
+    max_chars = 12000
     if len(target_text) > max_chars:
         target_text = target_text[:max_chars] + "\n\n[Content truncated...]"
 
-    # Get shared LLM instance
     llm = get_analytical_llm()
 
-    # Build messages
     messages = [
         SystemMessage(content=CURATOR_SYSTEM_PROMPT),
         HumanMessage(content=f"Analyze this content:\n\n{target_text}"),
     ]
 
     try:
-        # Call LLM
         response = await llm.ainvoke(messages)
         content = response.content.strip()
 
-        # Parse JSON response (strips markdown code fences)
         result = parse_llm_json_response(content)
 
         category = result.get("category", "FACT")

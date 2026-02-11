@@ -1,8 +1,3 @@
-"""
-Graph Service
-Business logic for knowledge graph operations
-"""
-
 import logging
 from typing import Any
 
@@ -13,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class GraphService:
-    """Service for knowledge graph business logic"""
+    """Knowledge Graph 비즈니스 로직."""
 
     def __init__(self, graph_repo: GraphRepository, memory_repo: MemoryRepository | None = None):
         self.graph_repo = graph_repo
@@ -21,16 +16,13 @@ class GraphService:
 
     @property
     def is_available(self) -> bool:
-        """Check if graph features are available."""
+        """그래프 기능 사용 가능 여부 확인."""
         return self.graph_repo.is_connected
 
     async def save_knowledge_graph(
         self, memory_id: str, entities: list[dict[str, Any]], relations: list[dict[str, Any]]
     ) -> bool:
-        """
-        Save extracted entities and relations to the knowledge graph.
-        Called by Librarian agent after processing.
-        """
+        """추출된 엔티티/관계를 Knowledge Graph에 저장. Librarian 에이전트가 호출."""
         if not self.is_available:
             return False
 
@@ -43,10 +35,7 @@ class GraphService:
             return False
 
     async def get_visualization_data(self, limit: int = 100, user_id: str | None = None) -> dict[str, Any]:
-        """
-        Get graph data for D3 visualization.
-        Returns nodes and links from the knowledge graph, filtered by user_id.
-        """
+        """D3 시각화용 그래프 데이터 조회. user_id로 필터링."""
         if not self.is_available:
             return {"nodes": [], "links": []}
 

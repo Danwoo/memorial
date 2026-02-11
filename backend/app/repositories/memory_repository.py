@@ -1,11 +1,3 @@
-"""
-Memory Repository
-Data access layer for memories table in Supabase.
-
-All public methods are async and delegate synchronous Supabase calls
-to a thread via ``asyncio.to_thread`` so that the event loop is never blocked.
-"""
-
 import asyncio
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
@@ -17,13 +9,13 @@ from app.utils import parse_iso_datetime
 
 
 class MemoryRepository:
-    """Repository for memory CRUD operations."""
+    """memories 테이블 데이터 접근 계층."""
 
     def __init__(self, db: Client):
         self.db = db
 
     # ------------------------------------------------------------------
-    # Public async interface
+    # 공개 비동기 인터페이스
     # ------------------------------------------------------------------
 
     async def create(
@@ -35,7 +27,7 @@ class MemoryRepository:
         source_url: str | None = None,
         summary: str | None = None,
     ) -> MemoryInDB:
-        """Create a new memory record. Returns the created memory with generated ID."""
+        """새 Memory 레코드 생성. 생성된 ID 포함 결과 반환."""
         memory_id = uuid4()
         now = datetime.now(UTC).isoformat()
 
@@ -59,7 +51,7 @@ class MemoryRepository:
         raise Exception("Failed to create memory")
 
     async def get_by_id(self, memory_id: UUID, user_id: UUID) -> MemoryInDB | None:
-        """Get a single memory by ID (with user_id for RLS)."""
+        """ID로 단일 Memory 조회 (user_id는 RLS용)."""
         try:
             result = await asyncio.to_thread(self._select_single, str(memory_id), str(user_id))
             if result.data:
@@ -73,7 +65,7 @@ class MemoryRepository:
         user_id: UUID | None = None,
         limit: int = 1000,
     ) -> list[dict]:
-        """Get all memories as raw dicts for internal services (digest, graph)."""
+        """내부 서비스용 전체 Memory 조회 (raw dict 반환)."""
         result = await asyncio.to_thread(self._select_all, str(user_id) if user_id else None, limit)
         return result.data or []
 
@@ -84,7 +76,7 @@ class MemoryRepository:
         limit: int = 20,
         search: str | None = None,
     ) -> tuple[list[MemoryInDB], int]:
-        """Get paginated list of memories for a user. Returns (items, total_count)."""
+        """사용자별 페이지네이션 Memory 목록 조회. (items, total_count) 반환."""
         result = await asyncio.to_thread(self._select_by_user, str(user_id), page, limit, search)
 
         items = [self._row_to_model(row) for row in (result.data or [])]
@@ -100,7 +92,7 @@ class MemoryRepository:
         source_url: str | None = None,
         source_type: str | None = None,
     ) -> bool:
-        """Update memory status and optionally summary/tags."""
+        """Memory 상태 업데이트. 선택적으로 summary/tags도 갱신."""
         now = datetime.now(UTC).isoformat()
 
         update_data: dict = {"status": status, "updated_at": now}
@@ -118,12 +110,12 @@ class MemoryRepository:
         return len(result.data) > 0 if result.data else False
 
     async def delete(self, memory_id: UUID, user_id: UUID) -> bool:
-        """Delete a memory by ID."""
+        """Memory 삭제."""
         result = await asyncio.to_thread(self._delete, str(memory_id), str(user_id))
         return len(result.data) > 0 if result.data else False
 
     # ------------------------------------------------------------------
-    # Private synchronous helpers (run in thread)
+    # 동기 헬퍼 (스레드에서 실행)
     # ------------------------------------------------------------------
 
     def _insert(self, data: dict):
@@ -157,11 +149,11 @@ class MemoryRepository:
         return self.db.table("memories").delete().eq("id", memory_id).eq("user_id", user_id).execute()
 
     # ------------------------------------------------------------------
-    # Conversion
+    # 변환
     # ------------------------------------------------------------------
 
     def _row_to_model(self, row: dict) -> MemoryInDB:
-        """Convert database row to Pydantic model."""
+        """DB 행을 Pydantic 모델로 변환."""
         return MemoryInDB(
             id=UUID(row["id"]),
             user_id=UUID(row["user_id"]),

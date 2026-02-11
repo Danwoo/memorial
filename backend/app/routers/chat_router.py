@@ -1,8 +1,3 @@
-"""
-Chat Router
-API endpoints for chat and Socratic dialogue
-"""
-
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -27,7 +22,7 @@ async def create_session(
     user_id: UUID = Depends(get_user_id),
     chat_service: ChatService = Depends(get_chat_service),
 ):
-    """Create a new chat session."""
+    """새 채팅 세션 생성."""
     session = await chat_service.create_session(user_id, data.title)
 
     return ChatSessionResponse(
@@ -42,7 +37,7 @@ async def list_sessions(
     user_id: UUID = Depends(get_user_id),
     chat_service: ChatService = Depends(get_chat_service),
 ):
-    """List all chat sessions for the current user."""
+    """현재 사용자의 채팅 세션 목록 조회."""
     sessions = await chat_service.list_sessions(user_id)
 
     return [
@@ -62,7 +57,7 @@ async def send_message(
     user_id: UUID = Depends(get_user_id),
     chat_service: ChatService = Depends(get_chat_service),
 ):
-    """Send a message and get AI response via SSE streaming."""
+    """메시지 전송 후 SSE 스트리밍으로 AI 응답 반환."""
     session = await chat_service.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -89,7 +84,7 @@ async def get_history(
     user_id: UUID = Depends(get_user_id),
     chat_service: ChatService = Depends(get_chat_service),
 ):
-    """Get chat history for a session."""
+    """특정 세션의 채팅 이력 조회."""
     session = await chat_service.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")

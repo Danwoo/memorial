@@ -1,8 +1,3 @@
-"""
-Middleware Configuration
-CORS and other middleware for the application.
-"""
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,7 +5,7 @@ from app.config.settings import get_settings
 
 
 def register_middleware(app: FastAPI) -> None:
-    """Register all middleware on the FastAPI application."""
+    """FastAPI 애플리케이션에 미들웨어 등록."""
     settings = get_settings()
 
     app.add_middleware(

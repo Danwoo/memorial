@@ -1,48 +1,40 @@
-"""
-Pydantic Schemas for Memory (지식 저장소)
-API Request/Response DTOs - Based on API_Spec.md
-"""
-
 from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-# ========================================
-# Enums
-# ========================================
 SourceType = Literal["WEB", "PDF", "NOTE", "KAKAO", "CHAT_HISTORY", "JOURNAL"]
 MemoryStatus = Literal["pending", "processing", "completed", "failed"]
 
 
-# ========================================
-# Request Schemas
-# ========================================
+# --- 요청 스키마 ---
+
+
 class MemoryCreate(BaseModel):
-    """POST /memories - Request Body"""
+    """메모리 생성 요청."""
 
     source_type: SourceType = Field(alias="sourceType")
-    url: str | None = None  # Required for WEB/PDF
-    content: str | None = None  # Required for NOTE
-    memo: str | None = None  # User's initial thought
+    url: str | None = None
+    content: str | None = None
+    memo: str | None = None
 
     class Config:
         populate_by_name = True
 
 
-# ========================================
-# Response Schemas
-# ========================================
+# --- 응답 스키마 ---
+
+
 class MemoryCreateResponse(BaseModel):
-    """POST /memories - Response"""
+    """메모리 생성 응답."""
 
     id: UUID
     status: MemoryStatus = "processing"
 
 
 class MemoryListItem(BaseModel):
-    """GET /memories - List Item"""
+    """메모리 목록 항목."""
 
     id: UUID
     title: str
@@ -55,14 +47,14 @@ class MemoryListItem(BaseModel):
 
 
 class MemoryListResponse(BaseModel):
-    """GET /memories - Response"""
+    """메모리 목록 응답."""
 
     items: list[MemoryListItem]
     total: int
 
 
 class MemoryDetail(BaseModel):
-    """GET /memories/{id} - Response"""
+    """메모리 상세 응답."""
 
     id: UUID
     title: str
@@ -78,11 +70,11 @@ class MemoryDetail(BaseModel):
         from_attributes = True
 
 
-# ========================================
-# Internal Schemas (for Service Layer)
-# ========================================
+# --- 내부 스키마 (서비스 레이어용) ---
+
+
 class MemoryInDB(BaseModel):
-    """Database row representation"""
+    """DB 행 표현."""
 
     id: UUID
     user_id: UUID

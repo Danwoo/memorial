@@ -18,10 +18,10 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public route */}
+          {/* 비인증 공개 라우트 */}
           <Route path="/login" element={<AuthView />} />
 
-          {/* Protected routes share the Sidebar layout */}
+          {/* 인증 필요 라우트 - Sidebar 레이아웃 공유 */}
           <Route
             element={
               <ProtectedRoute>

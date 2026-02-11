@@ -1,8 +1,3 @@
-"""
-Save Node - Persist processed data to database
-Updates memory with classification results and triggers graph sync
-"""
-
 import logging
 from uuid import UUID
 
@@ -17,11 +12,13 @@ logger = logging.getLogger(__name__)
 
 
 async def save_node(state: AgentState) -> dict:
-    """
-    Save Node: Updates memory status and saves analysis results.
+    """Save 노드: 분석 결과를 DB에 저장하고 그래프 동기화 트리거.
 
-    Input: state with classification, tags, summary, entities, relations
-    Output: next_step = "end"
+    Args:
+        state: classification, tags, summary, entities, relations을 포함한 상태
+
+    Returns:
+        next_step = "end"를 포함한 dict
     """
     memory_id = state.get("target_memory_id")
 
@@ -36,7 +33,6 @@ async def save_node(state: AgentState) -> dict:
 
         memory_service = MemoryService(memory_repo, vector_repo, graph_repo)
 
-        # Prepare data
         classification = state.get("classification", "FACT")
         summary = state.get("summary", "")
         tags = state.get("tags", [])
@@ -52,7 +48,6 @@ async def save_node(state: AgentState) -> dict:
         source_type = "WEB" if source_url else None
         user_id = state.get("user_id")
 
-        # Determine status
         if classification == "SPAM":
             tags.append("SPAM")
             await memory_service.update_memory_after_processing(
@@ -64,7 +59,6 @@ async def save_node(state: AgentState) -> dict:
                 user_id=str(user_id) if user_id else None,
             )
         else:
-            # Normal Flow
             await memory_service.update_memory_after_processing(
                 memory_id=UUID(memory_id),
                 summary=summary,

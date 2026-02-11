@@ -1,11 +1,3 @@
-"""
-Stats Repository
-Data access layer for statistics queries from Supabase.
-
-All public methods are async and delegate synchronous Supabase calls
-to a thread via ``asyncio.to_thread`` so that the event loop is never blocked.
-"""
-
 import asyncio
 from datetime import datetime
 from typing import Any
@@ -15,17 +7,17 @@ from supabase import Client
 
 
 class StatsRepository:
-    """Repository for statistics data queries."""
+    """통계 쿼리 데이터 접근 계층."""
 
     def __init__(self, db: Client):
         self.db = db
 
     # ------------------------------------------------------------------
-    # Public async interface
+    # 공개 비동기 인터페이스
     # ------------------------------------------------------------------
 
     async def get_all_memories(self, user_id: UUID) -> list[dict[str, Any]]:
-        """Get all memories for statistics calculation."""
+        """통계 집계용 전체 Memory 조회."""
         result = await asyncio.to_thread(self._select_all, str(user_id))
         return result.data or []
 
@@ -35,7 +27,7 @@ class StatsRepository:
         start_date: datetime,
         end_date: datetime,
     ) -> list[dict[str, Any]]:
-        """Get memories created within a date range."""
+        """날짜 범위 내 Memory 조회."""
         result = await asyncio.to_thread(self._select_range, str(user_id), start_date.isoformat(), end_date.isoformat())
         return result.data or []
 
@@ -45,13 +37,13 @@ class StatsRepository:
         page: int = 1,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
-        """Get memories ordered by date for timeline."""
+        """타임라인용 날짜순 Memory 조회."""
         offset = (page - 1) * limit
         result = await asyncio.to_thread(self._select_by_date, str(user_id), offset, limit)
         return result.data or []
 
     async def count_by_source_type(self, user_id: UUID) -> dict[str, int]:
-        """Count memories grouped by source type."""
+        """소스 타입별 Memory 카운트."""
         result = await asyncio.to_thread(self._select_source_types, str(user_id))
 
         counts: dict[str, int] = {}
@@ -62,7 +54,7 @@ class StatsRepository:
         return counts
 
     async def get_tag_counts(self, user_id: UUID, limit: int = 10) -> dict[str, int]:
-        """Get top tags by usage count."""
+        """사용 빈도 상위 태그 조회."""
         result = await asyncio.to_thread(self._select_tags, str(user_id))
 
         tag_counts: dict[str, int] = {}
@@ -75,7 +67,7 @@ class StatsRepository:
         return dict(sorted_tags[:limit])
 
     # ------------------------------------------------------------------
-    # Private synchronous helpers (run in thread)
+    # 동기 헬퍼 (스레드에서 실행)
     # ------------------------------------------------------------------
 
     def _select_all(self, user_id: str):

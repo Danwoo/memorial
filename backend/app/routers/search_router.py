@@ -1,8 +1,3 @@
-"""
-Search Router
-API endpoints for semantic search
-"""
-
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -26,7 +21,7 @@ async def advanced_search(
     user_id: UUID = Depends(get_user_id),
     search_service: SearchService = Depends(get_search_service),
 ):
-    """Advanced semantic search with filtering options."""
+    """필터링 옵션이 포함된 시맨틱 검색."""
     tag_list = [t.strip() for t in tags.split(",")] if tags else None
 
     result = await search_service.search(
@@ -54,6 +49,6 @@ async def get_related_memories(
     user_id: UUID = Depends(get_user_id),
     search_service: SearchService = Depends(get_search_service),
 ):
-    """Get memories related to a specific memory."""
+    """특정 메모리와 관련된 메모리 목록 조회."""
     related = await search_service.get_related_memories(user_id, memory_id, limit)
     return [RelatedMemory(**r) for r in related]

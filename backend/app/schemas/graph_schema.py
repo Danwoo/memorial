@@ -1,15 +1,10 @@
-"""
-Graph Schemas
-Request/Response DTOs for knowledge graph endpoints
-"""
-
 from typing import Any
 
 from pydantic import BaseModel
 
 
 class GraphNode(BaseModel):
-    """Node in the knowledge graph"""
+    """지식 그래프 노드."""
 
     id: str
     label: str
@@ -20,7 +15,7 @@ class GraphNode(BaseModel):
 
 
 class GraphLink(BaseModel):
-    """Link/Edge in the knowledge graph"""
+    """지식 그래프 엣지."""
 
     source: str
     target: str
@@ -29,21 +24,21 @@ class GraphLink(BaseModel):
 
 
 class GraphDataResponse(BaseModel):
-    """Graph data for visualization"""
+    """그래프 시각화 데이터 응답."""
 
     nodes: list[GraphNode]
     links: list[GraphLink]
 
 
 class EntityInput(BaseModel):
-    """Entity to be saved to graph"""
+    """그래프에 저장할 엔티티 입력."""
 
     name: str
     type: str
 
 
 class RelationInput(BaseModel):
-    """Relation to be saved to graph"""
+    """그래프에 저장할 관계 입력."""
 
     source: str
     target: str

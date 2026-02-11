@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import { storeProviderToken } from '../api'
 import type { User } from '../types'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── 타입 정의 ──────────────────────────────────────────────────────────────
 
 interface AuthContextValue {
   user: User | null
@@ -18,7 +18,7 @@ interface AuthContextValue {
   unlinkProvider: (identity: UserIdentity) => Promise<void>
 }
 
-// ─── Context ─────────────────────────────────────────────────────────────────
+// ─── Context 생성 ────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
@@ -31,7 +31,7 @@ export function useAuth(): AuthContextValue {
   return ctx
 }
 
-// ─── Provider ────────────────────────────────────────────────────────────────
+// ─── Provider 컴포넌트 ──────────────────────────────────────────────────────
 
 interface AuthProviderProps {
   children: ReactNode
@@ -42,6 +42,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Supabase 토큰을 localStorage에 동기화 (API 클라이언트에서 사용)
   const syncTokenToStorage = useCallback((accessToken: string | null) => {
     if (accessToken) {
       localStorage.setItem('auth_token', accessToken)
@@ -50,7 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
-  // ── Supabase auth listener ──────────────────────────────────────────────
+  // ── Supabase 인증 상태 변화 감지 ──────────────────────────────────────────
 
   useEffect(() => {
     if (!supabase) {
@@ -90,13 +91,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
             avatar_url: supaUser.user_metadata?.avatar_url,
           })
 
-          // Capture provider_token from Kakao OAuth and store it
+          // 카카오 OAuth에서 받은 provider_token을 백엔드에 저장
           if (newSession.provider_token) {
             storeProviderToken(
               newSession.provider_token,
               newSession.provider_refresh_token,
             ).catch(() => {
-              // Non-critical: token storage failure doesn't block auth
+              // 비필수 작업: 토큰 저장 실패가 인증 흐름을 막지 않음
             })
           }
         } else {
@@ -110,7 +111,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [syncTokenToStorage])
 
-  // ── Auth methods ────────────────────────────────────────────────────────
+  // ── 인증 메서드 ────────────────────────────────────────────────────────
 
   const signInWithGoogle = useCallback(async () => {
     if (!supabase) {
@@ -148,7 +149,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setSession(null)
   }, [syncTokenToStorage])
 
-  // ── Provider linking ──────────────────────────────────────────────────
+  // ── 소셜 계정 연결/해제 ─────────────────────────────────────────────
 
   const linkProvider = useCallback(async (provider: 'google' | 'kakao') => {
     if (!supabase) {
@@ -175,7 +176,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (error) throw error
   }, [])
 
-  // ── Memoized context value ──────────────────────────────────────────────
+  // ── 메모이제이션된 컨텍스트 값 ──────────────────────────────────────────
 
   const value = useMemo<AuthContextValue>(
     () => ({

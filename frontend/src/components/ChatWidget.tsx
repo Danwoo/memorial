@@ -13,10 +13,7 @@ const MODES: ChatModeOption[] = [
   { value: 'evening', label: '저녁 회고', icon: '🌙', desc: '하루 돌아보기' }
 ]
 
-/**
- * Embeddable chat component without routing.
- * Used inside JournalView's "Thinking Partner" section.
- */
+// 라우팅 없는 임베디드 채팅 컴포넌트 (JournalView의 Thinking Partner용)
 export default function ChatWidget() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])

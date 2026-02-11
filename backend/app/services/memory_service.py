@@ -1,8 +1,3 @@
-"""
-Memory Service
-Business logic for memory operations
-"""
-
 from uuid import UUID
 
 from app.repositories.graph_repository import GraphRepository
@@ -12,7 +7,7 @@ from app.schemas.memory_schema import MemoryInDB, SourceType
 
 
 class MemoryService:
-    """Service for memory business logic"""
+    """Memory CRUD 및 임베딩/그래프 연동 비즈니스 로직."""
 
     def __init__(
         self, memory_repo: MemoryRepository, vector_repo: VectorRepository, graph_repo: GraphRepository | None = None
@@ -30,10 +25,7 @@ class MemoryService:
         source_url: str | None = None,
         summary: str | None = None,
     ) -> MemoryInDB:
-        """
-        Create a new memory and generate embedding.
-        """
-        # Create memory record
+        """새 Memory 생성 후 임베딩 자동 생성."""
         memory = await self.memory_repo.create(
             user_id=user_id,
             title=title,
@@ -43,19 +35,18 @@ class MemoryService:
             summary=summary,
         )
 
-        # Generate and save embedding
         await self.vector_repo.save_embedding(memory_id=str(memory.id), content=f"{memory.title}\n\n{memory.content}")
 
         return memory
 
     async def get_memory(self, memory_id: UUID, user_id: UUID) -> MemoryInDB | None:
-        """Get a memory by ID."""
+        """ID로 Memory 조회."""
         return await self.memory_repo.get_by_id(memory_id, user_id)
 
     async def list_memories(
         self, user_id: UUID, page: int = 1, limit: int = 20, search: str | None = None
     ) -> tuple[list[MemoryInDB], int]:
-        """Get paginated list of memories."""
+        """페이지네이션 Memory 목록 조회."""
         return await self.memory_repo.get_by_user(user_id=user_id, page=page, limit=limit, search=search)
 
     async def update_memory_after_processing(
@@ -69,11 +60,7 @@ class MemoryService:
         source_type: str | None = None,
         user_id: str | None = None,
     ) -> bool:
-        """
-        Update memory after Librarian agent processing.
-        Saves summary, tags, and optionally graph data.
-        """
-        # Update memory status
+        """Librarian 처리 후 Memory 업데이트. summary, tags, 그래프 데이터 저장."""
         success = await self.memory_repo.update_status(
             memory_id=memory_id,
             status="completed",
@@ -83,7 +70,6 @@ class MemoryService:
             source_type=source_type,
         )
 
-        # Save graph data if available (pass user_id for graph filtering)
         if self.graph_repo and entities:
             await self.graph_repo.save_entities(entities, str(memory_id), user_id)
 
@@ -93,7 +79,7 @@ class MemoryService:
         return success
 
     async def delete_memory(self, memory_id: UUID, user_id: UUID) -> bool:
-        """Delete a memory and its associated graph data."""
+        """Memory 및 연관 그래프 데이터 삭제."""
         deleted = await self.memory_repo.delete(memory_id, user_id)
         if deleted and self.graph_repo:
             await self.graph_repo.delete_memory_node(str(memory_id))

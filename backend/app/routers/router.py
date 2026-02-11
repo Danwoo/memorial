@@ -1,8 +1,3 @@
-"""
-API v1 Router Aggregator
-Combines all v1 routers into a single router
-"""
-
 from fastapi import APIRouter
 
 from app.routers import (
@@ -19,7 +14,6 @@ from app.routers import (
 
 api_router = APIRouter(prefix="/api/v1")
 
-# Include all routers
 api_router.include_router(memory_router.router)
 api_router.include_router(chat_router.router)
 api_router.include_router(graph_router.router)

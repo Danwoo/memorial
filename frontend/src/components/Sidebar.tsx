@@ -4,7 +4,7 @@ import type { User, ChatSessionResponse } from '../types'
 import { fetchChatSessions } from '../api'
 import './Sidebar.css'
 
-// ─── Navigation item definition ──────────────────────────────────────────────
+// ─── 네비게이션 항목 정의 ────────────────────────────────────────────────────
 
 interface NavItem {
   to: string
@@ -25,7 +25,7 @@ const NAV_ITEMS: NavItem[] = [
 
 const MAX_SIDEBAR_SESSIONS = 8
 
-// ─── Component ───────────────────────────────────────────────────────────────
+// ─── 컴포넌트 ───────────────────────────────────────────────────────────────
 
 interface SidebarProps {
   onLogout?: () => void
@@ -43,7 +43,7 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
       const data = await fetchChatSessions()
       setSessions(data)
     } catch {
-      // Silently fail - sessions are a non-critical UI feature
+      // 세션 목록은 비필수 UI 요소이므로 실패 시 무시
     }
   }
 
@@ -51,7 +51,7 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
     loadSessions()
   }, [])
 
-  // Reload sessions when navigating to/from chat pages
+  // 채팅 페이지 진입 시 세션 목록 새로고침
   useEffect(() => {
     if (location.pathname.startsWith('/chat')) {
       loadSessions()
@@ -88,7 +88,7 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
           </NavLink>
         ))}
 
-        {/* Chat session list */}
+        {/* 채팅 세션 목록 */}
         {isOnChatPage && sessions.length > 0 && (
           <div className="session-section">
             <button

@@ -1,7 +1,3 @@
-"""
-Memoir AI - FastAPI Application Entry Point
-"""
-
 from fastapi import FastAPI
 
 from app.config.error_handler import register_error_handlers
@@ -20,7 +16,7 @@ register_error_handlers(app)
 
 @app.get("/health")
 async def health_check():
-    """Public health check endpoint (no auth required)."""
+    """헬스체크 엔드포인트 (인증 불필요)."""
     return {"status": "ok"}
 
 

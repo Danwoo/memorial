@@ -1,13 +1,8 @@
-"""
-Search Schemas
-Request/Response DTOs for search endpoints
-"""
-
 from pydantic import BaseModel
 
 
 class SearchResult(BaseModel):
-    """Single search result item"""
+    """검색 결과 항목."""
 
     id: str
     title: str
@@ -20,7 +15,7 @@ class SearchResult(BaseModel):
 
 
 class SearchResponse(BaseModel):
-    """Search response with results and metadata"""
+    """검색 결과 및 메타데이터 응답."""
 
     query: str
     results: list[SearchResult]
@@ -29,7 +24,7 @@ class SearchResponse(BaseModel):
 
 
 class RelatedMemory(BaseModel):
-    """Related memory item for recommendations"""
+    """관련 메모리 추천 항목."""
 
     id: str
     title: str
@@ -37,7 +32,7 @@ class RelatedMemory(BaseModel):
 
 
 class RelatedMemoriesResponse(BaseModel):
-    """Response for related memories endpoint"""
+    """관련 메모리 응답."""
 
     source_id: str
     related: list[RelatedMemory]

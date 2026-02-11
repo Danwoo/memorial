@@ -1,6 +1,6 @@
-import { get, post, put } from './client'
+import { get, post, put, del } from './client'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── 타입 정의 ──────────────────────────────────────────────────────────────
 
 export interface ProviderInfo {
   provider: string
@@ -42,12 +42,26 @@ export interface BotSettingsUpdate {
   include_insights?: boolean
 }
 
-// ─── API Functions ───────────────────────────────────────────────────────────
+export interface ChannelLinkCode {
+  code: string
+  expires_at: string
+  instructions: string
+}
 
+export interface ChannelStatus {
+  connected: boolean
+  bot_user_key: string | null
+  linked_at: string | null
+}
+
+// ─── API 함수 ───────────────────────────────────────────────────────────────
+
+// 전체 연동 상태 조회 (계정, 채널, 봇 설정)
 export async function getIntegrationStatus(): Promise<IntegrationStatus> {
   return get<IntegrationStatus>('/integrations/status')
 }
 
+// 카카오 OAuth 프로바이더 토큰을 서버에 저장
 export async function storeProviderToken(
   providerToken: string,
   providerRefreshToken?: string | null,
@@ -58,10 +72,29 @@ export async function storeProviderToken(
   })
 }
 
+// 일일 다이제스트 봇 설정 조회
 export async function getBotSettings(): Promise<BotSettings> {
   return get<BotSettings>('/integrations/bot-settings')
 }
 
+// 일일 다이제스트 봇 설정 업데이트
 export async function updateBotSettings(settings: BotSettingsUpdate): Promise<BotSettings> {
   return put<BotSettings>('/integrations/bot-settings', settings)
+}
+
+// ─── 카카오톡 채널 연결 API ─────────────────────────────────────────────────
+
+// 카카오톡 채널 연결용 일회성 코드 생성
+export async function generateChannelLinkCode(): Promise<ChannelLinkCode> {
+  return post<ChannelLinkCode>('/integrations/kakao/channel/link-code')
+}
+
+// 카카오톡 채널 연결 상태 조회
+export async function getChannelStatus(): Promise<ChannelStatus> {
+  return get<ChannelStatus>('/integrations/kakao/channel/status')
+}
+
+// 카카오톡 채널 연결 해제
+export async function disconnectChannel(): Promise<void> {
+  return del('/integrations/kakao/channel/disconnect')
 }

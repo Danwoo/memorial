@@ -1,20 +1,3 @@
-"""
-Librarian Agent - LangGraph Subgraph Definition
-Based on Agent_Architecture.md
-
-The Librarian is a background agent that processes ingested content:
-1. Curator Node -> Classify & Tag
-2. Ontologist Node -> Extract Entities/Relations (if INSIGHT)
-3. Save Node -> Persist results
-
-Workflow:
-  START -> curator -> (router) -> ontologist -> save -> END
-                   |                              ^
-                   +-------> save ----------------+
-                   |
-                   +-------> END (if SPAM)
-"""
-
 from langgraph.graph import END, StateGraph
 
 from app.agents.librarian.nodes.curator import curator_node
@@ -24,9 +7,7 @@ from app.agents.state import AgentState
 
 
 def route_after_curator(state: AgentState) -> str:
-    """
-    Conditional edge: Determine next step based on curator's classification.
-    """
+    """Curator 분류 결과에 따른 조건부 라우팅."""
     next_step = state.get("next_step", "save")
 
     if next_step == "ontologist":
@@ -38,36 +19,35 @@ def route_after_curator(state: AgentState) -> str:
 
 
 def create_librarian_graph() -> StateGraph:
-    """
-    Creates the Librarian Subgraph.
+    """Librarian 서브그래프 생성.
 
-    Returns a compiled LangGraph that can be invoked with:
-        result = await graph.ainvoke(initial_state)
+    워크플로우:
+        START -> curator -> (router) -> ontologist -> save -> END
+                         |                              ^
+                         +-------> save ----------------+
+                         |
+                         +-------> END (SPAM인 경우)
     """
-    # Create the graph
     graph = StateGraph(AgentState)
 
-    # Add nodes
     graph.add_node("curator", curator_node)
     graph.add_node("ontologist", ontologist_node)
     graph.add_node("save", save_node)
 
-    # Set entry point
     graph.set_entry_point("curator")
 
-    # Add conditional edge from curator
     graph.add_conditional_edges(
         "curator", route_after_curator, {"ontologist": "ontologist", "save": "save", "end": END}
     )
 
-    # Ontologist always goes to save
+    # Ontologist 완료 후 항상 Save로 이동
     graph.add_edge("ontologist", "save")
 
-    # Save always ends
+    # Save 완료 후 종료
     graph.add_edge("save", END)
 
     return graph.compile()
 
 
-# Create singleton instance
+# 싱글톤 인스턴스
 librarian_graph = create_librarian_graph()

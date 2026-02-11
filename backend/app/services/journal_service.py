@@ -1,8 +1,3 @@
-"""
-Journal Service
-Business logic for journal operations (sentiment, Socratic questions, distortions).
-"""
-
 import logging
 from typing import Any
 from uuid import UUID
@@ -98,6 +93,8 @@ COGNITIVE_DISTORTION_PATTERNS = {
 
 
 class JournalService:
+    """저널 작성, 감정 분석, 소크라테스 질문, 인지 왜곡 탐지 비즈니스 로직."""
+
     def __init__(
         self,
         journal_repo: JournalRepository,
@@ -111,10 +108,7 @@ class JournalService:
         self.chat_repo = chat_repo
 
     def _analyze_sentiment(self, content: str) -> str:
-        """
-        Simple keyword-based sentiment analysis for MVP.
-        TODO: Replace with LLM or VADER.
-        """
+        """키워드 기반 간이 감정 분석. TODO: LLM 또는 VADER로 교체."""
         score = 0
         content_lower = content.lower()
 
@@ -132,20 +126,17 @@ class JournalService:
         return "NEUTRAL"
 
     async def create_entry(self, user_id: UUID | None, content: str) -> dict[str, Any] | None:
-        """Create a journal entry with mood analysis."""
+        """저널 항목 생성 (감정 분석 포함)."""
         mood = self._analyze_sentiment(content)
         journal = await self.journal_repo.create_journal(user_id, content, mood=mood)
         return journal
 
     async def get_entries(self, user_id: UUID, limit: int = 10) -> list[dict[str, Any]]:
-        """Get journal entries for a user."""
+        """사용자의 저널 항목 목록 조회."""
         return await self.journal_repo.get_journals(user_id, limit)
 
     async def generate_review_questions(self, content: str) -> list[str]:
-        """
-        Generate Socratic review questions based on journal content.
-        Uses LLM to create thoughtful, reflective questions.
-        """
+        """저널 내용 기반 소크라테스식 성찰 질문 생성 (LLM 활용)."""
         if not content or len(content.strip()) < 10:
             return ["오늘 하루 중 가장 기억에 남는 순간은 무엇인가요?"]
 
@@ -167,10 +158,7 @@ class JournalService:
             return ["이 경험에서 어떤 인사이트를 얻었나요?"]
 
     def detect_cognitive_distortions(self, content: str) -> dict[str, Any]:
-        """
-        Detect cognitive distortions in journal content.
-        Returns detected patterns and gentle reframing suggestions.
-        """
+        """저널 내용에서 인지 왜곡 탐지. 탐지된 패턴과 리프레이밍 제안 반환."""
         content_lower = content.lower()
         detected = []
 
@@ -185,7 +173,7 @@ class JournalService:
                             "feedback": pattern["feedback"],
                         }
                     )
-                    break  # One match per pattern is enough
+                    break  # 패턴당 하나만 매칭
 
         return {
             "has_distortions": len(detected) > 0,
@@ -194,10 +182,7 @@ class JournalService:
         }
 
     async def generate_draft_from_conversation(self, session_id: UUID) -> str:
-        """
-        Generate a journal draft from an evening chat session.
-        Reads the conversation history and asks LLM to write a reflective journal.
-        """
+        """저녁 대화 세션으로부터 저널 초안 생성 (LLM 활용)."""
         if not self.chat_repo:
             raise ValueError("ChatRepository not available")
 
@@ -205,7 +190,7 @@ class JournalService:
         if not messages:
             raise ValueError("No messages found in session")
 
-        # Build conversation transcript
+        # 대화 트랜스크립트 구성
         transcript_lines = []
         for msg in messages:
             if isinstance(msg, HumanMessage):
@@ -215,7 +200,6 @@ class JournalService:
 
         transcript = "\n\n".join(transcript_lines)
 
-        # Truncate if too long
         if len(transcript) > 10000:
             transcript = transcript[:10000] + "\n\n[대화 내용 일부 생략...]"
 
@@ -229,7 +213,7 @@ class JournalService:
         return response.content
 
     async def get_related_memories(self, user_id: UUID, content: str) -> list[dict[str, Any]]:
-        """Find memories related to journal content via vector similarity search."""
+        """저널 내용과 유사한 Memory를 벡터 검색으로 조회."""
         if not self.vector_repo:
             return []
 

@@ -18,7 +18,7 @@ export default function DashboardView() {
     try {
       setLoading(true)
 
-      // Load stats and digest in parallel
+      // 통계와 다이제스트를 병렬로 로드
       const [statsData, digestData] = await Promise.allSettled([
         fetchStats(),
         fetchDigest(),
@@ -40,6 +40,7 @@ export default function DashboardView() {
     }
   }
 
+  // 활동 차트의 최대값 산출 (막대 높이 비율 계산용)
   const getMaxActivity = () => {
     if (!stats) return 1
     return Math.max(...stats.recent_activity.map(a => a.count), 1)
@@ -78,7 +79,7 @@ export default function DashboardView() {
         <p className="dashboard-subtitle">나의 지식 활동 요약</p>
       </div>
 
-      {/* Today's Digest Section */}
+      {/* 오늘의 다이제스트 섹션 */}
       {digest && (digest.summary.memory_count > 0 || digest.insights.suggested_questions.length > 0) && (
         <div className="digest-section glass-card">
           <div className="digest-header">
@@ -128,7 +129,7 @@ export default function DashboardView() {
         </div>
       )}
 
-      {/* Overview Cards */}
+      {/* 통계 개요 카드 */}
       <div className="stats-grid">
         <div className="stat-card glass-card">
           <div className="stat-icon">📚</div>
@@ -165,7 +166,7 @@ export default function DashboardView() {
         </div>
       </div>
 
-      {/* Activity Chart */}
+      {/* 최근 활동 차트 */}
       <div className="chart-section glass-card">
         <h2>📈 최근 7일 활동</h2>
         <div className="activity-chart">
@@ -184,7 +185,7 @@ export default function DashboardView() {
       </div>
 
       <div className="dashboard-row">
-        {/* Source Distribution */}
+        {/* 소스 타입 분포 */}
         <div className="chart-section glass-card">
           <h2>📁 소스 타입 분포</h2>
           <div className="source-list">
@@ -206,7 +207,7 @@ export default function DashboardView() {
           </div>
         </div>
 
-        {/* Top Tags */}
+        {/* 인기 태그 */}
         <div className="chart-section glass-card">
           <h2>🏷️ 인기 태그</h2>
           <div className="tag-cloud">

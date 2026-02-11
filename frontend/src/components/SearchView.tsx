@@ -10,7 +10,7 @@ export default function SearchView() {
   const [isSearching, setIsSearching] = useState(false)
   const [searched, setSearched] = useState(false)
 
-  // Filter states
+  // 검색 필터 상태 (소스 타입, 기간)
   const [showFilters, setShowFilters] = useState(false)
   const [sourceFilter, setSourceFilter] = useState<string>('')
   const [daysFilter, setDaysFilter] = useState<string>('')

@@ -8,7 +8,7 @@ interface SearchParams {
   days?: string
 }
 
-/** Perform a semantic search over stored memories */
+// 저장된 메모리에 대한 시맨틱 검색 수행
 export function searchMemories(params: SearchParams): Promise<SearchResponse<SearchResult>> {
   const query = new URLSearchParams()
   query.set('q', params.q)

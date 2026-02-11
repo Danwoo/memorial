@@ -1,17 +1,17 @@
 import { post } from './client'
 import type { RelatedMemoriesResponse } from '../types'
 
-/** Save a journal entry */
+// 저널 항목 저장
 export function saveJournal(content: string): Promise<void> {
   return post('/journals', { content })
 }
 
-/** Fetch memories related to the given journal content */
+// 저널 내용과 관련된 메모리 검색
 export function fetchRelatedMemories(content: string): Promise<RelatedMemoriesResponse> {
   return post<RelatedMemoriesResponse>('/journals/related-memories', { content })
 }
 
-/** Generate a journal draft from an evening chat session */
+// 저녁 대화 세션으로부터 저널 초안 AI 생성
 export function generateJournalDraft(sessionId: string): Promise<{ draft: string; session_id: string }> {
   return post<{ draft: string; session_id: string }>('/journals/generate-draft', { session_id: sessionId })
 }

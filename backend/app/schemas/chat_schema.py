@@ -1,8 +1,3 @@
-"""
-Chat Schemas
-Request/Response DTOs for chat endpoints
-"""
-
 from datetime import datetime
 from uuid import UUID
 
@@ -10,13 +5,13 @@ from pydantic import BaseModel
 
 
 class ChatSessionCreate(BaseModel):
-    """Request to create a new chat session"""
+    """채팅 세션 생성 요청."""
 
     title: str | None = None
 
 
 class ChatSessionResponse(BaseModel):
-    """Response with chat session details"""
+    """채팅 세션 상세 응답."""
 
     id: UUID
     title: str
@@ -24,14 +19,14 @@ class ChatSessionResponse(BaseModel):
 
 
 class ChatMessageRequest(BaseModel):
-    """Request to send a chat message"""
+    """채팅 메시지 전송 요청."""
 
     content: str
     mode: str | None = None  # insight, counter, summary, evening
 
 
 class ChatMessageResponse(BaseModel):
-    """Single chat message in history"""
+    """채팅 이력의 단일 메시지."""
 
     role: str  # "user" or "assistant"
     content: str
@@ -39,7 +34,7 @@ class ChatMessageResponse(BaseModel):
 
 
 class ChatStreamEvent(BaseModel):
-    """SSE event during chat streaming"""
+    """채팅 스트리밍 SSE 이벤트."""
 
     content: str | None = None
     done: bool | None = None
@@ -47,7 +42,7 @@ class ChatStreamEvent(BaseModel):
 
 
 class ChatHistoryResponse(BaseModel):
-    """Chat history response"""
+    """채팅 이력 응답."""
 
     session_id: UUID
     messages: list[ChatMessageResponse]

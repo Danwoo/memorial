@@ -29,9 +29,8 @@ export default function ChatView() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Load history when entering via URL param (e.g. /chat/abc-123)
-  // sessionId intentionally excluded: adding it would cause infinite loop
-  // since setSessionId inside triggers re-render
+  // URL 파라미터로 진입 시 채팅 히스토리 로드 (예: /chat/abc-123)
+  // sessionId를 의존성에서 제외: setSessionId가 재렌더링을 유발해 무한루프 방지
   useEffect(() => {
     if (urlSessionId && urlSessionId !== sessionId) {
       setSessionId(urlSessionId)
@@ -40,7 +39,7 @@ export default function ChatView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlSessionId])
 
-  // Handle location state: newSession or topic from GraphView
+  // location state 처리: 새 세션 시작 또는 GraphView에서 전달된 토픽
   useEffect(() => {
     const state = location.state as ChatLocationState | null
     if (state?.newSession) {
@@ -57,7 +56,7 @@ export default function ChatView() {
     }
   }, [location.state])
 
-  // Cleanup: abort any in-flight SSE stream on unmount
+  // 언마운트 시 진행 중인 SSE 스트림 중단
   useEffect(() => {
     return () => {
       abortControllerRef.current?.abort()
@@ -96,27 +95,27 @@ export default function ChatView() {
     abortControllerRef.current = abortController
 
     try {
-      // Create session if needed
+      // 세션이 없으면 새로 생성
       let currentSessionId = sessionId
       if (!currentSessionId) {
         const session = await createChatSession()
         currentSessionId = session.id
         setSessionId(currentSessionId)
-        // Update URL to include session ID (replace, not push)
+        // URL에 세션 ID 반영 (히스토리 교체)
         navigate(`/chat/${currentSessionId}`, { replace: true })
       }
 
-      // Send message and get SSE response
+      // 메시지 전송 후 SSE 응답 수신
       const response = await sendChatMessage(
         currentSessionId,
         { content: userMessage, mode: mode || undefined },
         abortController.signal,
       )
 
-      // Add placeholder for assistant message
+      // 어시스턴트 메시지 플레이스홀더 추가
       setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
-      // Stream the response
+      // SSE 스트림을 읽으며 실시간으로 메시지 업데이트
       await readSSEStream(response, (accumulated) => {
         setMessages(prev => {
           const updated = [...prev]

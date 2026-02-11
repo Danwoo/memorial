@@ -1,9 +1,3 @@
-"""
-Kakao Channel Service
-Handles inbound messages from Kakao OpenBuilder webhook,
-channel-account linking, and skill response building.
-"""
-
 import logging
 import re
 import secrets
@@ -33,14 +27,16 @@ HELP_TEXT = (
 
 
 class KakaoChannelService:
+    """카카오 OpenBuilder 웹훅 처리, 채널 계정 연동, 스킬 응답 생성."""
+
     def __init__(self, db: Client, memory_service: MemoryService) -> None:
         self.db = db
         self.memory_service = memory_service
 
-    # ─── Public API ───────────────────────────────────────────────────────
+    # --- 공개 API ---
 
     def lookup_user_id(self, bot_user_key: str) -> str | None:
-        """Look up user_id from bot_user_key mapping."""
+        """bot_user_key로 매핑된 user_id 조회."""
         result = (
             self.db.table("kakao_channel_mappings")
             .select("user_id")
@@ -59,36 +55,30 @@ class KakaoChannelService:
         bot_user_key: str,
         plusfriend_user_key: str | None = None,
     ) -> KakaoSkillResponse:
-        """Main routing: determine content type and process accordingly."""
+        """웹훅 메인 라우팅: 콘텐츠 타입 판별 후 적절한 처리 수행."""
         utterance = utterance.strip()
 
-        # 1. Help command (works for everyone)
         if utterance == HELP_COMMAND:
             return KakaoSkillResponse.simple_text(HELP_TEXT)
 
-        # 2. Link code command (for unlinked users)
         link_match = LINK_CODE_PATTERN.match(utterance)
         if link_match:
             return await self._handle_link_code(link_match.group(1), bot_user_key, plusfriend_user_key)
 
-        # 3. Look up user
         user_id = self.lookup_user_id(bot_user_key)
         if not user_id:
             return self._build_link_required_response()
 
-        # 4. Disconnect command
         if utterance == DISCONNECT_COMMAND:
             return self._handle_disconnect(bot_user_key)
 
-        # 5. URL → web content
         if URL_PATTERN.match(utterance):
             return await self._save_url_memory(utterance, user_id)
 
-        # 6. Plain text → note
         return await self._save_text_memory(utterance, user_id)
 
     def generate_link_code(self, user_id: str) -> dict:
-        """Generate a 6-char link code and store in pending_channel_links."""
+        """6자리 연결 코드 생성 후 pending_channel_links에 저장."""
         code = f"MEMOIR-{secrets.token_hex(3).upper()}"
         now = datetime.now(UTC)
         expires_at = (
@@ -97,7 +87,6 @@ class KakaoChannelService:
             else now.replace(hour=now.hour + 1, minute=now.minute - 30)
         )
 
-        # Use raw SQL-style interval via Supabase
         self.db.table("pending_channel_links").insert(
             {
                 "user_id": user_id,
@@ -105,7 +94,6 @@ class KakaoChannelService:
             }
         ).execute()
 
-        # Fetch to get the actual expires_at from DB default
         result = self.db.table("pending_channel_links").select("expires_at").eq("link_code", code).limit(1).execute()
         db_expires_at = result.data[0]["expires_at"] if result.data else expires_at.isoformat()
 
@@ -116,7 +104,7 @@ class KakaoChannelService:
         }
 
     def get_channel_status(self, user_id: str) -> dict:
-        """Check if user has an active channel mapping."""
+        """사용자의 활성 채널 매핑 상태 조회."""
         result = (
             self.db.table("kakao_channel_mappings")
             .select("bot_user_key, linked_at")
@@ -135,7 +123,7 @@ class KakaoChannelService:
         return {"connected": False, "bot_user_key": None, "linked_at": None}
 
     def disconnect_channel(self, user_id: str) -> bool:
-        """Soft-delete channel mapping by setting status to inactive."""
+        """채널 매핑 소프트 삭제 (status를 inactive로 변경)."""
         result = (
             self.db.table("kakao_channel_mappings")
             .update({"channel_status": "inactive", "updated_at": "now()"})
@@ -145,7 +133,7 @@ class KakaoChannelService:
         )
         return bool(result.data)
 
-    # ─── Internal ─────────────────────────────────────────────────────────
+    # --- 내부 메서드 ---
 
     async def _handle_link_code(
         self,
@@ -153,7 +141,7 @@ class KakaoChannelService:
         bot_user_key: str,
         plusfriend_user_key: str | None,
     ) -> KakaoSkillResponse:
-        """Verify link code and create channel mapping."""
+        """연결 코드 검증 후 채널 매핑 생성."""
         result = (
             self.db.table("pending_channel_links")
             .select("user_id, expires_at, used")
@@ -174,10 +162,8 @@ class KakaoChannelService:
 
         user_id = link["user_id"]
 
-        # Mark code as used
         self.db.table("pending_channel_links").update({"used": True}).eq("link_code", code).execute()
 
-        # Upsert channel mapping
         self.db.table("kakao_channel_mappings").upsert(
             {
                 "user_id": user_id,
@@ -194,7 +180,7 @@ class KakaoChannelService:
         )
 
     def _handle_disconnect(self, bot_user_key: str) -> KakaoSkillResponse:
-        """Disconnect channel via chat command."""
+        """채팅 명령으로 채널 연결 해제."""
         self.db.table("kakao_channel_mappings").update({"channel_status": "inactive", "updated_at": "now()"}).eq(
             "bot_user_key", bot_user_key
         ).execute()
@@ -204,7 +190,7 @@ class KakaoChannelService:
         )
 
     async def _save_url_memory(self, url: str, user_id: str) -> KakaoSkillResponse:
-        """Crawl URL and save as memory."""
+        """URL 크롤링 후 Memory로 저장."""
         try:
             processed = await process_web_content(url)
             await self.memory_service.create_memory(
@@ -221,7 +207,7 @@ class KakaoChannelService:
             return KakaoSkillResponse.simple_text("URL 저장에 실패했습니다. 잠시 후 다시 시도해주세요.")
 
     async def _save_text_memory(self, text: str, user_id: str) -> KakaoSkillResponse:
-        """Save plain text as note memory."""
+        """일반 텍스트를 노트 Memory로 저장."""
         try:
             processed = await process_note_content(text)
             await self.memory_service.create_memory(

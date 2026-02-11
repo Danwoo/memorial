@@ -1,8 +1,3 @@
-"""
-Graph Router
-API endpoints for knowledge graph visualization
-"""
-
 from typing import Any
 from uuid import UUID
 
@@ -21,11 +16,7 @@ async def get_graph(
     user_id: UUID = Depends(get_user_id),
     graph_service: GraphService = Depends(get_graph_service),
 ):
-    """
-    Get graph data for visualization.
-
-    Returns ``{nodes: [], links: []}`` from the knowledge graph.
-    """
+    """지식 그래프 시각화 데이터 조회. ``{nodes: [], links: []}`` 형태 반환."""
     if not graph_service.is_available:
         return {"nodes": [], "links": []}
 

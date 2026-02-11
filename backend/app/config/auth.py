@@ -1,8 +1,3 @@
-"""
-Authentication Dependencies
-JWT token verification using Supabase Auth
-"""
-
 from uuid import UUID
 
 import httpx
@@ -17,11 +12,10 @@ security = HTTPBearer(auto_error=False)
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> dict | None:
-    """
-    Verify JWT token with Supabase and return user info.
+    """Supabase JWT 토큰을 검증하고 사용자 정보 반환.
 
-    - Returns ``None`` when no token is provided (for optional-auth endpoints).
-    - Raises ``HTTPException(401)`` when a token is present but invalid.
+    토큰 미제공 시 None 반환 (선택적 인증 엔드포인트용).
+    토큰이 유효하지 않으면 401 예외 발생.
     """
     settings = get_settings()
 
@@ -62,10 +56,7 @@ async def get_current_user(
 async def require_auth(
     user: dict | None = Depends(get_current_user),
 ) -> dict:
-    """
-    Require authentication -- raises 401 if not authenticated.
-    Use this for protected endpoints.
-    """
+    """인증 필수 의존성. 미인증 시 401 발생."""
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -76,5 +67,5 @@ async def require_auth(
 
 
 def get_user_id(user: dict = Depends(require_auth)) -> UUID:
-    """Extract user ID from authenticated user."""
+    """인증된 사용자에서 user_id 추출."""
     return user["id"]

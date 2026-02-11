@@ -24,6 +24,7 @@ export default function MemoryView() {
     }
   }
 
+  // 소스 타입에 따라 메모리 생성 (WEB/NOTE/PDF)
   const addMemory = async () => {
     try {
       if (addType === 'PDF') {
@@ -45,7 +46,7 @@ export default function MemoryView() {
     }
   }
 
-  // Load on mount
+  // 마운트 시 메모리 목록 로드
   useEffect(() => {
     loadMemories()
   }, [])
@@ -89,7 +90,7 @@ export default function MemoryView() {
         )}
       </div>
 
-      {/* Add Memory Modal */}
+      {/* 메모리 추가 모달 */}
       {showAddModal && (
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
           <div className="modal-content glass-card" onClick={e => e.stopPropagation()}>

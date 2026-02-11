@@ -1,10 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
-/**
- * Route guard that redirects unauthenticated users to /login.
- * Preserves the originally requested URL so we can redirect back after login.
- */
+// 인증 가드: 미인증 사용자를 /login으로 리다이렉트하고, 원래 URL을 보존
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
   const location = useLocation()
@@ -19,7 +16,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }
 
   if (!user) {
-    // Save the current URL as "from" so login can redirect back
+    // 현재 URL을 저장하여 로그인 후 돌아올 수 있게 함
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 

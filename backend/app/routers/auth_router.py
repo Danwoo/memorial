@@ -1,9 +1,3 @@
-"""
-Auth Router
-Authentication endpoints (user info).
-OAuth login is handled entirely by Supabase client-side SDK.
-"""
-
 import logging
 
 import httpx
@@ -20,11 +14,10 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(user: dict = Depends(get_current_user)):
-    """Get current user info."""
+    """현재 인증된 사용자 정보 조회."""
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
-    # Fetch profile data
     settings = get_settings()
     profile = {}
 

@@ -1,8 +1,3 @@
-"""
-Journal Schemas
-Request/Response DTOs for journal endpoints
-"""
-
 from typing import Any
 from uuid import UUID
 
@@ -10,13 +5,13 @@ from pydantic import BaseModel
 
 
 class JournalCreate(BaseModel):
-    """Request to create a new journal entry."""
+    """저널 항목 생성 요청."""
 
     content: str
 
 
 class JournalResponse(BaseModel):
-    """Single journal entry response."""
+    """저널 항목 응답."""
 
     id: UUID
     content: str
@@ -26,19 +21,19 @@ class JournalResponse(BaseModel):
 
 
 class ReviewRequest(BaseModel):
-    """Request body for review questions and insight analysis."""
+    """성찰 질문 및 인사이트 분석 요청."""
 
     content: str
 
 
 class ReviewQuestionsResponse(BaseModel):
-    """Response containing generated review questions."""
+    """생성된 성찰 질문 응답."""
 
     questions: list[str]
 
 
 class InsightsResponse(BaseModel):
-    """Response containing cognitive distortion analysis."""
+    """인지 왜곡 분석 결과 응답."""
 
     has_distortions: bool
     distortions: list[dict[str, Any]]
@@ -46,7 +41,7 @@ class InsightsResponse(BaseModel):
 
 
 class RelatedMemoryItem(BaseModel):
-    """Single related memory item in the sidebar."""
+    """사이드바용 관련 메모리 항목."""
 
     id: str | None = None
     title: str
@@ -57,19 +52,19 @@ class RelatedMemoryItem(BaseModel):
 
 
 class RelatedMemoriesResponse(BaseModel):
-    """Response containing related memories for the context sidebar."""
+    """컨텍스트 사이드바용 관련 메모리 응답."""
 
     memories: list[RelatedMemoryItem]
 
 
 class GenerateDraftRequest(BaseModel):
-    """Request to generate a journal draft from an evening chat session."""
+    """저녁 대화 세션에서 저널 초안 생성 요청."""
 
     session_id: UUID
 
 
 class GenerateDraftResponse(BaseModel):
-    """Response containing the AI-generated journal draft."""
+    """AI 생성 저널 초안 응답."""
 
     draft: str
     session_id: UUID

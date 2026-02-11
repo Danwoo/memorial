@@ -1,22 +1,22 @@
 import { get, post, postRaw } from './client'
 import type { ChatSessionResponse, ChatMessage, ChatMessagePayload, ChatStreamChunk } from '../types'
 
-/** Create a new chat session */
+// 새 채팅 세션 생성
 export function createChatSession(): Promise<ChatSessionResponse> {
   return post<ChatSessionResponse>('/chat/sessions', {})
 }
 
-/** List all chat sessions for the current user */
+// 사용자의 전체 채팅 세션 목록 조회
 export function fetchChatSessions(): Promise<ChatSessionResponse[]> {
   return get<ChatSessionResponse[]>('/chat/sessions')
 }
 
-/** Get chat history for a specific session */
+// 특정 세션의 채팅 히스토리 조회
 export function fetchChatHistory(sessionId: string): Promise<ChatMessage[]> {
   return get<ChatMessage[]>(`/chat/sessions/${sessionId}/history`)
 }
 
-/** Send a message and receive an SSE stream response */
+// 메시지 전송 후 SSE 스트림 응답 수신
 export function sendChatMessage(
   sessionId: string,
   payload: ChatMessagePayload,
@@ -25,10 +25,7 @@ export function sendChatMessage(
   return postRaw(`/chat/sessions/${sessionId}/messages`, payload, signal)
 }
 
-/**
- * Reads an SSE stream from a Response body and invokes `onChunk`
- * for each parsed data event. Returns the full accumulated content.
- */
+// SSE 스트림을 읽어 청크 단위로 콜백 호출, 전체 누적 텍스트 반환
 export async function readSSEStream(
   response: Response,
   onChunk: (accumulated: string) => void,
@@ -49,7 +46,7 @@ export async function readSSEStream(
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n')
 
-      // Keep potentially incomplete last line in the buffer
+      // 불완전한 마지막 줄은 버퍼에 보관
       buffer = lines.pop() || ''
 
       for (const line of lines) {
@@ -67,7 +64,7 @@ export async function readSSEStream(
           }
         } catch (e) {
           if (e instanceof Error && e.message !== '') throw e
-          // Ignore unparseable SSE lines
+          // 파싱 불가능한 SSE 라인 무시
         }
       }
     }

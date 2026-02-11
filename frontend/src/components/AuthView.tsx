@@ -10,7 +10,7 @@ export default function AuthView() {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Redirect if already authenticated
+  // 이미 인증된 경우 원래 페이지로 리다이렉트
   const redirectTo = (location.state as { from?: string })?.from ?? '/'
   if (!isLoading && user) {
     return <Navigate to={redirectTo} replace />

@@ -33,6 +33,10 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 nul
+*.stackdump
+
+# Temp files
+*openapi_tmp*
 
 # KuzuDB (embedded graph database)
 kuzu_data/

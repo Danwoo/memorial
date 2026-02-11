@@ -1,8 +1,3 @@
-"""
-Stats Router
-API endpoints for dashboard statistics
-"""
-
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -20,7 +15,7 @@ async def get_overview_stats(
     user_id: UUID = Depends(get_user_id),
     stats_service: StatsService = Depends(get_stats_service),
 ):
-    """Get complete dashboard statistics overview."""
+    """대시보드 전체 통계 개요 조회."""
     return await stats_service.get_overview(user_id)
 
 
@@ -30,7 +25,7 @@ async def get_activity_data(
     user_id: UUID = Depends(get_user_id),
     stats_service: StatsService = Depends(get_stats_service),
 ):
-    """Get daily activity data for a range."""
+    """지정 기간의 일별 활동 데이터 조회."""
     activity = await stats_service.get_activity(user_id, days)
     return {"days": days, "activity": activity}
 
@@ -42,5 +37,5 @@ async def get_timeline_data(
     user_id: UUID = Depends(get_user_id),
     stats_service: StatsService = Depends(get_stats_service),
 ):
-    """Get memories grouped by date for timeline view."""
+    """날짜별 메모리 그룹 타임라인 조회."""
     return await stats_service.get_timeline(user_id, page, limit)

@@ -1,8 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getIntegrationStatus, getBotSettings, updateBotSettings } from '../api'
-import type { ProviderInfo, BotSettings, BotSettingsUpdate } from '../api/integrations'
+import {
+  getIntegrationStatus,
+  getBotSettings,
+  updateBotSettings,
+  generateChannelLinkCode,
+  getChannelStatus,
+  disconnectChannel,
+} from '../api'
+import type { ProviderInfo, BotSettings, BotSettingsUpdate, ChannelLinkCode, ChannelStatus } from '../api/integrations'
 import './SettingsView.css'
 
 const PROVIDER_LABELS: Record<string, string> = {
@@ -23,7 +30,14 @@ export default function SettingsView() {
   const [botSettings, setBotSettings] = useState<BotSettings | null>(null)
   const [botLoading, setBotLoading] = useState(false)
 
-  // Check for link callback result in URL params
+  // 카카오톡 채널 연결 상태
+  const [channelStatus, setChannelStatus] = useState<ChannelStatus | null>(null)
+  const [linkCode, setLinkCode] = useState<ChannelLinkCode | null>(null)
+  const [channelLoading, setChannelLoading] = useState(false)
+  const [countdown, setCountdown] = useState('')
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // URL 파라미터에서 계정 연결 결과 확인 (OAuth 콜백)
   useEffect(() => {
     const linked = searchParams.get('linked')
     if (linked) {
@@ -33,14 +47,14 @@ export default function SettingsView() {
     }
   }, [searchParams, setSearchParams])
 
-  // Auto-dismiss toast
+  // 토스트 메시지 자동 해제 (4초)
   useEffect(() => {
     if (!toast) return
     const timer = setTimeout(() => setToast(null), 4000)
     return () => clearTimeout(timer)
   }, [toast])
 
-  // Load integration status + bot settings
+  // 연동 상태 + 봇 설정 + 채널 상태 로드
   const loadStatus = useCallback(async () => {
     try {
       setLoading(true)
@@ -48,13 +62,13 @@ export default function SettingsView() {
       setProviders(status.providers)
       setEmail(status.email)
 
-      // Load bot settings in parallel
-      try {
-        const bot = await getBotSettings()
-        setBotSettings(bot)
-      } catch {
-        setBotSettings(null)
-      }
+      // 봇 설정과 채널 상태를 병렬로 로드
+      const [botResult, channelResult] = await Promise.allSettled([
+        getBotSettings(),
+        getChannelStatus(),
+      ])
+      if (botResult.status === 'fulfilled') setBotSettings(botResult.value)
+      if (channelResult.status === 'fulfilled') setChannelStatus(channelResult.value)
     } catch {
       setProviders([])
     } finally {
@@ -122,6 +136,58 @@ export default function SettingsView() {
     }
   }
 
+  // ─── 카카오톡 채널 연결 핸들러 ──────────────────────────────────────────
+  const handleGenerateLinkCode = async () => {
+    try {
+      setChannelLoading(true)
+      const result = await generateChannelLinkCode()
+      setLinkCode(result)
+      startCountdown(result.expires_at)
+    } catch {
+      setToast({ type: 'error', message: '연결 코드 생성에 실패했습니다' })
+    } finally {
+      setChannelLoading(false)
+    }
+  }
+
+  const handleDisconnectChannel = async () => {
+    try {
+      setChannelLoading(true)
+      await disconnectChannel()
+      setChannelStatus({ connected: false, bot_user_key: null, linked_at: null })
+      setToast({ type: 'success', message: '카카오톡 채널 연결이 해제되었습니다' })
+    } catch {
+      setToast({ type: 'error', message: '채널 연결 해제에 실패했습니다' })
+    } finally {
+      setChannelLoading(false)
+    }
+  }
+
+  // 연결 코드 만료까지 남은 시간 카운트다운
+  const startCountdown = (expiresAt: string) => {
+    if (countdownRef.current) clearInterval(countdownRef.current)
+    const update = () => {
+      const diff = new Date(expiresAt).getTime() - Date.now()
+      if (diff <= 0) {
+        setCountdown('만료됨')
+        setLinkCode(null)
+        if (countdownRef.current) clearInterval(countdownRef.current)
+        return
+      }
+      const min = Math.floor(diff / 60000)
+      const sec = Math.floor((diff % 60000) / 1000)
+      setCountdown(`${min}:${String(sec).padStart(2, '0')}`)
+    }
+    update()
+    countdownRef.current = setInterval(update, 1000)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current)
+    }
+  }, [])
+
   const kakaoLinked = isProviderLinked('kakao')
   const primaryProvider = providers.length > 0 ? providers[0].provider : null
 
@@ -139,7 +205,7 @@ export default function SettingsView() {
         <p className="settings-subtitle">계정 및 서비스 연동을 관리합니다</p>
       </header>
 
-      {/* Section 1: Account Info */}
+      {/* 계정 정보 섹션 */}
       <section className="settings-section">
         <h2 className="section-title">계정 정보</h2>
         <div className="account-info-card glass-card">
@@ -160,7 +226,7 @@ export default function SettingsView() {
         </div>
       </section>
 
-      {/* Section 2: Connected Accounts */}
+      {/* 연결된 계정 섹션 */}
       <section className="settings-section">
         <h2 className="section-title">연결된 계정</h2>
         {loading ? (
@@ -227,10 +293,64 @@ export default function SettingsView() {
         )}
       </section>
 
-      {/* Section 3: KakaoTalk Daily Digest */}
+      {/* 서비스 연동 섹션 */}
       <section className="settings-section">
         <h2 className="section-title">서비스 연동</h2>
         <div className="provider-list">
+
+          {/* 카카오톡 채널 연결 */}
+          <div className="bot-settings-card glass-card">
+            <div className="provider-info">
+              <div className="provider-icon kakao-icon">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                  <path d="M12 3C6.477 3 2 6.463 2 10.691c0 2.724 1.8 5.113 4.508 6.458-.199.748-.72 2.713-.826 3.132-.13.525.192.518.405.377.167-.11 2.665-1.81 3.747-2.545.7.1 1.42.152 2.166.152 5.523 0 10-3.463 10-7.574C22 6.463 17.523 3 12 3z"/>
+                </svg>
+              </div>
+              <div className="provider-details">
+                <h3>카카오톡 채널 연결</h3>
+                <p>카카오톡에서 URL이나 메모를 보내 Memoir에 바로 저장하세요</p>
+              </div>
+            </div>
+
+            {channelStatus?.connected ? (
+              <div className="channel-connected">
+                <div className="channel-status-row">
+                  <span className="status-badge connected">연결됨</span>
+                  <span className="channel-linked-at">
+                    {channelStatus.linked_at && new Date(channelStatus.linked_at).toLocaleDateString('ko-KR')}
+                  </span>
+                </div>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleDisconnectChannel}
+                  disabled={channelLoading}
+                >
+                  {channelLoading ? '처리 중...' : '연결 해제'}
+                </button>
+              </div>
+            ) : linkCode ? (
+              <div className="channel-link-code">
+                <div className="link-code-display">{linkCode.code}</div>
+                <p className="link-code-instruction">
+                  카카오톡에서 Memoir 채널에 다음 메시지를 보내주세요:
+                </p>
+                <div className="link-code-command">#연결 {linkCode.code}</div>
+                <span className="link-code-timer">남은 시간: {countdown}</span>
+              </div>
+            ) : (
+              <div className="channel-connect-action">
+                <button
+                  className="btn kakao-connect-btn btn-sm"
+                  onClick={handleGenerateLinkCode}
+                  disabled={channelLoading}
+                >
+                  {channelLoading ? '생성 중...' : '연결 코드 생성'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 카카오톡 일일 다이제스트 */}
           <div className="bot-settings-card glass-card">
             <div className="provider-info">
               <div className="provider-icon kakao-icon">

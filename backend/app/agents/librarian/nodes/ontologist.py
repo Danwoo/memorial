@@ -1,13 +1,3 @@
-"""
-Ontologist Node - Entity & Relation Extraction
-Based on Agent_Design_Spec.md - Section 2.3
-
-The Ontologist builds the Knowledge Graph by:
-1. Extracting high-level entities (concepts, people, projects)
-2. Defining relationships between entities
-3. Using canonical names for deduplication
-"""
-
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.agents.state import AgentState
@@ -41,13 +31,14 @@ If no meaningful entities/relations found, return empty arrays."""
 
 
 async def ontologist_node(state: AgentState) -> dict:
-    """
-    Ontologist Node: Extracts entities and relations from content.
+    """Ontologist 노드: 콘텐츠에서 엔티티 및 관계 추출.
 
-    Input: state.target_text, state.summary
-    Output: extracted_entities, extracted_relations, next_step
+    Args:
+        state: target_text, summary, tags를 포함한 에이전트 상태
+
+    Returns:
+        extracted_entities, extracted_relations, next_step을 포함한 dict
     """
-    # Get target text and context from state
     target_text = state.get("target_text", "")
     summary = state.get("summary", "")
     tags = state.get("tags", [])
@@ -55,22 +46,20 @@ async def ontologist_node(state: AgentState) -> dict:
     if not target_text:
         return {"extracted_entities": [], "extracted_relations": [], "next_step": "save"}
 
-    # Truncate if too long
+    # 길이 제한
     max_chars = 6000
     if len(target_text) > max_chars:
         target_text = target_text[:max_chars] + "\n\n[Content truncated...]"
 
-    # Create context hint from curator's analysis
+    # Curator 분석 결과를 힌트로 활용
     context_hint = ""
     if summary:
         context_hint += f"Summary: {summary}\n"
     if tags:
         context_hint += f"Tags: {', '.join(tags)}\n"
 
-    # Get shared LLM instance
     llm = get_analytical_llm()
 
-    # Build messages
     user_content = f"""Analyze this content and extract entities/relations:
 
 {context_hint}
@@ -80,11 +69,9 @@ async def ontologist_node(state: AgentState) -> dict:
     messages = [SystemMessage(content=ONTOLOGIST_SYSTEM_PROMPT), HumanMessage(content=user_content)]
 
     try:
-        # Call LLM
         response = await llm.ainvoke(messages)
         content = response.content.strip()
 
-        # Parse JSON response (strips markdown code fences)
         result = parse_llm_json_response(content)
 
         entities = result.get("entities", [])

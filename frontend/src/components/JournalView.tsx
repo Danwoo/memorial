@@ -17,7 +17,7 @@ export default function JournalView() {
   const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
   const [showSessionPicker, setShowSessionPicker] = useState(false)
 
-  // Debounced fetch for related memories
+  // 저널 내용과 관련된 메모리를 비동기 조회
   const loadRelatedMemories = useCallback(async (text: string) => {
     if (!text || text.trim().length < 20) {
       setRelatedMemories([])
@@ -34,11 +34,11 @@ export default function JournalView() {
     }
   }, [])
 
-  // Debounce content changes
+  // 글 작성 중 1.5초 디바운스 후 관련 메모리 검색
   useEffect(() => {
     const timer = setTimeout(() => {
       loadRelatedMemories(content)
-    }, 1500) // 1.5초 후 검색
+    }, 1500)
     return () => clearTimeout(timer)
   }, [content, loadRelatedMemories])
 
@@ -47,6 +47,7 @@ export default function JournalView() {
     setTimeout(() => setSaveStatus(null), 3000)
   }
 
+  // 채팅 세션 목록을 불러온 후 사용자가 선택하면 AI 초안 생성
   const handleGenerateDraft = async () => {
     setIsGenerating(true)
     try {
@@ -134,7 +135,7 @@ export default function JournalView() {
         </div>
       </div>
       
-      {/* Context Sidebar */}
+      {/* 관련 메모리 사이드바 */}
       <div className="context-sidebar">
         <div className="context-header">
           <h3>📚 Related Memories</h3>
@@ -157,7 +158,7 @@ export default function JournalView() {
         </div>
       </div>
       
-      {/* Session Picker Modal */}
+      {/* 세션 선택 모달 */}
       {showSessionPicker && (
         <div className="session-picker-overlay" onClick={() => setShowSessionPicker(false)}>
           <div className="session-picker" onClick={(e) => e.stopPropagation()}>

@@ -1,8 +1,3 @@
-"""
-Stats Service
-Business logic for dashboard statistics
-"""
-
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -20,13 +15,13 @@ from app.utils import parse_iso_datetime
 
 
 class StatsService:
-    """Service for statistics business logic"""
+    """대시보드 통계 비즈니스 로직."""
 
     def __init__(self, stats_repo: StatsRepository):
         self.stats_repo = stats_repo
 
     async def get_overview(self, user_id: UUID) -> StatsOverviewResponse:
-        """Get complete dashboard statistics."""
+        """대시보드 전체 통계 조회."""
         memories = await self.stats_repo.get_all_memories(user_id)
 
         now = datetime.now(UTC)
@@ -56,20 +51,16 @@ class StatsService:
                 except Exception:
                     pass
 
-            # Count sources
             source_type = memory.get("source_type", "UNKNOWN")
             source_counts[source_type] = source_counts.get(source_type, 0) + 1
 
-            # Count tags
             for tag in memory.get("tags") or []:
                 tag_counts[tag] = tag_counts.get(tag, 0) + 1
 
-        # Find most active day
         most_active_day = None
         if day_counts:
             most_active_day = max(day_counts, key=day_counts.get)
 
-        # Prepare response
         overview = OverviewStats(
             total_memories=total,
             total_this_week=weekly_count,
@@ -77,20 +68,18 @@ class StatsService:
             most_active_day=most_active_day,
         )
 
-        # Recent activity (last 30 days)
+        # 최근 30일 활동 데이터
         recent_activity = []
         for i in range(30):
             date = (now - timedelta(days=i)).strftime("%Y-%m-%d")
             recent_activity.append(ActivityData(date=date, count=day_counts.get(date, 0)))
         recent_activity.reverse()
 
-        # Source stats
         sources = [
             SourceStats(source_type=st, count=cnt, percentage=cnt / total * 100 if total > 0 else 0)
             for st, cnt in source_counts.items()
         ]
 
-        # Top tags
         sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)[:10]
         top_tags = [TagStats(tag=tag, count=cnt) for tag, cnt in sorted_tags]
 
@@ -103,7 +92,7 @@ class StatsService:
         user_id: UUID,
         days: int = 30,
     ) -> list[ActivityData]:
-        """Get daily activity data for a range."""
+        """지정 기간의 일별 활동 데이터 조회."""
         now = datetime.now(UTC)
         start_date = now - timedelta(days=days)
 
@@ -134,7 +123,7 @@ class StatsService:
         page: int = 1,
         limit: int = 20,
     ) -> dict[str, Any]:
-        """Get memories grouped by date for timeline view."""
+        """타임라인 뷰용 날짜별 Memory 그룹 조회."""
         memories = await self.stats_repo.get_memories_by_date(user_id, page, limit)
 
         grouped: dict[str, list] = {}

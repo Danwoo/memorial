@@ -1,8 +1,3 @@
-"""
-Digest Router
-API endpoints for daily digest
-"""
-
 from datetime import datetime
 from uuid import UUID
 
@@ -21,13 +16,7 @@ async def get_today_digest(
     user_id: UUID = Depends(get_user_id),
     digest_service: DigestService = Depends(get_digest_service),
 ):
-    """
-    Get today's digest including:
-    - All memories saved today
-    - All journal entries from today
-    - AI-generated reflection questions
-    - Main topics/tags
-    """
+    """오늘의 다이제스트 조회 (메모리, 저널, AI 성찰 질문, 주요 토픽 포함)."""
     return await digest_service.get_today_digest(user_id=user_id)
 
 
@@ -37,7 +26,7 @@ async def get_digest_by_date(
     user_id: UUID = Depends(get_user_id),
     digest_service: DigestService = Depends(get_digest_service),
 ):
-    """Get digest for a specific date (format: YYYY-MM-DD)."""
+    """특정 날짜의 다이제스트 조회 (형식: YYYY-MM-DD)."""
     try:
         target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
     except ValueError:

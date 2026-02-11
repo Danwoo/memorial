@@ -1,8 +1,3 @@
-"""
-Memory Router
-API endpoints for memory operations
-"""
-
 import logging
 from uuid import UUID
 
@@ -55,7 +50,7 @@ async def _process_with_librarian(
     content: str,
     user_id: str,
 ) -> None:
-    """Background task: classify, tag, extract entities via Librarian agent."""
+    """백그라운드 태스크: Librarian 에이전트로 분류, 태깅, 엔티티 추출."""
     try:
         initial_state = _build_librarian_initial_state(memory_id, content, user_id)
 
@@ -76,7 +71,7 @@ async def create_memory(
     user_id: UUID = Depends(get_user_id),
     memory_service: MemoryService = Depends(get_memory_service),
 ):
-    """Ingest new content (URL or Note)."""
+    """새 콘텐츠(URL 또는 노트) 수집 및 저장."""
     try:
         if data.source_type == "WEB":
             if not data.url:
@@ -129,7 +124,7 @@ async def upload_pdf(
     user_id: UUID = Depends(get_user_id),
     memory_service: MemoryService = Depends(get_memory_service),
 ):
-    """Upload and ingest a PDF file."""
+    """PDF 파일 업로드 및 수집."""
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
 
@@ -170,7 +165,7 @@ async def backfill_memories(
     user_id: UUID = Depends(get_user_id),
     memory_service: MemoryService = Depends(get_memory_service),
 ):
-    """Re-process memories through Librarian pipeline. Use force=true to re-process all."""
+    """기존 메모리를 Librarian 파이프라인으로 재처리. force=true 시 전체 재처리."""
     items, total = await memory_service.list_memories(user_id=user_id, page=1, limit=100)
 
     queued = 0
@@ -194,7 +189,7 @@ async def reprocess_all_memories(
     user_id: UUID = Depends(get_user_id),
     memory_service: MemoryService = Depends(get_memory_service),
 ):
-    """Re-process ALL memories through Librarian pipeline (for graph backfill)."""
+    """모든 메모리를 Librarian 파이프라인으로 재처리 (그래프 백필용)."""
     page = 1
     queued = 0
     total = 0
@@ -226,7 +221,7 @@ async def list_memories(
     user_id: UUID = Depends(get_user_id),
     memory_service: MemoryService = Depends(get_memory_service),
 ):
-    """Get paginated list of memories."""
+    """페이지네이션된 메모리 목록 조회."""
     items, total = await memory_service.list_memories(
         user_id=user_id,
         page=page,
@@ -255,7 +250,7 @@ async def get_memory(
     user_id: UUID = Depends(get_user_id),
     memory_service: MemoryService = Depends(get_memory_service),
 ):
-    """Get single memory by ID."""
+    """ID로 단일 메모리 상세 조회."""
     memory = await memory_service.get_memory(memory_id, user_id)
 
     if not memory:
@@ -280,7 +275,7 @@ async def delete_memory(
     user_id: UUID = Depends(get_user_id),
     memory_service: MemoryService = Depends(get_memory_service),
 ):
-    """Delete a memory by ID."""
+    """ID로 메모리 삭제."""
     success = await memory_service.delete_memory(memory_id, user_id)
 
     if not success:

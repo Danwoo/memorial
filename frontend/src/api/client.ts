@@ -2,17 +2,12 @@ import type { ApiError } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1'
 
-/**
- * Retrieves the current auth token from localStorage.
- * Returns null if no token is stored.
- */
+// localStorage에서 인증 토큰 조회
 function getAuthToken(): string | null {
   return localStorage.getItem('auth_token')
 }
 
-/**
- * Builds request headers with JSON content type and optional auth token.
- */
+// JSON Content-Type과 인증 토큰을 포함한 요청 헤더 생성
 function buildHeaders(extra?: HeadersInit): Headers {
   const headers = new Headers(extra)
 
@@ -28,9 +23,7 @@ function buildHeaders(extra?: HeadersInit): Headers {
   return headers
 }
 
-/**
- * Custom error class for API responses with non-OK status codes.
- */
+// API 응답 오류를 표현하는 커스텀 에러 클래스
 export class ApiResponseError extends Error {
   status: number
   detail: string
@@ -43,9 +36,7 @@ export class ApiResponseError extends Error {
   }
 }
 
-/**
- * Handles non-OK responses by parsing the error body and throwing ApiResponseError.
- */
+// 실패 응답의 본문을 파싱하여 ApiResponseError로 변환
 async function handleErrorResponse(res: Response): Promise<never> {
   let detail = `Request failed with status ${res.status}`
   try {
@@ -58,16 +49,14 @@ async function handleErrorResponse(res: Response): Promise<never> {
       }
     }
   } catch {
-    // Response body was not JSON; use the default message
+    // JSON 파싱 실패 시 기본 메시지 사용
   }
   throw new ApiResponseError(res.status, detail)
 }
 
-// ─── Public API ────────────────────────────────────────────────────────────────
+// ─── 공개 API 메서드 ─────────────────────────────────────────────────────────
 
-/**
- * Type-safe GET request that returns parsed JSON.
- */
+// 타입 안전한 GET 요청
 export async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: buildHeaders(),
@@ -77,9 +66,7 @@ export async function get<T>(path: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
-/**
- * Type-safe POST request that sends JSON and returns parsed JSON.
- */
+// 타입 안전한 POST 요청 (JSON 전송 및 응답)
 export async function post<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
@@ -91,10 +78,7 @@ export async function post<T>(path: string, body?: unknown): Promise<T> {
   return res.json() as Promise<T>
 }
 
-/**
- * POST request that returns the raw Response object.
- * Useful for SSE streaming endpoints where we need to read the body progressively.
- */
+// SSE 스트리밍 엔드포인트용 POST 요청 (raw Response 반환)
 export async function postRaw(
   path: string,
   body?: unknown,
@@ -111,9 +95,7 @@ export async function postRaw(
   return res
 }
 
-/**
- * POST request that sends FormData (multipart) and returns parsed JSON.
- */
+// FormData(멀티파트) POST 요청 (파일 업로드용)
 export async function postFormData<T>(path: string, formData: FormData): Promise<T> {
   const headers = new Headers()
   const token = getAuthToken()
@@ -131,9 +113,7 @@ export async function postFormData<T>(path: string, formData: FormData): Promise
   return res.json() as Promise<T>
 }
 
-/**
- * Type-safe PUT request that sends JSON and returns parsed JSON.
- */
+// 타입 안전한 PUT 요청 (JSON 전송 및 응답)
 export async function put<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'PUT',
@@ -145,9 +125,7 @@ export async function put<T>(path: string, body?: unknown): Promise<T> {
   return res.json() as Promise<T>
 }
 
-/**
- * Type-safe DELETE request.
- */
+// 타입 안전한 DELETE 요청
 export async function del<T = void>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'DELETE',
@@ -156,7 +134,7 @@ export async function del<T = void>(path: string): Promise<T> {
 
   if (!res.ok) await handleErrorResponse(res)
 
-  // Some DELETE endpoints return no content
+  // 일부 DELETE 엔드포인트는 빈 응답을 반환
   const text = await res.text()
   if (!text) return undefined as T
   return JSON.parse(text) as T

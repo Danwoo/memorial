@@ -1,44 +1,31 @@
-"""
-Core Configuration for Memoir AI Backend
-Pydantic Settings for environment variable management
-"""
-
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from environment variables."""
+    """환경변수 기반 애플리케이션 설정."""
 
-    # App info
     APP_NAME: str = "Memoir AI"
     DEBUG: bool = False
 
-    # Frontend
     FRONTEND_URL: str = "http://localhost:5173"
 
-    # CORS
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173",
         "http://localhost:3000",
     ]
 
-    # OpenAI
     OPENAI_API_KEY: str
 
-    # Supabase
     SUPABASE_URL: str
     SUPABASE_ANON_KEY: str
     SUPABASE_SERVICE_ROLE_KEY: str | None = None
 
-    # KuzuDB (Embedded Graph Database)
     KUZU_DB_PATH: str = "./kuzu_data"
 
-    # Upstage (PDF Parsing)
     UPSTAGE_API_KEY: str | None = None
 
-    # Kakao OpenBuilder
     KAKAO_SKILL_SECRET: str | None = None
 
     class Config:
@@ -49,5 +36,5 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Cached settings instance (Singleton pattern)."""
+    """캐시된 Settings 싱글톤 인스턴스 반환."""
     return Settings()

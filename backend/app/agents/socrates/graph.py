@@ -1,8 +1,3 @@
-"""
-Socrates Agent - LangGraph Definition
-Simple single-node graph for chat responses
-"""
-
 from langgraph.graph import END, StateGraph
 
 from app.agents.socrates.nodes.chat import socrates_node
@@ -10,23 +5,19 @@ from app.agents.state import AgentState
 
 
 def create_socrates_graph() -> StateGraph:
-    """
-    Creates the Socrates chat graph.
+    """Socrates 채팅 그래프 생성.
 
-    Simple workflow:
-        START -> socrates -> END
+    워크플로우: START -> socrates -> END
     """
     graph = StateGraph(AgentState)
 
-    # Add single node
     graph.add_node("socrates", socrates_node)
 
-    # Set entry and exit
     graph.set_entry_point("socrates")
     graph.add_edge("socrates", END)
 
     return graph.compile()
 
 
-# Singleton instance
+# 싱글톤 인스턴스
 socrates_graph = create_socrates_graph()

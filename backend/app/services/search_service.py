@@ -1,8 +1,3 @@
-"""
-Search Service
-Business logic for semantic search and recommendations
-"""
-
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -13,7 +8,7 @@ from app.utils import parse_iso_datetime
 
 
 class SearchService:
-    """Service for search business logic"""
+    """시맨틱 검색 및 추천 비즈니스 로직."""
 
     def __init__(self, vector_repo: VectorRepository, memory_repo: MemoryRepository | None = None):
         self.vector_repo = vector_repo
@@ -29,11 +24,7 @@ class SearchService:
         days: int | None = None,
         tags: list[str] | None = None,
     ) -> dict[str, Any]:
-        """
-        Advanced semantic search with filtering.
-        Returns search results with applied filters.
-        """
-        # Build filters for vector search
+        """필터링 지원 시맨틱 검색. 검색 결과와 적용된 필터 반환."""
         filters: dict[str, Any] = {"user_id": str(user_id)}
         filters_applied: dict[str, Any] = {}
 
@@ -47,7 +38,7 @@ class SearchService:
         if tags:
             filters_applied["tags"] = tags
 
-        # Perform vector search (get more results for filtering)
+        # 필터링 여유분을 고려하여 2배 조회
         results = await self.vector_repo.similarity_search(
             query=query,
             limit=limit * 2,
@@ -55,12 +46,11 @@ class SearchService:
             filters=filters,
         )
 
-        # Apply additional filters
         filtered_results = []
         now = datetime.now(UTC)
 
         for r in results:
-            # Time filter
+            # 기간 필터
             if days:
                 created_at_str = r.get("created_at")
                 if created_at_str:
@@ -71,7 +61,7 @@ class SearchService:
                     except Exception:
                         pass
 
-            # Tag filter
+            # 태그 필터
             if tags:
                 memory_tags = r.get("tags") or []
                 if not any(t in memory_tags for t in tags):
@@ -106,14 +96,10 @@ class SearchService:
         memory_id: str,
         limit: int = 5,
     ) -> list[dict[str, Any]]:
-        """
-        Get memories related to a specific memory.
-        Uses the memory's content to find similar items.
-        """
+        """특정 Memory와 유사한 Memory 목록 조회."""
         if not self.memory_repo:
             return []
 
-        # Fetch the source memory's content for vector similarity
         source = await self.memory_repo.get_by_id(UUID(memory_id), user_id)
         if not source:
             return []
@@ -127,7 +113,7 @@ class SearchService:
             filters={"user_id": str(user_id)},
         )
 
-        # Filter out the source memory
+        # 원본 Memory 제외
         related = []
         for item in similar:
             if str(item.get("id")) != memory_id:

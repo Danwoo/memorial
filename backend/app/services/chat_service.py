@@ -1,12 +1,3 @@
-"""
-Chat Service
-Business logic for chat and Socratic dialogue.
-
-Real-time token streaming: bypasses the LangGraph ``ainvoke`` path and
-calls ``llm.astream()`` directly so that each token is yielded to the
-client as an SSE event immediately.
-"""
-
 import asyncio
 import json
 import logging
@@ -23,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class ChatService:
-    """Service for chat business logic."""
+    """채팅 및 소크라테스 대화 비즈니스 로직."""
 
     def __init__(self, chat_repo: ChatRepository):
         self.chat_repo = chat_repo
@@ -33,15 +24,15 @@ class ChatService:
         user_id: UUID,
         title: str | None = None,
     ) -> dict:
-        """Create a new chat session."""
+        """새 채팅 세션 생성."""
         return await self.chat_repo.create_session(user_id, title)
 
     async def get_session(self, session_id: UUID) -> dict | None:
-        """Get a session by ID."""
+        """ID로 세션 조회."""
         return await self.chat_repo.get_session(session_id)
 
     async def list_sessions(self, user_id: UUID) -> list[dict]:
-        """List all sessions for a user."""
+        """사용자의 전체 세션 목록 조회 (최신순)."""
         sessions = await self.chat_repo.get_sessions_by_user(user_id)
         return sorted(sessions, key=lambda x: x["created_at"], reverse=True)
 
@@ -52,30 +43,27 @@ class ChatService:
         content: str,
         mode: str | None = None,
     ) -> AsyncGenerator[str, None]:
-        """
-        Send a message and get AI response via real-time SSE streaming.
+        """메시지 전송 후 실시간 SSE 스트리밍으로 AI 응답 반환.
 
-        Bypasses the LangGraph ``ainvoke`` path: context preparation (RAG,
-        journal, mode prompts) is done first, then ``llm.astream()`` yields
-        tokens one-by-one directly to the client.
+        RAG 컨텍스트 준비 후 llm.astream()으로 토큰 단위 스트리밍.
         """
         session = await self.chat_repo.get_session(session_id)
         if not session:
             yield f"data: {json.dumps({'error': 'Session not found'})}\n\n"
             return
 
-        # Persist user message
+        # 사용자 메시지 저장
         user_message = HumanMessage(content=content)
         await self.chat_repo.add_message(session_id, user_message)
 
         try:
-            # Retrieve conversation history
+            # 대화 이력 조회
             messages = await self.chat_repo.get_messages(session_id)
 
-            # Prepare context: RAG search, journal, mode prompts
+            # RAG 검색, 저널, 모드별 프롬프트 준비
             lc_messages = await prepare_socrates_context(messages, mode, user_id=str(user_id))
 
-            # Stream tokens directly from LLM
+            # LLM에서 토큰 단위 스트리밍
             llm = get_streaming_llm()
             full_response = ""
 
@@ -85,7 +73,7 @@ class ChatService:
                     full_response += chunk_text
                     yield f"data: {json.dumps({'content': chunk_text})}\n\n"
 
-            # Persist complete response
+            # 완성된 응답 저장
             if full_response:
                 await self.chat_repo.add_message(session_id, AIMessage(content=full_response))
 
@@ -98,5 +86,5 @@ class ChatService:
             yield f"data: {json.dumps({'error': 'An internal error occurred'})}\n\n"
 
     async def get_history(self, session_id: UUID) -> list[dict]:
-        """Get chat history for a session with actual DB timestamps."""
+        """세션의 채팅 이력 조회 (DB 타임스탬프 포함)."""
         return await self.chat_repo.get_messages_raw(session_id)

@@ -1,9 +1,3 @@
-"""
-Integration Schemas
-Pydantic models for integration status, provider token storage,
-KakaoTalk digest bot settings, and Kakao OpenBuilder webhook.
-"""
-
 from datetime import date, datetime
 from typing import Any
 
@@ -11,6 +5,8 @@ from pydantic import BaseModel, field_validator
 
 
 class ProviderInfo(BaseModel):
+    """연결된 OAuth 프로바이더 정보."""
+
     provider: str
     identity_id: str
     email: str | None = None
@@ -18,6 +14,8 @@ class ProviderInfo(BaseModel):
 
 
 class IntegrationStatusResponse(BaseModel):
+    """통합 연결 상태 응답."""
+
     email: str | None = None
     providers: list[ProviderInfo] = []
     kakao_channel: str = "upcoming"
@@ -27,14 +25,18 @@ class IntegrationStatusResponse(BaseModel):
 
 
 class StoreProviderTokenRequest(BaseModel):
+    """프로바이더 토큰 저장 요청."""
+
     provider_token: str
     provider_refresh_token: str | None = None
 
 
-# ─── Bot Settings ─────────────────────────────────────────────────────────────
+# --- 봇 설정 ---
 
 
 class DeliveryLogEntry(BaseModel):
+    """다이제스트 발송 이력 항목."""
+
     digest_date: date
     status: str
     error_message: str | None = None
@@ -42,6 +44,8 @@ class DeliveryLogEntry(BaseModel):
 
 
 class BotSettingsResponse(BaseModel):
+    """카카오톡 다이제스트 봇 설정 응답."""
+
     enabled: bool = False
     delivery_hour: int = 21
     include_memories: bool = True
@@ -51,6 +55,8 @@ class BotSettingsResponse(BaseModel):
 
 
 class BotSettingsUpdateRequest(BaseModel):
+    """카카오톡 다이제스트 봇 설정 업데이트 요청."""
+
     enabled: bool | None = None
     delivery_hour: int | None = None
     include_memories: bool | None = None
@@ -65,27 +71,35 @@ class BotSettingsUpdateRequest(BaseModel):
         return v
 
 
-# ─── Kakao OpenBuilder Webhook ────────────────────────────────────────────────
+# --- 카카오 OpenBuilder 웹훅 ---
 
 
 class KakaoWebhookUser(BaseModel):
+    """카카오 웹훅 사용자 정보."""
+
     id: str  # botUserKey
     type: str = "botUserKey"
     properties: dict[str, Any] = {}
 
 
 class KakaoUserRequest(BaseModel):
+    """카카오 웹훅 사용자 요청."""
+
     utterance: str
     user: KakaoWebhookUser
 
 
 class KakaoWebhookRequest(BaseModel):
+    """카카오 OpenBuilder 웹훅 요청."""
+
     userRequest: KakaoUserRequest
     bot: dict[str, Any] = {}
     action: dict[str, Any] = {}
 
 
 class KakaoSkillResponse(BaseModel):
+    """카카오 스킬 응답."""
+
     version: str = "2.0"
     template: dict[str, Any]
 
@@ -96,16 +110,20 @@ class KakaoSkillResponse(BaseModel):
         )
 
 
-# ─── Channel Link ─────────────────────────────────────────────────────────────
+# --- 채널 연동 ---
 
 
 class ChannelLinkCodeResponse(BaseModel):
+    """채널 연결 코드 응답."""
+
     code: str
     expires_at: datetime
     instructions: str
 
 
 class ChannelStatusResponse(BaseModel):
+    """채널 연결 상태 응답."""
+
     connected: bool
     bot_user_key: str | None = None
     linked_at: datetime | None = None

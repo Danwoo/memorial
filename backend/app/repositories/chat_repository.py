@@ -1,11 +1,3 @@
-"""
-Chat Repository
-Data access layer for chat sessions - Supabase implementation.
-
-All public methods are async and delegate synchronous Supabase calls
-to a thread via ``asyncio.to_thread`` so that the event loop is never blocked.
-"""
-
 import asyncio
 import logging
 from datetime import UTC, datetime
@@ -18,13 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 class ChatRepository:
-    """Repository for chat session operations with Supabase persistence."""
+    """채팅 세션 데이터 접근 계층 (Supabase)."""
 
     def __init__(self, db: Client):
         self.db = db
 
     # ------------------------------------------------------------------
-    # Public async interface
+    # 공개 비동기 인터페이스
     # ------------------------------------------------------------------
 
     async def create_session(
@@ -32,7 +24,7 @@ class ChatRepository:
         user_id: UUID,
         title: str | None = None,
     ) -> dict:
-        """Create a new chat session in Supabase."""
+        """새 채팅 세션 생성."""
         title = title or f"Chat {datetime.now(UTC).strftime('%Y-%m-%d %H:%M')}"
 
         data = {"user_id": str(user_id), "title": title}
@@ -48,7 +40,7 @@ class ChatRepository:
                 "created_at": session["created_at"],
             }
 
-        # Fallback - should not happen
+        # 폴백 (정상적으로는 도달하지 않음)
         session_id = str(uuid4())
         return {
             "id": session_id,
@@ -58,7 +50,7 @@ class ChatRepository:
         }
 
     async def get_session(self, session_id: UUID) -> dict | None:
-        """Get a session by ID from Supabase."""
+        """ID로 세션 조회."""
         result = await asyncio.to_thread(self._select_session, str(session_id))
 
         if result.data and len(result.data) > 0:
@@ -72,7 +64,7 @@ class ChatRepository:
         return None
 
     async def get_sessions_by_user(self, user_id: UUID) -> list[dict]:
-        """Get all sessions for a user from Supabase."""
+        """사용자의 전체 세션 목록 조회."""
         result = await asyncio.to_thread(self._select_sessions_by_user, str(user_id))
 
         return (
@@ -90,7 +82,7 @@ class ChatRepository:
         )
 
     async def add_message(self, session_id: UUID, message: BaseMessage) -> bool:
-        """Add a message to a session in Supabase."""
+        """세션에 메시지 추가."""
         role = "user" if isinstance(message, HumanMessage) else "assistant"
         content = message.content if hasattr(message, "content") else str(message)
 
@@ -108,7 +100,7 @@ class ChatRepository:
             return False
 
     async def get_messages(self, session_id: UUID) -> list[BaseMessage]:
-        """Get all messages in a session from Supabase as LangChain messages."""
+        """세션의 전체 메시지를 LangChain 메시지 형태로 조회."""
         result = await asyncio.to_thread(self._select_messages, str(session_id))
 
         messages: list[BaseMessage] = []
@@ -122,7 +114,7 @@ class ChatRepository:
         return messages
 
     async def get_messages_raw(self, session_id: UUID) -> list[dict]:
-        """Get all messages in a session as raw dicts with timestamps."""
+        """세션의 전체 메시지를 타임스탬프 포함 raw dict로 조회."""
         result = await asyncio.to_thread(self._select_messages, str(session_id))
 
         if not result.data:
@@ -138,7 +130,7 @@ class ChatRepository:
         ]
 
     async def delete_session(self, session_id: UUID) -> bool:
-        """Delete a session and its messages from Supabase."""
+        """세션과 소속 메시지 삭제."""
         try:
             await asyncio.to_thread(self._delete_session, str(session_id))
             return True
@@ -147,7 +139,7 @@ class ChatRepository:
             return False
 
     # ------------------------------------------------------------------
-    # Private synchronous helpers (run in thread)
+    # 동기 헬퍼 (스레드에서 실행)
     # ------------------------------------------------------------------
 
     def _insert_session(self, data: dict):
@@ -174,5 +166,5 @@ class ChatRepository:
         )
 
     def _delete_session(self, session_id: str):
-        # Messages are deleted via CASCADE in DB
+        # DB CASCADE로 메시지도 함께 삭제
         return self.db.table("chat_sessions").delete().eq("id", session_id).execute()
