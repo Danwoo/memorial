@@ -31,9 +31,9 @@
   flex: 1;
   padding: 16px 20px;
   font-size: 1.1rem;
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 2px solid var(--border-secondary);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-secondary);
   color: var(--text-primary);
   transition: border-color 0.2s, background 0.2s;
 }
@@ -41,7 +41,7 @@
 .search-input:focus {
   outline: none;
   border-color: var(--accent-primary);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
 }
 
 .search-input::placeholder {
@@ -140,7 +140,7 @@
   display: flex;
   gap: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-secondary);
   margin-top: 16px;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -159,9 +159,9 @@
 
 .filter-group select {
   padding: 10px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-secondary);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-secondary);
   color: var(--text-primary);
   font-size: 0.9rem;
   cursor: pointer;
@@ -193,7 +193,7 @@
   gap: 12px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border-secondary);
   align-items: center;
 }
 
@@ -209,7 +209,7 @@
 
 .tag {
   padding: 2px 8px;
-  background: rgba(99, 102, 241, 0.2);
+  background: var(--accent-bg);
   border-radius: 4px;
   font-size: 0.75rem;
   color: var(--accent-primary);

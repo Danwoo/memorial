@@ -1,7 +1,7 @@
 .sidebar {
   width: 240px;
   background-color: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-secondary);
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -9,7 +9,7 @@
 
 .sidebar-header {
   padding: var(--space-lg);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-secondary);
 }
 
 .logo {
@@ -80,7 +80,7 @@
 .session-section {
   margin-top: var(--space-sm);
   padding-top: var(--space-sm);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-secondary);
 }
 
 .session-section-toggle {
@@ -150,7 +150,7 @@
 
 .sidebar-footer {
   padding: var(--space-md);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-secondary);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
@@ -199,7 +199,7 @@
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-secondary);
 }
 
 .user-avatar-placeholder {

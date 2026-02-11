@@ -43,7 +43,7 @@ export default function DashboardView() {
   // 활동 차트의 최대값 산출 (막대 높이 비율 계산용)
   const getMaxActivity = () => {
     if (!stats) return 1
-    return Math.max(...stats.recent_activity.map(a => a.count), 1)
+    return Math.max(...stats.recent_activity.slice(-7).map(a => a.count), 1)
   }
 
   if (loading) {
@@ -178,7 +178,7 @@ export default function DashboardView() {
       <div className="chart-section">
         <h2>최근 7일 활동</h2>
         <div className="activity-chart">
-          {stats.recent_activity.map((day, idx) => (
+          {stats.recent_activity.slice(-7).map((day, idx) => (
             <div key={idx} className="activity-bar-container">
               <div
                 className="activity-bar"

@@ -11,7 +11,7 @@
   flex: 3;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-secondary);
   padding: var(--space-lg);
 }
 
@@ -25,7 +25,7 @@
 .editor-header h2 {
   margin: 0;
   font-size: 1.5rem;
-  color: var(--accent-secondary);
+  color: var(--accent-primary);
 }
 
 /* Save status toast */
@@ -79,7 +79,7 @@
 .markdown-input {
   flex: 1;
   background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   padding: var(--space-md);
@@ -91,13 +91,13 @@
 }
 
 .markdown-input:focus {
-  border-color: var(--accent-secondary);
+  border-color: var(--accent-primary);
 }
 
 .markdown-preview {
   flex: 1;
   background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
   padding: var(--space-md);
   overflow-y: auto;
@@ -108,7 +108,7 @@
 .markdown-preview h1,
 .markdown-preview h2,
 .markdown-preview h3 {
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-secondary);
   padding-bottom: 0.5em;
   margin-bottom: 0.5em;
   color: var(--text-primary);
@@ -125,7 +125,7 @@
 }
 
 .markdown-preview blockquote {
-  border-left: 4px solid var(--accent-secondary);
+  border-left: 4px solid var(--accent-primary);
   margin-left: 0;
   padding-left: var(--space-md);
   color: var(--text-secondary);
@@ -138,12 +138,12 @@
   display: flex;
   flex-direction: column;
   background-color: var(--bg-primary);
-  border-left: 1px solid var(--border-color);
+  border-left: 1px solid var(--border-secondary);
 }
 
 .companion-header {
   padding: var(--space-md) var(--space-lg);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-secondary);
   background-color: var(--bg-tertiary);
 }
 
@@ -178,8 +178,8 @@
   display: flex;
   flex-direction: column;
   background-color: var(--bg-secondary);
-  border-left: 1px solid var(--border-color);
-  border-right: 1px solid var(--border-color);
+  border-left: 1px solid var(--border-secondary);
+  border-right: 1px solid var(--border-secondary);
 }
 
 .context-header {
@@ -187,7 +187,7 @@
   justify-content: space-between;
   align-items: center;
   padding: var(--space-md);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-secondary);
   background-color: var(--bg-tertiary);
 }
 
@@ -214,7 +214,7 @@
 
 .journal-view .memory-card {
   background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
   padding: var(--space-sm);
   cursor: pointer;
@@ -229,7 +229,7 @@
 .memory-type {
   font-size: 0.7rem;
   text-transform: uppercase;
-  color: var(--accent-secondary);
+  color: var(--accent-primary);
   margin-bottom: var(--space-xs);
   font-weight: 600;
 }
@@ -261,7 +261,7 @@
 
 /* Generate Draft Button */
 .generate-btn {
-  background-color: var(--accent-secondary);
+  background-color: var(--accent-primary);
   color: var(--bg-primary);
   border: none;
   padding: var(--space-sm) var(--space-md);
@@ -299,7 +299,7 @@
 
 .session-picker {
   background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-secondary);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   width: 420px;
@@ -334,7 +334,7 @@
   align-items: center;
   padding: var(--space-sm) var(--space-md);
   background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-secondary);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   cursor: pointer;
@@ -342,7 +342,7 @@
 }
 
 .session-item:hover {
-  border-color: var(--accent-secondary);
+  border-color: var(--accent-primary);
 }
 
 .session-title {
@@ -357,7 +357,7 @@
 
 .session-cancel {
   background: none;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-secondary);
   color: var(--text-secondary);
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);

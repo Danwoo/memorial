@@ -91,7 +91,7 @@
   width: 40px;
   height: 40px;
   border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--accent-secondary, #8b5cf6);
+  border-top-color: var(--accent-primary, #8b5cf6);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -299,7 +299,7 @@
 
 .node-tag {
   font-size: 0.72rem;
-  color: var(--accent-secondary, #8b5cf6);
+  color: var(--accent-primary, #8b5cf6);
   background: rgba(139, 92, 246, 0.15);
   padding: 3px 8px;
   border-radius: var(--radius-full, 9999px);
