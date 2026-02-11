@@ -1,10 +1,11 @@
 """
 Integration Schemas
 Pydantic models for integration status, provider token storage,
-and KakaoTalk digest bot settings.
+KakaoTalk digest bot settings, and Kakao OpenBuilder webhook.
 """
 
 from datetime import date, datetime
+from typing import Any
 
 from pydantic import BaseModel, field_validator
 
@@ -62,3 +63,49 @@ class BotSettingsUpdateRequest(BaseModel):
         if v is not None and not (0 <= v <= 23):
             raise ValueError("delivery_hour must be between 0 and 23")
         return v
+
+
+# ─── Kakao OpenBuilder Webhook ────────────────────────────────────────────────
+
+
+class KakaoWebhookUser(BaseModel):
+    id: str  # botUserKey
+    type: str = "botUserKey"
+    properties: dict[str, Any] = {}
+
+
+class KakaoUserRequest(BaseModel):
+    utterance: str
+    user: KakaoWebhookUser
+
+
+class KakaoWebhookRequest(BaseModel):
+    userRequest: KakaoUserRequest
+    bot: dict[str, Any] = {}
+    action: dict[str, Any] = {}
+
+
+class KakaoSkillResponse(BaseModel):
+    version: str = "2.0"
+    template: dict[str, Any]
+
+    @staticmethod
+    def simple_text(text: str) -> "KakaoSkillResponse":
+        return KakaoSkillResponse(
+            template={"outputs": [{"simpleText": {"text": text}}]},
+        )
+
+
+# ─── Channel Link ─────────────────────────────────────────────────────────────
+
+
+class ChannelLinkCodeResponse(BaseModel):
+    code: str
+    expires_at: datetime
+    instructions: str
+
+
+class ChannelStatusResponse(BaseModel):
+    connected: bool
+    bot_user_key: str | None = None
+    linked_at: datetime | None = None

@@ -1,6 +1,7 @@
 """
 Integrations Router
-Account linking status, provider token storage, and KakaoTalk digest bot settings.
+Account linking status, provider token storage, KakaoTalk digest bot settings,
+and Kakao OpenBuilder webhook for inbound messaging.
 """
 
 import asyncio
@@ -9,20 +10,25 @@ import time
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from supabase import Client
 
+from app.agents.librarian.graph import librarian_graph
 from app.config.auth import get_user_id
-from app.config.dependencies import get_db
+from app.config.dependencies import get_db, get_kakao_channel_service
 from app.config.settings import get_settings
 from app.schemas.integration_schema import (
     BotSettingsResponse,
     BotSettingsUpdateRequest,
+    ChannelLinkCodeResponse,
+    ChannelStatusResponse,
     DeliveryLogEntry,
     IntegrationStatusResponse,
+    KakaoWebhookRequest,
     ProviderInfo,
     StoreProviderTokenRequest,
 )
+from app.services.kakao_channel_service import KakaoChannelService
 
 logger = logging.getLogger(__name__)
 
@@ -206,3 +212,138 @@ def update_bot_settings(
     except Exception as e:
         logger.exception("Failed to update bot settings")
         raise HTTPException(status_code=500, detail="Failed to update bot settings") from e
+
+
+# ─── Kakao OpenBuilder Webhook ────────────────────────────────────────────────
+
+
+async def _process_with_librarian(
+    memory_id: str,
+    content: str,
+    user_id: str,
+) -> None:
+    """Background task: classify, tag, extract entities via Librarian agent."""
+    try:
+        initial_state = {
+            "messages": [],
+            "user_id": user_id,
+            "context": {},
+            "target_memory_id": memory_id,
+            "target_text": content,
+            "classification": None,
+            "summary": None,
+            "tags": None,
+            "extracted_entities": None,
+            "extracted_relations": None,
+            "is_streaming": False,
+            "next_step": None,
+            "error": None,
+        }
+        result = await librarian_graph.ainvoke(initial_state)
+        logger.info(
+            "Librarian processed memory %s (via Kakao): classification=%s",
+            memory_id,
+            result.get("classification"),
+        )
+    except Exception:
+        logger.exception("Librarian error for memory %s (via Kakao)", memory_id)
+
+
+@router.post("/kakao/webhook")
+async def kakao_webhook(
+    request: KakaoWebhookRequest,
+    background_tasks: BackgroundTasks,
+    channel_service: KakaoChannelService = Depends(get_kakao_channel_service),
+):
+    """
+    Kakao OpenBuilder skill webhook.
+    No auth required — called by Kakao servers directly.
+    """
+    utterance = request.userRequest.utterance
+    bot_user_key = request.userRequest.user.id
+    plusfriend_user_key = request.userRequest.user.properties.get("plusfriendUserKey")
+
+    response = await channel_service.process_webhook(
+        utterance=utterance,
+        bot_user_key=bot_user_key,
+        plusfriend_user_key=plusfriend_user_key,
+    )
+
+    # Schedule Librarian for newly created memories (URL or text)
+    # Check if this was a save operation by looking up the latest memory
+    user_id = channel_service.lookup_user_id(bot_user_key)
+    if user_id and not utterance.startswith("#") and utterance != "#도움말":
+        try:
+            from app.config.database import get_supabase_client
+
+            db = get_supabase_client()
+            latest = (
+                db.table("memories")
+                .select("id, content")
+                .eq("user_id", user_id)
+                .eq("source_type", "KAKAO")
+                .order("created_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+            if latest.data:
+                memory = latest.data[0]
+                background_tasks.add_task(
+                    _process_with_librarian,
+                    memory["id"],
+                    memory["content"],
+                    user_id,
+                )
+        except Exception:
+            logger.exception("Failed to schedule Librarian for Kakao memory")
+
+    return response.model_dump()
+
+
+# ─── Channel Link Management ─────────────────────────────────────────────────
+
+
+@router.post("/kakao/channel/link-code", response_model=ChannelLinkCodeResponse)
+def generate_channel_link_code(
+    user_id: UUID = Depends(get_user_id),
+    channel_service: KakaoChannelService = Depends(get_kakao_channel_service),
+):
+    """Generate a temporary link code for Kakao channel pairing."""
+    try:
+        result = channel_service.generate_link_code(str(user_id))
+        return ChannelLinkCodeResponse(**result)
+    except Exception as e:
+        logger.exception("Failed to generate link code")
+        raise HTTPException(status_code=500, detail="Failed to generate link code") from e
+
+
+@router.get("/kakao/channel/status", response_model=ChannelStatusResponse)
+def get_channel_status(
+    user_id: UUID = Depends(get_user_id),
+    channel_service: KakaoChannelService = Depends(get_kakao_channel_service),
+):
+    """Check Kakao channel connection status."""
+    try:
+        result = channel_service.get_channel_status(str(user_id))
+        return ChannelStatusResponse(**result)
+    except Exception as e:
+        logger.exception("Failed to get channel status")
+        raise HTTPException(status_code=500, detail="Failed to get channel status") from e
+
+
+@router.delete("/kakao/channel/disconnect")
+def disconnect_channel(
+    user_id: UUID = Depends(get_user_id),
+    channel_service: KakaoChannelService = Depends(get_kakao_channel_service),
+):
+    """Disconnect Kakao channel (soft delete)."""
+    try:
+        success = channel_service.disconnect_channel(str(user_id))
+        if not success:
+            raise HTTPException(status_code=404, detail="No active channel connection found")
+        return {"success": True, "message": "채널 연결이 해제되었습니다"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to disconnect channel")
+        raise HTTPException(status_code=500, detail="Failed to disconnect channel") from e

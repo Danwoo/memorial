@@ -32,13 +32,14 @@ class Settings(BaseSettings):
     SUPABASE_ANON_KEY: str
     SUPABASE_SERVICE_ROLE_KEY: str | None = None
 
-    # Neo4j (Optional for Phase 1)
-    NEO4J_URI: str | None = None
-    NEO4J_USER: str | None = None
-    NEO4J_PASSWORD: str | None = None
+    # KuzuDB (Embedded Graph Database)
+    KUZU_DB_PATH: str = "./kuzu_data"
 
     # Upstage (PDF Parsing)
     UPSTAGE_API_KEY: str | None = None
+
+    # Kakao OpenBuilder
+    KAKAO_SKILL_SECRET: str | None = None
 
     class Config:
         env_file = ".env"

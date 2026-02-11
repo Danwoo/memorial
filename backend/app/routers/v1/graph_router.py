@@ -24,7 +24,7 @@ async def get_graph(
     """
     Get graph data for visualization.
 
-    Returns ``{nodes: [], links: []}`` from Neo4j knowledge graph.
+    Returns ``{nodes: [], links: []}`` from the knowledge graph.
     """
     if not graph_service.is_available:
         return {"nodes": [], "links": []}

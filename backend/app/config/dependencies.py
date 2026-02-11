@@ -30,6 +30,7 @@ from app.services.chat_service import ChatService
 from app.services.digest_service import DigestService
 from app.services.graph_service import GraphService
 from app.services.journal_service import JournalService
+from app.services.kakao_channel_service import KakaoChannelService
 from app.services.memory_service import MemoryService
 from app.services.search_service import SearchService
 from app.services.stats_service import StatsService
@@ -58,7 +59,7 @@ def get_vector_repository(db: Client = Depends(get_db)) -> VectorRepository:
 
 @lru_cache
 def get_graph_repository() -> GraphRepository:
-    """Get GraphRepository singleton (Neo4j connection is expensive to create)."""
+    """Get GraphRepository singleton (KuzuDB init is expensive to repeat)."""
     return GraphRepository()
 
 
@@ -136,3 +137,11 @@ def get_digest_service(
 ) -> DigestService:
     """Get DigestService instance."""
     return DigestService(memory_repo, journal_repo, chat_repo)
+
+
+def get_kakao_channel_service(
+    db: Client = Depends(get_db),
+    memory_service: MemoryService = Depends(get_memory_service),
+) -> KakaoChannelService:
+    """Get KakaoChannelService instance."""
+    return KakaoChannelService(db, memory_service)

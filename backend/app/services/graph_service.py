@@ -45,7 +45,7 @@ class GraphService:
     async def get_visualization_data(self, limit: int = 100, user_id: str | None = None) -> dict[str, Any]:
         """
         Get graph data for D3 visualization.
-        Returns nodes and links from Neo4j, filtered by user_id.
+        Returns nodes and links from the knowledge graph, filtered by user_id.
         """
         if not self.is_available:
             return {"nodes": [], "links": []}

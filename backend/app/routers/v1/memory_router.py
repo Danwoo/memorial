@@ -194,7 +194,7 @@ async def reprocess_all_memories(
     user_id: UUID = Depends(get_user_id),
     memory_service: MemoryService = Depends(get_memory_service),
 ):
-    """Re-process ALL memories through Librarian pipeline (for Neo4j graph backfill)."""
+    """Re-process ALL memories through Librarian pipeline (for graph backfill)."""
     page = 1
     queued = 0
     total = 0
