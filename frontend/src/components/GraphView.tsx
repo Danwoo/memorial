@@ -44,6 +44,16 @@ export default function GraphView() {
   const [searchQuery, setSearchQuery] = useState('')
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
 
+  // Dynamic background color based on color scheme preference
+  const [bgColor, setBgColor] = useState('#ffffff')
+  useEffect(() => {
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    setBgColor(isDark ? '#1a1a1a' : '#ffffff')
+    const listener = (e: MediaQueryListEvent) => setBgColor(e.matches ? '#1a1a1a' : '#ffffff')
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', listener)
+    return () => window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', listener)
+  }, [])
+
   // 그래프 데이터 조회 및 노드 가공
   const fetchGraphData = useCallback(async () => {
     try {
@@ -110,16 +120,16 @@ export default function GraphView() {
     // 라벨 스프라이트
     const label = (node.name || node.id).substring(0, 24)
     const sprite = new SpriteText(label)
-    sprite.color = '#ffffff'
+    sprite.color = bgColor === '#1a1a1a' ? '#ffffff' : '#1f1f1f'
     sprite.textHeight = Math.max(1.2, size * 0.5)
-    sprite.backgroundColor = 'rgba(0,0,0,0.6)'
+    sprite.backgroundColor = bgColor === '#1a1a1a' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.85)'
     sprite.padding = [0.5, 1] as unknown as number
     sprite.borderRadius = 1
     sprite.position.y = -(size + 2)
     group.add(sprite)
 
     return group
-  }, [])
+  }, [bgColor])
 
   // 하이라이트 매칭용 링크 키 생성
   const getLinkKey = useCallback((link: GraphLink) => {
@@ -319,8 +329,8 @@ export default function GraphView() {
           nodeThreeObjectExtend={false}
           linkColor={(link: GraphLink) =>
             highlightLinks.has(getLinkKey(link))
-              ? 'rgba(255,255,255,0.8)'
-              : 'rgba(255,255,255,0.12)'
+              ? (bgColor === '#1a1a1a' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)')
+              : (bgColor === '#1a1a1a' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)')
           }
           linkWidth={(link: GraphLink) => (highlightLinks.has(getLinkKey(link)) ? 1.5 : 0.3)}
           linkDirectionalArrowLength={3}
@@ -330,7 +340,7 @@ export default function GraphView() {
           }
           linkDirectionalParticleWidth={1.5}
           linkDirectionalParticleSpeed={0.006}
-          backgroundColor="#0a0a0f"
+          backgroundColor={bgColor}
           onNodeClick={handleNodeClick}
           onNodeHover={handleNodeHover}
           onBackgroundClick={handleBackgroundClick}

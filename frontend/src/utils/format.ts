@@ -1,13 +1,13 @@
 /**
- * Returns an emoji icon for the given memory source type.
+ * 소스 타입에 해당하는 Lucide 아이콘 이름 반환
  */
 export function getSourceIcon(type: string): string {
   const icons: Record<string, string> = {
-    WEB: '🌐',
-    PDF: '📄',
-    NOTE: '📝',
+    WEB: 'Globe',
+    PDF: 'FileText',
+    NOTE: 'StickyNote',
   }
-  return icons[type] ?? '📋'
+  return icons[type] ?? 'File'
 }
 
 /**

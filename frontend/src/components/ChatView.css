@@ -8,7 +8,7 @@
 
 .chat-header {
   padding: var(--space-lg);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-secondary);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -17,10 +17,7 @@
 .chat-header h1 {
   font-size: 1.5rem;
   font-weight: 600;
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
 }
 
 .chat-subtitle {
@@ -39,8 +36,8 @@
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   cursor: pointer;
@@ -49,13 +46,8 @@
 }
 
 .mode-toggle:hover {
-  background: var(--bg-secondary);
-  border-color: var(--accent-primary);
-}
-
-.mode-arrow {
-  font-size: 0.7rem;
-  opacity: 0.6;
+  border-color: var(--border-primary);
+  background: var(--bg-tertiary);
 }
 
 .mode-dropdown {
@@ -63,11 +55,11 @@
   top: 100%;
   right: 0;
   margin-top: 8px;
-  min-width: 200px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  min-width: 220px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
   z-index: 100;
   overflow: hidden;
 }
@@ -87,15 +79,25 @@
 }
 
 .mode-option:hover {
-  background: var(--bg-tertiary);
+  background: var(--bg-secondary);
 }
 
 .mode-option.active {
-  background: rgba(99, 102, 241, 0.2);
+  background: var(--accent-bg);
 }
 
 .mode-icon {
-  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.mode-option.active .mode-icon {
+  color: var(--accent-primary);
 }
 
 .mode-info {
@@ -109,17 +111,20 @@
 }
 
 .mode-desc {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
+  font-size: var(--fs-label);
+  color: var(--text-muted);
 }
 
 .mode-active-hint {
   margin-top: var(--space-md);
   padding: 8px 16px;
-  background: rgba(99, 102, 241, 0.1);
+  background: var(--accent-bg);
   border-radius: var(--radius-md);
   font-size: 0.9rem;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .chat-messages {
@@ -141,11 +146,6 @@
   color: var(--text-muted);
 }
 
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: var(--space-md);
-}
-
 .chat-empty h2 {
   font-size: 1.25rem;
   color: var(--text-secondary);
@@ -163,10 +163,9 @@
 }
 
 .message-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-full);
-  background: var(--bg-tertiary);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -174,7 +173,13 @@
 }
 
 .message.user .message-avatar {
-  background: var(--accent-gradient);
+  background: var(--accent-bg);
+  color: var(--accent-primary);
+}
+
+.message.assistant .message-avatar {
+  background: var(--bg-surface-raised);
+  color: var(--text-secondary);
 }
 
 .message-content {
@@ -187,12 +192,12 @@
 }
 
 .message.user .message-content {
-  background: var(--accent-gradient);
-  color: white;
+  background: var(--accent-primary);
+  color: var(--text-inverse);
   white-space: pre-wrap;
 }
 
-/* ─── Markdown in assistant messages ──────────────────────────────────── */
+/* Markdown in assistant messages */
 
 .message.assistant .message-content p {
   margin: 0 0 0.5em 0;
@@ -213,14 +218,14 @@
 }
 
 .message.assistant .message-content code {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-surface-raised);
   padding: 0.15em 0.35em;
   border-radius: 3px;
   font-size: 0.875em;
 }
 
 .message.assistant .message-content pre {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-surface-raised);
   padding: var(--space-md);
   border-radius: var(--radius-md);
   overflow-x: auto;
@@ -256,12 +261,12 @@
 
 .message.assistant .message-content th,
 .message.assistant .message-content td {
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-secondary);
   padding: 0.35em 0.75em;
 }
 
 .message.assistant .message-content th {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-surface-raised);
   font-weight: 600;
 }
 
@@ -275,9 +280,14 @@
   animation: pulse 1s infinite;
 }
 
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
 .chat-input-container {
   padding: var(--space-lg);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-secondary);
   background: var(--bg-secondary);
 }
 
@@ -285,10 +295,16 @@
   display: flex;
   align-items: flex-end;
   gap: var(--space-sm);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: var(--space-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: 24px;
+  padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.chat-input-wrapper:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
 }
 
 .chat-input {
@@ -301,32 +317,41 @@
   resize: none;
   max-height: 120px;
   line-height: 1.5;
+  font-family: inherit;
 }
 
 .chat-input:focus {
   outline: none;
 }
 
+.chat-input::placeholder {
+  color: var(--text-muted);
+}
+
 .send-button {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: var(--accent-gradient);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--text-primary);
   border: none;
-  color: white;
-  font-size: 1.25rem;
+  color: var(--bg-primary);
   cursor: pointer;
   transition: all var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .send-button:hover:not(:disabled) {
-  transform: scale(1.05);
+  opacity: 0.85;
+}
+
+.send-button:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .send-button:disabled {
-  opacity: 0.5;
+  opacity: 0.3;
   cursor: not-allowed;
 }

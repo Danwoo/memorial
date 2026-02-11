@@ -4,13 +4,16 @@
   align-items: center;
   min-height: 100vh;
   padding: 20px;
-  background: linear-gradient(135deg, var(--bg-primary) 0%, #1a1a2e 100%);
+  background: var(--bg-primary);
 }
 
 .auth-container {
   width: 100%;
   max-width: 400px;
   padding: 40px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
 }
 
 .auth-header {
@@ -19,18 +22,18 @@
 }
 
 .auth-logo {
-  font-size: 3rem;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
   display: block;
-  margin-bottom: 16px;
+  margin: 0 auto 16px;
+  border-radius: var(--radius-md);
 }
 
 .auth-header h1 {
   font-size: 1.75rem;
   margin-bottom: 8px;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
 }
 
 .auth-header p {
@@ -41,7 +44,7 @@
   padding: 12px;
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: #f87171;
   font-size: 0.9rem;
   text-align: center;
@@ -62,7 +65,7 @@
   justify-content: center;
   gap: 10px;
   padding: 14px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;

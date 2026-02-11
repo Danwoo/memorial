@@ -1,8 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { Globe, FileText, StickyNote, File, AlertCircle, CalendarX2 } from 'lucide-react'
 import type { TimelineData } from '../types'
 import { fetchTimeline } from '../api'
 import { getSourceIcon, formatRelativeDate } from '../utils'
 import './TimelineView.css'
+
+const SOURCE_ICONS: Record<string, React.ReactNode> = {
+  Globe: <Globe size={16} />,
+  FileText: <FileText size={16} />,
+  StickyNote: <StickyNote size={16} />,
+  File: <File size={16} />,
+}
+
+function renderSourceIcon(type: string) {
+  const iconName = getSourceIcon(type)
+  return SOURCE_ICONS[iconName] ?? <File size={16} />
+}
 
 export default function TimelineView() {
   const [data, setData] = useState<TimelineData | null>(null)
@@ -58,7 +71,7 @@ export default function TimelineView() {
   // 무한 스크롤: IntersectionObserver로 추가 데이터 로드
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect()
-    
+
     observerRef.current = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && data?.has_more && !loadingMore) {
         const nextPage = page + 1
@@ -89,7 +102,7 @@ export default function TimelineView() {
     return (
       <div className="timeline-view">
         <div className="error-state">
-          <div className="error-icon">⚠️</div>
+          <AlertCircle size={48} className="state-icon" />
           <h3>오류 발생</h3>
           <p>{error}</p>
           <button className="btn btn-primary" onClick={() => loadTimeline(1)}>
@@ -104,7 +117,7 @@ export default function TimelineView() {
     return (
       <div className="timeline-view">
         <div className="empty-state">
-          <div className="empty-icon">📅</div>
+          <CalendarX2 size={48} className="state-icon" />
           <h3>아직 메모리가 없습니다</h3>
           <p>새로운 지식을 저장해보세요!</p>
         </div>
@@ -115,31 +128,31 @@ export default function TimelineView() {
   return (
     <div className="timeline-view">
       <div className="timeline-header">
-        <h1>📅 타임라인</h1>
+        <h1>타임라인</h1>
         <p className="timeline-subtitle">시간순으로 보는 나의 지식</p>
       </div>
 
       <div className="timeline-container">
         <div className="timeline-line"></div>
-        
+
         {data.timeline.map((group) => (
           <div key={group.date} className="timeline-group">
             <div className="timeline-date-marker">
               <span className="date-label">{formatRelativeDate(group.date)}</span>
             </div>
-            
+
             <div className="timeline-items">
               {group.memories.map((memory) => (
                 <div key={memory.id} className="timeline-item glass-card">
                   <div className="item-header">
-                    <span className="source-icon">{getSourceIcon(memory.source_type)}</span>
+                    <span className="source-icon">{renderSourceIcon(memory.source_type)}</span>
                     <h3 className="item-title">{memory.title}</h3>
                   </div>
-                  
+
                   {memory.summary && (
                     <p className="item-summary">{memory.summary}</p>
                   )}
-                  
+
                   {memory.tags && memory.tags.length > 0 && (
                     <div className="item-tags">
                       {memory.tags.slice(0, 3).map((tag, tagIdx) => (

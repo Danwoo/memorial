@@ -1,7 +1,21 @@
 import { useState, useEffect } from 'react'
+import { Globe, FileText, StickyNote, File, FolderOpen, Upload, Plus } from 'lucide-react'
 import type { Memory, MemoryCreatePayload, SourceType } from '../types'
 import { fetchMemories, createMemory, uploadPdfMemory } from '../api'
+import { getSourceIcon } from '../utils'
 import './MemoryView.css'
+
+const SOURCE_ICONS: Record<string, React.ReactNode> = {
+  Globe: <Globe size={16} />,
+  FileText: <FileText size={16} />,
+  StickyNote: <StickyNote size={16} />,
+  File: <File size={16} />,
+}
+
+function renderSourceIcon(type: string) {
+  const iconName = getSourceIcon(type)
+  return SOURCE_ICONS[iconName] ?? <File size={16} />
+}
 
 export default function MemoryView() {
   const [memories, setMemories] = useState<Memory[]>([])
@@ -59,7 +73,7 @@ export default function MemoryView() {
           <p className="memory-subtitle">저장된 지식을 탐색하세요</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-          + 추가
+          <Plus size={16} /> 추가
         </button>
       </div>
 
@@ -68,7 +82,7 @@ export default function MemoryView() {
           <div className="loading-state">로딩 중...</div>
         ) : memories.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📦</div>
+            <FolderOpen size={48} className="state-icon" />
             <h3>아직 저장된 기억이 없습니다</h3>
             <p>웹 페이지나 메모를 추가해보세요</p>
           </div>
@@ -76,7 +90,7 @@ export default function MemoryView() {
           memories.map(memory => (
             <div key={memory.id} className="memory-card glass-card">
               <div className="memory-type-badge">
-                {memory.source_type === 'WEB' ? '🌐' : memory.source_type === 'PDF' ? '📄' : '📝'}
+                {renderSourceIcon(memory.source_type)}
               </div>
               <h3 className="memory-title">{memory.title}</h3>
               {memory.summary && (
@@ -95,25 +109,25 @@ export default function MemoryView() {
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
           <div className="modal-content glass-card" onClick={e => e.stopPropagation()}>
             <h2>새 메모리 추가</h2>
-            
+
             <div className="modal-tabs">
-              <button 
+              <button
                 className={`tab ${addType === 'WEB' ? 'active' : ''}`}
                 onClick={() => setAddType('WEB')}
               >
-                🌐 웹 URL
+                <Globe size={16} /> 웹 URL
               </button>
               <button
                 className={`tab ${addType === 'NOTE' ? 'active' : ''}`}
                 onClick={() => setAddType('NOTE')}
               >
-                📝 메모
+                <StickyNote size={16} /> 메모
               </button>
               <button
                 className={`tab ${addType === 'PDF' ? 'active' : ''}`}
                 onClick={() => setAddType('PDF')}
               >
-                📄 PDF
+                <FileText size={16} /> PDF
               </button>
             </div>
 
@@ -142,7 +156,7 @@ export default function MemoryView() {
                   onChange={e => setPdfFile(e.target.files?.[0] ?? null)}
                 />
                 <label htmlFor="pdf-input" className="pdf-drop-label">
-                  {pdfFile ? pdfFile.name : '📄 PDF 파일을 선택하세요 (최대 20MB)'}
+                  {pdfFile ? pdfFile.name : <><Upload size={16} /> PDF 파일을 선택하세요 (최대 20MB)</>}
                 </label>
               </div>
             )}

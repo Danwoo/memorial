@@ -1,17 +1,30 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type ReactNode } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import {
+  User, Bot, MessageSquareText, ArrowUp,
+  MessageSquare, Lightbulb, Scale, ClipboardList, Moon, ChevronDown,
+} from 'lucide-react'
 import type { ChatMessage, ChatMode, ChatModeOption, ChatLocationState } from '../types'
 import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream } from '../api'
 import './ChatView.css'
 
+// Lucide icon map keyed by mode value (avoids changing ChatModeOption.icon type)
+const MODE_ICONS: Record<string, ReactNode> = {
+  '': <MessageSquare size={16} />,
+  'insight': <Lightbulb size={16} />,
+  'counter': <Scale size={16} />,
+  'summary': <ClipboardList size={16} />,
+  'evening': <Moon size={16} />,
+}
+
 const MODES: ChatModeOption[] = [
-  { value: '', label: '기본', icon: '💬', desc: '일반 대화' },
-  { value: 'insight', label: '인사이트', icon: '💡', desc: '깊은 질문으로 사고 확장' },
-  { value: 'counter', label: '반론', icon: '⚖️', desc: '반대 의견 제시' },
-  { value: 'summary', label: '요약', icon: '📋', desc: '대화 내용 정리' },
-  { value: 'evening', label: '저녁 회고', icon: '🌙', desc: '하루 돌아보기' }
+  { value: '', label: '기본', icon: 'message-square', desc: '일반 대화' },
+  { value: 'insight', label: '인사이트', icon: 'lightbulb', desc: '깊은 질문으로 사고 확장' },
+  { value: 'counter', label: '반론', icon: 'scale', desc: '반대 의견 제시' },
+  { value: 'summary', label: '요약', icon: 'clipboard-list', desc: '대화 내용 정리' },
+  { value: 'evening', label: '저녁 회고', icon: 'moon', desc: '하루 돌아보기' },
 ]
 
 export default function ChatView() {
@@ -159,9 +172,9 @@ export default function ChatView() {
             className="mode-toggle"
             onClick={() => setShowModes(!showModes)}
           >
-            <span>{currentMode.icon}</span>
+            <span className="mode-icon">{MODE_ICONS[currentMode.value]}</span>
             <span>{currentMode.label}</span>
-            <span className="mode-arrow">▼</span>
+            <ChevronDown size={14} />
           </button>
           {showModes && (
             <div className="mode-dropdown">
@@ -171,7 +184,7 @@ export default function ChatView() {
                   className={`mode-option ${mode === m.value ? 'active' : ''}`}
                   onClick={() => { setMode(m.value); setShowModes(false) }}
                 >
-                  <span className="mode-icon">{m.icon}</span>
+                  <span className="mode-icon">{MODE_ICONS[m.value]}</span>
                   <div className="mode-info">
                     <span className="mode-label">{m.label}</span>
                     <span className="mode-desc">{m.desc}</span>
@@ -186,17 +199,17 @@ export default function ChatView() {
       <div className="chat-messages">
         {isLoadingHistory ? (
           <div className="chat-empty">
-            <div className="empty-icon">...</div>
+            <div className="loading-spinner"></div>
             <p>대화 기록을 불러오는 중...</p>
           </div>
         ) : messages.length === 0 ? (
           <div className="chat-empty">
-            <div className="empty-icon">🤔</div>
+            <MessageSquareText size={48} className="state-icon" />
             <h2>무엇이 궁금하신가요?</h2>
             <p>저장된 지식을 바탕으로 대화해보세요</p>
             {mode && (
               <div className="mode-active-hint">
-                {currentMode.icon} <strong>{currentMode.label}</strong> 모드 활성화됨
+                {MODE_ICONS[currentMode.value]} <strong>{currentMode.label}</strong> 모드 활성화됨
               </div>
             )}
           </div>
@@ -207,7 +220,7 @@ export default function ChatView() {
               className={`message ${msg.role}`}
             >
               <div className="message-avatar">
-                {msg.role === 'user' ? '👤' : '🧠'}
+                {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
               </div>
               <div className="message-content">
                 {msg.role === 'assistant' ? (
@@ -244,7 +257,7 @@ export default function ChatView() {
             onClick={handleSendMessage}
             disabled={!input.trim() || isLoading}
           >
-            {isLoading ? '...' : '→'}
+            {isLoading ? <div className="loading-spinner small" /> : <ArrowUp size={18} />}
           </button>
         </div>
       </div>

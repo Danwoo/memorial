@@ -208,7 +208,7 @@ export default function SettingsView() {
       {/* 계정 정보 섹션 */}
       <section className="settings-section">
         <h2 className="section-title">계정 정보</h2>
-        <div className="account-info-card glass-card">
+        <div className="account-info-card card">
           <div className="account-info-row">
             <span className="account-info-label">이메일</span>
             <span className="account-info-value">{email ?? user?.email ?? '-'}</span>
@@ -238,7 +238,7 @@ export default function SettingsView() {
               const isOnlyProvider = providers.length <= 1 && linked
               const isActioning = actionLoading === provider
               return (
-                <div key={provider} className="provider-card glass-card">
+                <div key={provider} className="provider-card card">
                   <div className="provider-info">
                     <div className={`provider-icon ${provider}-icon`}>
                       {provider === 'google' && (
@@ -299,7 +299,7 @@ export default function SettingsView() {
         <div className="provider-list">
 
           {/* 카카오톡 채널 연결 */}
-          <div className="bot-settings-card glass-card">
+          <div className="bot-settings-card card">
             <div className="provider-info">
               <div className="provider-icon kakao-icon">
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
@@ -351,7 +351,7 @@ export default function SettingsView() {
           </div>
 
           {/* 카카오톡 일일 다이제스트 */}
-          <div className="bot-settings-card glass-card">
+          <div className="bot-settings-card card">
             <div className="provider-info">
               <div className="provider-icon kakao-icon">
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
@@ -450,7 +450,7 @@ export default function SettingsView() {
             )}
           </div>
 
-          <div className="provider-card glass-card">
+          <div className="provider-card card">
             <div className="provider-info">
               <div className="provider-icon chrome-icon">
                 <svg viewBox="0 0 24 24" width="22" height="22">

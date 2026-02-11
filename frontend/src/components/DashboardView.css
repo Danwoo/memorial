@@ -13,6 +13,8 @@
 
 .dashboard-header h1 {
   font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
@@ -25,8 +27,10 @@
 .digest-section {
   padding: 24px;
   margin-bottom: 24px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-left: 3px solid var(--accent-primary);
+  border-radius: var(--radius-lg);
 }
 
 .digest-header {
@@ -39,15 +43,17 @@
 .digest-header h2 {
   margin: 0;
   font-size: 1.3rem;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
 .digest-date {
-  font-size: 0.9rem;
+  font-size: var(--fs-body-sm);
   color: var(--accent-primary);
-  background: rgba(99, 102, 241, 0.2);
+  background: var(--accent-bg);
   padding: 4px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-full);
+  font-weight: 500;
 }
 
 .digest-stats {
@@ -61,36 +67,37 @@
   flex-direction: column;
   align-items: center;
   padding: 12px 24px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
 }
 
 .digest-stat-value {
   font-size: 1.8rem;
-  font-weight: 700;
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .digest-stat-label {
-  font-size: 0.85rem;
+  font-size: var(--fs-body-sm);
   color: var(--text-secondary);
 }
 
 .digest-questions {
   margin-bottom: 20px;
   padding: 16px;
-  background: rgba(250, 204, 21, 0.1);
-  border-left: 3px solid #facc15;
-  border-radius: 0 8px 8px 0;
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--accent-primary);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
 .digest-questions h3 {
   margin: 0 0 12px 0;
   font-size: 1rem;
-  color: #facc15;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .digest-questions ul {
@@ -107,6 +114,7 @@
 .digest-memories h3 {
   margin: 0 0 12px 0;
   font-size: 1rem;
+  font-weight: 600;
   color: var(--text-secondary);
 }
 
@@ -121,29 +129,29 @@
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  transition: background 0.2s;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
 }
 
 .digest-memory-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
 }
 
 .digest-memory-type {
-  font-size: 0.7rem;
+  font-size: var(--fs-caption);
   font-weight: 600;
   text-transform: uppercase;
-  color: #60a5fa;
-  background: rgba(96, 165, 250, 0.2);
+  color: var(--accent-primary);
+  background: var(--accent-bg);
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .digest-memory-title {
   flex: 1;
   color: var(--text-primary);
-  font-size: 0.95rem;
+  font-size: var(--fs-body);
 }
 
 /* Stats Grid */
@@ -159,10 +167,26 @@
   align-items: center;
   gap: 16px;
   padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--transition-fast);
 }
 
-.stat-icon {
-  font-size: 2.5rem;
+.stat-card:hover {
+  border-color: var(--border-primary);
+}
+
+.stat-icon-container {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  flex-shrink: 0;
 }
 
 .stat-content {
@@ -172,15 +196,12 @@
 
 .stat-value {
   font-size: 2rem;
-  font-weight: 700;
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .stat-label {
-  font-size: 0.9rem;
+  font-size: var(--fs-body);
   color: var(--text-secondary);
 }
 
@@ -188,10 +209,14 @@
 .chart-section {
   padding: 24px;
   margin-bottom: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
 }
 
 .chart-section h2 {
   font-size: 1.2rem;
+  font-weight: 600;
   margin-bottom: 20px;
   color: var(--text-primary);
 }
@@ -215,8 +240,9 @@
 
 .activity-bar {
   width: 100%;
-  background: var(--accent-gradient);
-  border-radius: 8px 8px 0 0;
+  background: var(--accent-primary);
+  opacity: 0.6;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
   min-height: 4px;
   display: flex;
   align-items: flex-start;
@@ -226,13 +252,13 @@
 
 .activity-count {
   margin-top: 8px;
-  font-size: 0.8rem;
+  font-size: var(--fs-label);
   font-weight: 600;
-  color: white;
+  color: var(--text-inverse);
 }
 
 .activity-date {
-  font-size: 0.75rem;
+  font-size: var(--fs-label);
   color: var(--text-secondary);
   margin-top: 8px;
 }
@@ -269,31 +295,28 @@
   gap: 8px;
 }
 
-.source-icon {
-  font-size: 1.2rem;
-}
-
 .source-name {
   flex: 1;
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 .source-count {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: var(--fs-body);
 }
 
 .source-bar-bg {
   height: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  background: var(--bg-surface-raised);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
 .source-bar {
   height: 100%;
-  background: var(--accent-gradient);
-  border-radius: 4px;
+  background: var(--accent-primary);
+  border-radius: var(--radius-sm);
   transition: width 0.5s ease;
 }
 
@@ -307,15 +330,15 @@
 
 .tag-item {
   padding: 8px 16px;
-  background: rgba(99, 102, 241, 0.2);
-  border-radius: 20px;
-  color: var(--accent-primary);
-  transition: transform 0.2s, background 0.2s;
+  background: var(--bg-surface-raised);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  transition: transform var(--transition-fast), background var(--transition-fast);
   cursor: default;
 }
 
 .tag-item:hover {
-  background: rgba(99, 102, 241, 0.3);
+  background: var(--bg-tertiary);
   transform: scale(1.05);
 }
 
@@ -328,4 +351,3 @@
   color: var(--text-secondary);
   font-style: italic;
 }
-

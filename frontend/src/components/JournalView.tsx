@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { BookOpen } from 'lucide-react'
 import ChatWidget from './ChatWidget'
 import type { RelatedMemory, ChatSessionResponse } from '../types'
 import { saveJournal, fetchRelatedMemories as fetchRelatedMemoriesApi, generateJournalDraft, fetchChatSessions } from '../api'
@@ -94,7 +95,7 @@ export default function JournalView() {
       setIsSaving(false)
     }
   }
-  
+
   return (
     <div className="journal-view">
       <div className="editor-section">
@@ -134,11 +135,11 @@ export default function JournalView() {
             </div>
         </div>
       </div>
-      
+
       {/* 관련 메모리 사이드바 */}
       <div className="context-sidebar">
         <div className="context-header">
-          <h3>📚 Related Memories</h3>
+          <h3><BookOpen size={16} style={{display:'inline', verticalAlign:'middle', marginRight:'6px'}} />Related Memories</h3>
           {isLoadingContext && <span className="loading-indicator">...</span>}
         </div>
         <div className="context-list">
@@ -157,7 +158,7 @@ export default function JournalView() {
           )}
         </div>
       </div>
-      
+
       {/* 세션 선택 모달 */}
       {showSessionPicker && (
         <div className="session-picker-overlay" onClick={() => setShowSessionPicker(false)}>
@@ -196,4 +197,3 @@ export default function JournalView() {
     </div>
   )
 }
-

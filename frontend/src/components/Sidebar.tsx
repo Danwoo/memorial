@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import {
+  MessageSquare, BookOpen, PenLine, Search, Network,
+  LayoutDashboard, Clock, Settings as SettingsIcon,
+  LogOut, ChevronDown, ChevronRight, Plus,
+} from 'lucide-react'
 import type { User, ChatSessionResponse } from '../types'
 import { fetchChatSessions } from '../api'
 import './Sidebar.css'
@@ -8,19 +14,19 @@ import './Sidebar.css'
 
 interface NavItem {
   to: string
-  icon: string
+  icon: ReactNode
   label: string
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/chat',      icon: '💬', label: 'Chat' },
-  { to: '/memories',  icon: '🧠', label: 'Memories' },
-  { to: '/journal',   icon: '📝', label: 'Journal' },
-  { to: '/search',    icon: '🔍', label: 'Search' },
-  { to: '/graph',     icon: '🕸️', label: 'Graph' },
-  { to: '/',          icon: '📊', label: 'Dashboard' },
-  { to: '/timeline',  icon: '📅', label: 'Timeline' },
-  { to: '/settings',  icon: '⚙️', label: 'Settings' },
+  { to: '/chat',      icon: <MessageSquare size={20} />, label: 'Chat' },
+  { to: '/memories',  icon: <BookOpen size={20} />,      label: 'Memories' },
+  { to: '/journal',   icon: <PenLine size={20} />,       label: 'Journal' },
+  { to: '/search',    icon: <Search size={20} />,        label: 'Search' },
+  { to: '/graph',     icon: <Network size={20} />,       label: 'Graph' },
+  { to: '/',          icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
+  { to: '/timeline',  icon: <Clock size={20} />,         label: 'Timeline' },
+  { to: '/settings',  icon: <SettingsIcon size={20} />,  label: 'Settings' },
 ]
 
 const MAX_SIDEBAR_SESSIONS = 8
@@ -68,7 +74,7 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
     <aside className="sidebar">
       <div className="sidebar-header">
         <div className="logo">
-          <span className="logo-icon">📚</span>
+          <img src="/favicon.png" alt="" width={24} height={24} className="logo-icon" />
           <span className="logo-text">Memoir</span>
         </div>
       </div>
@@ -96,7 +102,9 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
               onClick={() => setShowSessions(!showSessions)}
             >
               <span>최근 대화</span>
-              <span className="session-toggle-arrow">{showSessions ? '▾' : '▸'}</span>
+              <span className="session-toggle-arrow">
+                {showSessions ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </span>
             </button>
 
             {showSessions && (
@@ -121,8 +129,9 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
       </nav>
 
       <div className="sidebar-footer">
-        <button className="btn btn-primary new-chat-btn" onClick={handleNewChat}>
-          <span>+ New Chat</span>
+        <button className="btn new-chat-btn" onClick={handleNewChat}>
+          <Plus size={16} />
+          <span>New Chat</span>
         </button>
 
         {user && (
@@ -146,7 +155,7 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
             </div>
             {onLogout && (
               <button className="logout-btn" onClick={onLogout} title="Logout">
-                🚪
+                <LogOut size={16} />
               </button>
             )}
           </div>

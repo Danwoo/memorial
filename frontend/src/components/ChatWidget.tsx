@@ -1,17 +1,29 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import {
+  MessageSquare, Lightbulb, Scale, ClipboardList, Moon,
+  HelpCircle, User, Bot, ArrowUp,
+} from 'lucide-react'
 import type { ChatMessage, ChatMode, ChatModeOption } from '../types'
 import { createChatSession, sendChatMessage, readSSEStream } from '../api'
 import './ChatView.css'
 
 const MODES: ChatModeOption[] = [
-  { value: '', label: '기본', icon: '💬', desc: '일반 대화' },
-  { value: 'insight', label: '인사이트', icon: '💡', desc: '깊은 질문으로 사고 확장' },
-  { value: 'counter', label: '반론', icon: '⚖️', desc: '반대 의견 제시' },
-  { value: 'summary', label: '요약', icon: '📋', desc: '대화 내용 정리' },
-  { value: 'evening', label: '저녁 회고', icon: '🌙', desc: '하루 돌아보기' }
+  { value: '', label: '기본', icon: 'MessageSquare', desc: '일반 대화' },
+  { value: 'insight', label: '인사이트', icon: 'Lightbulb', desc: '깊은 질문으로 사고 확장' },
+  { value: 'counter', label: '반론', icon: 'Scale', desc: '반대 의견 제시' },
+  { value: 'summary', label: '요약', icon: 'ClipboardList', desc: '대화 내용 정리' },
+  { value: 'evening', label: '저녁 회고', icon: 'Moon', desc: '하루 돌아보기' }
 ]
+
+const MODE_ICONS: Record<string, React.ReactNode> = {
+  MessageSquare: <MessageSquare size={16} />,
+  Lightbulb: <Lightbulb size={16} />,
+  Scale: <Scale size={16} />,
+  ClipboardList: <ClipboardList size={16} />,
+  Moon: <Moon size={16} />,
+}
 
 // 라우팅 없는 임베디드 채팅 컴포넌트 (JournalView의 Thinking Partner용)
 export default function ChatWidget() {
@@ -104,7 +116,7 @@ export default function ChatWidget() {
             className="mode-toggle"
             onClick={() => setShowModes(!showModes)}
           >
-            <span>{currentMode.icon}</span>
+            <span>{MODE_ICONS[currentMode.icon] || <MessageSquare size={16} />}</span>
             <span>{currentMode.label}</span>
             <span className="mode-arrow">▼</span>
           </button>
@@ -116,7 +128,7 @@ export default function ChatWidget() {
                   className={`mode-option ${mode === m.value ? 'active' : ''}`}
                   onClick={() => { setMode(m.value); setShowModes(false) }}
                 >
-                  <span className="mode-icon">{m.icon}</span>
+                  <span className="mode-icon">{MODE_ICONS[m.icon] || <MessageSquare size={16} />}</span>
                   <div className="mode-info">
                     <span className="mode-label">{m.label}</span>
                     <span className="mode-desc">{m.desc}</span>
@@ -131,14 +143,14 @@ export default function ChatWidget() {
       <div className="chat-messages">
         {messages.length === 0 ? (
           <div className="chat-empty">
-            <div className="empty-icon">🤔</div>
+            <div className="empty-icon"><HelpCircle size={32} /></div>
             <p>글 작성 중 궁금한 점을 물어보세요</p>
           </div>
         ) : (
           messages.map((msg, idx) => (
             <div key={idx} className={`message ${msg.role}`}>
               <div className="message-avatar">
-                {msg.role === 'user' ? '👤' : '🧠'}
+                {msg.role === 'user' ? <User size={18} /> : <Bot size={18} />}
               </div>
               <div className="message-content">
                 {msg.role === 'assistant' ? (
@@ -175,7 +187,7 @@ export default function ChatWidget() {
             onClick={handleSendMessage}
             disabled={!input.trim() || isLoading}
           >
-            {isLoading ? '...' : '→'}
+            {isLoading ? '...' : <ArrowUp size={18} />}
           </button>
         </div>
       </div>

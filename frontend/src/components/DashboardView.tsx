@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
+import { Database, CalendarDays, Calendar, TrendingUp, AlertCircle, Sparkles } from 'lucide-react'
 import type { StatsData, DigestData } from '../types'
 import { fetchStats, fetchDigest } from '../api'
-import { getSourceIcon } from '../utils'
 import './DashboardView.css'
 
 export default function DashboardView() {
@@ -61,7 +61,7 @@ export default function DashboardView() {
     return (
       <div className="dashboard-view">
         <div className="error-state">
-          <div className="error-icon">⚠️</div>
+          <AlertCircle size={48} className="state-icon" />
           <h3>오류 발생</h3>
           <p>{error}</p>
           <button className="btn btn-primary" onClick={loadData}>다시 시도</button>
@@ -75,18 +75,18 @@ export default function DashboardView() {
   return (
     <div className="dashboard-view">
       <div className="dashboard-header">
-        <h1>📊 대시보드</h1>
+        <h1>대시보드</h1>
         <p className="dashboard-subtitle">나의 지식 활동 요약</p>
       </div>
 
       {/* 오늘의 다이제스트 섹션 */}
       {digest && (digest.summary.memory_count > 0 || digest.insights.suggested_questions.length > 0) && (
-        <div className="digest-section glass-card">
+        <div className="digest-section">
           <div className="digest-header">
-            <h2>🌅 오늘의 현황</h2>
+            <h2>오늘의 현황</h2>
             <span className="digest-date">{digest.date}</span>
           </div>
-          
+
           <div className="digest-stats">
             <div className="digest-stat">
               <span className="digest-stat-value">{digest.summary.memory_count}</span>
@@ -104,7 +104,7 @@ export default function DashboardView() {
 
           {digest.insights.suggested_questions.length > 0 && (
             <div className="digest-questions">
-              <h3>🤔 AI 추천 질문</h3>
+              <h3><Sparkles size={16} /> 추천 질문</h3>
               <ul>
                 {digest.insights.suggested_questions.map((q, idx) => (
                   <li key={idx}>{q}</li>
@@ -115,7 +115,7 @@ export default function DashboardView() {
 
           {digest.memories.length > 0 && (
             <div className="digest-memories">
-              <h3>📝 오늘 저장한 내용</h3>
+              <h3>오늘 저장한 내용</h3>
               <div className="digest-memory-list">
                 {digest.memories.slice(0, 3).map((m, idx) => (
                   <div key={idx} className="digest-memory-item">
@@ -131,32 +131,40 @@ export default function DashboardView() {
 
       {/* 통계 개요 카드 */}
       <div className="stats-grid">
-        <div className="stat-card glass-card">
-          <div className="stat-icon">📚</div>
+        <div className="stat-card">
+          <div className="stat-icon-container">
+            <Database size={20} />
+          </div>
           <div className="stat-content">
             <span className="stat-value">{stats.overview.total_memories}</span>
             <span className="stat-label">전체 메모리</span>
           </div>
         </div>
 
-        <div className="stat-card glass-card">
-          <div className="stat-icon">📅</div>
+        <div className="stat-card">
+          <div className="stat-icon-container">
+            <CalendarDays size={20} />
+          </div>
           <div className="stat-content">
             <span className="stat-value">{stats.overview.total_this_week}</span>
             <span className="stat-label">이번 주</span>
           </div>
         </div>
 
-        <div className="stat-card glass-card">
-          <div className="stat-icon">📆</div>
+        <div className="stat-card">
+          <div className="stat-icon-container">
+            <Calendar size={20} />
+          </div>
           <div className="stat-content">
             <span className="stat-value">{stats.overview.total_this_month}</span>
             <span className="stat-label">이번 달</span>
           </div>
         </div>
 
-        <div className="stat-card glass-card">
-          <div className="stat-icon">🔥</div>
+        <div className="stat-card">
+          <div className="stat-icon-container">
+            <TrendingUp size={20} />
+          </div>
           <div className="stat-content">
             <span className="stat-value">
               {stats.overview.most_active_day ? stats.overview.most_active_day.slice(5) : '-'}
@@ -167,12 +175,12 @@ export default function DashboardView() {
       </div>
 
       {/* 최근 활동 차트 */}
-      <div className="chart-section glass-card">
-        <h2>📈 최근 7일 활동</h2>
+      <div className="chart-section">
+        <h2>최근 7일 활동</h2>
         <div className="activity-chart">
           {stats.recent_activity.map((day, idx) => (
             <div key={idx} className="activity-bar-container">
-              <div 
+              <div
                 className="activity-bar"
                 style={{ height: `${(day.count / getMaxActivity()) * 100}%` }}
               >
@@ -186,19 +194,18 @@ export default function DashboardView() {
 
       <div className="dashboard-row">
         {/* 소스 타입 분포 */}
-        <div className="chart-section glass-card">
-          <h2>📁 소스 타입 분포</h2>
+        <div className="chart-section">
+          <h2>소스 타입 분포</h2>
           <div className="source-list">
             {stats.sources.map((src, idx) => (
               <div key={idx} className="source-item">
                 <div className="source-header">
-                  <span className="source-icon">{getSourceIcon(src.source_type)}</span>
                   <span className="source-name">{src.source_type}</span>
                   <span className="source-count">{src.count}</span>
                 </div>
                 <div className="source-bar-bg">
-                  <div 
-                    className="source-bar" 
+                  <div
+                    className="source-bar"
                     style={{ width: `${src.percentage}%` }}
                   ></div>
                 </div>
@@ -208,13 +215,13 @@ export default function DashboardView() {
         </div>
 
         {/* 인기 태그 */}
-        <div className="chart-section glass-card">
-          <h2>🏷️ 인기 태그</h2>
+        <div className="chart-section">
+          <h2>인기 태그</h2>
           <div className="tag-cloud">
             {stats.top_tags.length > 0 ? (
               stats.top_tags.map((tag, idx) => (
-                <span 
-                  key={idx} 
+                <span
+                  key={idx}
                   className="tag-item"
                   style={{ fontSize: `${Math.max(0.8, Math.min(1.5, 0.8 + tag.count * 0.1))}rem` }}
                 >

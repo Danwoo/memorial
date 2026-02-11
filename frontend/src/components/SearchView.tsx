@@ -1,8 +1,21 @@
 import { useState } from 'react'
+import { Globe, FileText, StickyNote, File, SlidersHorizontal, SearchX } from 'lucide-react'
 import type { SearchResult } from '../types'
 import { searchMemories } from '../api'
 import { getSourceIcon, getSimilarityLevel, formatDateKR } from '../utils'
 import './SearchView.css'
+
+const SOURCE_ICONS: Record<string, React.ReactNode> = {
+  Globe: <Globe size={16} />,
+  FileText: <FileText size={16} />,
+  StickyNote: <StickyNote size={16} />,
+  File: <File size={16} />,
+}
+
+function renderSourceIcon(type: string) {
+  const iconName = getSourceIcon(type)
+  return SOURCE_ICONS[iconName] ?? <File size={16} />
+}
 
 export default function SearchView() {
   const [query, setQuery] = useState('')
@@ -52,7 +65,7 @@ export default function SearchView() {
   return (
     <div className="search-view">
       <div className="search-header">
-        <h1>🔍 의미 검색</h1>
+        <h1>의미 검색</h1>
         <p className="search-subtitle">자연어로 기억을 검색하세요</p>
       </div>
 
@@ -66,13 +79,13 @@ export default function SearchView() {
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <button 
+          <button
             className="btn btn-secondary filter-toggle"
             onClick={() => setShowFilters(!showFilters)}
           >
-            ⚙️ {hasFilters ? '필터 적용됨' : '필터'}
+            <SlidersHorizontal size={16} /> {hasFilters ? '필터 적용됨' : '필터'}
           </button>
-          <button 
+          <button
             className="btn btn-primary search-btn"
             onClick={handleSearch}
             disabled={isSearching || !query.trim()}
@@ -80,26 +93,26 @@ export default function SearchView() {
             {isSearching ? '검색 중...' : '검색'}
           </button>
         </div>
-        
+
         {showFilters && (
           <div className="filter-panel">
             <div className="filter-group">
               <label>소스 타입</label>
-              <select 
-                value={sourceFilter} 
+              <select
+                value={sourceFilter}
                 onChange={e => setSourceFilter(e.target.value)}
               >
                 <option value="">전체</option>
-                <option value="WEB">🌐 웹페이지</option>
-                <option value="PDF">📄 PDF</option>
-                <option value="NOTE">📝 메모</option>
+                <option value="WEB">웹페이지</option>
+                <option value="PDF">PDF</option>
+                <option value="NOTE">메모</option>
               </select>
             </div>
-            
+
             <div className="filter-group">
               <label>기간</label>
-              <select 
-                value={daysFilter} 
+              <select
+                value={daysFilter}
                 onChange={e => setDaysFilter(e.target.value)}
               >
                 <option value="">전체 기간</option>
@@ -109,7 +122,7 @@ export default function SearchView() {
                 <option value="365">최근 1년</option>
               </select>
             </div>
-            
+
             {hasFilters && (
               <button className="btn btn-ghost clear-filters" onClick={clearFilters}>
                 필터 초기화
@@ -127,7 +140,7 @@ export default function SearchView() {
           </div>
         ) : searched && results.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">🤔</div>
+            <SearchX size={48} className="state-icon" />
             <h3>관련 기억을 찾지 못했습니다</h3>
             <p>다른 키워드로 검색해보세요</p>
           </div>
@@ -135,7 +148,7 @@ export default function SearchView() {
           results.map(result => (
             <div key={result.id} className="result-card glass-card">
               <div className="result-header">
-                <span className="source-badge">{getSourceIcon(result.source_type)}</span>
+                <span className="source-badge">{renderSourceIcon(result.source_type)}</span>
                 <h3 className="result-title">{result.title}</h3>
                 <span className={`similarity-badge ${getSimilarityLevel(result.similarity)}`}>
                   {Math.round(result.similarity * 100)}% 일치
