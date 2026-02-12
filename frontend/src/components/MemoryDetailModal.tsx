@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { X, ExternalLink, Trash2, Loader2, Globe, FileText, StickyNote, File, Tag } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import type { MemoryDetail, RelatedMemory } from '../types'
 import { fetchMemoryDetail, deleteMemory, fetchRelatedMemoriesById } from '../api'
 import { formatDateKR } from '../utils'
@@ -32,6 +33,7 @@ interface MemoryDetailModalProps {
 
 export default function MemoryDetailModal({ memoryId, onClose, onDeleted }: MemoryDetailModalProps) {
   const toast = useToast()
+  const trapRef = useFocusTrap()
   const [detail, setDetail] = useState<MemoryDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -81,8 +83,8 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted }: Memo
   }, [memoryId, toast, onDeleted])
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="memory-detail-modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose} ref={trapRef}>
+      <div className="memory-detail-modal" role="dialog" aria-modal="true" aria-label="메모리 상세" onClick={e => e.stopPropagation()}>
         <div className="memory-detail-header">
           <h2>메모리 상세</h2>
           <button className="modal-close-btn" onClick={onClose} type="button">

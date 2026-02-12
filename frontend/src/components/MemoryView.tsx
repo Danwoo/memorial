@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useSearchParams } from 'react-router-dom'
 import {
   Globe, FileText, StickyNote, File, FolderOpen, Upload, Plus,
@@ -44,6 +45,7 @@ export default function MemoryView() {
 
   // ── 추가 모달 상태 ──
   const [showAddModal, setShowAddModal] = useState(false)
+  const addModalTrapRef = useFocusTrap(showAddModal)
   const [newUrl, setNewUrl] = useState('')
   const [newNote, setNewNote] = useState('')
   const [pdfFile, setPdfFile] = useState<File | null>(null)
@@ -492,8 +494,8 @@ export default function MemoryView() {
       )}
 
       {showAddModal && (
-        <div className="modal-overlay" onClick={resetAddModal}>
-          <div className="modal-content card" onClick={e => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={resetAddModal} ref={addModalTrapRef}>
+          <div className="modal-content card" role="dialog" aria-modal="true" aria-label="새 메모리 추가" onClick={e => e.stopPropagation()}>
             <h2>새 메모리 추가</h2>
 
             <div className="modal-tabs">
