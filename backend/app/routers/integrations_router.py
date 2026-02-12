@@ -7,10 +7,10 @@ import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from supabase import Client
 
-from app.agents.librarian.graph import librarian_graph
 from app.config.auth import get_user_id
 from app.config.dependencies import get_db, get_kakao_channel_service
 from app.config.settings import get_settings
+from app.routers.memory_router import _process_with_librarian
 from app.schemas.integration_schema import (
     BotSettingsResponse,
     BotSettingsUpdateRequest,
@@ -27,11 +27,17 @@ from app.services.kakao_channel_service import KakaoChannelService
 
 logger = logging.getLogger(__name__)
 
+# 카카오 OAuth 액세스 토큰 기본 만료 시간 (6시간)
+KAKAO_TOKEN_EXPIRES_IN_SECONDS = 21600
+
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 
 
 @router.get("/status", response_model=IntegrationStatusResponse)
-async def get_integration_status(user_id: UUID = Depends(get_user_id)):
+async def get_integration_status(
+    user_id: UUID = Depends(get_user_id),
+    db: Client = Depends(get_db),
+):
     """Supabase Admin API로 연결된 ID 프로바이더 목록 조회."""
     settings = get_settings()
 
@@ -65,25 +71,7 @@ async def get_integration_status(user_id: UUID = Depends(get_user_id)):
                 for identity in identities
             ]
 
-            bot_enabled = False
-            bot_delivery_hour = None
-            try:
-                from app.config.database import get_supabase_client
-
-                db = get_supabase_client()
-                bot_result = await asyncio.to_thread(
-                    lambda: (
-                        db.table("kakao_bot_settings")
-                        .select("enabled, delivery_hour")
-                        .eq("user_id", str(user_id))
-                        .execute()
-                    )
-                )
-                if bot_result.data:
-                    bot_enabled = bot_result.data[0]["enabled"]
-                    bot_delivery_hour = bot_result.data[0]["delivery_hour"]
-            except Exception:
-                logger.debug("Could not fetch bot settings for status")
+            bot_enabled, bot_delivery_hour = await _fetch_bot_settings(db, user_id)
 
             return IntegrationStatusResponse(
                 email=user_data.get("email"),
@@ -96,6 +84,22 @@ async def get_integration_status(user_id: UUID = Depends(get_user_id)):
         raise HTTPException(status_code=502, detail="Auth service unavailable") from e
 
 
+async def _fetch_bot_settings(db: Client, user_id: UUID) -> tuple[bool, int | None]:
+    """봇 설정에서 enabled, delivery_hour 조회. 실패 시 기본값 반환."""
+    try:
+        bot_result = await asyncio.to_thread(
+            lambda: (
+                db.table("kakao_bot_settings").select("enabled, delivery_hour").eq("user_id", str(user_id)).execute()
+            )
+        )
+        if bot_result.data:
+            row = bot_result.data[0]
+            return row["enabled"], row["delivery_hour"]
+    except Exception:
+        logger.debug("Could not fetch bot settings for status")
+    return False, None
+
+
 @router.post("/store-provider-token")
 async def store_provider_token(
     request: StoreProviderTokenRequest,
@@ -104,14 +108,13 @@ async def store_provider_token(
 ):
     """카카오 provider_token을 kakao_tokens 테이블에 저장."""
     try:
-        expires_in = 21600  # 카카오 기본값: 6시간
         data = {
             "user_id": str(user_id),
             "access_token": request.provider_token,
             "refresh_token": request.provider_refresh_token,
             "token_type": "bearer",
-            "expires_in": expires_in,
-            "expires_at": int(time.time()) + expires_in,
+            "expires_in": KAKAO_TOKEN_EXPIRES_IN_SECONDS,
+            "expires_at": int(time.time()) + KAKAO_TOKEN_EXPIRES_IN_SECONDS,
         }
         await asyncio.to_thread(lambda: db.table("kakao_tokens").upsert(data, on_conflict="user_id").execute())
         return {"success": True, "message": "Provider token stored"}
@@ -207,38 +210,6 @@ def update_bot_settings(
 # --- 카카오 OpenBuilder 웹훅 ---
 
 
-async def _process_with_librarian(
-    memory_id: str,
-    content: str,
-    user_id: str,
-) -> None:
-    """백그라운드 태스크: Librarian 에이전트로 분류, 태깅, 엔티티 추출."""
-    try:
-        initial_state = {
-            "messages": [],
-            "user_id": user_id,
-            "context": {},
-            "target_memory_id": memory_id,
-            "target_text": content,
-            "classification": None,
-            "summary": None,
-            "tags": None,
-            "extracted_entities": None,
-            "extracted_relations": None,
-            "is_streaming": False,
-            "next_step": None,
-            "error": None,
-        }
-        result = await librarian_graph.ainvoke(initial_state)
-        logger.info(
-            "Librarian processed memory %s (via Kakao): classification=%s",
-            memory_id,
-            result.get("classification"),
-        )
-    except Exception:
-        logger.exception("Librarian error for memory %s (via Kakao)", memory_id)
-
-
 @router.post("/kakao/webhook")
 async def kakao_webhook(
     request: KakaoWebhookRequest,
@@ -259,35 +230,44 @@ async def kakao_webhook(
 
         # 신규 저장된 메모리에 대해 Librarian 백그라운드 처리 스케줄링
         user_id = channel_service.lookup_user_id(bot_user_key)
-        if user_id and not utterance.startswith("#") and utterance != "#도움말":
-            try:
-                from app.config.database import get_supabase_client
-
-                db = get_supabase_client()
-                latest = (
-                    db.table("memories")
-                    .select("id, content")
-                    .eq("user_id", user_id)
-                    .eq("source_type", "KAKAO")
-                    .order("created_at", desc=True)
-                    .limit(1)
-                    .execute()
-                )
-                if latest.data:
-                    memory = latest.data[0]
-                    background_tasks.add_task(
-                        _process_with_librarian,
-                        memory["id"],
-                        memory["content"],
-                        user_id,
-                    )
-            except Exception:
-                logger.exception("Failed to schedule Librarian for Kakao memory")
+        is_content_message = not utterance.startswith("#")
+        if user_id and is_content_message:
+            await _schedule_librarian_for_kakao(background_tasks, user_id)
 
         return response.model_dump()
     except Exception:
         logger.exception("카카오 웹훅 처리 중 오류 발생")
         return KakaoSkillResponse.simple_text("처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.").model_dump()
+
+
+async def _schedule_librarian_for_kakao(
+    background_tasks: BackgroundTasks,
+    user_id: str,
+) -> None:
+    """가장 최근 카카오 메모리에 대해 Librarian 백그라운드 처리 스케줄링."""
+    try:
+        from app.config.database import get_supabase_client
+
+        db = get_supabase_client()
+        latest = (
+            db.table("memories")
+            .select("id, content")
+            .eq("user_id", user_id)
+            .eq("source_type", "KAKAO")
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if latest.data:
+            memory = latest.data[0]
+            background_tasks.add_task(
+                _process_with_librarian,
+                memory["id"],
+                memory["content"],
+                user_id,
+            )
+    except Exception:
+        logger.exception("Failed to schedule Librarian for Kakao memory")
 
 
 # --- 채널 연동 관리 ---

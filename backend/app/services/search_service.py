@@ -6,6 +6,13 @@ from app.repositories.memory_repository import MemoryRepository
 from app.repositories.vector_repository import VectorRepository
 from app.utils import parse_iso_datetime
 
+# 검색 결과에서 content 필드의 최대 미리보기 길이
+SEARCH_CONTENT_PREVIEW_LENGTH = 500
+# 벡터 검색 시 클라이언트 측 필터링 여유분 배수
+SEARCH_OVERSAMPLE_FACTOR = 2
+# 관련 메모리 검색 기본 유사도 임계값
+RELATED_SIMILARITY_THRESHOLD = 0.3
+
 
 class SearchService:
     """시맨틱 검색 및 추천 비즈니스 로직."""
@@ -38,10 +45,10 @@ class SearchService:
         if tags:
             filters_applied["tags"] = tags
 
-        # 필터링 여유분을 고려하여 2배 조회
+        # 클라이언트 측 필터링 여유분을 고려하여 배수 조회
         results = await self.vector_repo.similarity_search(
             query=query,
-            limit=limit * 2,
+            limit=limit * SEARCH_OVERSAMPLE_FACTOR,
             threshold=threshold,
             filters=filters,
         )
@@ -71,7 +78,7 @@ class SearchService:
                 {
                     "id": str(r.get("id", "")),
                     "title": r.get("title", "Untitled"),
-                    "content": r.get("content", "")[:500],
+                    "content": r.get("content", "")[:SEARCH_CONTENT_PREVIEW_LENGTH],
                     "summary": r.get("summary"),
                     "source_type": r.get("source_type", "NOTE"),
                     "similarity": r.get("similarity", 0),
@@ -109,7 +116,7 @@ class SearchService:
         similar = await self.vector_repo.similarity_search(
             query=query_text,
             limit=limit + 1,
-            threshold=0.3,
+            threshold=RELATED_SIMILARITY_THRESHOLD,
             filters={"user_id": str(user_id)},
         )
 

@@ -1,6 +1,3 @@
-"""
-Pytest Configuration
-"""
 import pytest
 
 

@@ -15,6 +15,17 @@ logger = logging.getLogger(__name__)
 
 MAX_MEMORIES_IN_DIGEST = 10
 MAX_JOURNALS_IN_DIGEST = 5
+MAX_DIGEST_TOPICS = 5
+# 다이제스트 미리보기 길이
+MEMORY_SUMMARY_PREVIEW_LENGTH = 150
+JOURNAL_PREVIEW_LENGTH = 100
+QUESTION_CONTEXT_PREVIEW_LENGTH = 100
+# 질문 생성에 참조할 최대 항목 수
+MAX_MEMORY_CONTEXT_ITEMS = 5
+MAX_JOURNAL_CONTEXT_ITEMS = 2
+MAX_GENERATED_QUESTIONS = 2
+# 저널 조회 제한
+MAX_JOURNAL_FETCH_LIMIT = 20
 
 DIGEST_QUESTION_PROMPT = """Based on the user's collected memories from today, generate 1-2 thoughtful questions
 to help them reflect on their day. Focus on:
@@ -37,10 +48,6 @@ class DigestService:
         self.memory_repo = memory_repo
         self.journal_repo = journal_repo
         self.chat_repo = chat_repo
-
-    @staticmethod
-    def _parse_iso_datetime(iso_str: str) -> datetime:
-        return parse_iso_datetime(iso_str)
 
     async def get_today_digest(self, user_id: UUID, target_date: datetime | None = None) -> dict[str, Any]:
         """하루 활동 종합 다이제스트 조회.
@@ -73,7 +80,7 @@ class DigestService:
                     "id": str(memory.get("id", "")),
                     "title": memory.get("title", "Untitled"),
                     "type": memory.get("source_type", "UNKNOWN"),
-                    "summary": memory.get("summary") or memory.get("content", "")[:150],
+                    "summary": memory.get("summary") or memory.get("content", "")[:MEMORY_SUMMARY_PREVIEW_LENGTH],
                     "tags": memory.get("tags") or [],
                     "created_at": memory.get("created_at", ""),
                 }
@@ -83,13 +90,13 @@ class DigestService:
                 {
                     "id": str(journal.get("id", "")),
                     "mood": journal.get("mood", "NEUTRAL"),
-                    "preview": journal.get("content", "")[:100],
+                    "preview": journal.get("content", "")[:JOURNAL_PREVIEW_LENGTH],
                     "created_at": journal.get("created_at", ""),
                 }
                 for journal in journals[:MAX_JOURNALS_IN_DIGEST]
             ],
             "chats": chats,
-            "insights": {"main_topics": main_topics[:5], "suggested_questions": suggested_questions},
+            "insights": {"main_topics": main_topics[:MAX_DIGEST_TOPICS], "suggested_questions": suggested_questions},
         }
 
     async def _get_today_memories(self, start: datetime, end: datetime, user_id: UUID | None = None) -> list[dict]:
@@ -102,7 +109,7 @@ class DigestService:
                 created_at_str = memory.get("created_at", "")
                 if created_at_str:
                     try:
-                        created_at = self._parse_iso_datetime(created_at_str)
+                        created_at = parse_iso_datetime(created_at_str)
                         if start <= created_at <= end:
                             today_memories.append(memory)
                     except (ValueError, TypeError) as e:
@@ -118,7 +125,7 @@ class DigestService:
         try:
             journals = await self.journal_repo.get_journals(
                 user_id,
-                limit=20,
+                limit=MAX_JOURNAL_FETCH_LIMIT,
             )
 
             today_journals = []
@@ -126,7 +133,7 @@ class DigestService:
                 created_at_str = journal.get("created_at", "")
                 if created_at_str:
                     try:
-                        created_at = self._parse_iso_datetime(created_at_str)
+                        created_at = parse_iso_datetime(created_at_str)
                         if created_at.date() == today:
                             today_journals.append(journal)
                     except (ValueError, TypeError) as e:
@@ -154,14 +161,14 @@ class DigestService:
 
         context_parts = []
 
-        for memory in memories[:5]:
+        for memory in memories[:MAX_MEMORY_CONTEXT_ITEMS]:
             title = memory.get("title", "Untitled")
-            summary = memory.get("summary") or memory.get("content", "")[:100]
+            summary = memory.get("summary") or memory.get("content", "")[:QUESTION_CONTEXT_PREVIEW_LENGTH]
             context_parts.append(f"- {title}: {summary}")
 
-        for journal in journals[:2]:
+        for journal in journals[:MAX_JOURNAL_CONTEXT_ITEMS]:
             mood = journal.get("mood", "NEUTRAL")
-            preview = journal.get("content", "")[:100]
+            preview = journal.get("content", "")[:QUESTION_CONTEXT_PREVIEW_LENGTH]
             context_parts.append(f"- [Journal, Mood: {mood}] {preview}")
 
         if not context_parts:
@@ -177,7 +184,7 @@ class DigestService:
 
             response = await llm.ainvoke(messages)
             questions = [q.strip() for q in response.content.split("\n") if q.strip()]
-            return questions[:2]
+            return questions[:MAX_GENERATED_QUESTIONS]
 
         except Exception:
             logger.exception("Error generating questions")

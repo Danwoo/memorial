@@ -30,3 +30,32 @@ class AgentState(TypedDict):
     is_streaming: bool  # 프론트엔드 스트리밍 여부
     next_step: str | None  # 다음 실행 노드 (Router 결정)
     error: str | None  # 에러 메시지 (존재 시 중단)
+
+
+def build_librarian_initial_state(
+    memory_id: str,
+    content: str,
+    user_id: str,
+) -> AgentState:
+    """Librarian 그래프 실행을 위한 초기 상태 생성.
+
+    Args:
+        memory_id: 처리 대상 메모리 ID
+        content: 분석 대상 본문 텍스트
+        user_id: 소유 사용자 ID
+    """
+    return {
+        "messages": [],
+        "user_id": user_id,
+        "context": {},
+        "target_memory_id": memory_id,
+        "target_text": content,
+        "classification": None,
+        "summary": None,
+        "tags": None,
+        "extracted_entities": None,
+        "extracted_relations": None,
+        "is_streaming": False,
+        "next_step": None,
+        "error": None,
+    }

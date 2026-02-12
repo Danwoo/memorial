@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -6,6 +7,8 @@ from supabase import Client
 
 from app.schemas.memory_schema import MemoryInDB, SourceType
 from app.utils import parse_iso_datetime
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryRepository:
@@ -48,7 +51,7 @@ class MemoryRepository:
         if result.data:
             return self._row_to_model(result.data[0])
 
-        raise Exception("Failed to create memory")
+        raise RuntimeError("Failed to create memory: DB returned no data")
 
     async def get_by_id(self, memory_id: UUID, user_id: UUID) -> MemoryInDB | None:
         """ID로 단일 Memory 조회 (user_id는 RLS용)."""
@@ -57,7 +60,7 @@ class MemoryRepository:
             if result.data:
                 return self._row_to_model(result.data)
         except Exception:
-            pass
+            logger.warning("Memory lookup failed: id=%s, user=%s", memory_id, user_id, exc_info=True)
         return None
 
     async def get_all(

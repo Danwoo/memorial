@@ -12,6 +12,19 @@ from app.repositories.vector_repository import VectorRepository
 
 logger = logging.getLogger(__name__)
 
+# 저널 입력 최소 길이 (이 미만은 의미 있는 분석 불가)
+MIN_CONTENT_LENGTH = 10
+# 대화 트랜스크립트 최대 길이 (토큰 절약)
+MAX_TRANSCRIPT_CHARS = 10000
+# 성찰 질문 최대 생성 수
+MAX_REVIEW_QUESTIONS = 3
+# 관련 메모리 검색 설정
+RELATED_MEMORIES_LIMIT = 5
+RELATED_MEMORIES_THRESHOLD = 0.4
+RELATED_MEMORY_SUMMARY_LENGTH = 100
+# 인지 왜곡당 웰니스 점수 감소분
+WELLNESS_PENALTY_PER_DISTORTION = 20
+
 REVIEWER_PROMPT = """You are a Socratic thinking partner. Based on the user's journal entry, generate 2-3 thoughtful questions that:
 1. Help the user think more deeply about their experiences
 2. Identify patterns or connections they might have missed
@@ -137,7 +150,7 @@ class JournalService:
 
     async def generate_review_questions(self, content: str) -> list[str]:
         """저널 내용 기반 소크라테스식 성찰 질문 생성 (LLM 활용)."""
-        if not content or len(content.strip()) < 10:
+        if not content or len(content.strip()) < MIN_CONTENT_LENGTH:
             return ["오늘 하루 중 가장 기억에 남는 순간은 무엇인가요?"]
 
         try:
@@ -151,7 +164,7 @@ class JournalService:
             response = await llm.ainvoke(messages)
 
             questions = [q.strip() for q in response.content.split("\n") if q.strip()]
-            return questions[:3]
+            return questions[:MAX_REVIEW_QUESTIONS]
 
         except Exception:
             logger.exception("Error generating review questions")
@@ -178,7 +191,7 @@ class JournalService:
         return {
             "has_distortions": len(detected) > 0,
             "distortions": detected,
-            "wellness_score": max(0, 100 - len(detected) * 20),
+            "wellness_score": max(0, 100 - len(detected) * WELLNESS_PENALTY_PER_DISTORTION),
         }
 
     async def generate_draft_from_conversation(self, session_id: UUID) -> str:
@@ -200,8 +213,8 @@ class JournalService:
 
         transcript = "\n\n".join(transcript_lines)
 
-        if len(transcript) > 10000:
-            transcript = transcript[:10000] + "\n\n[대화 내용 일부 생략...]"
+        if len(transcript) > MAX_TRANSCRIPT_CHARS:
+            transcript = transcript[:MAX_TRANSCRIPT_CHARS] + "\n\n[대화 내용 일부 생략...]"
 
         llm = get_creative_llm()
         lc_messages = [
@@ -217,21 +230,21 @@ class JournalService:
         if not self.vector_repo:
             return []
 
-        if not content or len(content.strip()) < 10:
+        if not content or len(content.strip()) < MIN_CONTENT_LENGTH:
             return []
 
         try:
             results = await self.vector_repo.similarity_search(
                 query=content,
-                limit=5,
-                threshold=0.4,
+                limit=RELATED_MEMORIES_LIMIT,
+                threshold=RELATED_MEMORIES_THRESHOLD,
                 filters={"user_id": str(user_id)},
             )
             return [
                 {
                     "id": m.get("id"),
                     "title": m.get("title", "Untitled"),
-                    "summary": m.get("summary") or m.get("content", "")[:100],
+                    "summary": m.get("summary") or m.get("content", "")[:RELATED_MEMORY_SUMMARY_LENGTH],
                     "type": m.get("type", "memory"),
                     "created_at": m.get("created_at"),
                     "similarity": m.get("similarity", 0),

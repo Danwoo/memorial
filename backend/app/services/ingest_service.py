@@ -4,10 +4,20 @@ from urllib.parse import urlparse
 import httpx
 from bs4 import BeautifulSoup
 
+# HTTP 요청 타임아웃 (초)
+WEB_FETCH_TIMEOUT = 30.0
+PDF_PARSE_TIMEOUT = 60.0
+# 노트 제목 자동 추출 최대 길이
+NOTE_TITLE_MAX_LENGTH = 50
+# HTML 파싱 시 제거할 태그 목록
+NOISE_TAGS = ["script", "style", "nav", "footer", "header", "aside", "noscript"]
+# Upstage Document Parse API 엔드포인트
+UPSTAGE_DOCUMENT_PARSE_URL = "https://api.upstage.ai/v1/document-ai/document-parse"
+
 
 async def fetch_url_content(url: str) -> tuple[str, str]:
     """URL에서 HTML을 가져와 클린 텍스트 추출. (title, content) 튜플 반환."""
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=WEB_FETCH_TIMEOUT) as client:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         response = await client.get(url, headers=headers, follow_redirects=True)
         response.raise_for_status()
@@ -23,7 +33,7 @@ async def fetch_url_content(url: str) -> tuple[str, str]:
     article = soup.find("article") or soup.find("main") or soup.find("body")
 
     if article:
-        for tag in article.find_all(["script", "style", "nav", "footer", "header", "aside", "noscript"]):
+        for tag in article.find_all(NOISE_TAGS):
             tag.decompose()
 
         text = article.get_text(separator="\n", strip=True)
@@ -66,9 +76,9 @@ async def process_pdf_content(file_bytes: bytes, filename: str) -> dict:
     if not settings.UPSTAGE_API_KEY:
         raise ValueError("UPSTAGE_API_KEY is not configured")
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=PDF_PARSE_TIMEOUT) as client:
         response = await client.post(
-            "https://api.upstage.ai/v1/document-ai/document-parse",
+            UPSTAGE_DOCUMENT_PARSE_URL,
             headers={"Authorization": f"Bearer {settings.UPSTAGE_API_KEY}"},
             files={"document": (filename, file_bytes, "application/pdf")},
             data={"output_formats": '["text"]'},
@@ -91,7 +101,7 @@ async def process_pdf_content(file_bytes: bytes, filename: str) -> dict:
 
 
 async def process_note_content(content: str, memo: str | None = None) -> dict:
-    """텍스트/노트 콘텐츠 처리. 첫 줄 또는 50자를 제목으로 추출.
+    """텍스트/노트 콘텐츠 처리. 첫 줄에서 NOTE_TITLE_MAX_LENGTH 이내로 제목을 추출.
 
     Returns:
         {title, content, source_url} dict
@@ -99,7 +109,11 @@ async def process_note_content(content: str, memo: str | None = None) -> dict:
     lines = content.strip().split("\n")
     first_line = lines[0] if lines else ""
 
-    title = first_line[:50] + "..." if len(first_line) > 50 else first_line or "Untitled Note"
+    title = (
+        first_line[:NOTE_TITLE_MAX_LENGTH] + "..."
+        if len(first_line) > NOTE_TITLE_MAX_LENGTH
+        else first_line or "Untitled Note"
+    )
 
     final_content = content
     if memo:

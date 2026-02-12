@@ -235,58 +235,71 @@ class GraphRepository:
         conn = self._get_conn()
         safe_limit = max(1, min(int(limit), MAX_GRAPH_QUERY_LIMIT))
 
+        results = self._query_entity_relations(conn, safe_limit, user_id)
+        nodes, links = self._build_graph_structures(results)
+
+        # 관계가 없는 고아 엔티티도 포함 (사용자 Memory에 연결된 것만)
+        if user_id:
+            self._add_orphan_entities(conn, user_id, nodes)
+
+        return {"nodes": list(nodes.values()), "links": links}
+
+    def _query_entity_relations(
+        self,
+        conn: kuzu.Connection,
+        limit: int,
+        user_id: str | None,
+    ) -> list[dict]:
+        """엔티티 간 관계 쿼리 실행."""
         if user_id:
             query = f"""
             MATCH (mem:Memory {{user_id: $user_id}})-[:MENTIONS]->(n:Entity)-[r:ENTITY_REL]->(m:Entity)<-[:MENTIONS]-(mem2:Memory {{user_id: $user_id}})
             RETURN DISTINCT
-                n.name AS source_name,
-                n.type AS source_label,
-                m.name AS target_name,
-                m.type AS target_label,
+                n.name AS source_name, n.type AS source_label,
+                m.name AS target_name, m.type AS target_label,
                 r.rel_type AS rel_type
-            LIMIT {safe_limit}
+            LIMIT {limit}
             """
-            results = self._result_to_dicts(conn.execute(query, {"user_id": user_id}))
-        else:
-            query = f"""
-            MATCH (n:Entity)-[r:ENTITY_REL]->(m:Entity)
-            RETURN
-                n.name AS source_name,
-                n.type AS source_label,
-                m.name AS target_name,
-                m.type AS target_label,
-                r.rel_type AS rel_type
-            LIMIT {safe_limit}
-            """
-            results = self._result_to_dicts(conn.execute(query))
+            return self._result_to_dicts(conn.execute(query, {"user_id": user_id}))
 
+        query = f"""
+        MATCH (n:Entity)-[r:ENTITY_REL]->(m:Entity)
+        RETURN
+            n.name AS source_name, n.type AS source_label,
+            m.name AS target_name, m.type AS target_label,
+            r.rel_type AS rel_type
+        LIMIT {limit}
+        """
+        return self._result_to_dicts(conn.execute(query))
+
+    @staticmethod
+    def _make_node(name: str, label: str) -> dict:
+        """D3 호환 노드 dict 생성."""
+        return {
+            "id": name,
+            "label": label,
+            "group": label,
+            "name": name,
+            "val": 1,
+            "properties": {},
+        }
+
+    def _build_graph_structures(
+        self,
+        results: list[dict],
+    ) -> tuple[dict[str, dict], list[dict]]:
+        """쿼리 결과에서 D3 호환 nodes/links 구조 생성."""
         nodes: dict[str, dict] = {}
-        links = []
+        links: list[dict] = []
 
         for record in results:
             source_name = record.get("source_name")
-            source_label = record.get("source_label", "Unknown")
-            if source_name and source_name not in nodes:
-                nodes[source_name] = {
-                    "id": source_name,
-                    "label": source_label,
-                    "group": source_label,
-                    "name": source_name,
-                    "val": 1,
-                    "properties": {},
-                }
-
             target_name = record.get("target_name")
-            target_label = record.get("target_label", "Unknown")
+
+            if source_name and source_name not in nodes:
+                nodes[source_name] = self._make_node(source_name, record.get("source_label", "Unknown"))
             if target_name and target_name not in nodes:
-                nodes[target_name] = {
-                    "id": target_name,
-                    "label": target_label,
-                    "group": target_label,
-                    "name": target_name,
-                    "val": 1,
-                    "properties": {},
-                }
+                nodes[target_name] = self._make_node(target_name, record.get("target_label", "Unknown"))
 
             if source_name and target_name:
                 links.append(
@@ -300,29 +313,25 @@ class GraphRepository:
                 nodes[source_name]["val"] += 1
                 nodes[target_name]["val"] += 1
 
-        # 관계가 없는 고아 엔티티도 포함 (사용자 Memory에 연결된 것만)
-        if user_id:
-            orphan_query = """
-            MATCH (mem:Memory {user_id: $user_id})-[:MENTIONS]->(e:Entity)
-            WHERE NOT EXISTS { MATCH (e)-[:ENTITY_REL]->(:Entity) }
-              AND NOT EXISTS { MATCH (:Entity)-[:ENTITY_REL]->(e) }
-            RETURN DISTINCT e.name AS name, e.type AS label
-            """
-            orphan_results = self._result_to_dicts(conn.execute(orphan_query, {"user_id": user_id}))
-            for record in orphan_results:
-                name = record.get("name")
-                label = record.get("label", "Unknown")
-                if name and name not in nodes:
-                    nodes[name] = {
-                        "id": name,
-                        "label": label,
-                        "group": label,
-                        "name": name,
-                        "val": 1,
-                        "properties": {},
-                    }
+        return nodes, links
 
-        return {"nodes": list(nodes.values()), "links": links}
+    def _add_orphan_entities(
+        self,
+        conn: kuzu.Connection,
+        user_id: str,
+        nodes: dict[str, dict],
+    ) -> None:
+        """관계가 없는 고아 엔티티를 nodes에 추가."""
+        orphan_query = """
+        MATCH (mem:Memory {user_id: $user_id})-[:MENTIONS]->(e:Entity)
+        WHERE NOT EXISTS { MATCH (e)-[:ENTITY_REL]->(:Entity) }
+          AND NOT EXISTS { MATCH (:Entity)-[:ENTITY_REL]->(e) }
+        RETURN DISTINCT e.name AS name, e.type AS label
+        """
+        for record in self._result_to_dicts(conn.execute(orphan_query, {"user_id": user_id})):
+            name = record.get("name")
+            if name and name not in nodes:
+                nodes[name] = self._make_node(name, record.get("label", "Unknown"))
 
     # ------------------------------------------------------------------
     # 관련 컨텍스트 조회 (Socrates 챗용)

@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile
 
 from app.agents.librarian.graph import librarian_graph
+from app.agents.state import build_librarian_initial_state
 from app.config.auth import get_user_id
 from app.config.dependencies import get_memory_service
 from app.schemas.memory_schema import (
@@ -18,31 +19,10 @@ from app.services.memory_service import MemoryService
 
 logger = logging.getLogger(__name__)
 
+# PDF 파일 업로드 최대 크기 (20MB)
 MAX_PDF_FILE_SIZE_BYTES = 20 * 1024 * 1024
 
 router = APIRouter(prefix="/memories", tags=["memories"])
-
-
-def _build_librarian_initial_state(
-    memory_id: str,
-    content: str,
-    user_id: str,
-) -> dict:
-    return {
-        "messages": [],
-        "user_id": user_id,
-        "context": {},
-        "target_memory_id": memory_id,
-        "target_text": content,
-        "classification": None,
-        "summary": None,
-        "tags": None,
-        "extracted_entities": None,
-        "extracted_relations": None,
-        "is_streaming": False,
-        "next_step": None,
-        "error": None,
-    }
 
 
 async def _process_with_librarian(
@@ -52,8 +32,7 @@ async def _process_with_librarian(
 ) -> None:
     """백그라운드 태스크: Librarian 에이전트로 분류, 태깅, 엔티티 추출."""
     try:
-        initial_state = _build_librarian_initial_state(memory_id, content, user_id)
-
+        initial_state = build_librarian_initial_state(memory_id, content, user_id)
         result = await librarian_graph.ainvoke(initial_state)
         logger.info(
             "Librarian processed memory %s: classification=%s",

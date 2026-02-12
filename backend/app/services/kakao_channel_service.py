@@ -1,7 +1,7 @@
 import logging
 import re
 import secrets
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from supabase import Client
 
@@ -24,6 +24,13 @@ HELP_TEXT = (
     "- #해제: 채널 연결을 해제합니다\n"
     "- #도움말: 이 안내를 표시합니다"
 )
+
+# 연결 코드 유효 시간
+LINK_CODE_EXPIRY = timedelta(minutes=30)
+# 카카오톡 메시지 미리보기 최대 길이
+KAKAO_PREVIEW_MAX_LENGTH = 20
+# 카카오톡 제목 미리보기 최대 길이
+KAKAO_TITLE_MAX_LENGTH = 30
 
 
 class KakaoChannelService:
@@ -80,12 +87,6 @@ class KakaoChannelService:
     def generate_link_code(self, user_id: str) -> dict:
         """6자리 연결 코드 생성 후 pending_channel_links에 저장."""
         code = f"MEMOIR-{secrets.token_hex(3).upper()}"
-        now = datetime.now(UTC)
-        expires_at = (
-            now.replace(minute=now.minute + 30)
-            if now.minute < 30
-            else now.replace(hour=now.hour + 1, minute=now.minute - 30)
-        )
 
         self.db.table("pending_channel_links").insert(
             {
@@ -94,8 +95,12 @@ class KakaoChannelService:
             }
         ).execute()
 
+        # DB에서 expires_at 조회 (DB 기본값 사용), 실패 시 로컬 계산으로 폴백
         result = self.db.table("pending_channel_links").select("expires_at").eq("link_code", code).limit(1).execute()
-        db_expires_at = result.data[0]["expires_at"] if result.data else expires_at.isoformat()
+        if result.data:
+            db_expires_at = result.data[0]["expires_at"]
+        else:
+            db_expires_at = (datetime.now(UTC) + LINK_CODE_EXPIRY).isoformat()
 
         return {
             "code": code,
@@ -200,7 +205,7 @@ class KakaoChannelService:
                 source_type="KAKAO",
                 source_url=processed.get("source_url"),
             )
-            title = processed["title"][:30]
+            title = processed["title"][:KAKAO_TITLE_MAX_LENGTH]
             return KakaoSkillResponse.simple_text(f"저장 완료! '{title}'이(가) Memoir에 추가되었습니다.")
         except Exception:
             logger.exception("Failed to save URL memory from Kakao: %s", url)
@@ -217,7 +222,7 @@ class KakaoChannelService:
                 source_type="KAKAO",
                 source_url=None,
             )
-            preview = text[:20] + "..." if len(text) > 20 else text
+            preview = text[:KAKAO_PREVIEW_MAX_LENGTH] + "..." if len(text) > KAKAO_PREVIEW_MAX_LENGTH else text
             return KakaoSkillResponse.simple_text(f"메모 저장 완료! '{preview}'이(가) Memoir에 추가되었습니다.")
         except Exception:
             logger.exception("Failed to save text memory from Kakao")

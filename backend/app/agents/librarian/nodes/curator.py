@@ -8,6 +8,9 @@ from app.utils import parse_llm_json_response
 
 logger = logging.getLogger(__name__)
 
+# 토큰 절약을 위한 Curator 입력 텍스트 최대 길이 (약 3000 토큰)
+CURATOR_MAX_INPUT_CHARS = 12000
+
 CURATOR_SYSTEM_PROMPT = """You are the Curator of Memoir AI. Your job is to classify and evaluate incoming text.
 
 **Input:**
@@ -64,9 +67,8 @@ async def curator_node(state: AgentState) -> dict:
         state["source_url"] = source_url
 
     # 토큰 절약을 위한 길이 제한
-    max_chars = 12000
-    if len(target_text) > max_chars:
-        target_text = target_text[:max_chars] + "\n\n[Content truncated...]"
+    if len(target_text) > CURATOR_MAX_INPUT_CHARS:
+        target_text = target_text[:CURATOR_MAX_INPUT_CHARS] + "\n\n[Content truncated...]"
 
     llm = get_analytical_llm()
 

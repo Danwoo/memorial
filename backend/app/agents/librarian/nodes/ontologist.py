@@ -4,6 +4,9 @@ from app.agents.state import AgentState
 from app.config.llm import get_analytical_llm
 from app.utils import parse_llm_json_response
 
+# 토큰 절약을 위한 Ontologist 입력 텍스트 최대 길이 (약 1500 토큰)
+ONTOLOGIST_MAX_INPUT_CHARS = 6000
+
 ONTOLOGIST_SYSTEM_PROMPT = """You are the Ontologist. You build the Knowledge Graph.
 
 **Input:**
@@ -46,10 +49,8 @@ async def ontologist_node(state: AgentState) -> dict:
     if not target_text:
         return {"extracted_entities": [], "extracted_relations": [], "next_step": "save"}
 
-    # 길이 제한
-    max_chars = 6000
-    if len(target_text) > max_chars:
-        target_text = target_text[:max_chars] + "\n\n[Content truncated...]"
+    if len(target_text) > ONTOLOGIST_MAX_INPUT_CHARS:
+        target_text = target_text[:ONTOLOGIST_MAX_INPUT_CHARS] + "\n\n[Content truncated...]"
 
     # Curator 분석 결과를 힌트로 활용
     context_hint = ""
