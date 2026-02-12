@@ -91,6 +91,16 @@ export default function MemoryView() {
     setPdfFile(null)
   }
 
+  // 추가 모달 Escape 키 닫기
+  useEffect(() => {
+    if (!showAddModal) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') resetAddModal()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [showAddModal])
+
   const addMemory = async () => {
     try {
       if (addType === 'PDF') {
