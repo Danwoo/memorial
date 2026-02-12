@@ -173,3 +173,60 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ─── 접기/펼치기 토글 (≤1024px에서만 표시) ────────────────────────────── */
+
+.memory-sidebar__collapse-toggle {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .memory-sidebar {
+    width: 100%;
+    min-width: 0;
+    border-left: none;
+    border-top: 1px solid var(--border-secondary);
+    height: auto;
+    max-height: 280px;
+    transition: max-height 0.25s ease;
+  }
+
+  .memory-sidebar--collapsed {
+    max-height: 40px;
+    overflow: hidden;
+  }
+
+  .memory-sidebar__collapse-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    width: 100%;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--bg-tertiary);
+    border: none;
+    border-bottom: 1px solid var(--border-secondary);
+    color: var(--text-secondary);
+    font-size: var(--fs-body-sm);
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .memory-sidebar__collapse-toggle span {
+    flex: 1;
+    text-align: left;
+  }
+
+  .memory-sidebar__collapse-toggle:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+
+  .memory-sidebar__list {
+    max-height: 150px;
+  }
+
+  .memory-sidebar__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}

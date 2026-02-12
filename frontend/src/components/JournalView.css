@@ -389,3 +389,21 @@
 .session-cancel:hover {
   border-color: var(--text-secondary);
 }
+
+/* ─── 반응형: ≤1024px → 에디터 + 사이드바 세로 스택 ───────────────────── */
+
+@media (max-width: 1024px) {
+  .journal-view {
+    flex-direction: column;
+  }
+
+  .journal-editor-section {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .session-picker {
+    width: 90%;
+    max-width: 420px;
+  }
+}

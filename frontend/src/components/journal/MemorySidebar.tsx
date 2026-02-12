@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { BookOpen, Sparkles, FileText, Zap } from 'lucide-react'
+import { BookOpen, Sparkles, FileText, Zap, ChevronUp, ChevronDown } from 'lucide-react'
 import type { DigestMemory, RelatedMemory } from '../../types'
 import { MemoryCard } from './MemoryCard'
 import './MemorySidebar.css'
@@ -14,6 +14,8 @@ interface MemorySidebarProps {
   onDailySummary: () => void
   onSessionDraft: () => void
   isGenerating: boolean
+  collapsed?: boolean
+  onToggleCollapse?: () => void
 }
 
 export function MemorySidebar({
@@ -24,6 +26,8 @@ export function MemorySidebar({
   onDailySummary,
   onSessionDraft,
   isGenerating,
+  collapsed,
+  onToggleCollapse,
 }: MemorySidebarProps) {
   const [activeTab, setActiveTab] = useState<SidebarTab>('today')
 
@@ -41,7 +45,15 @@ export function MemorySidebar({
   const isLoading = activeTab === 'related' && isLoadingRelated
 
   return (
-    <div className="memory-sidebar">
+    <div className={`memory-sidebar ${collapsed ? 'memory-sidebar--collapsed' : ''}`}>
+      {/* 모바일 접기/펼치기 토글 */}
+      {onToggleCollapse && (
+        <button className="memory-sidebar__collapse-toggle" onClick={onToggleCollapse} type="button">
+          <BookOpen size={16} />
+          <span>메모리 사이드바</span>
+          {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+      )}
       <div className="memory-sidebar__tabs">
         <button
           className={`sidebar-tab ${activeTab === 'today' ? 'sidebar-tab--active' : ''}`}

@@ -105,6 +105,7 @@ export default function JournalView() {
   const [tiptapEditor, setTiptapEditor] = useState<Editor | null>(null)
   const [starterQuestions, setStarterQuestions] = useState<string[]>([])
   const [isLoadingStarter, setIsLoadingStarter] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
 
   const showStarter = normalize(markdownContent) === normalize(defaultContent) && !isGenerating
 
@@ -506,6 +507,8 @@ export default function JournalView() {
         onDailySummary={handleDailySummary}
         onSessionDraft={handleSessionDraft}
         isGenerating={isGenerating}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
       />
 
       {/* 세션 선택 모달 */}
