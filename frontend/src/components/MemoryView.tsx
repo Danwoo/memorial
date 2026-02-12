@@ -9,6 +9,9 @@ import { fetchMemories, createMemory, uploadPdfMemory, searchMemories, fetchTime
 import { getSourceIcon, getSimilarityLevel, formatDateKR, formatRelativeDate } from '../utils'
 import './MemoryView.css'
 
+// 타임라인 태그 미리보기 최대 개수
+const MAX_VISIBLE_TAGS = 3
+
 const SOURCE_ICONS: Record<string, React.ReactNode> = {
   Globe: <Globe size={16} />,
   FileText: <FileText size={16} />,
@@ -29,18 +32,18 @@ export default function MemoryView() {
 
   const [activeTab, setActiveTab] = useState<MemoryTab>(initialTab)
 
-  // 전체 탭 상태
+  // ── 전체 탭 상태 ──
   const [memories, setMemories] = useState<Memory[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  // 추가 모달 상태
+  // ── 추가 모달 상태 ──
   const [showAddModal, setShowAddModal] = useState(false)
   const [newUrl, setNewUrl] = useState('')
   const [newNote, setNewNote] = useState('')
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [addType, setAddType] = useState<Extract<SourceType, 'WEB' | 'NOTE' | 'PDF'>>('WEB')
 
-  // 타임라인 탭 상태
+  // ── 타임라인 탭 상태 ──
   const [timelineData, setTimelineData] = useState<TimelineData | null>(null)
   const [timelineLoading, setTimelineLoading] = useState(false)
   const [timelineLoadingMore, setTimelineLoadingMore] = useState(false)
@@ -49,7 +52,7 @@ export default function MemoryView() {
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
-  // 검색 탭 상태
+  // ── 검색 탭 상태 ──
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -67,17 +70,25 @@ export default function MemoryView() {
     }
   }
 
-  // ── 전체 탭 ──
-  const loadMemories = async () => {
+  // ── 전체 탭 로직 ──
+
+  const loadMemories = useCallback(async () => {
     setIsLoading(true)
     try {
       const data = await fetchMemories()
       setMemories(data.items || [])
     } catch (error) {
-      console.error('Failed to load memories:', error)
+      console.error('메모리 목록 로드 실패:', error)
     } finally {
       setIsLoading(false)
     }
+  }, [])
+
+  const resetAddModal = () => {
+    setShowAddModal(false)
+    setNewUrl('')
+    setNewNote('')
+    setPdfFile(null)
   }
 
   const addMemory = async () => {
@@ -91,21 +102,19 @@ export default function MemoryView() {
           : { sourceType: 'NOTE', content: newNote }
         await createMemory(payload)
       }
-      setShowAddModal(false)
-      setNewUrl('')
-      setNewNote('')
-      setPdfFile(null)
+      resetAddModal()
       loadMemories()
     } catch (error) {
-      console.error('Failed to add memory:', error)
+      console.error('메모리 추가 실패:', error)
     }
   }
 
   useEffect(() => {
     loadMemories()
-  }, [])
+  }, [loadMemories])
 
-  // ── 타임라인 탭 ──
+  // ── 타임라인 탭 로직 ──
+
   const loadTimeline = useCallback(async (pageNum: number, append = false) => {
     try {
       if (pageNum === 1) setTimelineLoading(true)
@@ -114,6 +123,7 @@ export default function MemoryView() {
       const newData = await fetchTimeline(pageNum)
 
       if (append) {
+        // 기존 타임라인 데이터에 새 페이지를 병합 (같은 날짜 그룹이면 합침)
         setTimelineData(prev => {
           if (!prev) return newData
           const merged = prev.timeline.map(g => ({
@@ -134,7 +144,7 @@ export default function MemoryView() {
         setTimelineData(newData)
       }
     } catch (err) {
-      setTimelineError(err instanceof Error ? err.message : 'Unknown error')
+      setTimelineError(err instanceof Error ? err.message : '알 수 없는 오류')
     } finally {
       setTimelineLoading(false)
       setTimelineLoadingMore(false)
@@ -147,7 +157,7 @@ export default function MemoryView() {
     }
   }, [activeTab, timelineData, loadTimeline])
 
-  // 무한 스크롤
+  // 무한 스크롤: 하단 트리거 요소가 뷰포트에 진입하면 다음 페이지 로드
   useEffect(() => {
     if (activeTab !== 'timeline') return
     if (observerRef.current) observerRef.current.disconnect()
@@ -167,7 +177,8 @@ export default function MemoryView() {
     return () => observerRef.current?.disconnect()
   }, [activeTab, timelineData?.has_more, timelineLoadingMore, timelinePage, loadTimeline])
 
-  // ── 검색 탭 ──
+  // ── 검색 탭 로직 ──
+
   const handleSearch = async () => {
     if (!searchQuery.trim()) return
     setIsSearching(true)
@@ -180,7 +191,7 @@ export default function MemoryView() {
       })
       setSearchResults(data.results || [])
     } catch (error) {
-      console.error('Search failed:', error)
+      console.error('검색 실패:', error)
       setSearchResults([])
     } finally {
       setIsSearching(false)
@@ -198,7 +209,8 @@ export default function MemoryView() {
 
   const hasFilters = sourceFilter || daysFilter
 
-  // ── 렌더링 ──
+  // ── 탭별 렌더링 ──
+
   const renderAllTab = () => (
     <div className="memory-grid">
       {isLoading ? (
@@ -220,7 +232,7 @@ export default function MemoryView() {
               <p className="memory-summary">{memory.summary}</p>
             )}
             <div className="memory-meta">
-              <span>{new Date(memory.created_at).toLocaleDateString('ko-KR')}</span>
+              <span>{formatDateKR(memory.created_at)}</span>
             </div>
           </div>
         ))
@@ -281,11 +293,11 @@ export default function MemoryView() {
                   )}
                   {memory.tags && memory.tags.length > 0 && (
                     <div className="item-tags">
-                      {memory.tags.slice(0, 3).map((tag, tagIdx) => (
+                      {memory.tags.slice(0, MAX_VISIBLE_TAGS).map((tag, tagIdx) => (
                         <span key={tagIdx} className="tag">#{tag}</span>
                       ))}
-                      {memory.tags.length > 3 && (
-                        <span className="tag-more">+{memory.tags.length - 3}</span>
+                      {memory.tags.length > MAX_VISIBLE_TAGS && (
+                        <span className="tag-more">+{memory.tags.length - MAX_VISIBLE_TAGS}</span>
                       )}
                     </div>
                   )}
@@ -396,7 +408,7 @@ export default function MemoryView() {
                 )}
                 {result.tags && result.tags.length > 0 && (
                   <div className="result-tags">
-                    {result.tags.slice(0, 3).map((tag, i) => (
+                    {result.tags.slice(0, MAX_VISIBLE_TAGS).map((tag, i) => (
                       <span key={i} className="tag">#{tag}</span>
                     ))}
                   </div>
@@ -449,7 +461,7 @@ export default function MemoryView() {
       </div>
 
       {showAddModal && (
-        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+        <div className="modal-overlay" onClick={resetAddModal}>
           <div className="modal-content glass-card" onClick={e => e.stopPropagation()}>
             <h2>새 메모리 추가</h2>
 
@@ -505,7 +517,7 @@ export default function MemoryView() {
             )}
 
             <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
+              <button className="btn btn-secondary" onClick={resetAddModal}>
                 취소
               </button>
               <button className="btn btn-primary" onClick={addMemory}>

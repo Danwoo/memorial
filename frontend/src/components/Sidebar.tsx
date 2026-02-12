@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
@@ -9,8 +9,6 @@ import {
 import type { User, ChatSessionResponse } from '../types'
 import { fetchChatSessions } from '../api'
 import './Sidebar.css'
-
-// ─── 네비게이션 항목 정의 ────────────────────────────────────────────────────
 
 interface NavItem {
   to: string
@@ -26,9 +24,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/settings',  icon: <SettingsIcon size={20} />,  label: 'Settings' },
 ]
 
+// 사이드바에 표시할 최대 세션 수
 const MAX_SIDEBAR_SESSIONS = 8
-
-// ─── 컴포넌트 ───────────────────────────────────────────────────────────────
 
 interface SidebarProps {
   onLogout?: () => void
@@ -41,27 +38,34 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
   const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
   const [showSessions, setShowSessions] = useState(true)
 
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     try {
       const data = await fetchChatSessions()
       setSessions(data)
     } catch {
       // 세션 목록은 비필수 UI 요소이므로 실패 시 무시
     }
-  }
+  }, [])
 
   useEffect(() => {
     loadSessions()
-  }, [])
+  }, [loadSessions])
 
   // 채팅 페이지 진입 시 세션 목록 새로고침
   useEffect(() => {
     if (location.pathname.startsWith('/chat')) {
       loadSessions()
     }
-  }, [location.pathname])
+  }, [location.pathname, loadSessions])
 
   const isOnChatPage = location.pathname.startsWith('/chat')
+
+  /** 아바타 표시 문자: 이름 첫 글자 또는 이메일 첫 글자 */
+  const avatarInitial = user?.full_name
+    ? user.full_name[0].toUpperCase()
+    : user?.email[0].toUpperCase()
+
+  const displayName = user?.full_name || user?.email.split('@')[0]
 
   return (
     <aside className="sidebar">
@@ -129,20 +133,18 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
                 <img src={user.avatar_url} alt="Profile" className="user-avatar" />
               ) : (
                 <div className="user-avatar-placeholder">
-                  {user.full_name ? user.full_name[0].toUpperCase() : user.email[0].toUpperCase()}
+                  {avatarInitial}
                 </div>
               )}
               <div className="user-details">
-                <span className="user-name">
-                  {user.full_name || user.email.split('@')[0]}
-                </span>
+                <span className="user-name">{displayName}</span>
                 {user.full_name && (
                   <span className="user-email-sub">{user.email}</span>
                 )}
               </div>
             </div>
             {onLogout && (
-              <button className="logout-btn" onClick={onLogout} title="Logout">
+              <button className="logout-btn" onClick={onLogout} title="로그아웃">
                 <LogOut size={16} />
               </button>
             )}

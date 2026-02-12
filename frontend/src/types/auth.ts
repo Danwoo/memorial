@@ -1,4 +1,3 @@
-/** Authenticated user information */
 export interface User {
   id: string
   email: string
@@ -7,5 +6,4 @@ export interface User {
   avatar_url?: string
 }
 
-/** Available navigation views */
-export type View = 'chat' | 'memories' | 'graph' | 'search' | 'dashboard' | 'timeline' | 'journal'
+export type View = 'chat' | 'memories' | 'graph' | 'journal' | 'settings'

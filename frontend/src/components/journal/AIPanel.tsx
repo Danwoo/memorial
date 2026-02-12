@@ -4,6 +4,9 @@ import type { ReviewQuestionsResponse, InsightsResponse } from '../../types'
 import { fetchReviewQuestions, fetchInsights } from '../../api'
 import './AIPanel.css'
 
+// AI 분석을 위한 최소 글자 수
+const MIN_CONTENT_LENGTH_FOR_ANALYSIS = 20
+
 interface AIPanelProps {
   content: string
   onInsertQuestion: (question: string) => void
@@ -17,8 +20,8 @@ export function AIPanel({ content, onInsertQuestion }: AIPanelProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleLoadAnalysis = async () => {
-    if (!content.trim() || content.trim().length < 20) {
-      alert('분석하려면 20자 이상 작성해주세요.')
+    if (!content.trim() || content.trim().length < MIN_CONTENT_LENGTH_FOR_ANALYSIS) {
+      alert(`분석하려면 ${MIN_CONTENT_LENGTH_FOR_ANALYSIS}자 이상 작성해주세요.`)
       return
     }
     setIsOpen(true)

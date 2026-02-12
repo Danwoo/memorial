@@ -1,7 +1,5 @@
-/** Source types for memory entries (matches backend SourceType) */
 export type SourceType = 'WEB' | 'PDF' | 'NOTE' | 'KAKAO' | 'CHAT_HISTORY' | 'JOURNAL'
 
-/** A stored memory item */
 export interface Memory {
   id: string
   title: string
@@ -11,13 +9,11 @@ export interface Memory {
   tags?: string[]
 }
 
-/** Payload for creating a web-based memory */
 export interface MemoryCreateWeb {
   sourceType: 'WEB'
   url: string
 }
 
-/** Payload for creating a note-based memory */
 export interface MemoryCreateNote {
   sourceType: 'NOTE'
   content: string
@@ -25,7 +21,6 @@ export interface MemoryCreateNote {
 
 export type MemoryCreatePayload = MemoryCreateWeb | MemoryCreateNote
 
-/** Related memory shown in journal context sidebar */
 export interface RelatedMemory {
   id: string
   title: string
@@ -35,7 +30,6 @@ export interface RelatedMemory {
   similarity: number
 }
 
-/** Search result returned from semantic search */
 export interface SearchResult {
   id: string
   title: string

@@ -75,7 +75,7 @@
   flex-shrink: 0;
 }
 
-/* ─── Chat Session List ─────────────────────────────────────────────────── */
+/* ─── 채팅 세션 목록 ──────────────────────────────────────────────────── */
 
 .session-section {
   margin-top: var(--space-sm);
@@ -146,7 +146,7 @@
   white-space: nowrap;
 }
 
-/* ─── Footer ───────────────────────────────────────────────────────────── */
+/* ─── 푸터 ─────────────────────────────────────────────────────────────── */
 
 .sidebar-footer {
   padding: var(--space-md);
@@ -254,5 +254,5 @@
 
 .logout-btn:hover {
   background-color: var(--bg-secondary);
-  color: var(--error);
+  color: var(--color-error);
 }

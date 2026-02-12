@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ReactNode } from 'react'
+import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -10,7 +10,9 @@ import type { ChatMessage, ChatMode, ChatModeOption, ChatLocationState, DigestDa
 import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream, fetchDigest } from '../api'
 import './ChatView.css'
 
-// Lucide icon map keyed by mode value (avoids changing ChatModeOption.icon type)
+const ERROR_MESSAGE = '죄송합니다, 오류가 발생했습니다. 다시 시도해주세요.'
+
+// ChatMode에 대응하는 아이콘 맵 (ChatModeOption.icon은 문자열이므로 별도 매핑)
 const MODE_ICONS: Record<string, ReactNode> = {
   '': <MessageSquare size={16} />,
   'insight': <Lightbulb size={16} />,
@@ -65,8 +67,7 @@ export default function ChatView() {
       setSessionId(null)
       setMessages([])
       if (state.mode) setMode(state.mode as ChatMode)
-      const topicMessage = `${state.topic}에 대해 이야기하고 싶어. 내가 저장한 관련 지식을 바탕으로 대화해줘.`
-      setInput(topicMessage)
+      setInput(`${state.topic}에 대해 이야기하고 싶어. 내가 저장한 관련 지식을 바탕으로 대화해줘.`)
       window.history.replaceState({}, '')
     }
   }, [location.state])
@@ -94,13 +95,13 @@ export default function ChatView() {
     }
   }, [])
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  }, [])
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages, scrollToBottom])
 
   const loadHistory = async (sid: string) => {
     setIsLoadingHistory(true)
@@ -108,7 +109,7 @@ export default function ChatView() {
       const history = await fetchChatHistory(sid)
       setMessages(history)
     } catch (error) {
-      console.error('Failed to load chat history:', error)
+      console.error('채팅 히스토리 로드 실패:', error)
     } finally {
       setIsLoadingHistory(false)
     }
@@ -132,21 +133,18 @@ export default function ChatView() {
         const session = await createChatSession()
         currentSessionId = session.id
         setSessionId(currentSessionId)
-        // URL에 세션 ID 반영 (히스토리 교체)
         navigate(`/chat/${currentSessionId}`, { replace: true })
       }
 
-      // 메시지 전송 후 SSE 응답 수신
       const response = await sendChatMessage(
         currentSessionId,
         { content: userMessage, mode: mode || undefined },
         abortController.signal,
       )
 
-      // 어시스턴트 메시지 플레이스홀더 추가
+      // 어시스턴트 메시지 플레이스홀더 추가 후 SSE 스트림으로 실시간 갱신
       setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
-      // SSE 스트림을 읽으며 실시간으로 메시지 업데이트
       await readSSEStream(response, (accumulated) => {
         setMessages(prev => {
           const updated = [...prev]
@@ -155,14 +153,9 @@ export default function ChatView() {
         })
       })
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return
-      }
-      console.error('Error sending message:', error)
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: '죄송합니다, 오류가 발생했습니다. 다시 시도해주세요.'
-      }])
+      if (error instanceof DOMException && error.name === 'AbortError') return
+      console.error('메시지 전송 실패:', error)
+      setMessages(prev => [...prev, { role: 'assistant', content: ERROR_MESSAGE }])
     } finally {
       abortControllerRef.current = null
       setIsLoading(false)
@@ -176,11 +169,12 @@ export default function ChatView() {
     }
   }
 
-  const handleSuggestedQuestion = (question: string) => {
-    setInput(question)
-  }
-
   const currentMode = MODES.find(m => m.value === mode) || MODES[0]
+
+  const hasDigestContent = digest && (
+    digest.summary.memory_count > 0 || digest.insights.main_topics.length > 0
+  )
+  const hasSuggestedQuestions = digest && digest.insights.suggested_questions.length > 0
 
   return (
     <div className="chat-view">
@@ -230,7 +224,7 @@ export default function ChatView() {
             <h2>무엇이 궁금하신가요?</h2>
             <p>저장된 지식을 바탕으로 대화해보세요</p>
 
-            {digest && (digest.summary.memory_count > 0 || digest.insights.main_topics.length > 0) && (
+            {hasDigestContent && (
               <div className="welcome-stats">
                 <span>오늘 메모리 {digest.summary.memory_count}개</span>
                 <span className="welcome-stats-dot">&middot;</span>
@@ -238,10 +232,10 @@ export default function ChatView() {
               </div>
             )}
 
-            {digest && digest.insights.suggested_questions.length > 0 && (
+            {hasSuggestedQuestions && (
               <div className="suggested-questions">
                 {digest.insights.suggested_questions.map((q, idx) => (
-                  <button key={idx} className="suggested-q" onClick={() => handleSuggestedQuestion(q)}>
+                  <button key={idx} className="suggested-q" onClick={() => setInput(q)}>
                     {q}
                   </button>
                 ))}
@@ -256,10 +250,7 @@ export default function ChatView() {
           </div>
         ) : (
           messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`message ${msg.role}`}
-            >
+            <div key={idx} className={`message ${msg.role}`}>
               <div className="message-avatar">
                 {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
               </div>

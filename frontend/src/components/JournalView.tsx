@@ -20,6 +20,15 @@ import { AIPanel } from './journal/AIPanel'
 import { SessionPickerModal } from './journal/SessionPickerModal'
 import './JournalView.css'
 
+// 관련 메모리 검색을 트리거하기 위한 최소 글자 수
+const MIN_CONTENT_LENGTH_FOR_RELATED = 20
+
+// 관련 메모리 디바운스 지연 시간(ms)
+const RELATED_MEMORIES_DEBOUNCE_MS = 1500
+
+// 토스트 메시지 표시 시간(ms)
+const SAVE_STATUS_DURATION_MS = 3000
+
 const turndown = new TurndownService({
   headingStyle: 'atx',
   bulletListMarker: '-',
@@ -37,7 +46,7 @@ turndown.addRule('memoryBlock', {
   },
 })
 
-// 간이 마크다운 → HTML 변환 (StarterKit 범위)
+// 간이 마크다운 → HTML 변환 (Tiptap StarterKit 범위만 지원)
 function markdownToHtml(md: string): string {
   return md
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
@@ -55,6 +64,17 @@ function markdownToHtml(md: string): string {
     .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
     .replace(/^(?!<[hubloas]|<hr|<li|<blockquote)(.+)$/gm, '<p>$1</p>')
     .replace(/<\/blockquote>\s*<blockquote>/g, '\n')
+}
+
+/** 에디터 내용을 WYSIWYG 에디터에 동기화하는 헬퍼 */
+function syncContentToEditor(
+  content: string,
+  editorMode: EditorMode,
+  editorRef: React.RefObject<TiptapEditorHandle | null>,
+) {
+  if (editorMode === 'wysiwyg' && editorRef.current) {
+    editorRef.current.setContent(markdownToHtml(content))
+  }
 }
 
 export default function JournalView() {
@@ -81,9 +101,8 @@ export default function JournalView() {
       .catch((err) => console.error('다이제스트 로드 실패', err))
   }, [])
 
-  // 관련 메모리 1.5초 디바운스
   const loadRelatedMemories = useCallback(async (text: string) => {
-    if (!text || text.trim().length < 20) {
+    if (!text || text.trim().length < MIN_CONTENT_LENGTH_FOR_RELATED) {
       setRelatedMemories([])
       return
     }
@@ -98,15 +117,16 @@ export default function JournalView() {
     }
   }, [])
 
+  // 글 내용 변경 시 관련 메모리를 디바운스로 검색
   useEffect(() => {
-    const timer = setTimeout(() => loadRelatedMemories(markdownContent), 1500)
+    const timer = setTimeout(() => loadRelatedMemories(markdownContent), RELATED_MEMORIES_DEBOUNCE_MS)
     return () => clearTimeout(timer)
   }, [markdownContent, loadRelatedMemories])
 
-  const showSaveStatus = (type: 'success' | 'error', message: string) => {
+  const showSaveStatusToast = useCallback((type: 'success' | 'error', message: string) => {
     setSaveStatus({ type, message })
-    setTimeout(() => setSaveStatus(null), 3000)
-  }
+    setTimeout(() => setSaveStatus(null), SAVE_STATUS_DURATION_MS)
+  }, [])
 
   // WYSIWYG에서 HTML 변경 시 → 마크다운 동기화
   const handleWysiwygUpdate = useCallback((html: string) => {
@@ -114,7 +134,7 @@ export default function JournalView() {
     setMarkdownContent(md)
   }, [])
 
-  // 모드 전환
+  // 에디터 모드 전환 시 콘텐츠 포맷 동기화
   const handleModeChange = useCallback((newMode: EditorMode) => {
     if (newMode === editorMode) return
 
@@ -132,7 +152,6 @@ export default function JournalView() {
     setEditorMode(newMode)
   }, [editorMode, markdownContent])
 
-  // 마크다운 에디터 변경
   const handleMarkdownChange = useCallback((md: string) => {
     setMarkdownContent(md)
   }, [])
@@ -174,88 +193,84 @@ export default function JournalView() {
     }
   }, [handleInsertMemory])
 
-  // 저장
   const handleSave = async () => {
     if (!markdownContent.trim()) return
     setIsSaving(true)
     try {
       await saveJournal(markdownContent)
-      showSaveStatus('success', '저장되었습니다!')
+      showSaveStatusToast('success', '저장되었습니다!')
     } catch (e) {
-      console.error(e)
-      showSaveStatus('error', '저장에 실패했습니다.')
+      console.error('저널 저장 실패', e)
+      showSaveStatusToast('error', '저장에 실패했습니다.')
     } finally {
       setIsSaving(false)
     }
   }
 
-  // 하루 정리 (다이제스트 기반 템플릿)
+  // 하루 정리: 채팅 세션 기반 초안 → 실패 시 메모리 기반 템플릿 폴백
   const handleDailySummary = async () => {
     if (!digest || digest.memories.length === 0) {
-      showSaveStatus('error', '오늘 수집된 메모리가 없습니다.')
+      showSaveStatusToast('error', '오늘 수집된 메모리가 없습니다.')
       return
     }
     setIsGenerating(true)
     try {
-      const sessionList = await fetchChatSessions()
-      if (sessionList.length > 0) {
-        const latest = sessionList[0]
-        const result = await generateJournalDraft(latest.id)
-        setMarkdownContent(result.draft)
-        if (editorMode === 'wysiwyg' && editorRef.current) {
-          editorRef.current.setContent(markdownToHtml(result.draft))
+      // 채팅 세션 기반 초안 시도
+      try {
+        const sessionList = await fetchChatSessions()
+        if (sessionList.length > 0) {
+          const result = await generateJournalDraft(sessionList[0].id)
+          setMarkdownContent(result.draft)
+          syncContentToEditor(result.draft, editorMode, editorRef)
+          showSaveStatusToast('success', '하루 정리 초안이 생성되었습니다!')
+          return
         }
-        showSaveStatus('success', '하루 정리 초안이 생성되었습니다!')
-        return
+      } catch {
+        // 채팅 세션 기반 실패 시 아래 메모리 기반 템플릿으로 폴백
       }
-    } catch {
-      // 채팅 세션 기반 실패 시 폴백
-    }
 
-    // 메모리 기반 템플릿 폴백
-    const template = `# ${today} 회고\n\n## 오늘의 메모리\n\n${digest.memories
-      .map((m) => `- **[${m.type}]** ${m.title}: ${m.summary}`)
-      .join('\n')}\n\n## 하루를 돌아보며\n\n`
-    setMarkdownContent(template)
-    if (editorMode === 'wysiwyg' && editorRef.current) {
-      editorRef.current.setContent(markdownToHtml(template))
-    }
-    showSaveStatus('success', '메모리 기반 템플릿이 생성되었습니다.')
-    setIsGenerating(false)
-  }
-
-  // 세션 기반 초안
-  const handleSessionDraft = async () => {
-    setIsGenerating(true)
-    try {
-      const sessionList = await fetchChatSessions()
-      if (sessionList.length === 0) {
-        showSaveStatus('error', '대화 세션이 없습니다. 먼저 Evening 모드로 대화해보세요.')
-        return
-      }
-      setSessions(sessionList)
-      setShowSessionPicker(true)
-    } catch (e) {
-      console.error(e)
-      showSaveStatus('error', '세션 목록을 불러오지 못했습니다.')
+      // 메모리 기반 템플릿 폴백
+      const template = `# ${today} 회고\n\n## 오늘의 메모리\n\n${digest.memories
+        .map((m) => `- **[${m.type}]** ${m.title}: ${m.summary}`)
+        .join('\n')}\n\n## 하루를 돌아보며\n\n`
+      setMarkdownContent(template)
+      syncContentToEditor(template, editorMode, editorRef)
+      showSaveStatusToast('success', '메모리 기반 템플릿이 생성되었습니다.')
     } finally {
       setIsGenerating(false)
     }
   }
 
-  const handleSelectSession = async (sessionId: string) => {
+  // 세션 목록을 불러와 선택 모달 표시
+  const handleSessionDraft = async () => {
+    setIsGenerating(true)
+    try {
+      const sessionList = await fetchChatSessions()
+      if (sessionList.length === 0) {
+        showSaveStatusToast('error', '대화 세션이 없습니다. 먼저 Evening 모드로 대화해보세요.')
+        return
+      }
+      setSessions(sessionList)
+      setShowSessionPicker(true)
+    } catch (e) {
+      console.error('세션 목록 로드 실패', e)
+      showSaveStatusToast('error', '세션 목록을 불러오지 못했습니다.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleSelectSession = async (selectedSessionId: string) => {
     setShowSessionPicker(false)
     setIsGenerating(true)
     try {
-      const result = await generateJournalDraft(sessionId)
+      const result = await generateJournalDraft(selectedSessionId)
       setMarkdownContent(result.draft)
-      if (editorMode === 'wysiwyg' && editorRef.current) {
-        editorRef.current.setContent(markdownToHtml(result.draft))
-      }
-      showSaveStatus('success', 'AI 초안이 생성되었습니다!')
+      syncContentToEditor(result.draft, editorMode, editorRef)
+      showSaveStatusToast('success', 'AI 초안이 생성되었습니다!')
     } catch (e) {
-      console.error(e)
-      showSaveStatus('error', '초안 생성에 실패했습니다.')
+      console.error('초안 생성 실패', e)
+      showSaveStatusToast('error', '초안 생성에 실패했습니다.')
     } finally {
       setIsGenerating(false)
     }

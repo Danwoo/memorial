@@ -1,16 +1,10 @@
-/**
- * Formats a date string to Korean locale short date (e.g. "2024. 2. 7.").
- * Returns empty string if input is falsy.
- */
+/** 날짜 문자열을 한국어 로케일 단축 날짜로 포맷 (예: "2024. 2. 7.") */
 export function formatDateKR(dateStr?: string): string {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleDateString('ko-KR')
 }
 
-/**
- * Formats a date string with relative labels for today/yesterday,
- * falling back to a Korean locale long format.
- */
+/** 오늘/어제는 상대 표현, 그 외는 한국어 로케일 장형식 반환 */
 export function formatRelativeDate(dateStr: string): string {
   const date = new Date(dateStr)
   const today = new Date()
