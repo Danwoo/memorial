@@ -17,11 +17,11 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/chat',      icon: <MessageSquare size={20} />, label: 'Chat' },
-  { to: '/memories',  icon: <BookOpen size={20} />,      label: 'Memories' },
-  { to: '/journal',   icon: <PenLine size={20} />,       label: 'Journal' },
-  { to: '/graph',     icon: <Network size={20} />,       label: 'Graph' },
-  { to: '/settings',  icon: <SettingsIcon size={20} />,  label: 'Settings' },
+  { to: '/chat',      icon: <MessageSquare size={20} />, label: '대화' },
+  { to: '/memories',  icon: <BookOpen size={20} />,      label: '기억' },
+  { to: '/journal',   icon: <PenLine size={20} />,       label: '저널' },
+  { to: '/graph',     icon: <Network size={20} />,       label: '그래프' },
+  { to: '/settings',  icon: <SettingsIcon size={20} />,  label: '설정' },
 ]
 
 // 사이드바에 표시할 최대 세션 수

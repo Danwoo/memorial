@@ -85,7 +85,7 @@ export function EditorToolbar({ editor, mode, onModeChange }: EditorToolbarProps
             onClick={() => onModeChange(m)}
             type="button"
           >
-            {m === 'wysiwyg' ? 'WYSIWYG' : m === 'markdown' ? 'Markdown' : '뷰어'}
+            {m === 'wysiwyg' ? '편집기' : m === 'markdown' ? '마크다운' : '뷰어'}
           </button>
         ))}
       </div>

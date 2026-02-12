@@ -445,7 +445,7 @@ export default function MemoryView() {
     <div className="memory-view">
       <div className="memory-header">
         <div>
-          <h1>Memories</h1>
+          <h1>기억</h1>
           <p className="memory-subtitle">저장된 지식을 탐색하세요</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>

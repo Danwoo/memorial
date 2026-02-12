@@ -269,7 +269,7 @@ export default function GraphView() {
             </svg>
             <input
               type="text"
-              placeholder="Search nodes..."
+              placeholder="노드 검색..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch(searchQuery)}
@@ -281,7 +281,7 @@ export default function GraphView() {
       {/* 통계 정보 */}
       {!loading && !isEmptyGraph && (
         <div className="graph-stats">
-          {filteredData.nodes.length} nodes &middot; {filteredData.links.length} connections
+          노드 {filteredData.nodes.length}개 &middot; 연결 {filteredData.links.length}개
         </div>
       )}
 
@@ -289,7 +289,7 @@ export default function GraphView() {
       {loading && (
         <div className="graph-loader">
           <div className="loader-spinner" />
-          <p>Loading Knowledge Graph...</p>
+          <p>지식 그래프 로딩 중...</p>
         </div>
       )}
 
@@ -309,13 +309,13 @@ export default function GraphView() {
               <line x1="90" y1="35" x2="80" y2="70" stroke="#555" strokeWidth="1" opacity="0.4" />
             </svg>
           </div>
-          <h3>Knowledge Graph is empty</h3>
+          <h3>지식 그래프가 비어있습니다</h3>
           <p>
-            Add memories to build your knowledge graph.<br />
-            Entities and connections will be automatically extracted.
+            메모리를 추가하면 지식 그래프가 자동으로 생성됩니다.<br />
+            엔티티와 연결이 자동으로 추출됩니다.
           </p>
           <button onClick={() => navigate('/memories')} className="add-memory-btn">
-            + Add Memory
+            + 메모리 추가
           </button>
         </div>
       )}
@@ -352,7 +352,7 @@ export default function GraphView() {
       {/* 범례 */}
       {!loading && nodeTypes.length > 0 && (
         <div className="graph-legend">
-          <h4>Node Types</h4>
+          <h4>노드 유형</h4>
           <div className="legend-items">
             {nodeTypes.map(type => (
               <div
@@ -407,7 +407,7 @@ export default function GraphView() {
 
           {selectedConnections.length > 0 && (
             <div className="node-connections">
-              <h4>Connections ({selectedConnections.length})</h4>
+              <h4>연결 ({selectedConnections.length})</h4>
               <ul>
                 {selectedConnections.slice(0, 10).map((conn, i) => (
                   <li key={i}>
@@ -417,7 +417,7 @@ export default function GraphView() {
                   </li>
                 ))}
                 {selectedConnections.length > 10 && (
-                  <li className="conn-more">+{selectedConnections.length - 10} more</li>
+                  <li className="conn-more">+{selectedConnections.length - 10}개 더</li>
                 )}
               </ul>
             </div>
@@ -435,10 +435,10 @@ export default function GraphView() {
       {/* 조작 안내 */}
       {!loading && !isEmptyGraph && (
         <div className="graph-controls">
-          <span>Drag: Rotate</span>
-          <span>Scroll: Zoom</span>
-          <span>Click: Focus</span>
-          <span>Right-drag: Pan</span>
+          <span>드래그: 회전</span>
+          <span>스크롤: 확대/축소</span>
+          <span>클릭: 포커스</span>
+          <span>우클릭 드래그: 이동</span>
         </div>
       )}
     </div>
