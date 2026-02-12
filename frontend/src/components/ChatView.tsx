@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm'
 import {
   User, Bot, MessageSquareText, ArrowUp,
   MessageSquare, Lightbulb, Scale, ClipboardList, Moon, ChevronDown,
+  BookOpen, X,
 } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import type { ChatMessage, ChatMode, ChatModeOption, ChatLocationState, DigestData } from '../types'
@@ -44,6 +45,9 @@ export default function ChatView() {
   const [mode, setMode] = useState<ChatMode>('')
   const [showModes, setShowModes] = useState(false)
   const [digest, setDigest] = useState<DigestData | null>(null)
+  const [welcomeDismissed, setWelcomeDismissed] = useState(
+    () => localStorage.getItem('memoir-welcome-dismissed') === 'true'
+  )
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const modeDropdownRef = useRef<HTMLDivElement>(null)
@@ -184,6 +188,15 @@ export default function ChatView() {
 
   const currentMode = MODES.find(m => m.value === mode) || MODES[0]
 
+  const dismissWelcome = useCallback(() => {
+    localStorage.setItem('memoir-welcome-dismissed', 'true')
+    setWelcomeDismissed(true)
+  }, [])
+
+  const showWelcomeBanner = digest !== null
+    && digest.summary.memory_count === 0
+    && !welcomeDismissed
+
   const hasDigestContent = digest && (
     digest.summary.memory_count > 0 || digest.insights.main_topics.length > 0
   )
@@ -233,6 +246,24 @@ export default function ChatView() {
           </div>
         ) : messages.length === 0 ? (
           <div className="chat-empty">
+            {showWelcomeBanner && (
+              <div className="welcome-banner">
+                <button className="welcome-banner-close" onClick={dismissWelcome} type="button">
+                  <X size={16} />
+                </button>
+                <BookOpen size={32} className="welcome-banner-icon" />
+                <h3>Memoir에 오신 것을 환영합니다!</h3>
+                <p>웹 페이지, 메모, PDF 등을 저장하면 AI가 지식을 연결해줍니다.</p>
+                <button
+                  className="welcome-banner-cta"
+                  onClick={() => navigate('/memories')}
+                  type="button"
+                >
+                  메모리 추가하기
+                </button>
+              </div>
+            )}
+
             <MessageSquareText size={48} className="state-icon" />
             <h2>무엇이 궁금하신가요?</h2>
             <p>저장된 지식을 바탕으로 대화해보세요</p>

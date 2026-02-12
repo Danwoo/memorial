@@ -152,6 +152,72 @@
   margin-bottom: var(--space-sm);
 }
 
+/* 환영 배너 */
+.welcome-banner {
+  position: relative;
+  max-width: 400px;
+  padding: var(--space-lg);
+  margin-bottom: var(--space-xl);
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.welcome-banner-close {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+}
+
+.welcome-banner-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.welcome-banner-icon {
+  color: var(--accent-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.welcome-banner h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.welcome-banner p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-md);
+}
+
+.welcome-banner-cta {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.welcome-banner-cta:hover {
+  opacity: 0.9;
+}
+
 .welcome-stats {
   display: flex;
   align-items: center;
