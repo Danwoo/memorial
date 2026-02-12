@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './components/AppLayout'
@@ -7,9 +7,6 @@ import ChatView from './components/ChatView'
 import MemoryView from './components/MemoryView'
 import GraphView from './components/GraphView'
 import JournalView from './components/JournalView'
-import SearchView from './components/SearchView'
-import DashboardView from './components/DashboardView'
-import TimelineView from './components/TimelineView'
 import SettingsView from './components/SettingsView'
 import './App.css'
 
@@ -29,15 +26,17 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<DashboardView />} />
+            <Route index element={<ChatView />} />
             <Route path="chat" element={<ChatView />} />
             <Route path="chat/:sessionId" element={<ChatView />} />
             <Route path="memories" element={<MemoryView />} />
             <Route path="journal" element={<JournalView />} />
-            <Route path="search" element={<SearchView />} />
             <Route path="graph" element={<GraphView />} />
-            <Route path="timeline" element={<TimelineView />} />
             <Route path="settings" element={<SettingsView />} />
+            {/* 삭제된 라우트 리다이렉트 */}
+            <Route path="search" element={<Navigate to="/memories?tab=search" replace />} />
+            <Route path="timeline" element={<Navigate to="/memories?tab=timeline" replace />} />
+            <Route path="dashboard" element={<Navigate to="/chat" replace />} />
           </Route>
         </Routes>
       </AuthProvider>

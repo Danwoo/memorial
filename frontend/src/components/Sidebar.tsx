@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
-  MessageSquare, BookOpen, PenLine, Search, Network,
-  LayoutDashboard, Clock, Settings as SettingsIcon,
-  LogOut, ChevronDown, ChevronRight, Plus,
+  MessageSquare, BookOpen, PenLine, Network,
+  Settings as SettingsIcon,
+  LogOut, ChevronDown, ChevronRight,
 } from 'lucide-react'
 import type { User, ChatSessionResponse } from '../types'
 import { fetchChatSessions } from '../api'
@@ -22,10 +22,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/chat',      icon: <MessageSquare size={20} />, label: 'Chat' },
   { to: '/memories',  icon: <BookOpen size={20} />,      label: 'Memories' },
   { to: '/journal',   icon: <PenLine size={20} />,       label: 'Journal' },
-  { to: '/search',    icon: <Search size={20} />,        label: 'Search' },
   { to: '/graph',     icon: <Network size={20} />,       label: 'Graph' },
-  { to: '/',          icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-  { to: '/timeline',  icon: <Clock size={20} />,         label: 'Timeline' },
   { to: '/settings',  icon: <SettingsIcon size={20} />,  label: 'Settings' },
 ]
 
@@ -64,10 +61,6 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
     }
   }, [location.pathname])
 
-  const handleNewChat = () => {
-    navigate('/chat', { state: { newSession: true } })
-  }
-
   const isOnChatPage = location.pathname.startsWith('/chat')
 
   return (
@@ -84,7 +77,7 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
           <NavLink
             key={to}
             to={to}
-            end={to === '/' || to === '/chat'}
+            end={to === '/chat'}
             className={({ isActive }) =>
               `nav-item ${isActive ? 'active' : ''}`
             }
@@ -129,11 +122,6 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
       </nav>
 
       <div className="sidebar-footer">
-        <button className="btn new-chat-btn" onClick={handleNewChat}>
-          <Plus size={16} />
-          <span>New Chat</span>
-        </button>
-
         {user && (
           <div className="user-section">
             <div className="user-info">

@@ -6,8 +6,8 @@ import {
   User, Bot, MessageSquareText, ArrowUp,
   MessageSquare, Lightbulb, Scale, ClipboardList, Moon, ChevronDown,
 } from 'lucide-react'
-import type { ChatMessage, ChatMode, ChatModeOption, ChatLocationState } from '../types'
-import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream } from '../api'
+import type { ChatMessage, ChatMode, ChatModeOption, ChatLocationState, DigestData } from '../types'
+import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream, fetchDigest } from '../api'
 import './ChatView.css'
 
 // Lucide icon map keyed by mode value (avoids changing ChatModeOption.icon type)
@@ -39,8 +39,10 @@ export default function ChatView() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [mode, setMode] = useState<ChatMode>('')
   const [showModes, setShowModes] = useState(false)
+  const [digest, setDigest] = useState<DigestData | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const modeDropdownRef = useRef<HTMLDivElement>(null)
 
   // URL 파라미터로 진입 시 채팅 히스토리 로드 (예: /chat/abc-123)
   // sessionId를 의존성에서 제외: setSessionId가 재렌더링을 유발해 무한루프 방지
@@ -68,6 +70,22 @@ export default function ChatView() {
       window.history.replaceState({}, '')
     }
   }, [location.state])
+
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (modeDropdownRef.current && !modeDropdownRef.current.contains(e.target as Node)) {
+        setShowModes(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // 마운트 시 다이제스트 로드 (빈 상태 표시용)
+  useEffect(() => {
+    fetchDigest().then(setDigest).catch(() => {})
+  }, [])
 
   // 언마운트 시 진행 중인 SSE 스트림 중단
   useEffect(() => {
@@ -158,6 +176,10 @@ export default function ChatView() {
     }
   }
 
+  const handleSuggestedQuestion = (question: string) => {
+    setInput(question)
+  }
+
   const currentMode = MODES.find(m => m.value === mode) || MODES[0]
 
   return (
@@ -167,7 +189,7 @@ export default function ChatView() {
           <h1>Socrates</h1>
           <p className="chat-subtitle">당신의 지적 동반자</p>
         </div>
-        <div className="mode-selector">
+        <div className="mode-selector" ref={modeDropdownRef}>
           <button
             className="mode-toggle"
             onClick={() => setShowModes(!showModes)}
@@ -207,6 +229,25 @@ export default function ChatView() {
             <MessageSquareText size={48} className="state-icon" />
             <h2>무엇이 궁금하신가요?</h2>
             <p>저장된 지식을 바탕으로 대화해보세요</p>
+
+            {digest && (digest.summary.memory_count > 0 || digest.insights.main_topics.length > 0) && (
+              <div className="welcome-stats">
+                <span>오늘 메모리 {digest.summary.memory_count}개</span>
+                <span className="welcome-stats-dot">&middot;</span>
+                <span>주제 {digest.insights.main_topics.length}개</span>
+              </div>
+            )}
+
+            {digest && digest.insights.suggested_questions.length > 0 && (
+              <div className="suggested-questions">
+                {digest.insights.suggested_questions.map((q, idx) => (
+                  <button key={idx} className="suggested-q" onClick={() => handleSuggestedQuestion(q)}>
+                    {q}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {mode && (
               <div className="mode-active-hint">
                 {MODE_ICONS[currentMode.value]} <strong>{currentMode.label}</strong> 모드 활성화됨
