@@ -91,6 +91,30 @@ def get_mode_prompt(mode: str | None) -> str:
     return mode_prompts.get(mode, "")
 
 
+# 의도 자동 분류 키워드
+_COUNTER_KEYWORDS = ["반론", "반대", "비판", "다른 관점", "약점", "문제점", "단점", "criticism"]
+_SUMMARY_KEYWORDS = ["요약", "정리", "핵심", "줄여", "summarize"]
+_EVENING_KEYWORDS = ["하루 정리", "하루 돌아", "오늘 회고", "저녁 회고", "하루를 마무리"]
+_INSIGHT_KEYWORDS = ["깊이 생각", "분석해", "왜 그런", "근본 원인", "본질", "통찰"]
+
+
+def detect_intent(message: str) -> str | None:
+    """사용자 메시지에서 대화 의도를 키워드 기반으로 자동 분류.
+
+    반환값은 mode 문자열(insight/counter/summary/evening) 또는 None(기본).
+    """
+    msg = message.lower()
+    for keywords, mode_value in [
+        (_COUNTER_KEYWORDS, "counter"),
+        (_SUMMARY_KEYWORDS, "summary"),
+        (_EVENING_KEYWORDS, "evening"),
+        (_INSIGHT_KEYWORDS, "insight"),
+    ]:
+        if any(kw in msg for kw in keywords):
+            return mode_value
+    return None
+
+
 async def find_contradicting_memories(query: str, current_memories: list, user_id: str | None = None) -> list:
     """현재 주제와 반대되는 메모리를 벡터 검색으로 탐색."""
     vector_repo = VectorRepository(get_supabase_client())
@@ -232,6 +256,10 @@ async def prepare_socrates_context(
         query = last_message.content
         db = get_supabase_client()
         vector_repo = VectorRepository(db)
+
+        # mode가 명시적으로 전달되지 않으면 메시지에서 자동 분류
+        if not mode:
+            mode = detect_intent(query)
 
         context_memories, current_memories = await _search_vector_memories(
             query,

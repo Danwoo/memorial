@@ -11,8 +11,6 @@ export type {
 
 export type {
   ChatMessage,
-  ChatMode,
-  ChatModeOption,
   ChatMessagePayload,
   ChatStreamChunk,
   ChatSessionResponse,

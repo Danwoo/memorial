@@ -3,18 +3,8 @@ export interface ChatMessage {
   content: string
 }
 
-export type ChatMode = '' | 'insight' | 'counter' | 'summary' | 'evening'
-
-export interface ChatModeOption {
-  value: ChatMode
-  label: string
-  icon: string
-  desc: string
-}
-
 export interface ChatMessagePayload {
   content: string
-  mode?: ChatMode
 }
 
 export interface ChatStreamChunk {
@@ -33,5 +23,4 @@ export interface ChatSessionResponse {
 export interface ChatLocationState {
   newSession?: boolean
   topic?: string
-  mode?: string
 }

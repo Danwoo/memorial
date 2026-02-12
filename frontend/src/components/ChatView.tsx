@@ -1,35 +1,17 @@
-import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
   User, Bot, MessageSquareText, ArrowUp,
-  MessageSquare, Lightbulb, Scale, ClipboardList, Moon, ChevronDown,
   BookOpen, X,
 } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
-import type { ChatMessage, ChatMode, ChatModeOption, ChatLocationState, DigestData } from '../types'
+import type { ChatMessage, ChatLocationState, DigestData } from '../types'
 import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream, fetchDigest } from '../api'
 import './ChatView.css'
 
 const ERROR_MESSAGE = '죄송합니다, 오류가 발생했습니다. 다시 시도해주세요.'
-
-// ChatMode에 대응하는 아이콘 맵 (ChatModeOption.icon은 문자열이므로 별도 매핑)
-const MODE_ICONS: Record<string, ReactNode> = {
-  '': <MessageSquare size={16} />,
-  'insight': <Lightbulb size={16} />,
-  'counter': <Scale size={16} />,
-  'summary': <ClipboardList size={16} />,
-  'evening': <Moon size={16} />,
-}
-
-const MODES: ChatModeOption[] = [
-  { value: '', label: '기본', icon: 'message-square', desc: '일반 대화' },
-  { value: 'insight', label: '인사이트', icon: 'lightbulb', desc: '깊은 질문으로 사고 확장' },
-  { value: 'counter', label: '반론', icon: 'scale', desc: '반대 의견 제시' },
-  { value: 'summary', label: '요약', icon: 'clipboard-list', desc: '대화 내용 정리' },
-  { value: 'evening', label: '저녁 회고', icon: 'moon', desc: '하루 돌아보기' },
-]
 
 export default function ChatView() {
   const location = useLocation()
@@ -42,15 +24,12 @@ export default function ChatView() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
-  const [mode, setMode] = useState<ChatMode>('')
-  const [showModes, setShowModes] = useState(false)
   const [digest, setDigest] = useState<DigestData | null>(null)
   const [welcomeDismissed, setWelcomeDismissed] = useState(
     () => localStorage.getItem('memoir-welcome-dismissed') === 'true'
   )
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
-  const modeDropdownRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // URL 파라미터로 진입 시 채팅 히스토리 로드 (예: /chat/abc-123)
@@ -73,22 +52,10 @@ export default function ChatView() {
     } else if (state?.topic) {
       setSessionId(null)
       setMessages([])
-      if (state.mode) setMode(state.mode as ChatMode)
       setInput(`${state.topic}에 대해 이야기하고 싶어. 내가 저장한 관련 지식을 바탕으로 대화해줘.`)
       window.history.replaceState({}, '')
     }
   }, [location.state])
-
-  // 드롭다운 외부 클릭 시 닫기
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (modeDropdownRef.current && !modeDropdownRef.current.contains(e.target as Node)) {
-        setShowModes(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
   // 마운트 시 다이제스트 로드 (빈 상태 표시용)
   useEffect(() => {
@@ -147,7 +114,7 @@ export default function ChatView() {
 
       const response = await sendChatMessage(
         currentSessionId,
-        { content: userMessage, mode: mode || undefined },
+        { content: userMessage },
         abortController.signal,
       )
 
@@ -191,8 +158,6 @@ export default function ChatView() {
     }
   }
 
-  const currentMode = MODES.find(m => m.value === mode) || MODES[0]
-
   const dismissWelcome = useCallback(() => {
     localStorage.setItem('memoir-welcome-dismissed', 'true')
     setWelcomeDismissed(true)
@@ -213,33 +178,6 @@ export default function ChatView() {
         <div>
           <h1>Socrates</h1>
           <p className="chat-subtitle">당신의 지적 동반자</p>
-        </div>
-        <div className="mode-selector" ref={modeDropdownRef}>
-          <button
-            className="mode-toggle"
-            onClick={() => setShowModes(!showModes)}
-          >
-            <span className="mode-icon">{MODE_ICONS[currentMode.value]}</span>
-            <span>{currentMode.label}</span>
-            <ChevronDown size={14} />
-          </button>
-          {showModes && (
-            <div className="mode-dropdown">
-              {MODES.map(m => (
-                <button
-                  key={m.value}
-                  className={`mode-option ${mode === m.value ? 'active' : ''}`}
-                  onClick={() => { setMode(m.value); setShowModes(false) }}
-                >
-                  <span className="mode-icon">{MODE_ICONS[m.value]}</span>
-                  <div className="mode-info">
-                    <span className="mode-label">{m.label}</span>
-                    <span className="mode-desc">{m.desc}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
@@ -288,12 +226,6 @@ export default function ChatView() {
                     {q}
                   </button>
                 ))}
-              </div>
-            )}
-
-            {mode && (
-              <div className="mode-active-hint">
-                {MODE_ICONS[currentMode.value]} <strong>{currentMode.label}</strong> 모드 활성화됨
               </div>
             )}
           </div>
