@@ -154,13 +154,18 @@ export default function ChatView() {
       // 어시스턴트 메시지 플레이스홀더 추가 후 SSE 스트림으로 실시간 갱신
       setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
-      await readSSEStream(response, (accumulated) => {
+      const result = await readSSEStream(response, (accumulated) => {
         setMessages(prev => {
           const updated = [...prev]
           updated[updated.length - 1] = { role: 'assistant', content: accumulated }
           return updated
         })
       })
+
+      // 세션 제목이 자동 생성되면 사이드바에 알림
+      if (result.title) {
+        window.dispatchEvent(new CustomEvent('session-title-updated'))
+      }
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return
       console.error('메시지 전송 실패:', error)

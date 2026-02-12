@@ -58,6 +58,13 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
     }
   }, [location.pathname, loadSessions])
 
+  // 세션 제목 자동 생성 시 목록 새로고침
+  useEffect(() => {
+    const handler = () => loadSessions()
+    window.addEventListener('session-title-updated', handler)
+    return () => window.removeEventListener('session-title-updated', handler)
+  }, [loadSessions])
+
   const isOnChatPage = location.pathname.startsWith('/chat')
 
   /** 아바타 표시 문자: 이름 첫 글자 또는 이메일 첫 글자 */

@@ -5,7 +5,6 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 
 from app.agents.state import AgentState
 from app.config.database import get_supabase_client
-from app.config.dependencies import get_graph_repository
 from app.config.llm import get_streaming_llm
 from app.repositories.journal_repository import JournalRepository
 from app.repositories.vector_repository import VectorRepository
@@ -157,6 +156,8 @@ def _format_memory_line(memory: dict) -> str:
 async def _fetch_graph_context(query: str, limit: int = GRAPH_CONTEXT_LIMIT) -> str:
     """지식 그래프에서 관련 엔티티 조회. 포맷된 텍스트 반환."""
     try:
+        from app.config.dependencies import get_graph_repository
+
         graph_repo = get_graph_repository()
 
         keywords = [word for word in query.split() if len(word) > GRAPH_KEYWORD_MIN_LENGTH][:GRAPH_MAX_KEYWORDS]

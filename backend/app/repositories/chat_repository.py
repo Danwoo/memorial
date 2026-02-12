@@ -129,6 +129,20 @@ class ChatRepository:
             for msg in result.data
         ]
 
+    async def update_session_title(self, session_id: UUID, title: str) -> bool:
+        """세션 제목 업데이트."""
+        try:
+            await asyncio.to_thread(self._update_title, str(session_id), title)
+            return True
+        except Exception:
+            logger.exception("Error updating session title")
+            return False
+
+    async def get_message_count(self, session_id: UUID) -> int:
+        """세션의 메시지 수 조회."""
+        result = await asyncio.to_thread(self._count_messages, str(session_id))
+        return len(result.data) if result.data else 0
+
     async def delete_session(self, session_id: UUID) -> bool:
         """세션과 소속 메시지 삭제."""
         try:
@@ -164,6 +178,17 @@ class ChatRepository:
             .order("created_at", desc=False)
             .execute()
         )
+
+    def _update_title(self, session_id: str, title: str):
+        return (
+            self.db.table("chat_sessions")
+            .update({"title": title, "updated_at": datetime.now(UTC).isoformat()})
+            .eq("id", session_id)
+            .execute()
+        )
+
+    def _count_messages(self, session_id: str):
+        return self.db.table("chat_messages").select("id").eq("session_id", session_id).execute()
 
     def _delete_session(self, session_id: str):
         # DB CASCADE로 메시지도 함께 삭제

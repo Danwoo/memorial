@@ -18,6 +18,12 @@ class ChatSessionResponse(BaseModel):
     created_at: datetime
 
 
+class ChatSessionUpdate(BaseModel):
+    """채팅 세션 수정 요청."""
+
+    title: str
+
+
 class ChatMessageRequest(BaseModel):
     """채팅 메시지 전송 요청."""
 

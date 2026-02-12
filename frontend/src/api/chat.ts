@@ -25,17 +25,23 @@ export function sendChatMessage(
   return postRaw(`/chat/sessions/${sessionId}/messages`, payload, signal)
 }
 
-// SSE 스트림을 읽어 청크 단위로 콜백 호출, 전체 누적 텍스트 반환
+export interface SSEResult {
+  content: string
+  title?: string
+}
+
+// SSE 스트림을 읽어 청크 단위로 콜백 호출, 결과(누적 텍스트 + 자동 생성 제목) 반환
 export async function readSSEStream(
   response: Response,
   onChunk: (accumulated: string) => void,
-): Promise<string> {
+): Promise<SSEResult> {
   const reader = response.body?.getReader()
-  if (!reader) return ''
+  if (!reader) return { content: '' }
 
   const decoder = new TextDecoder('utf-8')
   let content = ''
   let buffer = ''
+  let title: string | undefined
 
   try {
     // eslint-disable-next-line no-constant-condition
@@ -57,7 +63,10 @@ export async function readSSEStream(
           if (data.error) {
             throw new Error(data.error)
           }
-          if (data.done) break
+          if (data.done) {
+            if (data.title) title = data.title
+            break
+          }
           if (data.content) {
             content += data.content
             onChunk(content)
@@ -72,5 +81,5 @@ export async function readSSEStream(
     reader.releaseLock()
   }
 
-  return content
+  return { content, title }
 }

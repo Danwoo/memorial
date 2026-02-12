@@ -21,6 +21,7 @@ export interface ChatStreamChunk {
   content?: string
   done?: boolean
   error?: string
+  title?: string
 }
 
 export interface ChatSessionResponse {

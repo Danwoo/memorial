@@ -10,6 +10,7 @@ from app.schemas.chat_schema import (
     ChatMessageResponse,
     ChatSessionCreate,
     ChatSessionResponse,
+    ChatSessionUpdate,
 )
 from app.services.chat_service import ChatService
 
@@ -48,6 +49,30 @@ async def list_sessions(
         )
         for s in sessions
     ]
+
+
+@router.patch("/sessions/{session_id}", response_model=ChatSessionResponse)
+async def update_session(
+    session_id: UUID,
+    data: ChatSessionUpdate,
+    user_id: UUID = Depends(get_user_id),
+    chat_service: ChatService = Depends(get_chat_service),
+):
+    """세션 제목 업데이트."""
+    session = await chat_service.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.get("user_id") != str(user_id):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    await chat_service.update_session_title(session_id, data.title)
+    session["title"] = data.title
+
+    return ChatSessionResponse(
+        id=UUID(session["id"]),
+        title=session["title"],
+        created_at=session["created_at"],
+    )
 
 
 @router.post("/sessions/{session_id}/messages")
