@@ -1,5 +1,5 @@
 import { get } from './client'
-import type { SearchResult, SearchResponse } from '../types'
+import type { SearchResult, SearchResponse, RelatedMemory } from '../types'
 
 interface SearchParams {
   q: string
@@ -17,4 +17,9 @@ export function searchMemories(params: SearchParams): Promise<SearchResponse<Sea
   if (params.days) query.set('days', params.days)
 
   return get<SearchResponse<SearchResult>>(`/search?${query}`)
+}
+
+// 특정 메모리와 관련된 메모리 목록 조회
+export function fetchRelatedMemoriesById(memoryId: string, limit = 5): Promise<RelatedMemory[]> {
+  return get<RelatedMemory[]>(`/search/related/${memoryId}?limit=${limit}`)
 }

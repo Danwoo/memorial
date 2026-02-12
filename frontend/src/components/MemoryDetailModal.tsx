@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { X, ExternalLink, Trash2, Loader2, Globe, FileText, StickyNote, File, Tag } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
-import type { MemoryDetail } from '../types'
-import { fetchMemoryDetail, deleteMemory } from '../api'
+import type { MemoryDetail, RelatedMemory } from '../types'
+import { fetchMemoryDetail, deleteMemory, fetchRelatedMemoriesById } from '../api'
 import { formatDateKR } from '../utils'
 import './MemoryDetailModal.css'
 
@@ -36,6 +36,8 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted }: Memo
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [relatedMemories, setRelatedMemories] = useState<RelatedMemory[]>([])
+  const [isLoadingRelated, setIsLoadingRelated] = useState(false)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -48,7 +50,15 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted }: Memo
   useEffect(() => {
     setIsLoading(true)
     fetchMemoryDetail(memoryId)
-      .then(setDetail)
+      .then(data => {
+        setDetail(data)
+        // 상세 정보 로드 후 관련 메모리 비동기 로드
+        setIsLoadingRelated(true)
+        fetchRelatedMemoriesById(memoryId)
+          .then(setRelatedMemories)
+          .catch(() => {}) // 관련 메모리 로드 실패는 무시 (선택적 기능)
+          .finally(() => setIsLoadingRelated(false))
+      })
       .catch(() => {
         toast.error('메모리 상세 정보를 불러오지 못했습니다.')
         onClose()
@@ -129,6 +139,34 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted }: Memo
               <h4>내용</h4>
               <div className="memory-detail-content">{detail.content}</div>
             </div>
+
+            {(isLoadingRelated || relatedMemories.length > 0) && (
+              <div className="memory-detail-section">
+                <h4>관련 메모리</h4>
+                {isLoadingRelated ? (
+                  <div className="related-loading">
+                    <Loader2 size={16} className="spin" />
+                    <span>찾는 중...</span>
+                  </div>
+                ) : relatedMemories.length > 0 ? (
+                  <div className="related-list">
+                    {relatedMemories.map(related => (
+                      <div key={related.id} className="related-item">
+                        <div className="related-title">{related.title}</div>
+                        {related.summary && (
+                          <div className="related-summary">{related.summary}</div>
+                        )}
+                        <div className="related-meta">
+                          <span className="related-similarity">
+                            {Math.round(related.similarity * 100)}% 유사
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             <div className="memory-detail-actions">
               {showConfirm ? (
