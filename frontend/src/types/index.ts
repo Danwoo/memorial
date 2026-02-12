@@ -21,6 +21,11 @@ export type {
 export type {
   JournalSavePayload,
   RelatedMemoriesPayload,
+  EditorMode,
+  InlineAIAction,
+  ReviewQuestionsResponse,
+  CognitiveDistortion,
+  InsightsResponse,
 } from './journal'
 
 export type {

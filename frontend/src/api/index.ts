@@ -1,7 +1,7 @@
 export { ApiResponseError } from './client'
 export { fetchMemories, createMemory, uploadPdfMemory } from './memories'
 export { createChatSession, fetchChatSessions, fetchChatHistory, sendChatMessage, readSSEStream } from './chat'
-export { saveJournal, fetchRelatedMemories, generateJournalDraft } from './journal'
+export { saveJournal, fetchRelatedMemories, generateJournalDraft, fetchReviewQuestions, fetchInsights, postInlineAssist } from './journal'
 export { searchMemories } from './search'
 export { fetchStats, fetchDigest } from './dashboard'
 export { fetchGraph } from './graph'
