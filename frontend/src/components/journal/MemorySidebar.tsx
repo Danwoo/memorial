@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { BookOpen, Sparkles, FileText, Zap } from 'lucide-react'
 import type { DigestMemory, RelatedMemory } from '../../types'
 import { MemoryCard } from './MemoryCard'
@@ -27,6 +27,16 @@ export function MemorySidebar({
 }: MemorySidebarProps) {
   const [activeTab, setActiveTab] = useState<SidebarTab>('today')
 
+  // 다이제스트 메모리 유형별 집계
+  const topicCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    todayMemories.forEach((m) => {
+      const type = m.type || 'etc'
+      counts[type] = (counts[type] || 0) + 1
+    })
+    return counts
+  }, [todayMemories])
+
   const memories = activeTab === 'today' ? todayMemories : relatedMemories
   const isLoading = activeTab === 'related' && isLoadingRelated
 
@@ -51,6 +61,16 @@ export function MemorySidebar({
           {isLoadingRelated && <span className="sidebar-loading-dot" />}
         </button>
       </div>
+
+      {activeTab === 'today' && Object.keys(topicCounts).length > 0 && (
+        <div className="memory-sidebar__topics">
+          {Object.entries(topicCounts).map(([type, count]) => (
+            <span key={type} className="topic-tag">
+              {type} {count}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="memory-sidebar__list">
         {isLoading ? (

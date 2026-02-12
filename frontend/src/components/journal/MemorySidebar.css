@@ -56,6 +56,24 @@
   50% { opacity: 1; }
 }
 
+/* 토픽 태그 */
+.memory-sidebar__topics {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  padding: var(--space-sm) var(--space-sm) 0;
+  flex-shrink: 0;
+}
+
+.topic-tag {
+  padding: 2px var(--space-sm);
+  border-radius: var(--radius-full);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: var(--fs-caption);
+  font-weight: 500;
+}
+
 .memory-sidebar__list {
   flex: 1;
   overflow-y: auto;

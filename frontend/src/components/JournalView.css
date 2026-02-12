@@ -89,6 +89,111 @@
   cursor: not-allowed;
 }
 
+/* 시작 도우미 */
+.journal-starter {
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  background-color: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.journal-starter__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.journal-starter__label {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.journal-template-chips {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.journal-template-chip {
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: var(--fs-body-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.journal-template-chip:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--accent-bg);
+}
+
+.journal-starter-questions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.journal-starter-question {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: var(--fs-body-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  line-height: 1.4;
+}
+
+.journal-starter-question:hover {
+  border-color: var(--accent-primary);
+  background: var(--accent-bg);
+}
+
+.journal-starter__cta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-secondary);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--fs-body-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.journal-starter__cta:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.journal-starter__cta:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.journal-starter__loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  color: var(--text-muted);
+  font-size: var(--fs-body-sm);
+}
+
 /* 에디터 영역 */
 .journal-editor-area {
   flex: 1;

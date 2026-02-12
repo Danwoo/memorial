@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Save } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { Save, Loader2, Sparkles } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import TurndownService from 'turndown'
 import type { EditorMode, RelatedMemory, DigestMemory, DigestData, ChatSessionResponse } from '../types'
@@ -9,6 +9,7 @@ import {
   generateJournalDraft,
   fetchChatSessions,
   fetchDigest,
+  fetchReviewQuestions,
 } from '../api'
 import type { Editor } from '@tiptap/react'
 import { TiptapEditor, type TiptapEditorHandle } from './journal/TiptapEditor'
@@ -92,6 +93,34 @@ export default function JournalView() {
   const [showSessionPicker, setShowSessionPicker] = useState(false)
 
   const [tiptapEditor, setTiptapEditor] = useState<Editor | null>(null)
+  const [starterQuestions, setStarterQuestions] = useState<string[]>([])
+  const [isLoadingStarter, setIsLoadingStarter] = useState(false)
+
+  const defaultContent = `# ${today} 회고\n\n오늘은...\n\n`
+  // WYSIWYG 라운드트립 시 공백이 변할 수 있으므로 정규화 비교
+  const normalize = (s: string) => s.replace(/\s+/g, ' ').trim()
+  const showStarter = normalize(markdownContent) === normalize(defaultContent) && !isGenerating
+
+  const templates = useMemo(
+    () => [
+      {
+        id: 'til',
+        label: '오늘의 TIL',
+        content: `# ${today} TIL\n\n## 오늘 배운 것\n\n\n\n## 느낀 점\n\n\n\n## 적용할 것\n\n`,
+      },
+      {
+        id: 'weekly',
+        label: '주간 회고',
+        content: `# 이번 주 회고\n\n## 잘한 점\n\n\n\n## 아쉬운 점\n\n\n\n## 다음 주 계획\n\n`,
+      },
+      {
+        id: 'free',
+        label: '자유 회고',
+        content: `# ${today} 회고\n\n`,
+      },
+    ],
+    [today],
+  )
 
   // 마운트 시 오늘의 다이제스트 로드
   useEffect(() => {
@@ -99,6 +128,19 @@ export default function JournalView() {
       .then(setDigest)
       .catch((err) => console.error('다이제스트 로드 실패', err))
   }, [])
+
+  // 다이제스트 로드 시 회고 질문 자동 생성
+  useEffect(() => {
+    if (!digest || digest.memories.length === 0) return
+    const summary = digest.memories
+      .map((m) => `[${m.type}] ${m.title}: ${m.summary}`)
+      .join('\n')
+    setIsLoadingStarter(true)
+    fetchReviewQuestions(summary)
+      .then((res) => setStarterQuestions(res.questions || []))
+      .catch(() => {})
+      .finally(() => setIsLoadingStarter(false))
+  }, [digest])
 
   const loadRelatedMemories = useCallback(async (text: string) => {
     if (!text || text.trim().length < MIN_CONTENT_LENGTH_FOR_RELATED) {
@@ -115,6 +157,41 @@ export default function JournalView() {
       setIsLoadingRelated(false)
     }
   }, [])
+
+  // 템플릿 선택 시 에디터 내용 교체
+  const handleTemplateSelect = useCallback(
+    (content: string) => {
+      setMarkdownContent(content)
+      syncContentToEditor(content, editorMode, editorRef)
+    },
+    [editorMode],
+  )
+
+  // 회고 질문 클릭 시 에디터에 삽입
+  const handleStarterQuestion = useCallback(
+    (question: string) => {
+      const content = `# ${today} 회고\n\n> Q: ${question}\n\n`
+      setMarkdownContent(content)
+      syncContentToEditor(content, editorMode, editorRef)
+    },
+    [today, editorMode],
+  )
+
+  // AI에게 질문받기 (수동 트리거)
+  const handleAskAI = useCallback(async () => {
+    const context = digest?.memories.length
+      ? digest.memories.map((m) => `[${m.type}] ${m.title}: ${m.summary}`).join('\n')
+      : '오늘 하루를 돌아보며 회고를 시작하려 합니다.'
+    setIsLoadingStarter(true)
+    try {
+      const res = await fetchReviewQuestions(context)
+      setStarterQuestions(res.questions || [])
+    } catch {
+      toast.error('질문 생성에 실패했습니다.')
+    } finally {
+      setIsLoadingStarter(false)
+    }
+  }, [digest, toast])
 
   // 글 내용 변경 시 관련 메모리를 디바운스로 검색
   useEffect(() => {
@@ -283,7 +360,7 @@ export default function JournalView() {
       <div className="journal-editor-section">
         {/* 에디터 헤더 */}
         <div className="journal-editor-header">
-          <h2>Today's Journal</h2>
+          <h2>오늘의 저널</h2>
           <div className="journal-editor-actions">
             <button
               className="journal-save-btn"
@@ -303,6 +380,60 @@ export default function JournalView() {
           mode={editorMode}
           onModeChange={handleModeChange}
         />
+
+        {/* 시작 도우미 */}
+        {showStarter && (
+          <div className="journal-starter">
+            <div className="journal-starter__section">
+              <span className="journal-starter__label">템플릿 선택</span>
+              <div className="journal-template-chips">
+                {templates.map((t) => (
+                  <button
+                    key={t.id}
+                    className="journal-template-chip"
+                    onClick={() => handleTemplateSelect(t.content)}
+                    type="button"
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {isLoadingStarter ? (
+              <div className="journal-starter__loading">
+                <Loader2 size={16} className="spin" />
+                회고 질문 생성 중...
+              </div>
+            ) : starterQuestions.length > 0 ? (
+              <div className="journal-starter__section">
+                <span className="journal-starter__label">오늘의 회고 질문</span>
+                <div className="journal-starter-questions">
+                  {starterQuestions.map((q, i) => (
+                    <button
+                      key={i}
+                      className="journal-starter-question"
+                      onClick={() => handleStarterQuestion(q)}
+                      type="button"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <button
+                className="journal-starter__cta"
+                onClick={handleAskAI}
+                disabled={isLoadingStarter}
+                type="button"
+              >
+                <Sparkles size={16} />
+                AI에게 질문받기
+              </button>
+            )}
+          </div>
+        )}
 
         {/* 에디터 영역 */}
         <div
