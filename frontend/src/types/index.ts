@@ -4,6 +4,7 @@ export type {
   MemoryCreateWeb,
   MemoryCreateNote,
   MemoryCreatePayload,
+  MemoryDetail,
   RelatedMemory,
   SearchResult,
 } from './memory'

@@ -21,6 +21,18 @@ export interface MemoryCreateNote {
 
 export type MemoryCreatePayload = MemoryCreateWeb | MemoryCreateNote
 
+export interface MemoryDetail {
+  id: string
+  title: string
+  content: string
+  summary: string | null
+  source_url: string | null
+  source_type: SourceType
+  tags: string[] | null
+  created_at: string
+  updated_at: string | null
+}
+
 export interface RelatedMemory {
   id: string
   title: string

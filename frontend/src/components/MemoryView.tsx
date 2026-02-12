@@ -8,6 +8,7 @@ import { useToast } from '../contexts/ToastContext'
 import type { Memory, MemoryCreatePayload, SourceType, SearchResult, TimelineData } from '../types'
 import { fetchMemories, createMemory, uploadPdfMemory, searchMemories, fetchTimeline } from '../api'
 import { getSourceIcon, getSimilarityLevel, formatDateKR, formatRelativeDate } from '../utils'
+import MemoryDetailModal from './MemoryDetailModal'
 import './MemoryView.css'
 
 // 타임라인 태그 미리보기 최대 개수
@@ -37,6 +38,9 @@ export default function MemoryView() {
   // ── 전체 탭 상태 ──
   const [memories, setMemories] = useState<Memory[]>([])
   const [isLoading, setIsLoading] = useState(false)
+
+  // ── 상세 모달 상태 ──
+  const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null)
 
   // ── 추가 모달 상태 ──
   const [showAddModal, setShowAddModal] = useState(false)
@@ -239,7 +243,7 @@ export default function MemoryView() {
         </div>
       ) : (
         memories.map(memory => (
-          <div key={memory.id} className="memory-card glass-card">
+          <div key={memory.id} className="memory-card glass-card" onClick={() => setSelectedMemoryId(memory.id)} style={{ cursor: 'pointer' }}>
             <div className="memory-type-badge">
               {renderSourceIcon(memory.source_type)}
             </div>
@@ -299,7 +303,7 @@ export default function MemoryView() {
             </div>
             <div className="timeline-items">
               {group.memories.map((memory) => (
-                <div key={memory.id} className="timeline-item glass-card">
+                <div key={memory.id} className="timeline-item glass-card" onClick={() => setSelectedMemoryId(memory.id)} style={{ cursor: 'pointer' }}>
                   <div className="item-header">
                     <span className="source-icon">{renderSourceIcon(memory.source_type)}</span>
                     <h3 className="item-title">{memory.title}</h3>
@@ -405,7 +409,7 @@ export default function MemoryView() {
           </div>
         ) : (
           searchResults.map(result => (
-            <div key={result.id} className="result-card glass-card">
+            <div key={result.id} className="result-card glass-card" onClick={() => setSelectedMemoryId(result.id)} style={{ cursor: 'pointer' }}>
               <div className="result-header">
                 <span className="source-badge">{renderSourceIcon(result.source_type)}</span>
                 <h3 className="result-title">{result.title}</h3>
@@ -475,6 +479,17 @@ export default function MemoryView() {
         {activeTab === 'timeline' && renderTimelineTab()}
         {activeTab === 'search' && renderSearchTab()}
       </div>
+
+      {selectedMemoryId && (
+        <MemoryDetailModal
+          memoryId={selectedMemoryId}
+          onClose={() => setSelectedMemoryId(null)}
+          onDeleted={() => {
+            setSelectedMemoryId(null)
+            loadMemories()
+          }}
+        />
+      )}
 
       {showAddModal && (
         <div className="modal-overlay" onClick={resetAddModal}>

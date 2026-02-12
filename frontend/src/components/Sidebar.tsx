@@ -4,7 +4,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
   MessageSquare, BookOpen, PenLine, Network,
   Settings as SettingsIcon,
-  LogOut, ChevronDown, ChevronRight,
+  LogOut, ChevronDown, ChevronRight, Plus,
 } from 'lucide-react'
 import type { User, ChatSessionResponse } from '../types'
 import { fetchChatSessions } from '../api'
@@ -77,6 +77,15 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
       </div>
 
       <nav className="sidebar-nav">
+        <button
+          className="new-chat-btn"
+          onClick={() => navigate('/chat', { state: { newSession: true } })}
+          type="button"
+        >
+          <Plus size={18} />
+          <span>새 대화</span>
+        </button>
+
         {NAV_ITEMS.map(({ to, icon, label }) => (
           <NavLink
             key={to}
