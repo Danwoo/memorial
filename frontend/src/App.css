@@ -21,3 +21,28 @@
   gap: var(--space-4);
   color: var(--text-secondary);
 }
+
+/* ─── 모바일 햄버거 버튼 ──────────────────────────────────────────────── */
+
+.mobile-nav-toggle {
+  display: none;
+  position: fixed;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: 998;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs);
+  color: var(--text-primary);
+  cursor: pointer;
+  line-height: 0;
+}
+
+@media (max-width: 767px) {
+  .mobile-nav-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

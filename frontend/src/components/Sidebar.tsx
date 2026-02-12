@@ -30,9 +30,11 @@ const MAX_SIDEBAR_SESSIONS = 8
 interface SidebarProps {
   onLogout?: () => void
   user?: User | null
+  mobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
-export default function Sidebar({ onLogout, user }: SidebarProps) {
+export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: SidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
@@ -74,8 +76,15 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
 
   const displayName = user?.full_name || user?.email.split('@')[0]
 
+  // 모바일에서 네비게이션 클릭 시 사이드바 닫기
+  const handleNavClick = useCallback(() => {
+    onMobileClose?.()
+  }, [onMobileClose])
+
   return (
-    <aside className="sidebar">
+    <>
+    {mobileOpen && <div className="sidebar-backdrop" onClick={onMobileClose} />}
+    <aside className={`sidebar ${mobileOpen ? 'sidebar--mobile-open' : ''}`}>
       <div className="sidebar-header">
         <div className="logo">
           <img src="/favicon.png" alt="" width={24} height={24} className="logo-icon" />
@@ -101,9 +110,10 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
             className={({ isActive }) =>
               `nav-item ${isActive ? 'active' : ''}`
             }
+            onClick={handleNavClick}
           >
             <span className="nav-icon">{icon}</span>
-            <span>{label}</span>
+            <span className="nav-label">{label}</span>
           </NavLink>
         ))}
 
@@ -168,5 +178,6 @@ export default function Sidebar({ onLogout, user }: SidebarProps) {
         )}
       </div>
     </aside>
+    </>
   )
 }

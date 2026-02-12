@@ -243,7 +243,7 @@ export default function ChatView() {
         </div>
       </div>
 
-      <div className="chat-messages">
+      <div className="chat-messages" aria-live="polite" aria-label="대화 메시지">
         {isLoadingHistory ? (
           <div className="chat-empty">
             <div className="loading-spinner"></div>
