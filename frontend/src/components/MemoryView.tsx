@@ -243,7 +243,7 @@ export default function MemoryView() {
         </div>
       ) : (
         memories.map(memory => (
-          <div key={memory.id} className="memory-card glass-card" onClick={() => setSelectedMemoryId(memory.id)} style={{ cursor: 'pointer' }}>
+          <div key={memory.id} className="memory-card card" onClick={() => setSelectedMemoryId(memory.id)} style={{ cursor: 'pointer' }}>
             <div className="memory-type-badge">
               {renderSourceIcon(memory.source_type)}
             </div>
@@ -303,7 +303,7 @@ export default function MemoryView() {
             </div>
             <div className="timeline-items">
               {group.memories.map((memory) => (
-                <div key={memory.id} className="timeline-item glass-card" onClick={() => setSelectedMemoryId(memory.id)} style={{ cursor: 'pointer' }}>
+                <div key={memory.id} className="timeline-item card" onClick={() => setSelectedMemoryId(memory.id)} style={{ cursor: 'pointer' }}>
                   <div className="item-header">
                     <span className="source-icon">{renderSourceIcon(memory.source_type)}</span>
                     <h3 className="item-title">{memory.title}</h3>
@@ -340,7 +340,7 @@ export default function MemoryView() {
 
   const renderSearchTab = () => (
     <div className="search-section">
-      <div className="search-box glass-card">
+      <div className="search-box card">
         <div className="search-main">
           <input
             type="text"
@@ -409,7 +409,7 @@ export default function MemoryView() {
           </div>
         ) : (
           searchResults.map(result => (
-            <div key={result.id} className="result-card glass-card" onClick={() => setSelectedMemoryId(result.id)} style={{ cursor: 'pointer' }}>
+            <div key={result.id} className="result-card card" onClick={() => setSelectedMemoryId(result.id)} style={{ cursor: 'pointer' }}>
               <div className="result-header">
                 <span className="source-badge">{renderSourceIcon(result.source_type)}</span>
                 <h3 className="result-title">{result.title}</h3>
@@ -493,7 +493,7 @@ export default function MemoryView() {
 
       {showAddModal && (
         <div className="modal-overlay" onClick={resetAddModal}>
-          <div className="modal-content glass-card" onClick={e => e.stopPropagation()}>
+          <div className="modal-content card" onClick={e => e.stopPropagation()}>
             <h2>새 메모리 추가</h2>
 
             <div className="modal-tabs">

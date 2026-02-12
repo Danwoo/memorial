@@ -149,7 +149,7 @@ body {
   min-height: 100vh;
 }
 
-/* Card (replaces .glass-card) */
+/* Card */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
@@ -159,13 +159,6 @@ body {
 
 .card:hover {
   border-color: var(--border-primary);
-}
-
-/* KEEP .glass-card as alias during transition */
-.glass-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-secondary);
-  border-radius: var(--radius-lg);
 }
 
 /* Buttons */
