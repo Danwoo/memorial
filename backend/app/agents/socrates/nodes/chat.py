@@ -92,9 +92,10 @@ def get_mode_prompt(mode: str | None) -> str:
     return mode_prompts.get(mode, "")
 
 
-async def find_contradicting_memories(query: str, current_memories: list) -> list:
+async def find_contradicting_memories(query: str, current_memories: list, user_id: str | None = None) -> list:
     """현재 주제와 반대되는 메모리를 벡터 검색으로 탐색."""
     vector_repo = VectorRepository(get_supabase_client())
+    filters = {"user_id": str(user_id)} if user_id else {}
 
     contradiction_queries = [
         f"disadvantages of {query}",
@@ -111,6 +112,7 @@ async def find_contradicting_memories(query: str, current_memories: list) -> lis
                 cq,
                 limit=CONTRADICTION_SEARCH_LIMIT,
                 threshold=CONTRADICTION_THRESHOLD,
+                filters=filters,
             )
             for r in results:
                 if r.get("id") not in current_ids:
@@ -125,13 +127,16 @@ async def _search_vector_memories(
     query: str,
     vector_repo: VectorRepository,
     limit: int = VECTOR_SEARCH_LIMIT,
+    user_id: str | None = None,
 ) -> tuple[str, list]:
     """벡터 스토어에서 관련 메모리 검색. (포맷된 텍스트, 원본 결과) 반환."""
     try:
+        filters = {"user_id": str(user_id)} if user_id else {}
         results = await vector_repo.similarity_search(
             query,
             limit=limit,
             threshold=VECTOR_SEARCH_THRESHOLD,
+            filters=filters,
         )
         if results:
             formatted = "\n".join(_format_memory_line(memory) for memory in results)
@@ -227,7 +232,11 @@ async def prepare_socrates_context(
         db = get_supabase_client()
         vector_repo = VectorRepository(db)
 
-        context_memories, current_memories = await _search_vector_memories(query, vector_repo)
+        context_memories, current_memories = await _search_vector_memories(
+            query,
+            vector_repo,
+            user_id=user_id,
+        )
         graph_context = await _fetch_graph_context(query)
 
         if user_id:
@@ -235,7 +244,7 @@ async def prepare_socrates_context(
             journal_context = await _fetch_journal_context(user_id, journal_repo)
 
         if mode == "counter" and current_memories:
-            contradicting_memories = await _build_contradiction_context(query, current_memories)
+            contradicting_memories = await _build_contradiction_context(query, current_memories, user_id)
 
     system_content = _assemble_system_prompt(
         mode,
@@ -248,10 +257,10 @@ async def prepare_socrates_context(
     return [SystemMessage(content=system_content), *messages]
 
 
-async def _build_contradiction_context(query: str, current_memories: list) -> str:
+async def _build_contradiction_context(query: str, current_memories: list, user_id: str | None = None) -> str:
     """반론 검색 후 포맷된 컨텍스트 문자열 반환."""
     try:
-        contradicting = await find_contradicting_memories(query, current_memories)
+        contradicting = await find_contradicting_memories(query, current_memories, user_id)
         if contradicting:
             return "\n".join(_format_memory_line(memory) for memory in contradicting)
     except Exception:

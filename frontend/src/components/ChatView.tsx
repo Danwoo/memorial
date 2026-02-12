@@ -45,6 +45,7 @@ export default function ChatView() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const modeDropdownRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // URL 파라미터로 진입 시 채팅 히스토리 로드 (예: /chat/abc-123)
   // sessionId를 의존성에서 제외: setSessionId가 재렌더링을 유발해 무한루프 방지
@@ -120,6 +121,7 @@ export default function ChatView() {
 
     const userMessage = input.trim()
     setInput('')
+    if (textareaRef.current) textareaRef.current.style.height = 'auto'
     setMessages(prev => [...prev, { role: 'user', content: userMessage }])
     setIsLoading(true)
 
@@ -161,6 +163,13 @@ export default function ChatView() {
       setIsLoading(false)
     }
   }
+
+  const adjustTextareaHeight = useCallback(() => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    textarea.style.height = 'auto'
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`
+  }, [])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -276,10 +285,14 @@ export default function ChatView() {
       <div className="chat-input-container">
         <div className="chat-input-wrapper">
           <textarea
+            ref={textareaRef}
             className="chat-input"
             placeholder="메시지를 입력하세요..."
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value)
+              adjustTextareaHeight()
+            }}
             onKeyDown={handleKeyDown}
             rows={1}
             disabled={isLoading}

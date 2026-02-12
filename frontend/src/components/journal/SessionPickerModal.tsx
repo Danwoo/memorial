@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { ChatSessionResponse } from '../../types'
 
 interface SessionPickerModalProps {
@@ -7,6 +8,14 @@ interface SessionPickerModalProps {
 }
 
 export function SessionPickerModal({ sessions, onSelect, onClose }: SessionPickerModalProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   return (
     <div className="session-picker-overlay" onClick={onClose}>
       <div className="session-picker" onClick={(e) => e.stopPropagation()}>
