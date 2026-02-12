@@ -18,6 +18,7 @@ from app.schemas.integration_schema import (
     ChannelStatusResponse,
     DeliveryLogEntry,
     IntegrationStatusResponse,
+    KakaoSkillResponse,
     KakaoWebhookRequest,
     ProviderInfo,
     StoreProviderTokenRequest,
@@ -245,44 +246,48 @@ async def kakao_webhook(
     channel_service: KakaoChannelService = Depends(get_kakao_channel_service),
 ):
     """카카오 OpenBuilder 스킬 웹훅. 인증 불필요 (카카오 서버에서 직접 호출)."""
-    utterance = request.userRequest.utterance
-    bot_user_key = request.userRequest.user.id
-    plusfriend_user_key = request.userRequest.user.properties.get("plusfriendUserKey")
+    try:
+        utterance = request.userRequest.utterance
+        bot_user_key = request.userRequest.user.id
+        plusfriend_user_key = request.userRequest.user.properties.get("plusfriendUserKey")
 
-    response = await channel_service.process_webhook(
-        utterance=utterance,
-        bot_user_key=bot_user_key,
-        plusfriend_user_key=plusfriend_user_key,
-    )
+        response = await channel_service.process_webhook(
+            utterance=utterance,
+            bot_user_key=bot_user_key,
+            plusfriend_user_key=plusfriend_user_key,
+        )
 
-    # 신규 저장된 메모리에 대해 Librarian 백그라운드 처리 스케줄링
-    user_id = channel_service.lookup_user_id(bot_user_key)
-    if user_id and not utterance.startswith("#") and utterance != "#도움말":
-        try:
-            from app.config.database import get_supabase_client
+        # 신규 저장된 메모리에 대해 Librarian 백그라운드 처리 스케줄링
+        user_id = channel_service.lookup_user_id(bot_user_key)
+        if user_id and not utterance.startswith("#") and utterance != "#도움말":
+            try:
+                from app.config.database import get_supabase_client
 
-            db = get_supabase_client()
-            latest = (
-                db.table("memories")
-                .select("id, content")
-                .eq("user_id", user_id)
-                .eq("source_type", "KAKAO")
-                .order("created_at", desc=True)
-                .limit(1)
-                .execute()
-            )
-            if latest.data:
-                memory = latest.data[0]
-                background_tasks.add_task(
-                    _process_with_librarian,
-                    memory["id"],
-                    memory["content"],
-                    user_id,
+                db = get_supabase_client()
+                latest = (
+                    db.table("memories")
+                    .select("id, content")
+                    .eq("user_id", user_id)
+                    .eq("source_type", "KAKAO")
+                    .order("created_at", desc=True)
+                    .limit(1)
+                    .execute()
                 )
-        except Exception:
-            logger.exception("Failed to schedule Librarian for Kakao memory")
+                if latest.data:
+                    memory = latest.data[0]
+                    background_tasks.add_task(
+                        _process_with_librarian,
+                        memory["id"],
+                        memory["content"],
+                        user_id,
+                    )
+            except Exception:
+                logger.exception("Failed to schedule Librarian for Kakao memory")
 
-    return response.model_dump()
+        return response.model_dump()
+    except Exception:
+        logger.exception("카카오 웹훅 처리 중 오류 발생")
+        return KakaoSkillResponse.simple_text("처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.").model_dump()
 
 
 # --- 채널 연동 관리 ---
