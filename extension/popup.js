@@ -1,4 +1,6 @@
 const API_BASE = 'https://memoir-ai-backend.fly.dev/api/v1';
+const SUPABASE_URL = 'https://otzqnucgfrlbqyyhksgo.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90enFudWNnZnJsYnF5eWhrc2dvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NjE5NjQsImV4cCI6MjA4NTMzNzk2NH0.ewsd_uZl7hkjdH9Np-P03J0R4qJT6-H1natMKUIy8zE';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const titleEl = document.getElementById('title');
@@ -8,115 +10,131 @@ document.addEventListener('DOMContentLoaded', async () => {
   const loginSection = document.getElementById('loginSection');
   const mainSection = document.getElementById('mainSection');
   const logoutBtn = document.getElementById('logoutBtn');
+  const googleLoginBtn = document.getElementById('googleLoginBtn');
 
-  // 저장된 토큰 확인
-  const stored = await chrome.storage.local.get(['auth_token', 'user_email']);
+  const stored = await chrome.storage.local.get(['access_token', 'refresh_token', 'user_email']);
 
-  if (!stored.auth_token) {
+  if (!stored.access_token) {
     showLogin();
-    return;
+  } else {
+    await initMain(stored.access_token, stored.user_email);
   }
 
-  showMain(stored.user_email);
-
-  // 현재 탭 정보 가져오기
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-  if (tab) {
-    titleEl.textContent = tab.title || 'No Title';
-    urlEl.textContent = tab.url || 'No URL';
-  }
-
-  saveBtn.addEventListener('click', async () => {
-    saveBtn.disabled = true;
-    saveBtn.textContent = '저장 중...';
-    statusEl.textContent = '';
-    statusEl.className = '';
+  // Google OAuth 로그인
+  googleLoginBtn.addEventListener('click', async () => {
+    googleLoginBtn.disabled = true;
+    googleLoginBtn.textContent = '로그인 중...';
 
     try {
-      const response = await fetch(`${API_BASE}/memories`, {
-        method: 'POST',
+      const redirectUrl = chrome.identity.getRedirectURL();
+      const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
+
+      const responseUrl = await chrome.identity.launchWebAuthFlow({
+        url: authUrl,
+        interactive: true
+      });
+
+      // URL fragment에서 토큰 추출 (#access_token=...&refresh_token=...)
+      const hashParams = new URLSearchParams(responseUrl.split('#')[1]);
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+
+      if (!accessToken) {
+        throw new Error('토큰을 받지 못했습니다');
+      }
+
+      // 사용자 정보 가져오기
+      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${stored.auth_token}`
-        },
-        body: JSON.stringify({
-          source_type: 'WEB',
-          url: tab.url,
-          memo: tab.title || 'Saved from Chrome Extension'
-        })
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': SUPABASE_ANON_KEY
+        }
       });
+      const userData = await userRes.json();
+      const email = userData.email || 'User';
 
-      if (response.status === 401) {
-        await chrome.storage.local.remove(['auth_token', 'user_email']);
-        showLogin();
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
-      }
-
-      statusEl.textContent = '저장 완료!';
-      statusEl.className = 'success';
-      saveBtn.textContent = '저장됨';
-    } catch (error) {
-      console.error(error);
-      statusEl.textContent = '저장 실패. 다시 시도해주세요.';
-      statusEl.className = 'error';
-      saveBtn.disabled = false;
-      saveBtn.textContent = '다시 시도';
-    }
-  });
-
-  logoutBtn.addEventListener('click', async () => {
-    await chrome.storage.local.remove(['auth_token', 'user_email']);
-    showLogin();
-  });
-
-  // 로그인 폼 처리
-  document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const loginStatus = document.getElementById('loginStatus');
-
-    loginStatus.textContent = '로그인 중...';
-    loginStatus.className = '';
-
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-
-      if (!res.ok) {
-        throw new Error('로그인 실패');
-      }
-
-      const data = await res.json();
       await chrome.storage.local.set({
-        auth_token: data.access_token,
+        access_token: accessToken,
+        refresh_token: refreshToken,
         user_email: email
       });
 
-      showMain(email);
+      await initMain(accessToken, email);
     } catch (error) {
-      loginStatus.textContent = '로그인 실패. 이메일/비밀번호를 확인해주세요.';
-      loginStatus.className = 'error';
+      console.error('OAuth error:', error);
+      document.getElementById('loginStatus').textContent = '로그인 실패. 다시 시도해주세요.';
+      document.getElementById('loginStatus').className = 'error';
+      googleLoginBtn.disabled = false;
+      googleLoginBtn.textContent = 'Google로 로그인';
     }
   });
 
+  // 로그아웃
+  logoutBtn.addEventListener('click', async () => {
+    await chrome.storage.local.remove(['access_token', 'refresh_token', 'user_email']);
+    showLogin();
+  });
+
+  async function initMain(token, email) {
+    showMain(email);
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+      titleEl.textContent = tab.title || 'No Title';
+      urlEl.textContent = tab.url || 'No URL';
+    }
+
+    saveBtn.onclick = async () => {
+      saveBtn.disabled = true;
+      saveBtn.textContent = '저장 중...';
+      statusEl.textContent = '';
+      statusEl.className = '';
+
+      try {
+        const response = await fetch(`${API_BASE}/memories`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            source_type: 'WEB',
+            url: tab.url,
+            memo: tab.title || 'Saved from Memoir Scout'
+          })
+        });
+
+        if (response.status === 401) {
+          await chrome.storage.local.remove(['access_token', 'refresh_token', 'user_email']);
+          showLogin();
+          return;
+        }
+
+        if (!response.ok) throw new Error(`Error: ${response.status}`);
+
+        statusEl.textContent = '저장 완료!';
+        statusEl.className = 'success';
+        saveBtn.textContent = '저장됨';
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = '저장 실패. 다시 시도해주세요.';
+        statusEl.className = 'error';
+        saveBtn.disabled = false;
+        saveBtn.textContent = '다시 시도';
+      }
+    };
+  }
+
   function showLogin() {
-    if (loginSection) loginSection.style.display = 'block';
-    if (mainSection) mainSection.style.display = 'none';
+    loginSection.style.display = 'block';
+    mainSection.style.display = 'none';
+    googleLoginBtn.disabled = false;
+    googleLoginBtn.textContent = 'Google로 로그인';
   }
 
   function showMain(email) {
-    if (loginSection) loginSection.style.display = 'none';
-    if (mainSection) mainSection.style.display = 'block';
-    const userEl = document.getElementById('userEmail');
-    if (userEl && email) userEl.textContent = email;
+    loginSection.style.display = 'none';
+    mainSection.style.display = 'block';
+    document.getElementById('userEmail').textContent = email || '';
   }
 });
