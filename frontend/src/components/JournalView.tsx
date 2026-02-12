@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Save } from 'lucide-react'
+import { useToast } from '../contexts/ToastContext'
 import TurndownService from 'turndown'
 import type { EditorMode, RelatedMemory, DigestMemory, DigestData, ChatSessionResponse } from '../types'
 import {
@@ -26,8 +27,6 @@ const MIN_CONTENT_LENGTH_FOR_RELATED = 20
 // 관련 메모리 디바운스 지연 시간(ms)
 const RELATED_MEMORIES_DEBOUNCE_MS = 1500
 
-// 토스트 메시지 표시 시간(ms)
-const SAVE_STATUS_DURATION_MS = 3000
 
 const turndown = new TurndownService({
   headingStyle: 'atx',
@@ -80,6 +79,7 @@ function syncContentToEditor(
 export default function JournalView() {
   const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
   const editorRef = useRef<TiptapEditorHandle>(null)
+  const toast = useToast()
 
   const [markdownContent, setMarkdownContent] = useState(`# ${today} 회고\n\n오늘은...\n\n`)
   const [editorMode, setEditorMode] = useState<EditorMode>('wysiwyg')
@@ -87,7 +87,6 @@ export default function JournalView() {
   const [relatedMemories, setRelatedMemories] = useState<RelatedMemory[]>([])
   const [isLoadingRelated, setIsLoadingRelated] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
   const [showSessionPicker, setShowSessionPicker] = useState(false)
@@ -123,10 +122,6 @@ export default function JournalView() {
     return () => clearTimeout(timer)
   }, [markdownContent, loadRelatedMemories])
 
-  const showSaveStatusToast = useCallback((type: 'success' | 'error', message: string) => {
-    setSaveStatus({ type, message })
-    setTimeout(() => setSaveStatus(null), SAVE_STATUS_DURATION_MS)
-  }, [])
 
   // WYSIWYG에서 HTML 변경 시 → 마크다운 동기화
   const handleWysiwygUpdate = useCallback((html: string) => {
@@ -198,10 +193,10 @@ export default function JournalView() {
     setIsSaving(true)
     try {
       await saveJournal(markdownContent)
-      showSaveStatusToast('success', '저장되었습니다!')
+      toast.success( '저장되었습니다!')
     } catch (e) {
       console.error('저널 저장 실패', e)
-      showSaveStatusToast('error', '저장에 실패했습니다.')
+      toast.error( '저장에 실패했습니다.')
     } finally {
       setIsSaving(false)
     }
@@ -210,7 +205,7 @@ export default function JournalView() {
   // 하루 정리: 채팅 세션 기반 초안 → 실패 시 메모리 기반 템플릿 폴백
   const handleDailySummary = async () => {
     if (!digest || digest.memories.length === 0) {
-      showSaveStatusToast('error', '오늘 수집된 메모리가 없습니다.')
+      toast.error( '오늘 수집된 메모리가 없습니다.')
       return
     }
     setIsGenerating(true)
@@ -222,7 +217,7 @@ export default function JournalView() {
           const result = await generateJournalDraft(sessionList[0].id)
           setMarkdownContent(result.draft)
           syncContentToEditor(result.draft, editorMode, editorRef)
-          showSaveStatusToast('success', '하루 정리 초안이 생성되었습니다!')
+          toast.success( '하루 정리 초안이 생성되었습니다!')
           return
         }
       } catch {
@@ -235,7 +230,7 @@ export default function JournalView() {
         .join('\n')}\n\n## 하루를 돌아보며\n\n`
       setMarkdownContent(template)
       syncContentToEditor(template, editorMode, editorRef)
-      showSaveStatusToast('success', '메모리 기반 템플릿이 생성되었습니다.')
+      toast.success( '메모리 기반 템플릿이 생성되었습니다.')
     } finally {
       setIsGenerating(false)
     }
@@ -247,14 +242,14 @@ export default function JournalView() {
     try {
       const sessionList = await fetchChatSessions()
       if (sessionList.length === 0) {
-        showSaveStatusToast('error', '대화 세션이 없습니다. 먼저 Evening 모드로 대화해보세요.')
+        toast.error( '대화 세션이 없습니다. 먼저 Evening 모드로 대화해보세요.')
         return
       }
       setSessions(sessionList)
       setShowSessionPicker(true)
     } catch (e) {
       console.error('세션 목록 로드 실패', e)
-      showSaveStatusToast('error', '세션 목록을 불러오지 못했습니다.')
+      toast.error( '세션 목록을 불러오지 못했습니다.')
     } finally {
       setIsGenerating(false)
     }
@@ -267,10 +262,10 @@ export default function JournalView() {
       const result = await generateJournalDraft(selectedSessionId)
       setMarkdownContent(result.draft)
       syncContentToEditor(result.draft, editorMode, editorRef)
-      showSaveStatusToast('success', 'AI 초안이 생성되었습니다!')
+      toast.success( 'AI 초안이 생성되었습니다!')
     } catch (e) {
       console.error('초안 생성 실패', e)
-      showSaveStatusToast('error', '초안 생성에 실패했습니다.')
+      toast.error( '초안 생성에 실패했습니다.')
     } finally {
       setIsGenerating(false)
     }
@@ -290,11 +285,6 @@ export default function JournalView() {
         <div className="journal-editor-header">
           <h2>Today's Journal</h2>
           <div className="journal-editor-actions">
-            {saveStatus && (
-              <span className={`journal-save-status journal-save-status--${saveStatus.type}`}>
-                {saveStatus.message}
-              </span>
-            )}
             <button
               className="journal-save-btn"
               onClick={handleSave}

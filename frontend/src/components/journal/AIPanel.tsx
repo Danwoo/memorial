@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, Brain, Heart, Loader2 } from 'lucide-react'
+import { useToast } from '../../contexts/ToastContext'
 import type { ReviewQuestionsResponse, InsightsResponse } from '../../types'
 import { fetchReviewQuestions, fetchInsights } from '../../api'
 import './AIPanel.css'
@@ -13,6 +14,7 @@ interface AIPanelProps {
 }
 
 export function AIPanel({ content, onInsertQuestion }: AIPanelProps) {
+  const toast = useToast()
   const [isOpen, setIsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'questions' | 'insights'>('questions')
   const [questions, setQuestions] = useState<ReviewQuestionsResponse | null>(null)
@@ -21,7 +23,7 @@ export function AIPanel({ content, onInsertQuestion }: AIPanelProps) {
 
   const handleLoadAnalysis = async () => {
     if (!content.trim() || content.trim().length < MIN_CONTENT_LENGTH_FOR_ANALYSIS) {
-      alert(`분석하려면 ${MIN_CONTENT_LENGTH_FOR_ANALYSIS}자 이상 작성해주세요.`)
+      toast.info(`분석하려면 ${MIN_CONTENT_LENGTH_FOR_ANALYSIS}자 이상 작성해주세요.`)
       return
     }
     setIsOpen(true)
@@ -35,6 +37,7 @@ export function AIPanel({ content, onInsertQuestion }: AIPanelProps) {
       setInsights(i)
     } catch (err) {
       console.error('AI 분석 실패', err)
+      toast.error('AI 분석에 실패했습니다.')
     } finally {
       setIsLoading(false)
     }

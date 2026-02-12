@@ -4,6 +4,7 @@ import {
   Globe, FileText, StickyNote, File, FolderOpen, Upload, Plus,
   SlidersHorizontal, SearchX, AlertCircle, CalendarX2,
 } from 'lucide-react'
+import { useToast } from '../contexts/ToastContext'
 import type { Memory, MemoryCreatePayload, SourceType, SearchResult, TimelineData } from '../types'
 import { fetchMemories, createMemory, uploadPdfMemory, searchMemories, fetchTimeline } from '../api'
 import { getSourceIcon, getSimilarityLevel, formatDateKR, formatRelativeDate } from '../utils'
@@ -27,6 +28,7 @@ function renderSourceIcon(type: string) {
 type MemoryTab = 'all' | 'timeline' | 'search'
 
 export default function MemoryView() {
+  const toast = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const initialTab = (searchParams.get('tab') as MemoryTab) || 'all'
 
@@ -79,10 +81,11 @@ export default function MemoryView() {
       setMemories(data.items || [])
     } catch (error) {
       console.error('메모리 목록 로드 실패:', error)
+      toast.error('메모리 목록을 불러오지 못했습니다.')
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [toast])
 
   const resetAddModal = () => {
     setShowAddModal(false)
@@ -114,8 +117,10 @@ export default function MemoryView() {
       }
       resetAddModal()
       loadMemories()
+      toast.success('메모리가 추가되었습니다!')
     } catch (error) {
       console.error('메모리 추가 실패:', error)
+      toast.error('메모리 추가에 실패했습니다.')
     }
   }
 
@@ -202,6 +207,7 @@ export default function MemoryView() {
       setSearchResults(data.results || [])
     } catch (error) {
       console.error('검색 실패:', error)
+      toast.error('검색에 실패했습니다.')
       setSearchResults([])
     } finally {
       setIsSearching(false)

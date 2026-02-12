@@ -6,6 +6,7 @@ import {
   User, Bot, MessageSquareText, ArrowUp,
   MessageSquare, Lightbulb, Scale, ClipboardList, Moon, ChevronDown,
 } from 'lucide-react'
+import { useToast } from '../contexts/ToastContext'
 import type { ChatMessage, ChatMode, ChatModeOption, ChatLocationState, DigestData } from '../types'
 import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream, fetchDigest } from '../api'
 import './ChatView.css'
@@ -33,6 +34,7 @@ export default function ChatView() {
   const location = useLocation()
   const navigate = useNavigate()
   const { sessionId: urlSessionId } = useParams<{ sessionId: string }>()
+  const toast = useToast()
 
   const [sessionId, setSessionId] = useState<string | null>(urlSessionId ?? null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -111,6 +113,7 @@ export default function ChatView() {
       setMessages(history)
     } catch (error) {
       console.error('채팅 히스토리 로드 실패:', error)
+      toast.error('대화 기록을 불러오지 못했습니다.')
     } finally {
       setIsLoadingHistory(false)
     }
@@ -157,6 +160,7 @@ export default function ChatView() {
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return
       console.error('메시지 전송 실패:', error)
+      toast.error('메시지 전송에 실패했습니다.')
       setMessages(prev => [...prev, { role: 'assistant', content: ERROR_MESSAGE }])
     } finally {
       abortControllerRef.current = null

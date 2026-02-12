@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
 import {
   getIntegrationStatus,
   getBotSettings,
@@ -21,12 +22,12 @@ const SUPPORTED_PROVIDERS = ['google', 'kakao'] as const
 
 export default function SettingsView() {
   const { user, linkProvider, unlinkProvider } = useAuth()
+  const toast = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const [providers, setProviders] = useState<ProviderInfo[]>([])
   const [email, setEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [botSettings, setBotSettings] = useState<BotSettings | null>(null)
   const [botLoading, setBotLoading] = useState(false)
 
@@ -41,18 +42,11 @@ export default function SettingsView() {
   useEffect(() => {
     const linked = searchParams.get('linked')
     if (linked) {
-      setToast({ type: 'success', message: `${PROVIDER_LABELS[linked] ?? linked} 계정이 연결되었습니다!` })
+      toast.success(`${PROVIDER_LABELS[linked] ?? linked} 계정이 연결되었습니다!`)
       searchParams.delete('linked')
       setSearchParams(searchParams, { replace: true })
     }
-  }, [searchParams, setSearchParams])
-
-  // 토스트 메시지 자동 해제 (4초)
-  useEffect(() => {
-    if (!toast) return
-    const timer = setTimeout(() => setToast(null), 4000)
-    return () => clearTimeout(timer)
-  }, [toast])
+  }, [searchParams, setSearchParams, toast])
 
   // 연동 상태 + 봇 설정 + 채널 상태 로드
   const loadStatus = useCallback(async () => {
@@ -91,14 +85,14 @@ export default function SettingsView() {
       setActionLoading(provider)
       await linkProvider(provider)
     } catch {
-      setToast({ type: 'error', message: `${PROVIDER_LABELS[provider]} 연결에 실패했습니다` })
+      toast.error( `${PROVIDER_LABELS[provider]} 연결에 실패했습니다`)
       setActionLoading(null)
     }
   }
 
   const handleUnlink = async (provider: string) => {
     if (providers.length <= 1) {
-      setToast({ type: 'error', message: '최소 1개의 로그인 방식이 필요합니다' })
+      toast.error( '최소 1개의 로그인 방식이 필요합니다')
       return
     }
 
@@ -114,9 +108,9 @@ export default function SettingsView() {
         provider: provider,
       })
       await loadStatus()
-      setToast({ type: 'success', message: `${PROVIDER_LABELS[provider] ?? provider} 연결이 해제되었습니다` })
+      toast.success( `${PROVIDER_LABELS[provider] ?? provider} 연결이 해제되었습니다`)
     } catch {
-      setToast({ type: 'error', message: '연결 해제에 실패했습니다' })
+      toast.error( '연결 해제에 실패했습니다')
     } finally {
       setActionLoading(null)
     }
@@ -127,10 +121,10 @@ export default function SettingsView() {
       setBotLoading(true)
       const updated = await updateBotSettings(update)
       setBotSettings(updated)
-      setToast({ type: 'success', message: '다이제스트 설정이 저장되었습니다' })
+      toast.success( '다이제스트 설정이 저장되었습니다')
     } catch (err) {
       const message = err instanceof Error ? err.message : '설정 저장에 실패했습니다'
-      setToast({ type: 'error', message })
+      toast.error(message)
     } finally {
       setBotLoading(false)
     }
@@ -144,7 +138,7 @@ export default function SettingsView() {
       setLinkCode(result)
       startCountdown(result.expires_at)
     } catch {
-      setToast({ type: 'error', message: '연결 코드 생성에 실패했습니다' })
+      toast.error( '연결 코드 생성에 실패했습니다')
     } finally {
       setChannelLoading(false)
     }
@@ -155,9 +149,9 @@ export default function SettingsView() {
       setChannelLoading(true)
       await disconnectChannel()
       setChannelStatus({ connected: false, bot_user_key: null, linked_at: null })
-      setToast({ type: 'success', message: '카카오톡 채널 연결이 해제되었습니다' })
+      toast.success( '카카오톡 채널 연결이 해제되었습니다')
     } catch {
-      setToast({ type: 'error', message: '채널 연결 해제에 실패했습니다' })
+      toast.error( '채널 연결 해제에 실패했습니다')
     } finally {
       setChannelLoading(false)
     }
@@ -193,13 +187,6 @@ export default function SettingsView() {
 
   return (
     <div className="settings-view">
-      {toast && (
-        <div className={`settings-toast ${toast.type}`}>
-          <span>{toast.type === 'success' ? '\u2713' : '!'}</span>
-          {toast.message}
-        </div>
-      )}
-
       <header className="settings-header">
         <h1>설정</h1>
         <p className="settings-subtitle">계정 및 서비스 연동을 관리합니다</p>

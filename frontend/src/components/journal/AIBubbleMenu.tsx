@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Editor } from '@tiptap/react'
 import { Expand, Minimize2, Wand2 } from 'lucide-react'
+import { useToast } from '../../contexts/ToastContext'
 import type { InlineAIAction } from '../../types'
 import { postInlineAssist, ApiResponseError } from '../../api'
 
@@ -18,6 +19,7 @@ const ACTIONS: { action: InlineAIAction; icon: typeof Expand; label: string }[] 
 ]
 
 export function AIBubbleMenu({ editor }: AIBubbleMenuProps) {
+  const toast = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [show, setShow] = useState(false)
   const [position, setPosition] = useState({ top: 0, left: 0 })
@@ -70,10 +72,10 @@ export function AIBubbleMenu({ editor }: AIBubbleMenuProps) {
       editor.chain().focus().insertContentAt({ from, to }, result).run()
     } catch (err) {
       if (err instanceof ApiResponseError && err.status === 404) {
-        alert('이 기능은 준비 중입니다.')
+        toast.info('이 기능은 준비 중입니다.')
       } else {
         console.error('인라인 AI 처리 실패', err)
-        alert('AI 처리 중 오류가 발생했습니다.')
+        toast.error('AI 처리 중 오류가 발생했습니다.')
       }
     } finally {
       setIsLoading(false)
