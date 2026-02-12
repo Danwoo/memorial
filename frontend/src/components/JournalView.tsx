@@ -28,6 +28,10 @@ const MIN_CONTENT_LENGTH_FOR_RELATED = 20
 // 관련 메모리 디바운스 지연 시간(ms)
 const RELATED_MEMORIES_DEBOUNCE_MS = 1500
 
+// 자동 저장 설정
+const JOURNAL_DRAFT_KEY = 'memoir-journal-draft'
+const AUTOSAVE_DEBOUNCE_MS = 2000
+
 
 const turndown = new TurndownService({
   headingStyle: 'atx',
@@ -82,7 +86,13 @@ export default function JournalView() {
   const editorRef = useRef<TiptapEditorHandle>(null)
   const toast = useToast()
 
-  const [markdownContent, setMarkdownContent] = useState(`# ${today} 회고\n\n오늘은...\n\n`)
+  const defaultContent = `# ${today} 회고\n\n오늘은...\n\n`
+  const normalize = (s: string) => s.replace(/\s+/g, ' ').trim()
+
+  const [markdownContent, setMarkdownContent] = useState(() => {
+    const saved = localStorage.getItem(JOURNAL_DRAFT_KEY)
+    return saved && saved.trim() ? saved : defaultContent
+  })
   const [editorMode, setEditorMode] = useState<EditorMode>('wysiwyg')
   const [digest, setDigest] = useState<DigestData | null>(null)
   const [relatedMemories, setRelatedMemories] = useState<RelatedMemory[]>([])
@@ -96,9 +106,6 @@ export default function JournalView() {
   const [starterQuestions, setStarterQuestions] = useState<string[]>([])
   const [isLoadingStarter, setIsLoadingStarter] = useState(false)
 
-  const defaultContent = `# ${today} 회고\n\n오늘은...\n\n`
-  // WYSIWYG 라운드트립 시 공백이 변할 수 있으므로 정규화 비교
-  const normalize = (s: string) => s.replace(/\s+/g, ' ').trim()
   const showStarter = normalize(markdownContent) === normalize(defaultContent) && !isGenerating
 
   const templates = useMemo(
@@ -122,12 +129,30 @@ export default function JournalView() {
     [today],
   )
 
+  // 마운트 시 초안 복원 알림
+  useEffect(() => {
+    const saved = localStorage.getItem(JOURNAL_DRAFT_KEY)
+    if (saved && normalize(saved) !== normalize(defaultContent)) {
+      toast.info('이전 초안을 복원했습니다.')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // 마운트 시 오늘의 다이제스트 로드
   useEffect(() => {
     fetchDigest()
       .then(setDigest)
       .catch((err) => console.error('다이제스트 로드 실패', err))
   }, [])
+
+  // 자동 저장: 내용 변경 시 localStorage에 디바운스 저장
+  useEffect(() => {
+    if (normalize(markdownContent) === normalize(defaultContent)) return
+    const timer = setTimeout(() => {
+      localStorage.setItem(JOURNAL_DRAFT_KEY, markdownContent)
+    }, AUTOSAVE_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [markdownContent, defaultContent])
 
   // 다이제스트 로드 시 회고 질문 자동 생성
   useEffect(() => {
@@ -270,7 +295,8 @@ export default function JournalView() {
     setIsSaving(true)
     try {
       await saveJournal(markdownContent)
-      toast.success( '저장되었습니다!')
+      localStorage.removeItem(JOURNAL_DRAFT_KEY)
+      toast.success('저장되었습니다!')
     } catch (e) {
       console.error('저널 저장 실패', e)
       toast.error( '저장에 실패했습니다.')
