@@ -1,0 +1,182 @@
+.ai-panel {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-secondary);
+  background-color: var(--bg-secondary);
+}
+
+.ai-panel__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-size: var(--fs-body-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ai-panel__toggle:hover {
+  color: var(--accent-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.ai-panel__content {
+  padding: 0 var(--space-md) var(--space-md);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.ai-panel__tabs {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.ai-panel-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-xs) var(--space-sm);
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ai-panel-tab:hover {
+  color: var(--text-secondary);
+  background-color: var(--bg-tertiary);
+}
+
+.ai-panel-tab--active {
+  color: var(--accent-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.ai-panel__loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-muted);
+  font-size: var(--fs-body-sm);
+  padding: var(--space-md);
+  justify-content: center;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ai-panel__empty {
+  color: var(--text-muted);
+  font-size: var(--fs-body-sm);
+  text-align: center;
+  padding: var(--space-md);
+}
+
+/* 성찰 질문 */
+.ai-question-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.ai-question-text {
+  margin: 0;
+  font-size: var(--fs-body-sm);
+  color: var(--text-primary);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.ai-question-insert {
+  flex-shrink: 0;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--accent-primary);
+  background: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-caption);
+  color: var(--accent-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.ai-question-insert:hover {
+  background-color: var(--accent-primary);
+  color: var(--bg-primary);
+}
+
+/* 웰니스 점수 */
+.wellness-score {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.wellness-label {
+  font-size: var(--fs-body-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.wellness-value {
+  font-size: var(--fs-title);
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
+/* 인지 왜곡 리스트 */
+.distortion-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.distortion-item {
+  padding: var(--space-sm);
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--color-warning);
+}
+
+.distortion-name {
+  font-size: var(--fs-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.distortion-trigger {
+  font-size: var(--fs-caption);
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.distortion-feedback {
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
