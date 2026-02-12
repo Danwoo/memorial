@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <style>
     body {
-      width: 300px;
+      width: 320px;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #1a1a1a;
       color: #e5e5e5;
@@ -32,6 +32,21 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .user-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 0.8rem;
+      color: #888;
+    }
+    #logoutBtn {
+      width: auto;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      background: #444;
+    }
+    #logoutBtn:hover { background: #555; }
     button {
       width: 100%;
       padding: 10px;
@@ -45,7 +60,7 @@
     }
     button:hover { background: #7c3aed; }
     button:disabled { background: #555; cursor: not-allowed; }
-    #status {
+    #status, #loginStatus {
       margin-top: 10px;
       font-size: 0.9rem;
       text-align: center;
@@ -53,18 +68,50 @@
     }
     .success { color: #34d399; }
     .error { color: #f87171; }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: #2d2d2d;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #e5e5e5;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+    input::placeholder { color: #666; }
+    input:focus { outline: none; border-color: #8b5cf6; }
+    label { font-size: 0.8rem; color: #888; display: block; margin-bottom: 4px; }
   </style>
 </head>
 <body>
-  <h2>Memoir Scout 🧠</h2>
-  
-  <div class="page-info">
-    <div class="page-title" id="title">Loading...</div>
-    <div class="page-url" id="url">...</div>
+  <h2>Memoir Scout</h2>
+
+  <!-- 로그인 섹션 -->
+  <div id="loginSection" style="display:none;">
+    <form id="loginForm">
+      <label for="email">이메일</label>
+      <input type="email" id="email" placeholder="your@email.com" required>
+      <label for="password">비밀번호</label>
+      <input type="password" id="password" placeholder="비밀번호" required>
+      <button type="submit">로그인</button>
+    </form>
+    <div id="loginStatus"></div>
   </div>
 
-  <button id="saveBtn">Save to Memory</button>
-  <div id="status"></div>
+  <!-- 메인 섹션 -->
+  <div id="mainSection" style="display:none;">
+    <div class="user-bar">
+      <span id="userEmail"></span>
+      <button id="logoutBtn">로그아웃</button>
+    </div>
+    <div class="page-info">
+      <div class="page-title" id="title">Loading...</div>
+      <div class="page-url" id="url">...</div>
+    </div>
+    <button id="saveBtn">메모리에 저장</button>
+    <div id="status"></div>
+  </div>
 
   <script src="popup.js"></script>
 </body>

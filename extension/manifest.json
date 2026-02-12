@@ -5,12 +5,14 @@
   "description": "Save current page to Memoir AI",
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "storage"
   ],
   "action": {
     "default_popup": "popup.html"
   },
   "host_permissions": [
+    "https://memoir-ai-backend.fly.dev/*",
     "http://localhost:8000/*"
   ]
 }
