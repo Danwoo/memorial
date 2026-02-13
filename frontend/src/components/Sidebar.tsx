@@ -124,6 +124,7 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
             <button
               className="session-section-toggle"
               onClick={() => setShowSessions(!showSessions)}
+              aria-expanded={showSessions}
             >
               <span>최근 대화</span>
               <span className="session-toggle-arrow">
@@ -171,7 +172,7 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
               </div>
             </div>
             {onLogout && (
-              <button className="logout-btn" onClick={onLogout} title="로그아웃">
+              <button className="logout-btn" onClick={onLogout} title="로그아웃" aria-label="로그아웃">
                 <LogOut size={16} />
               </button>
             )}

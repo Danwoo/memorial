@@ -22,6 +22,25 @@
   color: var(--text-secondary);
 }
 
+/* ─── 스킵 네비게이션 링크 ─────────────────────────────────────────────── */
+
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  z-index: 9999;
+  border-radius: 0 0 var(--radius-md) 0;
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
 /* ─── 모바일 햄버거 버튼 ──────────────────────────────────────────────── */
 
 .mobile-nav-toggle {

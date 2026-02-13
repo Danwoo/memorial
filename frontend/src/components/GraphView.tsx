@@ -512,10 +512,12 @@ export default function GraphView() {
           <h4>노드 유형</h4>
           <div className="legend-items">
             {nodeTypes.map(type => (
-              <div
+              <button
                 key={type}
                 className={`legend-item ${hiddenTypes.has(type) ? 'legend-item-hidden' : ''}`}
                 onClick={() => toggleType(type)}
+                aria-pressed={!hiddenTypes.has(type)}
+                aria-label={`${toKo(type, NODE_TYPE_KO)} 노드 필터`}
               >
                 <span
                   className="legend-dot"
@@ -526,7 +528,7 @@ export default function GraphView() {
                   }}
                 />
                 <span className="legend-label">{toKo(type, NODE_TYPE_KO)}</span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -542,7 +544,7 @@ export default function GraphView() {
             >
               {toKo(selectedNode.label, NODE_TYPE_KO)}
             </span>
-            <button className="close-btn" onClick={() => setSelectedNode(null)}>
+            <button className="close-btn" onClick={() => setSelectedNode(null)} aria-label="패널 닫기">
               &times;
             </button>
           </div>
@@ -570,7 +572,10 @@ export default function GraphView() {
                   <li
                     key={i}
                     className="conn-clickable"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleConnectionClick(conn.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleConnectionClick(conn.id) } }}
                   >
                     <span className="conn-dot" style={{ backgroundColor: conn.color }} />
                     <span className="conn-type">{toKo(conn.type, LINK_TYPE_KO)}</span>
@@ -597,7 +602,10 @@ export default function GraphView() {
                   <li
                     key={m.id}
                     className="memory-item"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setSelectedMemoryId(m.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedMemoryId(m.id) } }}
                   >
                     <BookOpen size={14} className="memory-icon" />
                     <span className="memory-title">{m.title || m.content?.substring(0, 40) || '메모리'}</span>

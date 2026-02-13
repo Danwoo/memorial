@@ -28,6 +28,7 @@ export default function AppLayout() {
 
   return (
     <div className="app-container">
+      <a href="#main-content" className="skip-link">본문으로 건너뛰기</a>
       <button
         className="mobile-nav-toggle"
         onClick={() => setMobileOpen(true)}
@@ -37,7 +38,7 @@ export default function AppLayout() {
         <Menu size={22} />
       </button>
       <Sidebar onLogout={signOut} user={user} mobileOpen={mobileOpen} onMobileClose={closeMobile} />
-      <main className="main-content">
+      <main className="main-content" id="main-content">
         <Outlet />
       </main>
       <CommandPalette isOpen={showCmdPalette} onClose={() => setShowCmdPalette(false)} />
