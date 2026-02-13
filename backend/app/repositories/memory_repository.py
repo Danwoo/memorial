@@ -112,6 +112,41 @@ class MemoryRepository:
         result = await asyncio.to_thread(self._update, str(memory_id), update_data)
         return len(result.data) > 0 if result.data else False
 
+    async def update_fields(
+        self,
+        memory_id: UUID,
+        user_id: UUID,
+        **fields: object,
+    ) -> MemoryInDB | None:
+        """사용자 소유 Memory의 지정 필드를 업데이트. 업데이트된 레코드 반환."""
+        now = datetime.now(UTC).isoformat()
+        update_data: dict = {"updated_at": now}
+        for key, val in fields.items():
+            if val is not None:
+                update_data[key] = val
+
+        result = await asyncio.to_thread(
+            self._update_with_owner,
+            str(memory_id),
+            str(user_id),
+            update_data,
+        )
+        if result.data and len(result.data) > 0:
+            return self._row_to_model(result.data[0])
+        return None
+
+    async def get_distinct_tags(self, user_id: UUID, prefix: str = "") -> list[str]:
+        """사용자의 모든 메모리에서 고유 태그 목록 추출."""
+        result = await asyncio.to_thread(self._select_tags, str(user_id))
+        all_tags: set[str] = set()
+        for row in result.data or []:
+            tags = row.get("tags")
+            if tags:
+                for tag in tags:
+                    if isinstance(tag, str) and tag.lower().startswith(prefix.lower()):
+                        all_tags.add(tag)
+        return sorted(all_tags)
+
     async def delete(self, memory_id: UUID, user_id: UUID) -> bool:
         """Memory 삭제."""
         result = await asyncio.to_thread(self._delete, str(memory_id), str(user_id))
@@ -147,6 +182,12 @@ class MemoryRepository:
 
     def _update(self, memory_id: str, update_data: dict):
         return self.db.table("memories").update(update_data).eq("id", memory_id).execute()
+
+    def _update_with_owner(self, memory_id: str, user_id: str, update_data: dict):
+        return self.db.table("memories").update(update_data).eq("id", memory_id).eq("user_id", user_id).execute()
+
+    def _select_tags(self, user_id: str):
+        return self.db.table("memories").select("tags").eq("user_id", user_id).not_.is_("tags", "null").execute()
 
     def _delete(self, memory_id: str, user_id: str):
         return self.db.table("memories").delete().eq("id", memory_id).eq("user_id", user_id).execute()

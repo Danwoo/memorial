@@ -1,4 +1,4 @@
-import { get, post, del, postFormData } from './client'
+import { get, post, patch, del, postFormData } from './client'
 import type { Memory, MemoryDetail, MemoryCreatePayload, PaginatedResponse } from '../types'
 
 // 메모리 목록 조회 (페이지네이션)
@@ -19,6 +19,20 @@ export function fetchMemoryDetail(memoryId: string): Promise<MemoryDetail> {
 // 메모리 삭제
 export function deleteMemory(memoryId: string): Promise<void> {
   return del(`/memories/${memoryId}`)
+}
+
+// 메모리 수정 (제목, 요약, 태그)
+export function updateMemory(
+  memoryId: string,
+  body: { title?: string; summary?: string; tags?: string[] },
+): Promise<MemoryDetail> {
+  return patch<MemoryDetail>(`/memories/${memoryId}`, body)
+}
+
+// 사용자의 기존 태그 목록 조회 (자동완성용)
+export function fetchUserTags(prefix = ''): Promise<string[]> {
+  const q = prefix ? `?q=${encodeURIComponent(prefix)}` : ''
+  return get<string[]>(`/memories/tags${q}`)
 }
 
 // PDF 파일 업로드로 메모리 생성

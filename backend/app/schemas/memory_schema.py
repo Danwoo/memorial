@@ -23,6 +23,14 @@ class MemoryCreate(BaseModel):
         populate_by_name = True
 
 
+class MemoryUpdate(BaseModel):
+    """메모리 수정 요청. 전달된 필드만 업데이트."""
+
+    title: str | None = None
+    summary: str | None = None
+    tags: list[str] | None = None
+
+
 # --- 응답 스키마 ---
 
 

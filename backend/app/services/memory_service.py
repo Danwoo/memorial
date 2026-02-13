@@ -1,3 +1,4 @@
+import contextlib
 from uuid import UUID
 
 from app.repositories.graph_repository import GraphRepository
@@ -77,6 +78,38 @@ class MemoryService:
             await self.graph_repo.save_relations(relations)
 
         return success
+
+    async def update_memory(
+        self,
+        memory_id: UUID,
+        user_id: UUID,
+        title: str | None = None,
+        summary: str | None = None,
+        tags: list[str] | None = None,
+    ) -> MemoryInDB | None:
+        """사용자가 직접 메모리 필드를 수정."""
+        fields: dict = {}
+        if title is not None:
+            fields["title"] = title
+        if summary is not None:
+            fields["summary"] = summary
+        if tags is not None:
+            fields["tags"] = tags
+
+        if not fields:
+            return await self.memory_repo.get_by_id(memory_id, user_id)
+
+        updated = await self.memory_repo.update_fields(memory_id, user_id, **fields)
+
+        if updated and self.graph_repo and tags is not None:
+            with contextlib.suppress(Exception):
+                await self.graph_repo.delete_memory_node(str(memory_id))
+
+        return updated
+
+    async def get_user_tags(self, user_id: UUID, prefix: str = "") -> list[str]:
+        """사용자의 기존 태그 목록 조회 (자동완성용)."""
+        return await self.memory_repo.get_distinct_tags(user_id, prefix)
 
     async def delete_memory(self, memory_id: UUID, user_id: UUID) -> bool:
         """Memory 및 연관 그래프 데이터 삭제."""

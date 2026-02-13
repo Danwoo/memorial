@@ -13,6 +13,7 @@ from app.schemas.memory_schema import (
     MemoryDetail,
     MemoryListItem,
     MemoryListResponse,
+    MemoryUpdate,
 )
 from app.services.ingest_service import process_note_content, process_pdf_content, process_web_content
 from app.services.memory_service import MemoryService
@@ -250,6 +251,48 @@ async def get_memory(
         tags=memory.tags,
         created_at=memory.created_at,
         updated_at=memory.updated_at,
+    )
+
+
+@router.get("/tags", response_model=list[str])
+async def get_tags(
+    q: str = Query("", description="태그 prefix 필터"),
+    user_id: UUID = Depends(get_user_id),
+    memory_service: MemoryService = Depends(get_memory_service),
+):
+    """사용자의 기존 태그 목록 조회 (자동완성용)."""
+    return await memory_service.get_user_tags(user_id, q)
+
+
+@router.patch("/{memory_id}", response_model=MemoryDetail)
+async def update_memory(
+    memory_id: UUID,
+    data: MemoryUpdate,
+    user_id: UUID = Depends(get_user_id),
+    memory_service: MemoryService = Depends(get_memory_service),
+):
+    """메모리 제목, 요약, 태그 수정."""
+    updated = await memory_service.update_memory(
+        memory_id=memory_id,
+        user_id=user_id,
+        title=data.title,
+        summary=data.summary,
+        tags=data.tags,
+    )
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="Memory not found")
+
+    return MemoryDetail(
+        id=updated.id,
+        title=updated.title,
+        content=updated.content,
+        summary=updated.summary,
+        source_url=updated.source_url,
+        source_type=updated.source_type,
+        tags=updated.tags,
+        created_at=updated.created_at,
+        updated_at=updated.updated_at,
     )
 
 

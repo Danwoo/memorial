@@ -490,6 +490,7 @@ export default function MemoryView() {
             setSelectedMemoryId(null)
             loadMemories()
           }}
+          onUpdated={loadMemories}
         />
       )}
 
