@@ -29,6 +29,51 @@ const NODE_COLORS: Record<string, string> = {
   default: '#9ca3af',
 }
 
+// 노드 타입 한국어 매핑
+const NODE_TYPE_KO: Record<string, string> = {
+  Memory: '메모리',
+  Entity: '엔티티',
+  Concept: '개념',
+  Person: '인물',
+  Organization: '조직',
+  Company: '회사',
+  Technology: '기술',
+  Platform: '플랫폼',
+  Product: '제품',
+  Location: '장소',
+  Event: '이벤트',
+  Topic: '주제',
+  Idea: '아이디어',
+  Framework: '프레임워크',
+  Language: '언어',
+  Tool: '도구',
+}
+
+// 관계 타입 한국어 매핑
+const LINK_TYPE_KO: Record<string, string> = {
+  RELATES_TO: '관련',
+  MENTIONED_IN: '언급됨',
+  MENTIONS: '언급',
+  HAS_TAG: '태그',
+  HAS_ENTITY: '엔티티 포함',
+  ASSOCIATED_WITH: '연관',
+  PART_OF: '소속',
+  WORKS_AT: '근무',
+  LOCATED_IN: '위치',
+  CREATED_BY: '작성자',
+  USED_IN: '사용됨',
+  SIMILAR_TO: '유사',
+  DEPENDS_ON: '의존',
+  DERIVED_FROM: '파생',
+  CONTAINS: '포함',
+  BELONGS_TO: '소속',
+}
+
+// 한국어 변환 헬퍼
+function toKo(type: string, map: Record<string, string>): string {
+  return map[type] || type
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyNode = GraphNode & { x?: number; y?: number; z?: number; [k: string]: any }
 
@@ -220,7 +265,7 @@ export default function GraphView() {
   // 선택된 노드 주제로 채팅 시작
   const handleStartChat = useCallback(
     (node: GraphNode) => {
-      navigate('/chat', { state: { topic: node.name || node.id, mode: 'insight' } })
+      navigate('/chat', { state: { topic: node.name || node.id } })
     },
     [navigate],
   )
@@ -362,7 +407,7 @@ export default function GraphView() {
                       : NODE_COLORS[type] || NODE_COLORS['default'],
                   }}
                 />
-                <span className="legend-label">{type}</span>
+                <span className="legend-label">{toKo(type, NODE_TYPE_KO)}</span>
               </div>
             ))}
           </div>
@@ -377,7 +422,7 @@ export default function GraphView() {
               className="node-type-badge"
               style={{ backgroundColor: selectedNode.color }}
             >
-              {selectedNode.label}
+              {toKo(selectedNode.label, NODE_TYPE_KO)}
             </span>
             <button className="close-btn" onClick={() => setSelectedNode(null)}>
               &times;
@@ -406,7 +451,7 @@ export default function GraphView() {
                 {selectedConnections.slice(0, 10).map((conn, i) => (
                   <li key={i}>
                     <span className="conn-dot" style={{ backgroundColor: conn.color }} />
-                    <span className="conn-type">{conn.type}</span>
+                    <span className="conn-type">{toKo(conn.type, LINK_TYPE_KO)}</span>
                     <span className="conn-name">{conn.name}</span>
                   </li>
                 ))}
