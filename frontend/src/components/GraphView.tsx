@@ -6,6 +6,7 @@ import * as THREE from 'three'
 import { BookOpen } from 'lucide-react'
 import type { GraphNode, GraphLink, GraphData, SearchResult } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
+import { useToast } from '../contexts/ToastContext'
 import { fetchGraph, searchMemories } from '../api'
 import MemoryDetailModal from './MemoryDetailModal'
 import './GraphView.css'
@@ -82,6 +83,7 @@ type AnyNode = GraphNode & { x?: number; y?: number; z?: number; [k: string]: an
 export default function GraphView() {
   const navigate = useNavigate()
   const { resolvedTheme } = useTheme()
+  const toast = useToast()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null)
   const nodeMaterials = useRef<Map<string, THREE.MeshLambertMaterial>>(new Map())
@@ -117,11 +119,12 @@ export default function GraphView() {
       }))
       setData({ nodes: processedNodes, links: json.links })
     } catch (err) {
-      console.error('Failed to fetch graph data:', err)
+      console.error('그래프 데이터 로딩 실패:', err)
+      toast.error('지식 그래프를 불러오지 못했습니다')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast])
 
   useEffect(() => {
     fetchGraphData()

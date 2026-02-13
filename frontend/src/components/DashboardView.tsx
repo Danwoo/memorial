@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { Flame, Trophy, Calendar, TrendingUp, Tag } from 'lucide-react'
 import type { StreakData, StatsData, ActivityData } from '../types'
 import { fetchStreak, fetchStats, fetchActivity } from '../api'
+import { useToast } from '../contexts/ToastContext'
 import './DashboardView.css'
 
 // 스트릭 축하 메시지
@@ -15,12 +16,12 @@ function getStreakMessage(streak: number): string {
   return '한 달 넘는 연속 기록!'
 }
 
-// 활동 히트맵 색상 (0~max count → 투명도 매핑)
-function getHeatColor(count: number, max: number): string {
-  if (count === 0) return 'var(--bg-tertiary)'
+// 활동 히트맵 스타일 (0~max count → accent 색상 + 투명도 매핑)
+function getHeatStyle(count: number, max: number): React.CSSProperties {
+  if (count === 0) return { backgroundColor: 'var(--bg-tertiary)' }
   const intensity = Math.min(count / Math.max(max, 1), 1)
-  const alpha = 0.25 + intensity * 0.75
-  return `rgba(139, 92, 246, ${alpha})`
+  const opacity = 0.25 + intensity * 0.75
+  return { backgroundColor: 'var(--accent-primary)', opacity }
 }
 
 export default function DashboardView() {
@@ -28,6 +29,7 @@ export default function DashboardView() {
   const [stats, setStats] = useState<StatsData | null>(null)
   const [activity, setActivity] = useState<ActivityData[]>([])
   const [loading, setLoading] = useState(true)
+  const toast = useToast()
 
   useEffect(() => {
     const load = async () => {
@@ -43,12 +45,13 @@ export default function DashboardView() {
         setActivity(activityData.activity)
       } catch (err) {
         console.error('대시보드 데이터 로딩 실패:', err)
+        toast.error('대시보드 데이터를 불러오지 못했습니다')
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [])
+  }, [toast])
 
   const maxActivity = useMemo(
     () => Math.max(...activity.map(a => a.count), 1),
@@ -119,7 +122,7 @@ export default function DashboardView() {
               <div
                 key={day.date}
                 className="heatmap-cell"
-                style={{ backgroundColor: getHeatColor(day.count, maxActivity) }}
+                style={getHeatStyle(day.count, maxActivity)}
                 title={`${day.date}: ${day.count}개`}
               />
             ))}
@@ -131,7 +134,9 @@ export default function DashboardView() {
                 <div
                   key={i}
                   className="heatmap-cell"
-                  style={{ backgroundColor: v === 0 ? 'var(--bg-tertiary)' : `rgba(139, 92, 246, ${0.25 + v * 0.75})` }}
+                  style={v === 0
+                    ? { backgroundColor: 'var(--bg-tertiary)' }
+                    : { backgroundColor: 'var(--accent-primary)', opacity: 0.25 + v * 0.75 }}
                 />
               ))}
             </div>

@@ -12,7 +12,7 @@ def register_middleware(app: FastAPI) -> None:
         CORSMiddleware,
         allow_origins=["*"] if settings.DEBUG else settings.CORS_ORIGINS,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
         max_age=600,
     )

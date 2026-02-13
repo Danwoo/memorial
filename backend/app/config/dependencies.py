@@ -10,6 +10,7 @@ from app.repositories.chat_repository import ChatRepository
 from app.repositories.graph_repository import GraphRepository
 from app.repositories.journal_repository import JournalRepository
 from app.repositories.memory_repository import MemoryRepository
+from app.repositories.notification_repository import NotificationRepository
 from app.repositories.stats_repository import StatsRepository
 from app.repositories.vector_repository import VectorRepository
 
@@ -127,3 +128,10 @@ def get_kakao_channel_service(
 ) -> KakaoChannelService:
     """KakaoChannelService 인스턴스 생성."""
     return KakaoChannelService(db, memory_service)
+
+
+def get_notification_repository(
+    db: Client = Depends(get_db),
+) -> NotificationRepository:
+    """NotificationRepository 인스턴스 생성."""
+    return NotificationRepository(db)
