@@ -427,6 +427,53 @@
   border-top: 1px solid var(--border-secondary);
 }
 
+/* Notification Settings */
+.notification-settings {
+  padding: var(--space-lg);
+}
+
+.nudge-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nudge-desc {
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+
+.nudge-divider {
+  border: none;
+  border-top: 1px solid var(--border-secondary);
+  margin: var(--space-sm) 0;
+}
+
+.nudge-sub-setting {
+  padding-left: var(--space-lg);
+}
+
+.btn-primary {
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-size: 0.813rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Responsive */
 @media (max-width: 767px) {
   .settings-header {

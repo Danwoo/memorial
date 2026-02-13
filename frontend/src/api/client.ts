@@ -125,6 +125,18 @@ export async function put<T>(path: string, body?: unknown): Promise<T> {
   return res.json() as Promise<T>
 }
 
+// 타입 안전한 PATCH 요청 (JSON 전송 및 응답)
+export async function patch<T>(path: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'PATCH',
+    headers: buildHeaders(),
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  })
+
+  if (!res.ok) await handleErrorResponse(res)
+  return res.json() as Promise<T>
+}
+
 // 타입 안전한 DELETE 요청
 export async function del<T = void>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {

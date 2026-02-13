@@ -11,6 +11,9 @@ import {
   getChannelStatus,
   disconnectChannel,
 } from '../api'
+import { getNotificationSettings, updateNotificationSetting } from '../api/notifications'
+import type { NudgeSetting } from '../api/notifications'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 import type { ProviderInfo, BotSettings, BotSettingsUpdate, ChannelLinkCode, ChannelStatus } from '../api/integrations'
 import './SettingsView.css'
 
@@ -32,6 +35,11 @@ export default function SettingsView() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [botSettings, setBotSettings] = useState<BotSettings | null>(null)
   const [botLoading, setBotLoading] = useState(false)
+
+  // 알림 (넛지) 설정
+  const [nudgeSettings, setNudgeSettings] = useState<NudgeSetting[]>([])
+  const [nudgeLoading, setNudgeLoading] = useState(false)
+  const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, subscribe: subscribePush } = usePushNotifications()
 
   // 카카오톡 채널 연결 상태
   const [channelStatus, setChannelStatus] = useState<ChannelStatus | null>(null)
@@ -58,13 +66,15 @@ export default function SettingsView() {
       setProviders(status.providers)
       setEmail(status.email)
 
-      // 봇 설정과 채널 상태를 병렬로 로드
-      const [botResult, channelResult] = await Promise.allSettled([
+      // 봇 설정, 채널 상태, 알림 설정을 병렬로 로드
+      const [botResult, channelResult, nudgeResult] = await Promise.allSettled([
         getBotSettings(),
         getChannelStatus(),
+        getNotificationSettings(),
       ])
       if (botResult.status === 'fulfilled') setBotSettings(botResult.value)
       if (channelResult.status === 'fulfilled') setChannelStatus(channelResult.value)
+      if (nudgeResult.status === 'fulfilled') setNudgeSettings(nudgeResult.value.nudges)
     } catch {
       setProviders([])
     } finally {
@@ -131,6 +141,43 @@ export default function SettingsView() {
       setBotLoading(false)
     }
   }
+
+  // ─── 넛지 알림 설정 핸들러 ──────────────────────────────────────────────
+  const handleNudgeToggle = async (nudgeType: string, enabled: boolean) => {
+    try {
+      setNudgeLoading(true)
+      const result = await updateNotificationSetting({ nudge_type: nudgeType, enabled })
+      setNudgeSettings(result.nudges)
+    } catch {
+      toast.error('알림 설정 변경에 실패했습니다')
+    } finally {
+      setNudgeLoading(false)
+    }
+  }
+
+  const handleNudgeHourChange = async (nudgeType: string, hour: number) => {
+    try {
+      setNudgeLoading(true)
+      const result = await updateNotificationSetting({ nudge_type: nudgeType, delivery_hour: hour })
+      setNudgeSettings(result.nudges)
+    } catch {
+      toast.error('발송 시간 변경에 실패했습니다')
+    } finally {
+      setNudgeLoading(false)
+    }
+  }
+
+  const handlePushSubscribe = async () => {
+    const success = await subscribePush()
+    if (success) {
+      toast.success('브라우저 알림이 활성화되었습니다')
+    } else {
+      toast.error('알림 권한을 허용해주세요')
+    }
+  }
+
+  const getNudgeSetting = (type: string) =>
+    nudgeSettings.find((n) => n.nudge_type === type)
 
   // ─── 카카오톡 채널 연결 핸들러 ──────────────────────────────────────────
   const handleGenerateLinkCode = async () => {
@@ -238,6 +285,105 @@ export default function SettingsView() {
               </div>
             </label>
           ))}
+        </div>
+      </section>
+
+      {/* 알림 설정 섹션 */}
+      <section className="settings-section">
+        <h2 className="section-title">알림</h2>
+        <div className="notification-settings card">
+          {/* 브라우저 푸시 권한 */}
+          <div className="bot-setting-row">
+            <div className="nudge-info">
+              <span className="bot-setting-label">브라우저 알림</span>
+              <span className="nudge-desc">푸시 알림을 받으려면 브라우저 권한이 필요합니다</span>
+            </div>
+            {!pushSupported ? (
+              <span className="status-badge">미지원</span>
+            ) : pushSubscribed ? (
+              <span className="status-badge connected">활성화됨</span>
+            ) : (
+              <button
+                className="btn btn-sm btn-primary"
+                onClick={handlePushSubscribe}
+                disabled={pushLoading}
+              >
+                {pushLoading ? '처리 중...' : '알림 허용'}
+              </button>
+            )}
+          </div>
+
+          <hr className="nudge-divider" />
+
+          {/* 저녁 회고 */}
+          <div className="bot-setting-row">
+            <div className="nudge-info">
+              <span className="bot-setting-label">저녁 회고</span>
+              <span className="nudge-desc">오늘 저장한 기억 수와 주요 토픽을 알려줍니다</span>
+            </div>
+            <label className="toggle-switch">
+              <input
+                type="checkbox"
+                checked={getNudgeSetting('evening_review')?.enabled ?? true}
+                onChange={(e) => handleNudgeToggle('evening_review', e.target.checked)}
+                disabled={nudgeLoading}
+              />
+              <span className="toggle-slider" />
+            </label>
+          </div>
+
+          {getNudgeSetting('evening_review')?.enabled && (
+            <div className="bot-setting-row nudge-sub-setting">
+              <span className="bot-setting-label">발송 시간</span>
+              <select
+                value={getNudgeSetting('evening_review')?.delivery_hour ?? 21}
+                onChange={(e) => handleNudgeHourChange('evening_review', Number(e.target.value))}
+                disabled={nudgeLoading}
+              >
+                {Array.from({ length: 5 }, (_, i) => i + 19).map((h) => (
+                  <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <hr className="nudge-divider" />
+
+          {/* 주간 요약 */}
+          <div className="bot-setting-row">
+            <div className="nudge-info">
+              <span className="bot-setting-label">주간 요약</span>
+              <span className="nudge-desc">매주 일요일에 이번 주 활동 통계를 보내줍니다</span>
+            </div>
+            <label className="toggle-switch">
+              <input
+                type="checkbox"
+                checked={getNudgeSetting('weekly_summary')?.enabled ?? true}
+                onChange={(e) => handleNudgeToggle('weekly_summary', e.target.checked)}
+                disabled={nudgeLoading}
+              />
+              <span className="toggle-slider" />
+            </label>
+          </div>
+
+          <hr className="nudge-divider" />
+
+          {/* 연결 발견 */}
+          <div className="bot-setting-row">
+            <div className="nudge-info">
+              <span className="bot-setting-label">기억 연결 발견</span>
+              <span className="nudge-desc">저장한 기억들 사이의 연결을 찾아 알려줍니다</span>
+            </div>
+            <label className="toggle-switch">
+              <input
+                type="checkbox"
+                checked={getNudgeSetting('connection_found')?.enabled ?? true}
+                onChange={(e) => handleNudgeToggle('connection_found', e.target.checked)}
+                disabled={nudgeLoading}
+              />
+              <span className="toggle-slider" />
+            </label>
+          </div>
         </div>
       </section>
 
