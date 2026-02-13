@@ -148,6 +148,21 @@ class JournalService:
         """사용자의 저널 항목 목록 조회."""
         return await self.journal_repo.get_journals(user_id, limit)
 
+    async def get_journal_dates(self, user_id: UUID, limit: int = 90) -> list[dict[str, Any]]:
+        """저널이 존재하는 날짜 목록 조회."""
+        entries = await self.journal_repo.get_journal_dates(user_id, limit)
+        date_map: dict[str, dict[str, Any]] = {}
+        for entry in entries:
+            date_key = entry["created_at"][:10]
+            if date_key not in date_map:
+                date_map[date_key] = {"date": date_key, "count": 0, "mood": entry.get("mood")}
+            date_map[date_key]["count"] += 1
+        return sorted(date_map.values(), key=lambda x: x["date"], reverse=True)
+
+    async def get_journals_by_date(self, user_id: UUID, date_str: str) -> list[dict[str, Any]]:
+        """특정 날짜의 저널 목록 조회."""
+        return await self.journal_repo.get_journals_by_date(user_id, date_str)
+
     async def generate_review_questions(self, content: str) -> list[str]:
         """저널 내용 기반 소크라테스식 성찰 질문 생성 (LLM 활용)."""
         if not content or len(content.strip()) < MIN_CONTENT_LENGTH:

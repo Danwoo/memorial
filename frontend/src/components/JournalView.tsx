@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { Save, Loader2, Sparkles } from 'lucide-react'
+import { Save, Loader2, Sparkles, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import TurndownService from 'turndown'
-import type { EditorMode, RelatedMemory, DigestMemory, DigestData, ChatSessionResponse } from '../types'
+import type { EditorMode, RelatedMemory, DigestMemory, DigestData, ChatSessionResponse, JournalDateInfo } from '../types'
 import {
   saveJournal,
   fetchRelatedMemories as fetchRelatedMemoriesApi,
@@ -10,6 +10,8 @@ import {
   fetchChatSessions,
   fetchDigest,
   fetchReviewQuestions,
+  fetchJournalDates,
+  fetchJournalsByDate,
 } from '../api'
 import type { Editor } from '@tiptap/react'
 import { TiptapEditor, type TiptapEditorHandle } from './journal/TiptapEditor'
@@ -81,15 +83,39 @@ function syncContentToEditor(
   }
 }
 
+// YYYY-MM-DD 형식 날짜 헬퍼
+function toDateStr(d: Date): string {
+  return d.toISOString().slice(0, 10)
+}
+
+function formatDateKo(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+function shiftDate(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  d.setDate(d.getDate() + days)
+  return toDateStr(d)
+}
+
 export default function JournalView() {
-  const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+  const todayStr = toDateStr(new Date())
+  const todayLabel = formatDateKo(todayStr)
   const editorRef = useRef<TiptapEditorHandle>(null)
   const toast = useToast()
 
-  const defaultContent = `# ${today} 회고\n\n오늘은...\n\n`
+  // 날짜 네비게이션
+  const [selectedDate, setSelectedDate] = useState(todayStr)
+  const [journalDates, setJournalDates] = useState<JournalDateInfo[]>([])
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const isToday = selectedDate === todayStr
+
+  const defaultContent = `# ${todayLabel} 회고\n\n오늘은...\n\n`
   const normalize = (s: string) => s.replace(/\s+/g, ' ').trim()
 
   const [markdownContent, setMarkdownContent] = useState(() => {
+    if (!isToday) return ''
     const saved = localStorage.getItem(JOURNAL_DRAFT_KEY)
     return saved && saved.trim() ? saved : defaultContent
   })
@@ -101,20 +127,21 @@ export default function JournalView() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
   const [showSessionPicker, setShowSessionPicker] = useState(false)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
 
   const [tiptapEditor, setTiptapEditor] = useState<Editor | null>(null)
   const [starterQuestions, setStarterQuestions] = useState<string[]>([])
   const [isLoadingStarter, setIsLoadingStarter] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
 
-  const showStarter = normalize(markdownContent) === normalize(defaultContent) && !isGenerating
+  const showStarter = isToday && normalize(markdownContent) === normalize(defaultContent) && !isGenerating
 
   const templates = useMemo(
     () => [
       {
         id: 'til',
         label: '오늘의 TIL',
-        content: `# ${today} TIL\n\n## 오늘 배운 것\n\n\n\n## 느낀 점\n\n\n\n## 적용할 것\n\n`,
+        content: `# ${todayLabel} TIL\n\n## 오늘 배운 것\n\n\n\n## 느낀 점\n\n\n\n## 적용할 것\n\n`,
       },
       {
         id: 'weekly',
@@ -124,14 +151,22 @@ export default function JournalView() {
       {
         id: 'free',
         label: '자유 회고',
-        content: `# ${today} 회고\n\n`,
+        content: `# ${todayLabel} 회고\n\n`,
       },
     ],
-    [today],
+    [todayLabel],
   )
 
-  // 마운트 시 초안 복원 알림
+  // 마운트 시 저널 날짜 목록 로드
   useEffect(() => {
+    fetchJournalDates()
+      .then((res) => setJournalDates(res.dates))
+      .catch((err) => console.error('저널 날짜 로드 실패', err))
+  }, [])
+
+  // 마운트 시 초안 복원 알림 (오늘일 때만)
+  useEffect(() => {
+    if (!isToday) return
     const saved = localStorage.getItem(JOURNAL_DRAFT_KEY)
     if (saved && normalize(saved) !== normalize(defaultContent)) {
       toast.info('이전 초안을 복원했습니다.')
@@ -139,21 +174,50 @@ export default function JournalView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 마운트 시 오늘의 다이제스트 로드
+  // 오늘의 다이제스트 로드 (오늘일 때만)
   useEffect(() => {
+    if (!isToday) return
     fetchDigest()
       .then(setDigest)
       .catch((err) => console.error('다이제스트 로드 실패', err))
-  }, [])
+  }, [isToday])
 
-  // 자동 저장: 내용 변경 시 localStorage에 디바운스 저장
+  // 과거 날짜 선택 시 저널 로드
   useEffect(() => {
+    if (isToday) {
+      const saved = localStorage.getItem(JOURNAL_DRAFT_KEY)
+      setMarkdownContent(saved && saved.trim() ? saved : defaultContent)
+      setEditorMode('wysiwyg')
+      return
+    }
+    setIsLoadingHistory(true)
+    fetchJournalsByDate(selectedDate)
+      .then((entries) => {
+        if (entries.length > 0) {
+          setMarkdownContent(entries[0].content)
+          setEditorMode('viewer')
+        } else {
+          setMarkdownContent(`*${formatDateKo(selectedDate)}에 작성된 저널이 없습니다.*`)
+          setEditorMode('viewer')
+        }
+      })
+      .catch((err) => {
+        console.error('저널 로드 실패', err)
+        toast.error('저널을 불러오지 못했습니다.')
+      })
+      .finally(() => setIsLoadingHistory(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate])
+
+  // 자동 저장: 오늘일 때만 localStorage에 디바운스 저장
+  useEffect(() => {
+    if (!isToday) return
     if (normalize(markdownContent) === normalize(defaultContent)) return
     const timer = setTimeout(() => {
       localStorage.setItem(JOURNAL_DRAFT_KEY, markdownContent)
     }, AUTOSAVE_DEBOUNCE_MS)
     return () => clearTimeout(timer)
-  }, [markdownContent, defaultContent])
+  }, [markdownContent, defaultContent, isToday])
 
   // 다이제스트 로드 시 회고 질문 자동 생성
   useEffect(() => {
@@ -196,11 +260,11 @@ export default function JournalView() {
   // 회고 질문 클릭 시 에디터에 삽입
   const handleStarterQuestion = useCallback(
     (question: string) => {
-      const content = `# ${today} 회고\n\n> Q: ${question}\n\n`
+      const content = `# ${todayLabel} 회고\n\n> Q: ${question}\n\n`
       setMarkdownContent(content)
       syncContentToEditor(content, editorMode, editorRef)
     },
-    [today, editorMode],
+    [todayLabel, editorMode],
   )
 
   // AI에게 질문받기 (수동 트리거)
@@ -329,7 +393,7 @@ export default function JournalView() {
       }
 
       // 메모리 기반 템플릿 폴백
-      const template = `# ${today} 회고\n\n## 오늘의 메모리\n\n${digest.memories
+      const template = `# ${todayLabel} 회고\n\n## 오늘의 메모리\n\n${digest.memories
         .map((m) => `- **[${m.type}]** ${m.title}: ${m.summary}`)
         .join('\n')}\n\n## 하루를 돌아보며\n\n`
       setMarkdownContent(template)
@@ -387,28 +451,96 @@ export default function JournalView() {
       <div className="journal-editor-section">
         {/* 에디터 헤더 */}
         <div className="journal-editor-header">
-          <h2>오늘의 저널</h2>
-          <div className="journal-editor-actions">
+          <div className="journal-date-nav">
             <button
-              className="journal-save-btn"
-              onClick={handleSave}
-              disabled={isSaving}
+              className="journal-date-nav__btn"
+              onClick={() => setSelectedDate(shiftDate(selectedDate, -1))}
+              type="button"
+              aria-label="이전 날짜"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              className="journal-date-nav__current"
+              onClick={() => setShowDatePicker(!showDatePicker)}
               type="button"
             >
-              <Save size={16} />
-              {isSaving ? '저장 중...' : '저장'}
+              <Calendar size={14} />
+              <span>{isToday ? '오늘의 저널' : formatDateKo(selectedDate)}</span>
             </button>
+            <button
+              className="journal-date-nav__btn"
+              onClick={() => setSelectedDate(shiftDate(selectedDate, 1))}
+              disabled={selectedDate >= todayStr}
+              type="button"
+              aria-label="다음 날짜"
+            >
+              <ChevronRight size={18} />
+            </button>
+            {!isToday && (
+              <button
+                className="journal-date-nav__today"
+                onClick={() => setSelectedDate(todayStr)}
+                type="button"
+              >
+                오늘
+              </button>
+            )}
+          </div>
+          <div className="journal-editor-actions">
+            {isToday && (
+              <button
+                className="journal-save-btn"
+                onClick={handleSave}
+                disabled={isSaving}
+                type="button"
+              >
+                <Save size={16} />
+                {isSaving ? '저장 중...' : '저장'}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* 툴바 */}
-        <EditorToolbar
-          editor={tiptapEditor}
-          mode={editorMode}
-          onModeChange={handleModeChange}
-        />
+        {/* 날짜 선택 드롭다운 */}
+        {showDatePicker && journalDates.length > 0 && (
+          <div className="journal-date-picker">
+            <div className="journal-date-picker__list">
+              {journalDates.map((d) => (
+                <button
+                  key={d.date}
+                  className={`journal-date-picker__item ${d.date === selectedDate ? 'active' : ''}`}
+                  onClick={() => { setSelectedDate(d.date); setShowDatePicker(false) }}
+                  type="button"
+                >
+                  <span className="journal-date-picker__date">{formatDateKo(d.date)}</span>
+                  <span className="journal-date-picker__meta">
+                    {d.count}개 {d.mood === 'POSITIVE' ? '😊' : d.mood === 'NEGATIVE' ? '😔' : '📝'}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* 시작 도우미 */}
+        {/* 툴바 (오늘일 때만) */}
+        {isToday && (
+          <EditorToolbar
+            editor={tiptapEditor}
+            mode={editorMode}
+            onModeChange={handleModeChange}
+          />
+        )}
+
+        {/* 히스토리 로딩 */}
+        {isLoadingHistory && (
+          <div className="journal-history-loading">
+            <Loader2 size={20} className="spin" />
+            저널 불러오는 중...
+          </div>
+        )}
+
+        {/* 시작 도우미 (오늘일 때만) */}
         {showStarter && (
           <div className="journal-starter">
             <div className="journal-starter__section">
@@ -491,25 +623,29 @@ export default function JournalView() {
           )}
         </div>
 
-        {/* AI 하단 패널 */}
-        <AIPanel
-          content={markdownContent}
-          onInsertQuestion={handleInsertQuestion}
-        />
+        {/* AI 하단 패널 (오늘일 때만) */}
+        {isToday && (
+          <AIPanel
+            content={markdownContent}
+            onInsertQuestion={handleInsertQuestion}
+          />
+        )}
       </div>
 
-      {/* 메모리 사이드바 */}
-      <MemorySidebar
-        todayMemories={digest?.memories ?? []}
-        relatedMemories={relatedMemories}
-        isLoadingRelated={isLoadingRelated}
-        onInsertMemory={handleInsertMemory}
-        onDailySummary={handleDailySummary}
-        onSessionDraft={handleSessionDraft}
-        isGenerating={isGenerating}
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
-      />
+      {/* 메모리 사이드바 (오늘일 때만) */}
+      {isToday && (
+        <MemorySidebar
+          todayMemories={digest?.memories ?? []}
+          relatedMemories={relatedMemories}
+          isLoadingRelated={isLoadingRelated}
+          onInsertMemory={handleInsertMemory}
+          onDailySummary={handleDailySummary}
+          onSessionDraft={handleSessionDraft}
+          isGenerating={isGenerating}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
+        />
+      )}
 
       {/* 세션 선택 모달 */}
       {showSessionPicker && (

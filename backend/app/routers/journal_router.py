@@ -10,6 +10,8 @@ from app.schemas.journal_schema import (
     GenerateDraftResponse,
     InsightsResponse,
     JournalCreate,
+    JournalDateInfo,
+    JournalDatesResponse,
     RelatedMemoriesResponse,
     RelatedMemoryItem,
     ReviewQuestionsResponse,
@@ -55,6 +57,27 @@ async def list_journals(
 ):
     """현재 사용자의 저널 항목 목록 조회."""
     return await service.get_entries(user_id, limit)
+
+
+@router.get("/dates", response_model=JournalDatesResponse)
+async def get_journal_dates(
+    limit: int = 90,
+    user_id: UUID = Depends(get_user_id),
+    service: JournalService = Depends(get_journal_service),
+):
+    """저널이 존재하는 날짜 목록 조회."""
+    dates = await service.get_journal_dates(user_id, limit)
+    return JournalDatesResponse(dates=[JournalDateInfo(**d) for d in dates])
+
+
+@router.get("/by-date/{date}")
+async def get_journals_by_date(
+    date: str,
+    user_id: UUID = Depends(get_user_id),
+    service: JournalService = Depends(get_journal_service),
+):
+    """특정 날짜(YYYY-MM-DD)의 저널 목록 조회."""
+    return await service.get_journals_by_date(user_id, date)
 
 
 @router.post("/review-questions", response_model=ReviewQuestionsResponse)

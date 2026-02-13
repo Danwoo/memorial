@@ -25,3 +25,21 @@ export interface InsightsResponse {
   distortions: CognitiveDistortion[]
   wellness_score: number
 }
+
+export interface JournalDateInfo {
+  date: string
+  count: number
+  mood: string | null
+}
+
+export interface JournalDatesResponse {
+  dates: JournalDateInfo[]
+}
+
+export interface JournalEntry {
+  id: string
+  content: string
+  mood: string | null
+  created_at: string
+  updated_at: string
+}

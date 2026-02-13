@@ -68,3 +68,17 @@ class GenerateDraftResponse(BaseModel):
 
     draft: str
     session_id: UUID
+
+
+class JournalDateInfo(BaseModel):
+    """저널 존재 날짜 정보."""
+
+    date: str
+    count: int
+    mood: str | None = None
+
+
+class JournalDatesResponse(BaseModel):
+    """저널 날짜 목록 응답."""
+
+    dates: list[JournalDateInfo]

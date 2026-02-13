@@ -25,6 +25,9 @@ export type {
   ReviewQuestionsResponse,
   CognitiveDistortion,
   InsightsResponse,
+  JournalDateInfo,
+  JournalDatesResponse,
+  JournalEntry,
 } from './journal'
 
 export type {
