@@ -1,11 +1,14 @@
 import { useEffect, useState, useMemo } from 'react'
-import { Flame, Trophy, Calendar, TrendingUp, Tag } from 'lucide-react'
-import type { StreakData, StatsData, ActivityData } from '../types'
-import { fetchStreak, fetchStats, fetchActivity } from '../api'
+import { useNavigate } from 'react-router-dom'
+import {
+  Flame, Trophy, Calendar, TrendingUp, Tag,
+  BookOpen, Lightbulb, Link2, Pencil,
+} from 'lucide-react'
+import type { StreakData, StatsData, ActivityData, BriefingData } from '../types'
+import { fetchStreak, fetchStats, fetchActivity, fetchBriefing } from '../api'
 import { useToast } from '../contexts/ToastContext'
 import './DashboardView.css'
 
-// 스트릭 축하 메시지
 function getStreakMessage(streak: number): string {
   if (streak === 0) return '오늘 기록을 시작해보세요!'
   if (streak === 1) return '첫 걸음을 내딛었어요!'
@@ -16,7 +19,6 @@ function getStreakMessage(streak: number): string {
   return '한 달 넘는 연속 기록!'
 }
 
-// 활동 히트맵 스타일 (0~max count → accent 색상 + 투명도 매핑)
 function getHeatStyle(count: number, max: number): React.CSSProperties {
   if (count === 0) return { backgroundColor: 'var(--bg-tertiary)' }
   const intensity = Math.min(count / Math.max(max, 1), 1)
@@ -25,21 +27,26 @@ function getHeatStyle(count: number, max: number): React.CSSProperties {
 }
 
 export default function DashboardView() {
+  const navigate = useNavigate()
+  const toast = useToast()
+
+  const [briefing, setBriefing] = useState<BriefingData | null>(null)
   const [streak, setStreak] = useState<StreakData | null>(null)
   const [stats, setStats] = useState<StatsData | null>(null)
   const [activity, setActivity] = useState<ActivityData[]>([])
   const [loading, setLoading] = useState(true)
-  const toast = useToast()
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       try {
-        const [streakData, statsData, activityData] = await Promise.all([
+        const [briefingData, streakData, statsData, activityData] = await Promise.all([
+          fetchBriefing().catch(() => null),
           fetchStreak(),
           fetchStats(),
           fetchActivity(60),
         ])
+        setBriefing(briefingData)
         setStreak(streakData)
         setStats(statsData)
         setActivity(activityData.activity)
@@ -69,6 +76,84 @@ export default function DashboardView() {
   return (
     <div className="dashboard-view">
       <h1 className="dashboard-title">대시보드</h1>
+
+      {/* 오늘의 브리핑 */}
+      {briefing && (
+        <div className="briefing-section">
+          <h2 className="briefing-heading">오늘의 브리핑</h2>
+          <div className="briefing-grid">
+            <button
+              className="briefing-card"
+              onClick={() => navigate('/memories')}
+            >
+              <div className="briefing-card-icon">
+                <BookOpen size={20} />
+              </div>
+              <div className="briefing-card-body">
+                <div className="briefing-card-value">
+                  {briefing.today_memories.count > 0
+                    ? `오늘 ${briefing.today_memories.count}개의 새 기억`
+                    : '아직 오늘의 기억이 없어요'}
+                </div>
+                {briefing.today_memories.topics.length > 0 && (
+                  <div className="briefing-card-tags">
+                    {briefing.today_memories.topics.map(t => (
+                      <span key={t} className="briefing-tag">#{t}</span>
+                    ))}
+                  </div>
+                )}
+                {briefing.today_memories.count === 0 && (
+                  <div className="briefing-card-hint">첫 메모리를 추가해보세요!</div>
+                )}
+              </div>
+            </button>
+
+            <button
+              className="briefing-card"
+              onClick={() => navigate('/journal')}
+            >
+              <div className="briefing-card-icon">
+                <Pencil size={20} />
+              </div>
+              <div className="briefing-card-body">
+                <div className="briefing-card-value">
+                  {briefing.unreviewed_count > 0
+                    ? `회고하지 않은 기억 ${briefing.unreviewed_count}개`
+                    : '모든 기억을 회고했어요!'}
+                </div>
+                {briefing.unreviewed_count > 0 && (
+                  <div className="briefing-card-cta">저널 쓰러 가기 →</div>
+                )}
+              </div>
+            </button>
+
+            <button
+              className="briefing-card briefing-card-wide"
+              onClick={() => navigate('/journal', { state: { prefillQuestion: briefing.suggested_question } })}
+            >
+              <div className="briefing-card-icon">
+                <Lightbulb size={20} />
+              </div>
+              <div className="briefing-card-body">
+                <div className="briefing-card-label">오늘의 질문</div>
+                <div className="briefing-card-question">{briefing.suggested_question}</div>
+              </div>
+            </button>
+
+            {briefing.connection_hint && (
+              <button className="briefing-card briefing-card-wide">
+                <div className="briefing-card-icon">
+                  <Link2 size={20} />
+                </div>
+                <div className="briefing-card-body">
+                  <div className="briefing-card-label">연결 발견</div>
+                  <div className="briefing-card-value">{briefing.connection_hint}</div>
+                </div>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 스트릭 카드 */}
       {streak && (

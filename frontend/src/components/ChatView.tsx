@@ -7,8 +7,8 @@ import {
   BookOpen, X,
 } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
-import type { ChatMessage, ChatLocationState, DigestData } from '../types'
-import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream, fetchDigest } from '../api'
+import type { ChatMessage, ChatLocationState, BriefingData } from '../types'
+import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream, fetchBriefing } from '../api'
 import './ChatView.css'
 
 const ERROR_MESSAGE = '죄송합니다, 오류가 발생했습니다. 다시 시도해주세요.'
@@ -24,7 +24,7 @@ export default function ChatView() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
-  const [digest, setDigest] = useState<DigestData | null>(null)
+  const [briefing, setBriefing] = useState<BriefingData | null>(null)
   const [welcomeDismissed, setWelcomeDismissed] = useState(
     () => localStorage.getItem('memoir-welcome-dismissed') === 'true'
   )
@@ -57,9 +57,9 @@ export default function ChatView() {
     }
   }, [location.state])
 
-  // 마운트 시 다이제스트 로드 (빈 상태 표시용)
+  // 마운트 시 브리핑 로드 (빈 상태 표시용)
   useEffect(() => {
-    fetchDigest().then(setDigest).catch(() => {})
+    fetchBriefing().then(setBriefing).catch(() => {})
   }, [])
 
   // 언마운트 시 진행 중인 SSE 스트림 중단
@@ -163,14 +163,11 @@ export default function ChatView() {
     setWelcomeDismissed(true)
   }, [])
 
-  const showWelcomeBanner = digest !== null
-    && digest.summary.memory_count === 0
+  const showWelcomeBanner = briefing !== null
+    && briefing.today_memories.count === 0
     && !welcomeDismissed
 
-  const hasDigestContent = digest && (
-    digest.summary.memory_count > 0 || digest.insights.main_topics.length > 0
-  )
-  const hasSuggestedQuestions = digest && digest.insights.suggested_questions.length > 0
+  const hasBriefingContent = briefing && briefing.today_memories.count > 0
 
   return (
     <div className="chat-view">
@@ -208,24 +205,36 @@ export default function ChatView() {
             )}
 
             <MessageSquareText size={48} className="state-icon" />
-            <h2>무엇이 궁금하신가요?</h2>
-            <p>저장된 지식을 바탕으로 대화해보세요</p>
-
-            {hasDigestContent && (
-              <div className="welcome-stats">
-                <span>오늘 메모리 {digest.summary.memory_count}개</span>
-                <span className="welcome-stats-dot">&middot;</span>
-                <span>주제 {digest.insights.main_topics.length}개</span>
-              </div>
+            {hasBriefingContent ? (
+              <>
+                <h2>오늘 {briefing.today_memories.count}개의 기억이 쌓였습니다</h2>
+                <p>무엇이 궁금하세요?</p>
+                {briefing.today_memories.topics.length > 0 && (
+                  <div className="welcome-stats">
+                    {briefing.today_memories.topics.map((t, i) => (
+                      <span key={i} className="welcome-topic-tag">#{t}</span>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <h2>무엇이 궁금하신가요?</h2>
+                <p>저장된 지식을 바탕으로 대화해보세요</p>
+              </>
             )}
 
-            {hasSuggestedQuestions && (
+            {briefing && (
               <div className="suggested-questions">
-                {digest.insights.suggested_questions.map((q, idx) => (
-                  <button key={idx} className="suggested-q" onClick={() => setInput(q)}>
-                    {q}
-                  </button>
-                ))}
+                <button className="suggested-q" onClick={() => setInput(briefing.suggested_question)}>
+                  {briefing.suggested_question}
+                </button>
+                <button className="suggested-q" onClick={() => setInput('최근 관심사에 대해 이야기해줘')}>
+                  최근 관심사에 대해 이야기해줘
+                </button>
+                <button className="suggested-q" onClick={() => setInput('저장한 글 중 인상적인 것은?')}>
+                  저장한 글 중 인상적인 것은?
+                </button>
               </div>
             )}
           </div>

@@ -130,6 +130,14 @@
   color: var(--text-muted);
 }
 
+.welcome-topic-tag {
+  font-size: 0.8rem;
+  color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
 .suggested-questions {
   display: flex;
   flex-wrap: wrap;

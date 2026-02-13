@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.routers import (
     auth_router,
+    briefing_router,
     chat_router,
     digest_router,
     graph_router,
@@ -25,3 +26,4 @@ api_router.include_router(stats_router.router)
 api_router.include_router(journal_router.router)
 api_router.include_router(digest_router.router)
 api_router.include_router(notification_router.router)
+api_router.include_router(briefing_router.router)

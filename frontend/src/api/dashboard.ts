@@ -1,5 +1,5 @@
 import { get } from './client'
-import type { StatsData, DigestData, StreakData, ActivityResponse } from '../types'
+import type { StatsData, DigestData, StreakData, ActivityResponse, BriefingData } from '../types'
 
 // 대시보드 통계 요약 조회
 export function fetchStats(): Promise<StatsData> {
@@ -19,4 +19,9 @@ export function fetchStreak(): Promise<StreakData> {
 // 활동 데이터 조회
 export function fetchActivity(days: number = 30): Promise<ActivityResponse> {
   return get<ActivityResponse>(`/stats/activity?days=${days}`)
+}
+
+// 오늘의 브리핑 조회
+export function fetchBriefing(): Promise<BriefingData> {
+  return get<BriefingData>('/briefing/today')
 }

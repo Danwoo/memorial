@@ -17,6 +17,114 @@
   padding: 60px 0;
 }
 
+/* 오늘의 브리핑 */
+.briefing-section {
+  margin-bottom: 24px;
+}
+
+.briefing-heading {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.briefing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.briefing-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+  width: 100%;
+}
+
+.briefing-card:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-secondary);
+}
+
+.briefing-card-wide {
+  grid-column: 1 / -1;
+}
+
+.briefing-card-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+  color: var(--accent-primary);
+}
+
+.briefing-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.briefing-card-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.briefing-card-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+}
+
+.briefing-card-question {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.briefing-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.briefing-tag {
+  font-size: 0.7rem;
+  color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+}
+
+.briefing-card-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.briefing-card-cta {
+  font-size: 0.8rem;
+  color: var(--accent-primary);
+  font-weight: 500;
+  margin-top: 4px;
+}
+
 /* 스트릭 카드 */
 .streak-card {
   background: var(--bg-card);
@@ -219,6 +327,14 @@
   .dashboard-view {
     padding: 20px 16px;
     padding-top: 52px;
+  }
+
+  .briefing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .briefing-card-wide {
+    grid-column: auto;
   }
 
   .stats-grid {

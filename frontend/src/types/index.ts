@@ -46,6 +46,7 @@ export type {
   ActivityResponse,
   DigestMemory,
   DigestJournal,
+  BriefingData,
   DigestData,
 } from './dashboard'
 

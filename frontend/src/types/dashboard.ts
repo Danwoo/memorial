@@ -55,6 +55,20 @@ export interface ActivityResponse {
   activity: ActivityData[]
 }
 
+export interface BriefingData {
+  today_memories: {
+    count: number
+    topics: string[]
+  }
+  unreviewed_count: number
+  streak: {
+    current: number
+    longest: number
+  }
+  suggested_question: string
+  connection_hint: string | null
+}
+
 export interface DigestData {
   date: string
   summary: {
