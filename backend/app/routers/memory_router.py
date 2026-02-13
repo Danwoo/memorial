@@ -56,6 +56,11 @@ async def create_memory(
             if not data.url:
                 raise HTTPException(status_code=400, detail="URL is required for WEB type")
             processed = await process_web_content(data.url)
+            # Extension이 본문을 직접 전송한 경우 병합
+            if data.content:
+                processed["content"] = data.content + "\n\n" + processed["content"]
+            if data.memo and data.memo != processed["title"]:
+                processed["content"] = f"[메모] {data.memo}\n\n" + processed["content"]
 
         elif data.source_type == "PDF":
             raise HTTPException(

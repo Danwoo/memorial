@@ -3,20 +3,42 @@
 <head>
   <meta charset="utf-8">
   <style>
+    :root {
+      --bg: #1a1a1a;
+      --bg-secondary: #2d2d2d;
+      --text: #e5e5e5;
+      --text-dim: #888;
+      --accent: #8b5cf6;
+      --accent-hover: #7c3aed;
+      --success: #34d399;
+      --error: #f87171;
+      --border: #444;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f9fafb;
+        --bg-secondary: #ffffff;
+        --text: #1f2937;
+        --text-dim: #6b7280;
+        --border: #d1d5db;
+      }
+    }
+    * { box-sizing: border-box; }
     body {
-      width: 320px;
+      width: 340px;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #1a1a1a;
-      color: #e5e5e5;
+      background-color: var(--bg);
+      color: var(--text);
       margin: 0;
       padding: 16px;
     }
-    h2 { margin-top: 0; color: #a78bfa; font-size: 1.2rem; }
+    h2 { margin-top: 0; color: var(--accent); font-size: 1.2rem; }
     .page-info {
-      background: #2d2d2d;
+      background: var(--bg-secondary);
       padding: 10px;
       border-radius: 8px;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
     }
     .page-title {
       font-weight: bold;
@@ -26,8 +48,8 @@
       text-overflow: ellipsis;
     }
     .page-url {
-      color: #888;
-      font-size: 0.8rem;
+      color: var(--text-dim);
+      font-size: 0.78rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -38,20 +60,81 @@
       align-items: center;
       margin-bottom: 12px;
       font-size: 0.8rem;
-      color: #888;
+      color: var(--text-dim);
     }
     #logoutBtn {
       width: auto;
       padding: 4px 10px;
       font-size: 0.75rem;
-      background: #444;
+      background: var(--border);
       border-radius: 4px;
+      color: var(--text);
     }
-    #logoutBtn:hover { background: #555; }
+    #logoutBtn:hover { opacity: 0.8; }
+
+    /* 메모/태그 입력 */
+    .input-group { margin-bottom: 10px; }
+    .input-group label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      resize: vertical;
+    }
+    textarea:focus, input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    textarea { min-height: 56px; max-height: 120px; }
+
+    /* 토글 */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 0.82rem;
+    }
+    .toggle-row label { color: var(--text-dim); cursor: pointer; }
+    .toggle-switch {
+      position: relative;
+      width: 36px; height: 20px;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      left: 2px; bottom: 2px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+    /* 버튼 */
     button {
       width: 100%;
       padding: 10px;
-      background: #8b5cf6;
+      background: var(--accent);
       border: none;
       color: white;
       border-radius: 6px;
@@ -60,8 +143,8 @@
       transition: background 0.2s;
       font-size: 0.9rem;
     }
-    button:hover { background: #7c3aed; }
-    button:disabled { background: #555; cursor: not-allowed; }
+    button:hover { background: var(--accent-hover); }
+    button:disabled { background: var(--border); cursor: not-allowed; color: var(--text-dim); }
     .google-btn {
       background: #fff;
       color: #333;
@@ -80,13 +163,44 @@
       text-align: center;
       min-height: 20px;
     }
-    .success { color: #34d399; }
-    .error { color: #f87171; }
+    .success { color: var(--success); }
+    .error { color: var(--error); }
     .login-info {
       text-align: center;
-      color: #666;
+      color: var(--text-dim);
       font-size: 0.8rem;
       margin-bottom: 16px;
+    }
+
+    /* 성공 애니메이션 */
+    @keyframes checkmark {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .save-success {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 0;
+    }
+    .save-success .check-icon {
+      width: 48px; height: 48px;
+      background: var(--success);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: checkmark 0.4s ease-out;
+    }
+    .save-success .check-icon svg { width: 28px; height: 28px; }
+    .save-success p { color: var(--success); font-weight: 600; margin: 0; }
+    .today-count {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      text-align: center;
+      margin-top: 4px;
     }
   </style>
 </head>
@@ -111,7 +225,35 @@
       <div class="page-title" id="title">Loading...</div>
       <div class="page-url" id="url">...</div>
     </div>
-    <button id="saveBtn">메모리에 저장</button>
+
+    <div class="input-group">
+      <label for="memoInput">메모 (선택)</label>
+      <textarea id="memoInput" placeholder="이 페이지에 대한 메모를 남겨보세요..."></textarea>
+    </div>
+    <div class="input-group">
+      <label for="tagsInput">태그 (쉼표로 구분)</label>
+      <input type="text" id="tagsInput" placeholder="예: 기술, AI, 참고자료">
+    </div>
+    <div class="toggle-row">
+      <label for="includeBody">페이지 본문 포함</label>
+      <div class="toggle-switch">
+        <input type="checkbox" id="includeBody" checked>
+        <span class="toggle-slider"></span>
+      </div>
+    </div>
+
+    <div id="saveArea">
+      <button id="saveBtn">메모리에 저장</button>
+    </div>
+    <div id="successArea" style="display:none;">
+      <div class="save-success">
+        <div class="check-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <p>저장 완료!</p>
+      </div>
+      <div class="today-count" id="todayCount"></div>
+    </div>
     <div id="status"></div>
   </div>
 
