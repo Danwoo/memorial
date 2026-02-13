@@ -4,6 +4,7 @@ import ForceGraph3D from 'react-force-graph-3d'
 import SpriteText from 'three-spritetext'
 import * as THREE from 'three'
 import type { GraphNode, GraphLink, GraphData } from '../types'
+import { useTheme } from '../contexts/ThemeContext'
 import { fetchGraph } from '../api'
 import './GraphView.css'
 
@@ -33,6 +34,7 @@ type AnyNode = GraphNode & { x?: number; y?: number; z?: number; [k: string]: an
 
 export default function GraphView() {
   const navigate = useNavigate()
+  const { resolvedTheme } = useTheme()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null)
   const nodeMaterials = useRef<Map<string, THREE.MeshLambertMaterial>>(new Map())
@@ -44,15 +46,7 @@ export default function GraphView() {
   const [searchQuery, setSearchQuery] = useState('')
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
 
-  // Dynamic background color based on color scheme preference
-  const [bgColor, setBgColor] = useState('#ffffff')
-  useEffect(() => {
-    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    setBgColor(isDark ? '#1a1a1a' : '#ffffff')
-    const listener = (e: MediaQueryListEvent) => setBgColor(e.matches ? '#1a1a1a' : '#ffffff')
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', listener)
-    return () => window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', listener)
-  }, [])
+  const bgColor = resolvedTheme === 'dark' ? '#1a1a1a' : '#ffffff'
 
   // 그래프 데이터 조회 및 노드 가공
   const fetchGraphData = useCallback(async () => {

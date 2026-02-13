@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme, type ThemePreference } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
 import {
   getIntegrationStatus,
@@ -22,6 +23,7 @@ const SUPPORTED_PROVIDERS = ['google', 'kakao'] as const
 
 export default function SettingsView() {
   const { user, linkProvider, unlinkProvider } = useAuth()
+  const { preference: themePreference, setPreference: setThemePreference } = useTheme()
   const toast = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const [providers, setProviders] = useState<ProviderInfo[]>([])
@@ -210,6 +212,32 @@ export default function SettingsView() {
               )}
             </span>
           </div>
+        </div>
+      </section>
+
+      {/* 테마 설정 섹션 */}
+      <section className="settings-section">
+        <h2 className="section-title">테마</h2>
+        <div className="theme-selector card">
+          {([
+            { value: 'system' as ThemePreference, label: '시스템', desc: 'OS 설정에 따라 자동 전환' },
+            { value: 'light' as ThemePreference, label: '라이트', desc: '밝은 테마' },
+            { value: 'dark' as ThemePreference, label: '다크', desc: '어두운 테마' },
+          ]).map((option) => (
+            <label key={option.value} className={`theme-option ${themePreference === option.value ? 'theme-option--active' : ''}`}>
+              <input
+                type="radio"
+                name="theme"
+                value={option.value}
+                checked={themePreference === option.value}
+                onChange={() => setThemePreference(option.value)}
+              />
+              <div className="theme-option__content">
+                <span className="theme-option__label">{option.label}</span>
+                <span className="theme-option__desc">{option.desc}</span>
+              </div>
+            </label>
+          ))}
         </div>
       </section>
 

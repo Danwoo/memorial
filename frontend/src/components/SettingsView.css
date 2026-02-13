@@ -453,3 +453,57 @@
     flex-wrap: wrap;
   }
 }
+
+/* ─── 테마 선택기 ──────────────────────────────────────────────────────── */
+
+.theme-selector {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+}
+
+.theme-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.theme-option:hover {
+  border-color: var(--border-primary);
+  background: var(--bg-tertiary);
+}
+
+.theme-option--active {
+  border-color: var(--accent-primary);
+  background: var(--accent-bg);
+}
+
+.theme-option input[type="radio"] {
+  accent-color: var(--accent-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.theme-option__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.theme-option__label {
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.theme-option__desc {
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
