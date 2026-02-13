@@ -361,3 +361,34 @@
   opacity: 0.3;
   cursor: not-allowed;
 }
+
+/* 모바일 반응형 */
+@media (max-width: 767px) {
+  .chat-header {
+    padding: var(--space-md) var(--space-md) var(--space-md) 52px;
+  }
+
+  .chat-header h1 {
+    font-size: 1.15rem;
+  }
+
+  .chat-messages {
+    padding: var(--space-md);
+  }
+
+  .message-content {
+    max-width: 85%;
+  }
+
+  .chat-input-container {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .welcome-banner {
+    max-width: 100%;
+  }
+
+  .suggested-questions {
+    max-width: 100%;
+  }
+}

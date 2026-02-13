@@ -549,3 +549,70 @@
   border-color: var(--accent-primary);
   color: var(--text-primary);
 }
+
+/* 모바일 반응형 */
+@media (max-width: 767px) {
+  .memory-header {
+    padding: var(--space-md) var(--space-md) var(--space-md) 52px;
+  }
+
+  .memory-header h1 {
+    font-size: 1.15rem;
+  }
+
+  .memory-tabs {
+    padding: var(--space-sm) var(--space-md);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .memory-tab {
+    white-space: nowrap;
+    font-size: 0.85rem;
+  }
+
+  .memory-grid {
+    padding: var(--space-md);
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-container {
+    padding: var(--space-md);
+    padding-left: 48px;
+  }
+
+  .timeline-line {
+    left: 23px;
+  }
+
+  .timeline-date-marker::before {
+    left: -33px;
+  }
+
+  .search-section {
+    padding: var(--space-md);
+  }
+
+  .search-main {
+    flex-direction: column;
+  }
+
+  .search-input {
+    font-size: 1rem;
+    padding: 12px 16px;
+  }
+
+  .search-btn {
+    padding: 12px;
+    font-size: 1rem;
+  }
+
+  .filter-panel {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .result-header {
+    flex-wrap: wrap;
+  }
+}

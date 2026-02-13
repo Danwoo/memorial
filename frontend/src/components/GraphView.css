@@ -484,6 +484,18 @@
     display: none;
   }
 
+  .graph-search {
+    top: 52px;
+    left: 16px;
+    transform: none;
+    right: 16px;
+  }
+
+  .search-input-wrapper {
+    min-width: 0;
+    width: 100%;
+  }
+
   .node-info-panel {
     width: calc(100% - 40px);
     left: 20px;
@@ -500,9 +512,5 @@
 
   .graph-controls span {
     font-size: 0.65rem;
-  }
-
-  .search-input-wrapper {
-    min-width: 200px;
   }
 }

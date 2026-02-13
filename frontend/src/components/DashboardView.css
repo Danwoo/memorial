@@ -215,9 +215,10 @@
 }
 
 /* 반응형 */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .dashboard-view {
     padding: 20px 16px;
+    padding-top: 52px;
   }
 
   .stats-grid {

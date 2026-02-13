@@ -428,6 +428,16 @@
 }
 
 /* Responsive */
+@media (max-width: 767px) {
+  .settings-header {
+    padding-left: 36px;
+  }
+
+  .theme-selector {
+    flex-direction: column;
+  }
+}
+
 @media (max-width: 640px) {
   .settings-view {
     padding: var(--space-lg);

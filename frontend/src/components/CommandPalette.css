@@ -173,3 +173,18 @@
   font-size: var(--fs-body-sm);
   color: var(--text-muted);
 }
+
+/* 모바일 반응형 */
+@media (max-width: 767px) {
+  .cmd-palette-overlay {
+    padding-top: 5vh;
+  }
+
+  .cmd-palette {
+    max-height: 70vh;
+  }
+
+  .cmd-palette__kbd {
+    display: none;
+  }
+}

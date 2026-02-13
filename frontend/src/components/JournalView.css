@@ -523,3 +523,9 @@
     max-width: 420px;
   }
 }
+
+@media (max-width: 767px) {
+  .journal-editor-header {
+    padding-left: 52px;
+  }
+}
