@@ -111,6 +111,27 @@ class MemoryService:
         """사용자의 기존 태그 목록 조회 (자동완성용)."""
         return await self.memory_repo.get_distinct_tags(user_id, prefix)
 
+    async def bulk_action(
+        self,
+        action: str,
+        memory_ids: list[UUID],
+        user_id: UUID,
+        tags: list[str] | None = None,
+    ) -> int:
+        """메모리 일괄 작업 수행 (삭제, 태그 추가, 태그 제거)."""
+        if action == "delete":
+            count = await self.memory_repo.delete_bulk(memory_ids, user_id)
+            if self.graph_repo:
+                for mid in memory_ids:
+                    with contextlib.suppress(Exception):
+                        await self.graph_repo.delete_memory_node(str(mid))
+            return count
+        elif action == "add_tags" and tags:
+            return await self.memory_repo.add_tags_bulk(memory_ids, user_id, tags)
+        elif action == "remove_tags" and tags:
+            return await self.memory_repo.remove_tags_bulk(memory_ids, user_id, tags)
+        return 0
+
     async def delete_memory(self, memory_id: UUID, user_id: UUID) -> bool:
         """Memory 및 연관 그래프 데이터 삭제."""
         deleted = await self.memory_repo.delete(memory_id, user_id)

@@ -152,6 +152,49 @@ class MemoryRepository:
         result = await asyncio.to_thread(self._delete, str(memory_id), str(user_id))
         return len(result.data) > 0 if result.data else False
 
+    async def delete_bulk(self, memory_ids: list[UUID], user_id: UUID) -> int:
+        """여러 Memory 일괄 삭제. 삭제된 건수 반환."""
+        str_ids = [str(mid) for mid in memory_ids]
+        result = await asyncio.to_thread(self._delete_bulk, str_ids, str(user_id))
+        return len(result.data) if result.data else 0
+
+    async def add_tags_bulk(self, memory_ids: list[UUID], user_id: UUID, tags: list[str]) -> int:
+        """여러 Memory에 태그 추가 (기존 태그에 합집합)."""
+        str_ids = [str(mid) for mid in memory_ids]
+        rows = await asyncio.to_thread(self._select_tags_for_ids, str_ids, str(user_id))
+        updated = 0
+        for row in rows.data or []:
+            existing = row.get("tags") or []
+            merged = list(dict.fromkeys(existing + tags))
+            if merged != existing:
+                await asyncio.to_thread(
+                    self._update_with_owner,
+                    row["id"],
+                    str(user_id),
+                    {"tags": merged, "updated_at": datetime.now(UTC).isoformat()},
+                )
+                updated += 1
+        return updated
+
+    async def remove_tags_bulk(self, memory_ids: list[UUID], user_id: UUID, tags: list[str]) -> int:
+        """여러 Memory에서 태그 제거."""
+        str_ids = [str(mid) for mid in memory_ids]
+        tags_set = set(tags)
+        rows = await asyncio.to_thread(self._select_tags_for_ids, str_ids, str(user_id))
+        updated = 0
+        for row in rows.data or []:
+            existing = row.get("tags") or []
+            filtered = [t for t in existing if t not in tags_set]
+            if filtered != existing:
+                await asyncio.to_thread(
+                    self._update_with_owner,
+                    row["id"],
+                    str(user_id),
+                    {"tags": filtered, "updated_at": datetime.now(UTC).isoformat()},
+                )
+                updated += 1
+        return updated
+
     # ------------------------------------------------------------------
     # 동기 헬퍼 (스레드에서 실행)
     # ------------------------------------------------------------------
@@ -191,6 +234,12 @@ class MemoryRepository:
 
     def _delete(self, memory_id: str, user_id: str):
         return self.db.table("memories").delete().eq("id", memory_id).eq("user_id", user_id).execute()
+
+    def _delete_bulk(self, memory_ids: list[str], user_id: str):
+        return self.db.table("memories").delete().in_("id", memory_ids).eq("user_id", user_id).execute()
+
+    def _select_tags_for_ids(self, memory_ids: list[str], user_id: str):
+        return self.db.table("memories").select("id,tags").in_("id", memory_ids).eq("user_id", user_id).execute()
 
     # ------------------------------------------------------------------
     # 변환

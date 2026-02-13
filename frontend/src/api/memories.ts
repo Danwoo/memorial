@@ -35,6 +35,15 @@ export function fetchUserTags(prefix = ''): Promise<string[]> {
   return get<string[]>(`/memories/tags${q}`)
 }
 
+// 메모리 일괄 작업 (삭제, 태그 추가/제거)
+export function bulkMemoryAction(body: {
+  action: 'delete' | 'add_tags' | 'remove_tags'
+  memory_ids: string[]
+  tags?: string[]
+}): Promise<{ affected: number }> {
+  return post<{ affected: number }>('/memories/bulk', body)
+}
+
 // PDF 파일 업로드로 메모리 생성
 export function uploadPdfMemory(file: File): Promise<{ id: string; status: string }> {
   const formData = new FormData()

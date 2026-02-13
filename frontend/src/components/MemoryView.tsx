@@ -4,10 +4,11 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Globe, FileText, StickyNote, File, FolderOpen, Upload, Plus,
   SlidersHorizontal, SearchX, AlertCircle, CalendarX2,
+  CheckSquare, Square, Trash2, Tag, X, Check,
 } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import type { Memory, MemoryCreatePayload, SourceType, SearchResult, TimelineData } from '../types'
-import { fetchMemories, createMemory, uploadPdfMemory, searchMemories, fetchTimeline } from '../api'
+import { fetchMemories, createMemory, uploadPdfMemory, searchMemories, fetchTimeline, bulkMemoryAction, fetchUserTags } from '../api'
 import { getSourceIcon, getSimilarityLevel, formatDateKR, formatRelativeDate } from '../utils'
 import MemoryDetailModal from './MemoryDetailModal'
 import './MemoryView.css'
@@ -60,6 +61,18 @@ export default function MemoryView() {
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
+  // ── 선택 모드 상태 ──
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const lastSelectedIndexRef = useRef<number>(-1)
+  const [showTagModal, setShowTagModal] = useState(false)
+  const [tagAction, setTagAction] = useState<'add_tags' | 'remove_tags'>('add_tags')
+  const [tagInput, setTagInput] = useState('')
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const tagModalTrapRef = useFocusTrap(showTagModal)
+  const tagInputRef = useRef<HTMLInputElement>(null)
+
   // ── 검색 탭 상태 ──
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
@@ -71,10 +84,51 @@ export default function MemoryView() {
 
   const handleTabChange = (tab: MemoryTab) => {
     setActiveTab(tab)
+    exitSelectMode()
     if (tab === 'all') {
       setSearchParams({})
     } else {
       setSearchParams({ tab })
+    }
+  }
+
+  const exitSelectMode = () => {
+    setSelectMode(false)
+    setSelectedIds(new Set())
+    lastSelectedIndexRef.current = -1
+  }
+
+  const toggleSelectMode = () => {
+    if (selectMode) {
+      exitSelectMode()
+    } else {
+      setSelectMode(true)
+    }
+  }
+
+  const toggleSelect = (id: string, index: number, shiftKey: boolean) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (shiftKey && lastSelectedIndexRef.current >= 0) {
+        const start = Math.min(lastSelectedIndexRef.current, index)
+        const end = Math.max(lastSelectedIndexRef.current, index)
+        for (let i = start; i <= end; i++) {
+          next.add(memories[i].id)
+        }
+      } else {
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+      }
+      lastSelectedIndexRef.current = index
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === memories.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(memories.map(m => m.id)))
     }
   }
 
@@ -109,6 +163,84 @@ export default function MemoryView() {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [showAddModal])
+
+  // 선택 모드 Escape 키 해제
+  useEffect(() => {
+    if (!selectMode) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') exitSelectMode()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [selectMode])
+
+  // 일괄 삭제
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    if (!window.confirm(`${selectedIds.size}개 메모리를 삭제하시겠습니까?`)) return
+
+    setBulkLoading(true)
+    try {
+      const result = await bulkMemoryAction({
+        action: 'delete',
+        memory_ids: Array.from(selectedIds),
+      })
+      toast.success(`${result.affected}개 메모리가 삭제되었습니다`)
+      exitSelectMode()
+      loadMemories()
+    } catch {
+      toast.error('일괄 삭제에 실패했습니다')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  // 태그 모달 열기
+  const openTagModal = (action: 'add_tags' | 'remove_tags') => {
+    setTagAction(action)
+    setTagInput('')
+    setTagSuggestions([])
+    setShowTagModal(true)
+  }
+
+  // 태그 자동완성
+  const handleTagInputChange = async (value: string) => {
+    setTagInput(value)
+    if (value.length >= 1) {
+      try {
+        const suggestions = await fetchUserTags(value)
+        setTagSuggestions(suggestions.slice(0, 5))
+      } catch {
+        setTagSuggestions([])
+      }
+    } else {
+      setTagSuggestions([])
+    }
+  }
+
+  // 일괄 태그 적용
+  const handleBulkTagAction = async () => {
+    const tag = (tagInput || tagInputRef.current?.value || '').trim()
+    if (!tag || selectedIds.size === 0) return
+
+    setBulkLoading(true)
+    try {
+      const result = await bulkMemoryAction({
+        action: tagAction,
+        memory_ids: Array.from(selectedIds),
+        tags: [tag],
+      })
+      const actionLabel = tagAction === 'add_tags' ? '추가' : '제거'
+      toast.success(`${result.affected}개 메모리에 태그를 ${actionLabel}했습니다`)
+      setShowTagModal(false)
+      exitSelectMode()
+      loadMemories()
+    } catch {
+      toast.error('태그 작업에 실패했습니다')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
 
   const addMemory = async () => {
     try {
@@ -235,6 +367,16 @@ export default function MemoryView() {
 
   const renderAllTab = () => (
     <div className="memory-grid">
+      {selectMode && memories.length > 0 && (
+        <div className="select-header">
+          <button className="select-all-btn" onClick={toggleSelectAll}>
+            {selectedIds.size === memories.length
+              ? <CheckSquare size={18} />
+              : <Square size={18} />}
+            <span>전체 선택 ({selectedIds.size}/{memories.length})</span>
+          </button>
+        </div>
+      )}
       {isLoading ? (
         <div className="loading-state">로딩 중...</div>
       ) : memories.length === 0 ? (
@@ -244,8 +386,27 @@ export default function MemoryView() {
           <p>웹 페이지나 메모를 추가해보세요</p>
         </div>
       ) : (
-        memories.map(memory => (
-          <button key={memory.id} className="memory-card card" onClick={() => setSelectedMemoryId(memory.id)} style={{ cursor: 'pointer' }} aria-label={`메모리: ${memory.title}`}>
+        memories.map((memory, index) => (
+          <button
+            key={memory.id}
+            className={`memory-card card ${selectMode && selectedIds.has(memory.id) ? 'selected' : ''}`}
+            onClick={(e) => {
+              if (selectMode) {
+                toggleSelect(memory.id, index, e.shiftKey)
+              } else {
+                setSelectedMemoryId(memory.id)
+              }
+            }}
+            style={{ cursor: 'pointer' }}
+            aria-label={`메모리: ${memory.title}`}
+          >
+            {selectMode && (
+              <div className="card-checkbox">
+                {selectedIds.has(memory.id)
+                  ? <CheckSquare size={20} />
+                  : <Square size={20} />}
+              </div>
+            )}
             <div className="memory-type-badge">
               {renderSourceIcon(memory.source_type)}
             </div>
@@ -450,9 +611,21 @@ export default function MemoryView() {
           <h1>기억</h1>
           <p className="memory-subtitle">저장된 지식을 탐색하세요</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-          <Plus size={16} /> 추가
-        </button>
+        <div className="memory-header-actions">
+          {activeTab === 'all' && memories.length > 0 && (
+            <button
+              className={`btn ${selectMode ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={toggleSelectMode}
+            >
+              {selectMode ? <><X size={16} /> 취소</> : <><Check size={16} /> 선택</>}
+            </button>
+          )}
+          {!selectMode && (
+            <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+              <Plus size={16} /> 추가
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="memory-tabs">
@@ -492,6 +665,59 @@ export default function MemoryView() {
           }}
           onUpdated={loadMemories}
         />
+      )}
+
+      {selectMode && selectedIds.size > 0 && (
+        <div className="bulk-action-bar">
+          <span className="bulk-count">{selectedIds.size}개 선택</span>
+          <button className="bulk-btn bulk-btn-danger" onClick={handleBulkDelete} disabled={bulkLoading}>
+            <Trash2 size={16} /> 삭제
+          </button>
+          <button className="bulk-btn" onClick={() => openTagModal('add_tags')} disabled={bulkLoading}>
+            <Tag size={16} /> 태그 추가
+          </button>
+          <button className="bulk-btn" onClick={() => openTagModal('remove_tags')} disabled={bulkLoading}>
+            <Tag size={16} /> 태그 제거
+          </button>
+        </div>
+      )}
+
+      {showTagModal && (
+        <div className="modal-overlay" onClick={() => setShowTagModal(false)} ref={tagModalTrapRef}>
+          <div className="modal-content card" role="dialog" aria-modal="true" aria-label="태그 일괄 작업" onClick={e => e.stopPropagation()}>
+            <h2>{tagAction === 'add_tags' ? '태그 추가' : '태그 제거'}</h2>
+            <p className="tag-modal-desc">
+              {selectedIds.size}개 메모리에 태그를 {tagAction === 'add_tags' ? '추가' : '제거'}합니다
+            </p>
+            <div className="tag-modal-input-wrapper">
+              <input
+                ref={tagInputRef}
+                type="text"
+                className="input"
+                placeholder="태그 입력..."
+                value={tagInput}
+                onChange={e => handleTagInputChange(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleBulkTagAction() }}
+                autoFocus
+              />
+              {tagSuggestions.length > 0 && (
+                <div className="tag-modal-suggestions">
+                  {tagSuggestions.map(s => (
+                    <button key={s} className="tag-suggestion-item" onClick={() => setTagInput(s)}>
+                      #{s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => setShowTagModal(false)}>취소</button>
+              <button className="btn btn-primary" onClick={handleBulkTagAction} disabled={!tagInput.trim() || bulkLoading}>
+                {bulkLoading ? '처리 중...' : '적용'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showAddModal && (

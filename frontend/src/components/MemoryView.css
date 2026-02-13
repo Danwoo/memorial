@@ -465,6 +465,152 @@ button.result-card {
   color: var(--accent-primary);
 }
 
+/* ── 선택 모드 ── */
+
+.memory-header-actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.select-header {
+  grid-column: 1 / -1;
+  padding: 0 0 var(--space-sm) 0;
+}
+
+.select-all-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.select-all-btn:hover {
+  color: var(--accent-primary);
+  background: var(--accent-bg);
+}
+
+.memory-card.selected {
+  border-color: var(--accent-primary);
+  background: var(--accent-bg);
+}
+
+.card-checkbox {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+/* 플로팅 액션 바 */
+.bulk-action-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  animation: slideUp var(--transition-normal) ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+.bulk-count {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding-right: var(--space-sm);
+  border-right: 1px solid var(--border-secondary);
+}
+
+.bulk-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.bulk-btn:hover:not(:disabled) {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.bulk-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bulk-btn-danger:hover:not(:disabled) {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* 태그 모달 */
+.tag-modal-desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.tag-modal-input-wrapper {
+  position: relative;
+}
+
+.tag-modal-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  z-index: 10;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.tag-modal-suggestions .tag-suggestion-item {
+  display: block;
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tag-modal-suggestions .tag-suggestion-item:hover {
+  background: var(--accent-bg);
+  color: var(--accent-primary);
+}
+
 /* ── 모달 ── */
 
 .modal-overlay {
@@ -624,5 +770,18 @@ button.result-card {
 
   .result-header {
     flex-wrap: wrap;
+  }
+
+  .bulk-action-bar {
+    left: var(--space-md);
+    right: var(--space-md);
+    transform: none;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
 }

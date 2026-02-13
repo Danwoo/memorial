@@ -31,6 +31,23 @@ class MemoryUpdate(BaseModel):
     tags: list[str] | None = None
 
 
+BulkActionType = Literal["delete", "add_tags", "remove_tags"]
+
+
+class BulkActionRequest(BaseModel):
+    """메모리 일괄 작업 요청."""
+
+    action: BulkActionType
+    memory_ids: list[UUID] = Field(..., min_length=1, max_length=50)
+    tags: list[str] | None = None
+
+
+class BulkActionResponse(BaseModel):
+    """메모리 일괄 작업 응답."""
+
+    affected: int
+
+
 # --- 응답 스키마 ---
 
 

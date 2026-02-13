@@ -8,6 +8,8 @@ from app.agents.state import build_librarian_initial_state
 from app.config.auth import get_user_id
 from app.config.dependencies import get_memory_service
 from app.schemas.memory_schema import (
+    BulkActionRequest,
+    BulkActionResponse,
     MemoryCreate,
     MemoryCreateResponse,
     MemoryDetail,
@@ -198,6 +200,25 @@ async def reprocess_all_memories(
     return {"queued": queued, "total": total}
 
 
+@router.post("/bulk", response_model=BulkActionResponse)
+async def bulk_action(
+    data: BulkActionRequest,
+    user_id: UUID = Depends(get_user_id),
+    memory_service: MemoryService = Depends(get_memory_service),
+):
+    """메모리 일괄 작업 (삭제, 태그 추가, 태그 제거). 최대 50개."""
+    if data.action in ("add_tags", "remove_tags") and not data.tags:
+        raise HTTPException(status_code=400, detail="tags field is required for tag actions")
+
+    affected = await memory_service.bulk_action(
+        action=data.action,
+        memory_ids=data.memory_ids,
+        user_id=user_id,
+        tags=data.tags,
+    )
+    return BulkActionResponse(affected=affected)
+
+
 @router.get("", response_model=MemoryListResponse)
 async def list_memories(
     page: int = Query(1, ge=1),
@@ -229,6 +250,16 @@ async def list_memories(
     )
 
 
+@router.get("/tags", response_model=list[str])
+async def get_tags(
+    q: str = Query("", description="태그 prefix 필터"),
+    user_id: UUID = Depends(get_user_id),
+    memory_service: MemoryService = Depends(get_memory_service),
+):
+    """사용자의 기존 태그 목록 조회 (자동완성용)."""
+    return await memory_service.get_user_tags(user_id, q)
+
+
 @router.get("/{memory_id}", response_model=MemoryDetail)
 async def get_memory(
     memory_id: UUID,
@@ -252,16 +283,6 @@ async def get_memory(
         created_at=memory.created_at,
         updated_at=memory.updated_at,
     )
-
-
-@router.get("/tags", response_model=list[str])
-async def get_tags(
-    q: str = Query("", description="태그 prefix 필터"),
-    user_id: UUID = Depends(get_user_id),
-    memory_service: MemoryService = Depends(get_memory_service),
-):
-    """사용자의 기존 태그 목록 조회 (자동완성용)."""
-    return await memory_service.get_user_tags(user_id, q)
 
 
 @router.patch("/{memory_id}", response_model=MemoryDetail)
