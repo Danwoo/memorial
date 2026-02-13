@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.config.auth import get_user_id
 from app.config.dependencies import get_stats_service
-from app.schemas.stats_schema import StatsOverviewResponse, TimelineResponse
+from app.schemas.stats_schema import StatsOverviewResponse, StreakResponse, TimelineResponse
 from app.services.stats_service import StatsService
 
 router = APIRouter(prefix="/stats", tags=["stats"])
@@ -17,6 +17,15 @@ async def get_overview_stats(
 ):
     """대시보드 전체 통계 개요 조회."""
     return await stats_service.get_overview(user_id)
+
+
+@router.get("/streak", response_model=StreakResponse)
+async def get_streak(
+    user_id: UUID = Depends(get_user_id),
+    stats_service: StatsService = Depends(get_stats_service),
+):
+    """활동 스트릭 (연속 활동일) 조회."""
+    return await stats_service.get_streak(user_id)
 
 
 @router.get("/activity")

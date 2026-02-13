@@ -43,6 +43,18 @@ export interface DigestJournal {
   created_at: string
 }
 
+export interface StreakData {
+  current_streak: number
+  longest_streak: number
+  total_active_days: number
+  last_active_date: string | null
+}
+
+export interface ActivityResponse {
+  days: number
+  activity: ActivityData[]
+}
+
 export interface DigestData {
   date: string
   summary: {

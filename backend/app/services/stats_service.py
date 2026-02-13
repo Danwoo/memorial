@@ -10,6 +10,7 @@ from app.schemas.stats_schema import (
     OverviewStats,
     SourceStats,
     StatsOverviewResponse,
+    StreakResponse,
     TagStats,
     TimelineGroup,
 )
@@ -148,3 +149,42 @@ class StatsService:
         timeline = [TimelineGroup(date=date, memories=mems) for date, mems in sorted(grouped.items(), reverse=True)]
 
         return {"page": page, "limit": limit, "timeline": timeline, "has_more": len(memories) == limit}
+
+    async def get_streak(self, user_id: UUID) -> StreakResponse:
+        """활동 스트릭 계산 (메모리 + 저널 기준 연속 활동일)."""
+        active_dates = await self.stats_repo.get_all_active_dates(user_id)
+        if not active_dates:
+            return StreakResponse(current_streak=0, longest_streak=0, total_active_days=0)
+
+        sorted_dates = sorted(active_dates, reverse=True)
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+
+        # 현재 스트릭 계산 (오늘 또는 어제부터 역순으로)
+        current_streak = 0
+        check_date = datetime.strptime(today, "%Y-%m-%d")
+        # 오늘 활동이 없으면 어제부터 확인
+        if today not in active_dates:
+            check_date -= timedelta(days=1)
+        while check_date.strftime("%Y-%m-%d") in active_dates:
+            current_streak += 1
+            check_date -= timedelta(days=1)
+
+        # 최장 스트릭 계산
+        longest_streak = 0
+        streak = 0
+        prev_date = None
+        for date_str in sorted(active_dates):
+            d = datetime.strptime(date_str, "%Y-%m-%d")
+            if prev_date and (d - prev_date).days == 1:
+                streak += 1
+            else:
+                streak = 1
+            longest_streak = max(longest_streak, streak)
+            prev_date = d
+
+        return StreakResponse(
+            current_streak=current_streak,
+            longest_streak=longest_streak,
+            total_active_days=len(active_dates),
+            last_active_date=sorted_dates[0] if sorted_dates else None,
+        )

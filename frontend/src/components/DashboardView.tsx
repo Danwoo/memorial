@@ -1,0 +1,168 @@
+import { useEffect, useState, useMemo } from 'react'
+import { Flame, Trophy, Calendar, TrendingUp, Tag } from 'lucide-react'
+import type { StreakData, StatsData, ActivityData } from '../types'
+import { fetchStreak, fetchStats, fetchActivity } from '../api'
+import './DashboardView.css'
+
+// 스트릭 축하 메시지
+function getStreakMessage(streak: number): string {
+  if (streak === 0) return '오늘 기록을 시작해보세요!'
+  if (streak === 1) return '첫 걸음을 내딛었어요!'
+  if (streak < 3) return '좋은 시작이에요!'
+  if (streak < 7) return '습관이 만들어지고 있어요!'
+  if (streak < 14) return '꾸준함이 빛나고 있어요!'
+  if (streak < 30) return '대단해요! 2주 이상 연속!'
+  return '한 달 넘는 연속 기록!'
+}
+
+// 활동 히트맵 색상 (0~max count → 투명도 매핑)
+function getHeatColor(count: number, max: number): string {
+  if (count === 0) return 'var(--bg-tertiary)'
+  const intensity = Math.min(count / Math.max(max, 1), 1)
+  const alpha = 0.25 + intensity * 0.75
+  return `rgba(139, 92, 246, ${alpha})`
+}
+
+export default function DashboardView() {
+  const [streak, setStreak] = useState<StreakData | null>(null)
+  const [stats, setStats] = useState<StatsData | null>(null)
+  const [activity, setActivity] = useState<ActivityData[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      try {
+        const [streakData, statsData, activityData] = await Promise.all([
+          fetchStreak(),
+          fetchStats(),
+          fetchActivity(60),
+        ])
+        setStreak(streakData)
+        setStats(statsData)
+        setActivity(activityData.activity)
+      } catch (err) {
+        console.error('대시보드 데이터 로딩 실패:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
+
+  const maxActivity = useMemo(
+    () => Math.max(...activity.map(a => a.count), 1),
+    [activity],
+  )
+
+  if (loading) {
+    return (
+      <div className="dashboard-view">
+        <div className="dashboard-loading">불러오는 중...</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="dashboard-view">
+      <h1 className="dashboard-title">대시보드</h1>
+
+      {/* 스트릭 카드 */}
+      {streak && (
+        <div className="streak-card">
+          <div className="streak-main">
+            <Flame size={32} className="streak-icon" />
+            <div className="streak-number">{streak.current_streak}</div>
+            <div className="streak-unit">일 연속</div>
+          </div>
+          <p className="streak-message">{getStreakMessage(streak.current_streak)}</p>
+          <div className="streak-stats">
+            <div className="streak-stat">
+              <Trophy size={16} />
+              <span>최장 {streak.longest_streak}일</span>
+            </div>
+            <div className="streak-stat">
+              <Calendar size={16} />
+              <span>총 {streak.total_active_days}일 활동</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 통계 카드 */}
+      {stats && (
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-value">{stats.overview.total_memories}</div>
+            <div className="stat-label">전체 메모리</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{stats.overview.total_this_week}</div>
+            <div className="stat-label">이번 주</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{stats.overview.total_this_month}</div>
+            <div className="stat-label">이번 달</div>
+          </div>
+        </div>
+      )}
+
+      {/* 활동 히트맵 */}
+      {activity.length > 0 && (
+        <div className="activity-section">
+          <h2>
+            <TrendingUp size={18} />
+            최근 활동
+          </h2>
+          <div className="activity-heatmap">
+            {activity.map(day => (
+              <div
+                key={day.date}
+                className="heatmap-cell"
+                style={{ backgroundColor: getHeatColor(day.count, maxActivity) }}
+                title={`${day.date}: ${day.count}개`}
+              />
+            ))}
+          </div>
+          <div className="heatmap-legend">
+            <span>적음</span>
+            <div className="heatmap-legend-cells">
+              {[0, 0.25, 0.5, 0.75, 1].map((v, i) => (
+                <div
+                  key={i}
+                  className="heatmap-cell"
+                  style={{ backgroundColor: v === 0 ? 'var(--bg-tertiary)' : `rgba(139, 92, 246, ${0.25 + v * 0.75})` }}
+                />
+              ))}
+            </div>
+            <span>많음</span>
+          </div>
+        </div>
+      )}
+
+      {/* 인기 태그 */}
+      {stats && stats.top_tags.length > 0 && (
+        <div className="tags-section">
+          <h2>
+            <Tag size={18} />
+            주요 주제
+          </h2>
+          <div className="tag-list">
+            {stats.top_tags.map(t => (
+              <div key={t.tag} className="tag-item">
+                <span className="tag-name">#{t.tag}</span>
+                <span className="tag-count">{t.count}</span>
+                <div className="tag-bar">
+                  <div
+                    className="tag-bar-fill"
+                    style={{ width: `${(t.count / stats.top_tags[0].count) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

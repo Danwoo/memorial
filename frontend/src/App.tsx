@@ -9,6 +9,7 @@ import ChatView from './components/ChatView'
 import MemoryView from './components/MemoryView'
 import GraphView from './components/GraphView'
 import JournalView from './components/JournalView'
+import DashboardView from './components/DashboardView'
 import SettingsView from './components/SettingsView'
 import './App.css'
 
@@ -40,7 +41,7 @@ function App() {
               {/* 삭제된 라우트 리다이렉트 */}
               <Route path="search" element={<Navigate to="/memories?tab=search" replace />} />
               <Route path="timeline" element={<Navigate to="/memories?tab=timeline" replace />} />
-              <Route path="dashboard" element={<Navigate to="/chat" replace />} />
+              <Route path="dashboard" element={<DashboardView />} />
             </Route>
           </Routes>
         </ToastProvider>

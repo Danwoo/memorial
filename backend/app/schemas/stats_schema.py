@@ -41,6 +41,15 @@ class StatsOverviewResponse(BaseModel):
     top_tags: list[TagStats]
 
 
+class StreakResponse(BaseModel):
+    """활동 스트릭 응답."""
+
+    current_streak: int
+    longest_streak: int
+    total_active_days: int
+    last_active_date: str | None = None
+
+
 class TimelineGroup(BaseModel):
     """날짜별 메모리 그룹."""
 

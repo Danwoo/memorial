@@ -42,6 +42,8 @@ export type {
   SourceStats,
   TagStats,
   StatsData,
+  StreakData,
+  ActivityResponse,
   DigestMemory,
   DigestJournal,
   DigestData,

@@ -98,3 +98,29 @@ class StatsRepository:
 
     def _select_tags(self, user_id: str):
         return self.db.table("memories").select("tags").eq("user_id", user_id).execute()
+
+    # ------------------------------------------------------------------
+    # 스트릭 계산용 날짜 조회
+    # ------------------------------------------------------------------
+
+    async def get_all_active_dates(self, user_id: UUID) -> set[str]:
+        """메모리 + 저널에서 활동한 모든 날짜(YYYY-MM-DD) 집합 반환."""
+        mem_result = await asyncio.to_thread(self._select_memory_dates, str(user_id))
+        journal_result = await asyncio.to_thread(self._select_journal_dates, str(user_id))
+
+        dates: set[str] = set()
+        for row in mem_result.data or []:
+            ca = row.get("created_at", "")
+            if ca:
+                dates.add(ca[:10])
+        for row in journal_result.data or []:
+            ca = row.get("created_at", "")
+            if ca:
+                dates.add(ca[:10])
+        return dates
+
+    def _select_memory_dates(self, user_id: str):
+        return self.db.table("memories").select("created_at").eq("user_id", user_id).execute()
+
+    def _select_journal_dates(self, user_id: str):
+        return self.db.table("journals").select("created_at").eq("user_id", user_id).execute()

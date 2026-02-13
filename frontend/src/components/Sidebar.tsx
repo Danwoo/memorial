@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
-  MessageSquare, BookOpen, PenLine, Network,
+  MessageSquare, BookOpen, PenLine, Network, BarChart3,
   Settings as SettingsIcon,
   LogOut, ChevronDown, ChevronRight, Plus,
 } from 'lucide-react'
@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/memories',  icon: <BookOpen size={20} />,      label: '기억' },
   { to: '/journal',   icon: <PenLine size={20} />,       label: '저널' },
   { to: '/graph',     icon: <Network size={20} />,       label: '그래프' },
+  { to: '/dashboard', icon: <BarChart3 size={20} />,     label: '대시보드' },
   { to: '/settings',  icon: <SettingsIcon size={20} />,  label: '설정' },
 ]
 
