@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import ForceGraph3D from 'react-force-graph-3d'
 import SpriteText from 'three-spritetext'
 import * as THREE from 'three'
-import type { GraphNode, GraphLink, GraphData } from '../types'
+import { BookOpen } from 'lucide-react'
+import type { GraphNode, GraphLink, GraphData, SearchResult } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
-import { fetchGraph } from '../api'
+import { fetchGraph, searchMemories } from '../api'
+import MemoryDetailModal from './MemoryDetailModal'
 import './GraphView.css'
 
 // 노드 타입별 색상 팔레트
@@ -91,6 +93,15 @@ export default function GraphView() {
   const [searchQuery, setSearchQuery] = useState('')
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
 
+  // P2-11: 관련 메모리 조회
+  const [relatedMemories, setRelatedMemories] = useState<SearchResult[]>([])
+  const [isLoadingMemories, setIsLoadingMemories] = useState(false)
+  const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null)
+
+  // P2-11: 검색 결과 하이라이트
+  const [searchMatches, setSearchMatches] = useState<GraphNode[]>([])
+  const [searchMatchIdx, setSearchMatchIdx] = useState(0)
+
   const bgColor = resolvedTheme === 'dark' ? '#1a1a1a' : '#ffffff'
 
   // 그래프 데이터 조회 및 노드 가공
@@ -115,6 +126,28 @@ export default function GraphView() {
   useEffect(() => {
     fetchGraphData()
   }, [fetchGraphData])
+
+  // P2-11: 선택 노드 변경 시 관련 메모리 조회
+  useEffect(() => {
+    if (!selectedNode) {
+      setRelatedMemories([])
+      return
+    }
+    let cancelled = false
+    const fetchRelated = async () => {
+      setIsLoadingMemories(true)
+      try {
+        const res = await searchMemories({ q: selectedNode.name || selectedNode.id, limit: 5 })
+        if (!cancelled) setRelatedMemories(res.results ?? [])
+      } catch {
+        if (!cancelled) setRelatedMemories([])
+      } finally {
+        if (!cancelled) setIsLoadingMemories(false)
+      }
+    }
+    fetchRelated()
+    return () => { cancelled = true }
+  }, [selectedNode])
 
   // 숨겨진 타입을 제외한 필터링 데이터
   const filteredData = useMemo(() => {
@@ -224,22 +257,62 @@ export default function GraphView() {
   const handleBackgroundClick = useCallback(() => {
     setSelectedNode(null)
     setHighlightLinks(new Set())
+    setSearchMatches([])
     nodeMaterials.current.forEach(mat => {
       mat.opacity = 0.9
     })
   }, [])
 
-  // 검색: 노드를 찾아 카메라 이동
+  // P2-11: 검색 하이라이트 — 모든 매치를 찾아 하이라이트
   const handleSearch = useCallback(
     (query: string) => {
-      if (!query.trim()) return
+      if (!query.trim()) {
+        setSearchMatches([])
+        setSearchMatchIdx(0)
+        nodeMaterials.current.forEach(mat => { mat.opacity = 0.9 })
+        return
+      }
       const q = query.toLowerCase()
-      const match = filteredData.nodes.find(n =>
+      const matches = filteredData.nodes.filter(n =>
         (n.name || n.id).toLowerCase().includes(q),
       )
-      if (match && fgRef.current) {
-        const node = match as AnyNode
-        setSelectedNode(match)
+      setSearchMatches(matches)
+      setSearchMatchIdx(0)
+
+      // 매치 노드만 밝게, 나머지 흐리게
+      if (matches.length > 0) {
+        const matchIds = new Set(matches.map(n => n.id))
+        nodeMaterials.current.forEach((mat, id) => {
+          mat.opacity = matchIds.has(id) ? 1.0 : 0.15
+        })
+        // 첫 매치로 카메라 이동
+        const first = matches[0] as AnyNode
+        if (fgRef.current) {
+          const distance = 60
+          const distRatio = 1 + distance / Math.hypot(first.x || 1, first.y || 1, first.z || 1)
+          fgRef.current.cameraPosition(
+            { x: (first.x || 0) * distRatio, y: (first.y || 0) * distRatio, z: (first.z || 0) * distRatio },
+            { x: first.x || 0, y: first.y || 0, z: first.z || 0 },
+            1000,
+          )
+        }
+        setSelectedNode(matches[0])
+      } else {
+        nodeMaterials.current.forEach(mat => { mat.opacity = 0.9 })
+      }
+    },
+    [filteredData.nodes],
+  )
+
+  // P2-11: 검색 매치 간 이동 (위/아래 화살표)
+  const navigateSearchMatch = useCallback(
+    (direction: 1 | -1) => {
+      if (searchMatches.length === 0) return
+      const nextIdx = (searchMatchIdx + direction + searchMatches.length) % searchMatches.length
+      setSearchMatchIdx(nextIdx)
+      const node = searchMatches[nextIdx] as AnyNode
+      setSelectedNode(searchMatches[nextIdx])
+      if (fgRef.current) {
         const distance = 60
         const distRatio = 1 + distance / Math.hypot(node.x || 1, node.y || 1, node.z || 1)
         fgRef.current.cameraPosition(
@@ -249,7 +322,7 @@ export default function GraphView() {
         )
       }
     },
-    [filteredData.nodes],
+    [searchMatches, searchMatchIdx],
   )
 
   // 노드 타입 표시/숨김 토글
@@ -261,6 +334,23 @@ export default function GraphView() {
       return next
     })
   }, [])
+
+  // P2-11: 연결 노드 클릭 시 해당 노드로 카메라 이동
+  const handleConnectionClick = useCallback(
+    (nodeId: string) => {
+      const target = filteredData.nodes.find(n => n.id === nodeId) as AnyNode | undefined
+      if (!target || !fgRef.current) return
+      setSelectedNode(target)
+      const distance = 60
+      const distRatio = 1 + distance / Math.hypot(target.x || 1, target.y || 1, target.z || 1)
+      fgRef.current.cameraPosition(
+        { x: (target.x || 0) * distRatio, y: (target.y || 0) * distRatio, z: (target.z || 0) * distRatio },
+        { x: target.x || 0, y: target.y || 0, z: target.z || 0 },
+        1000,
+      )
+    },
+    [filteredData.nodes],
+  )
 
   // 선택된 노드 주제로 채팅 시작
   const handleStartChat = useCallback(
@@ -310,9 +400,37 @@ export default function GraphView() {
               type="text"
               placeholder="노드 검색..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch(searchQuery)}
+              onChange={e => {
+                setSearchQuery(e.target.value)
+                if (!e.target.value.trim()) handleSearch('')
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  if (searchMatches.length > 0 && searchQuery.trim()) {
+                    navigateSearchMatch(1)
+                  } else {
+                    handleSearch(searchQuery)
+                  }
+                }
+                if (e.key === 'ArrowDown' && searchMatches.length > 0) {
+                  e.preventDefault()
+                  navigateSearchMatch(1)
+                }
+                if (e.key === 'ArrowUp' && searchMatches.length > 0) {
+                  e.preventDefault()
+                  navigateSearchMatch(-1)
+                }
+                if (e.key === 'Escape') {
+                  setSearchQuery('')
+                  handleSearch('')
+                }
+              }}
             />
+            {searchMatches.length > 0 && (
+              <span className="search-match-count">
+                {searchMatchIdx + 1}/{searchMatches.length}
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -449,7 +567,11 @@ export default function GraphView() {
               <h4>연결 ({selectedConnections.length})</h4>
               <ul>
                 {selectedConnections.slice(0, 10).map((conn, i) => (
-                  <li key={i}>
+                  <li
+                    key={i}
+                    className="conn-clickable"
+                    onClick={() => handleConnectionClick(conn.id)}
+                  >
                     <span className="conn-dot" style={{ backgroundColor: conn.color }} />
                     <span className="conn-type">{toKo(conn.type, LINK_TYPE_KO)}</span>
                     <span className="conn-name">{conn.name}</span>
@@ -461,6 +583,29 @@ export default function GraphView() {
               </ul>
             </div>
           )}
+
+          {/* P2-11: 관련 메모리 */}
+          <div className="node-memories">
+            <h4>관련 메모리</h4>
+            {isLoadingMemories && <p className="memories-loading">불러오는 중...</p>}
+            {!isLoadingMemories && relatedMemories.length === 0 && (
+              <p className="memories-empty">관련 메모리가 없습니다</p>
+            )}
+            {!isLoadingMemories && relatedMemories.length > 0 && (
+              <ul>
+                {relatedMemories.map(m => (
+                  <li
+                    key={m.id}
+                    className="memory-item"
+                    onClick={() => setSelectedMemoryId(m.id)}
+                  >
+                    <BookOpen size={14} className="memory-icon" />
+                    <span className="memory-title">{m.title || m.content?.substring(0, 40) || '메모리'}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
           <button
             className="chat-with-topic-btn"
@@ -479,6 +624,18 @@ export default function GraphView() {
           <span>클릭: 포커스</span>
           <span>우클릭 드래그: 이동</span>
         </div>
+      )}
+
+      {/* P2-11: 메모리 상세 모달 */}
+      {selectedMemoryId && (
+        <MemoryDetailModal
+          memoryId={selectedMemoryId}
+          onClose={() => setSelectedMemoryId(null)}
+          onDeleted={() => {
+            setSelectedMemoryId(null)
+            fetchGraphData()
+          }}
+        />
       )}
     </div>
   )

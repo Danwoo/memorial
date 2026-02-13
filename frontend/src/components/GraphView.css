@@ -362,6 +362,83 @@
   font-style: italic;
 }
 
+/* 검색 매치 카운트 */
+.search-match-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 연결 노드 클릭 */
+.conn-clickable {
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.conn-clickable:hover {
+  background: var(--bg-tertiary);
+}
+
+/* 관련 메모리 섹션 */
+.node-memories {
+  margin-bottom: 12px;
+}
+
+.node-memories h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.node-memories ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.memory-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.memory-item:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.memory-icon {
+  flex-shrink: 0;
+  color: var(--accent-primary);
+}
+
+.memory-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memories-loading,
+.memories-empty {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 .chat-with-topic-btn {
   width: 100%;
   margin-top: 4px;
