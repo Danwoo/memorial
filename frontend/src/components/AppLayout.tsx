@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
+import CommandPalette from './CommandPalette'
 import { useAuth } from '../contexts/AuthContext'
 import '../App.css'
 
@@ -9,8 +10,21 @@ import '../App.css'
 export default function AppLayout() {
   const { signOut, user } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [showCmdPalette, setShowCmdPalette] = useState(false)
 
   const closeMobile = useCallback(() => setMobileOpen(false), [])
+
+  // Cmd+K / Ctrl+K 글로벌 단축키
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setShowCmdPalette((v) => !v)
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
 
   return (
     <div className="app-container">
@@ -26,6 +40,7 @@ export default function AppLayout() {
       <main className="main-content">
         <Outlet />
       </main>
+      <CommandPalette isOpen={showCmdPalette} onClose={() => setShowCmdPalette(false)} />
     </div>
   )
 }

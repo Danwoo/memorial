@@ -1,0 +1,175 @@
+/* ─── 커맨드 팔레트 오버레이 ──────────────────────────────── */
+.cmd-palette-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  padding-top: 15vh;
+  animation: cmdFadeIn 0.15s ease-out;
+}
+
+@keyframes cmdFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ─── 팔레트 메인 ──────────────────────────────── */
+.cmd-palette {
+  width: 560px;
+  max-width: 90vw;
+  max-height: 420px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: cmdSlideDown 0.15s ease-out;
+}
+
+@keyframes cmdSlideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── 검색 입력 행 ──────────────────────────────── */
+.cmd-palette__input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.cmd-palette__search-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.cmd-palette__input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-family: inherit;
+}
+
+.cmd-palette__input::placeholder {
+  color: var(--text-muted);
+}
+
+.cmd-palette__kbd {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border: 1px solid var(--border-secondary);
+  border-radius: 4px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  font-family: inherit;
+}
+
+.cmd-palette__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.cmd-palette__close:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+/* ─── 결과 목록 ──────────────────────────────── */
+.cmd-palette__results {
+  overflow-y: auto;
+  padding: var(--space-xs) 0;
+}
+
+.cmd-palette__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-primary);
+  transition: background var(--transition-fast);
+}
+
+.cmd-palette__item:hover,
+.cmd-palette__item.active {
+  background: var(--bg-tertiary);
+}
+
+.cmd-palette__item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.cmd-palette__item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cmd-palette__item-title {
+  font-size: var(--fs-body-sm);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmd-palette__item-meta {
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmd-palette__item-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* ─── 빈 상태 / 로딩 / 안내 ──────────────────────── */
+.cmd-palette__empty,
+.cmd-palette__loading,
+.cmd-palette__hint {
+  padding: var(--space-xl) var(--space-lg);
+  text-align: center;
+  font-size: var(--fs-body-sm);
+  color: var(--text-muted);
+}
