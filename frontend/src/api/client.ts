@@ -1,6 +1,6 @@
 import type { ApiError } from '../types'
 
-const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1'
+export const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1'
 
 // localStorage에서 인증 토큰 조회
 function getAuthToken(): string | null {

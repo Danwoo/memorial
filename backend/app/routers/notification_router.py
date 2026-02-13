@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.config.auth import get_user_id
 from app.config.dependencies import get_notification_repository
+from app.config.settings import get_settings
 from app.repositories.notification_repository import (
     VALID_NUDGE_TYPES,
     NotificationRepository,
@@ -67,3 +68,12 @@ async def subscribe_push(
         auth=body.auth,
     )
     return {"status": "subscribed"}
+
+
+@router.get("/push/vapid-key")
+async def get_vapid_public_key():
+    """VAPID 공개키 반환 (Service Worker 등록에 필요)."""
+    settings = get_settings()
+    if not settings.VAPID_PUBLIC_KEY:
+        raise HTTPException(status_code=503, detail="Push not configured")
+    return {"publicKey": settings.VAPID_PUBLIC_KEY}

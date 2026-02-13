@@ -28,6 +28,10 @@ class Settings(BaseSettings):
 
     KAKAO_SKILL_SECRET: str | None = None
 
+    VAPID_PUBLIC_KEY: str | None = None
+    VAPID_PRIVATE_KEY: str | None = None
+    VAPID_MAILTO: str = "mailto:noreply@memoir.ai"
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
