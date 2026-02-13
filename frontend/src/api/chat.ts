@@ -1,5 +1,5 @@
 import { get, post, postRaw } from './client'
-import type { ChatSessionResponse, ChatMessage, ChatMessagePayload, ChatStreamChunk } from '../types'
+import type { ChatSessionResponse, ChatMessage, ChatMessagePayload, ChatStreamChunk, ChatReference } from '../types'
 
 // 새 채팅 세션 생성
 export function createChatSession(): Promise<ChatSessionResponse> {
@@ -28,6 +28,7 @@ export function sendChatMessage(
 export interface SSEResult {
   content: string
   title?: string
+  references?: ChatReference[]
 }
 
 // SSE 스트림을 읽어 청크 단위로 콜백 호출, 결과(누적 텍스트 + 자동 생성 제목) 반환
@@ -42,6 +43,7 @@ export async function readSSEStream(
   let content = ''
   let buffer = ''
   let title: string | undefined
+  let references: ChatReference[] | undefined
 
   try {
     // eslint-disable-next-line no-constant-condition
@@ -67,6 +69,9 @@ export async function readSSEStream(
             if (data.title) title = data.title
             break
           }
+          if (data.references) {
+            references = data.references
+          }
           if (data.content) {
             content += data.content
             onChunk(content)
@@ -81,5 +86,5 @@ export async function readSSEStream(
     reader.releaseLock()
   }
 
-  return { content, title }
+  return { content, title, references }
 }

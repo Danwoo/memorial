@@ -239,11 +239,11 @@ async def prepare_socrates_context(
     messages: list[BaseMessage],
     mode: str | None = None,
     user_id: str | None = None,
-) -> list[BaseMessage]:
+) -> tuple[list[BaseMessage], list[dict]]:
     """Socrates용 RAG 컨텍스트가 포함된 LangChain 메시지 리스트 준비.
 
     벡터 검색, 저널 조회, 모드별 프롬프트를 결합하여
-    LLM 호출에 바로 사용할 수 있는 메시지 리스트를 반환한다.
+    LLM 호출에 바로 사용할 수 있는 (메시지 리스트, 참조 메모리) 튜플을 반환한다.
     """
     context_memories = ""
     contradicting_memories = ""
@@ -266,6 +266,7 @@ async def prepare_socrates_context(
             vector_repo,
             user_id=user_id,
         )
+        logger.debug("RAG 검색 결과: query=%s, memories=%d개", query[:50], len(current_memories))
         graph_context = await _fetch_graph_context(query)
 
         if user_id:
@@ -283,7 +284,7 @@ async def prepare_socrates_context(
         journal_context,
     )
 
-    return [SystemMessage(content=system_content), *messages]
+    return [SystemMessage(content=system_content), *messages], current_memories
 
 
 async def _build_contradiction_context(query: str, current_memories: list, user_id: str | None = None) -> str:
@@ -339,7 +340,7 @@ async def socrates_node(state: AgentState) -> dict:
             greeting = "🌙 오늘 하루 어떠셨나요? 오늘 저장한 내용들을 함께 돌아볼까요?"
         return {"messages": [AIMessage(content=greeting)], "next_step": "end"}
 
-    lc_messages = await prepare_socrates_context(messages, mode)
+    lc_messages, _refs = await prepare_socrates_context(messages, mode)
     llm = get_streaming_llm()
 
     try:

@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
   User, Bot, MessageSquareText, ArrowUp,
-  BookOpen, X,
+  BookOpen, X, Paperclip, ChevronDown, ChevronUp, FileText, Globe, StickyNote,
 } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import type { ChatMessage, ChatLocationState, BriefingData } from '../types'
@@ -25,6 +25,7 @@ export default function ChatView() {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [briefing, setBriefing] = useState<BriefingData | null>(null)
+  const [expandedRefs, setExpandedRefs] = useState<Set<number>>(new Set())
   const [welcomeDismissed, setWelcomeDismissed] = useState(
     () => localStorage.getItem('memoir-welcome-dismissed') === 'true'
   )
@@ -129,6 +130,16 @@ export default function ChatView() {
         })
       })
 
+      // 참조 메모리가 있으면 마지막 어시스턴트 메시지에 첨부
+      if (result.references && result.references.length > 0) {
+        setMessages(prev => {
+          const updated = [...prev]
+          const last = updated[updated.length - 1]
+          updated[updated.length - 1] = { ...last, references: result.references }
+          return updated
+        })
+      }
+
       // 세션 제목이 자동 생성되면 사이드바에 알림
       if (result.title) {
         window.dispatchEvent(new CustomEvent('session-title-updated'))
@@ -162,6 +173,23 @@ export default function ChatView() {
     localStorage.setItem('memoir-welcome-dismissed', 'true')
     setWelcomeDismissed(true)
   }, [])
+
+  const toggleRefExpand = useCallback((idx: number) => {
+    setExpandedRefs(prev => {
+      const next = new Set(prev)
+      if (next.has(idx)) next.delete(idx)
+      else next.add(idx)
+      return next
+    })
+  }, [])
+
+  const getSourceIcon = (sourceType: string) => {
+    switch (sourceType) {
+      case 'WEB': return <Globe size={14} />
+      case 'PDF': return <FileText size={14} />
+      default: return <StickyNote size={14} />
+    }
+  }
 
   const showWelcomeBanner = briefing !== null
     && briefing.today_memories.count === 0
@@ -247,9 +275,40 @@ export default function ChatView() {
               <div className="message-content">
                 {msg.role === 'assistant' ? (
                   msg.content ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {msg.content}
-                    </ReactMarkdown>
+                    <>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {msg.content}
+                      </ReactMarkdown>
+                      {msg.references && msg.references.length > 0 && (
+                        <div className="chat-references">
+                          <button
+                            className="chat-references-toggle"
+                            onClick={() => toggleRefExpand(idx)}
+                            type="button"
+                          >
+                            <Paperclip size={14} />
+                            <span>{msg.references.length}개 기억 참조</span>
+                            {expandedRefs.has(idx) ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </button>
+                          {expandedRefs.has(idx) && (
+                            <div className="chat-references-list">
+                              {msg.references.map(ref => (
+                                <button
+                                  key={ref.id}
+                                  className="chat-reference-chip"
+                                  onClick={() => navigate(`/memories`)}
+                                  type="button"
+                                >
+                                  {getSourceIcon(ref.source_type)}
+                                  <span className="chat-reference-title">{ref.title}</span>
+                                  <span className="chat-reference-date">{ref.created_at}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <span className="typing-indicator">...</span>
                   )

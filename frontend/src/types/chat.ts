@@ -1,6 +1,14 @@
+export interface ChatReference {
+  id: string
+  title: string
+  source_type: string
+  created_at: string
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+  references?: ChatReference[]
 }
 
 export interface ChatMessagePayload {
@@ -12,6 +20,7 @@ export interface ChatStreamChunk {
   done?: boolean
   error?: string
   title?: string
+  references?: ChatReference[]
 }
 
 export interface ChatSessionResponse {

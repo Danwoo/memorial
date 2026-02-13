@@ -10,6 +10,7 @@ export type {
 } from './memory'
 
 export type {
+  ChatReference,
   ChatMessage,
   ChatMessagePayload,
   ChatStreamChunk,

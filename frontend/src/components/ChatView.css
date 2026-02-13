@@ -400,3 +400,67 @@
     max-width: 100%;
   }
 }
+
+/* 참조 메모리 섹션 */
+.chat-references {
+  margin-top: 8px;
+  border-top: 1px solid var(--border-primary);
+  padding-top: 6px;
+}
+
+.chat-references-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+
+.chat-references-toggle:hover {
+  color: var(--accent-primary);
+}
+
+.chat-references-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.chat-reference-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  max-width: 280px;
+}
+
+.chat-reference-chip:hover {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.chat-reference-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.chat-reference-date {
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}

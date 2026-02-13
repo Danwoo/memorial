@@ -70,7 +70,7 @@ class ChatService:
             messages = await self.chat_repo.get_messages(session_id)
 
             # RAG 검색, 저널, 모드별 프롬프트 준비
-            lc_messages = await prepare_socrates_context(messages, mode, user_id=str(user_id))
+            lc_messages, references = await prepare_socrates_context(messages, mode, user_id=str(user_id))
 
             # LLM에서 토큰 단위 스트리밍
             llm = get_streaming_llm()
@@ -85,6 +85,19 @@ class ChatService:
             # 완성된 응답 저장
             if full_response:
                 await self.chat_repo.add_message(session_id, AIMessage(content=full_response))
+
+            # 참조 메모리 이벤트 (최대 5개)
+            if references:
+                ref_data = [
+                    {
+                        "id": str(m.get("id", "")),
+                        "title": m.get("title", ""),
+                        "source_type": m.get("source_type", "NOTE"),
+                        "created_at": str(m.get("created_at", ""))[:10],
+                    }
+                    for m in references[:5]
+                ]
+                yield f"data: {json.dumps({'references': ref_data})}\n\n"
 
             # 첫 대화 완료 시 세션 제목 자동 생성
             title = await self._maybe_generate_title(session_id, content, full_response)
