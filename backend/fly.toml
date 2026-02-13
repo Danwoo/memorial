@@ -1,6 +1,9 @@
 app = 'memoir-ai-backend'
 primary_region = 'nrt'
 
+[env]
+  KUZU_DB_PATH = "/data/kuzu"
+
 [build]
 
 [http_service]
