@@ -9,6 +9,11 @@ from app.repositories.chat_repository import ChatRepository
 from app.repositories.journal_repository import JournalRepository
 from app.repositories.memory_repository import MemoryRepository
 from app.services.digest_service import DigestService
+from app.services.nudge_service import (
+    connection_discovery_job,
+    evening_review_job,
+    weekly_summary_job,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +104,7 @@ async def digest_delivery_job() -> None:
 
 
 def start_scheduler() -> None:
-    """스케줄러 시작: 매 정시에 다이제스트 배달 작업 실행."""
+    """스케줄러 시작: 다이제스트 + 넛지 작업 등록."""
     scheduler.add_job(
         digest_delivery_job,
         "cron",
@@ -107,8 +112,35 @@ def start_scheduler() -> None:
         id="digest_delivery",
         replace_existing=True,
     )
+    # 저녁 회고 넛지: 매 정시 실행 (사용자별 delivery_hour에 맞춰 전송)
+    scheduler.add_job(
+        evening_review_job,
+        "cron",
+        minute=0,
+        id="evening_review_nudge",
+        replace_existing=True,
+    )
+    # 주간 요약 넛지: 매주 일요일 10시 실행
+    scheduler.add_job(
+        weekly_summary_job,
+        "cron",
+        day_of_week="sun",
+        hour=10,
+        minute=0,
+        id="weekly_summary_nudge",
+        replace_existing=True,
+    )
+    # 연결 발견 넛지: 매일 오전 9시 실행
+    scheduler.add_job(
+        connection_discovery_job,
+        "cron",
+        hour=9,
+        minute=0,
+        id="connection_discovery_nudge",
+        replace_existing=True,
+    )
     scheduler.start()
-    logger.info("다이제스트 스케줄러 시작됨 (매 정시 실행)")
+    logger.info("스케줄러 시작됨 (다이제스트 + 넛지 3종)")
 
 
 def stop_scheduler() -> None:

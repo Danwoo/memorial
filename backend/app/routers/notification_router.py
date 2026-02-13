@@ -77,3 +77,35 @@ async def get_vapid_public_key():
     if not settings.VAPID_PUBLIC_KEY:
         raise HTTPException(status_code=503, detail="Push not configured")
     return {"publicKey": settings.VAPID_PUBLIC_KEY}
+
+
+@router.post("/nudge/trigger/{nudge_type}")
+async def trigger_nudge(
+    nudge_type: str,
+    user_id: UUID = Depends(get_user_id),
+):
+    """넛지 수동 트리거 (테스트/디버그용)."""
+    from app.services.nudge_service import (
+        _get_repos,
+        _send_nudge_to_user,
+    )
+
+    if nudge_type not in VALID_NUDGE_TYPES:
+        raise HTTPException(status_code=400, detail=f"유효하지 않은 넛지 타입: {nudge_type}")
+
+    notif_repo, _, _ = _get_repos()
+    messages = {
+        "evening_review": ("오늘의 회고", "테스트: 오늘의 기억을 돌아보세요.", "/journal"),
+        "weekly_summary": ("주간 요약", "테스트: 이번 주 활동을 확인하세요.", "/dashboard"),
+        "connection_found": ("기억 연결 발견", "테스트: 새로운 연결이 발견되었습니다.", "/graph"),
+    }
+    title, body, url = messages[nudge_type]
+    sent = await _send_nudge_to_user(
+        notif_repo,
+        str(user_id),
+        nudge_type,
+        title,
+        body,
+        url=url,
+    )
+    return {"status": "sent" if sent else "no_subscription", "nudge_type": nudge_type}
