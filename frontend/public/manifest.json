@@ -1,0 +1,26 @@
+{
+  "name": "Memoir - 나만의 지식 파트너",
+  "short_name": "Memoir",
+  "description": "읽고, 생각하고, 깨달은 것들을 AI와 함께 정리하세요",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f14",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "education"],
+  "lang": "ko"
+}

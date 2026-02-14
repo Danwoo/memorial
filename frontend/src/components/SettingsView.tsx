@@ -16,6 +16,7 @@ import type { NudgeSetting } from '../api/notifications'
 import { fetchExportCounts, exportMemories, exportJournals, exportAll } from '../api/export'
 import type { ExportCounts } from '../api/export'
 import { usePushNotifications } from '../hooks/usePushNotifications'
+import { usePWAInstall } from '../hooks/usePWAInstall'
 import type { ProviderInfo, BotSettings, BotSettingsUpdate, ChannelLinkCode, ChannelStatus } from '../api/integrations'
 import './SettingsView.css'
 
@@ -43,6 +44,7 @@ export default function SettingsView() {
   const [nudgeSettings, setNudgeSettings] = useState<NudgeSetting[]>([])
   const [nudgeLoading, setNudgeLoading] = useState(false)
   const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, subscribe: subscribePush } = usePushNotifications()
+  const { canInstall, isInstalled, install: installPWA } = usePWAInstall()
 
   // 카카오톡 채널 연결 상태
   const [channelStatus, setChannelStatus] = useState<ChannelStatus | null>(null)
@@ -335,6 +337,28 @@ export default function SettingsView() {
               다시 보기
             </button>
           </div>
+          {(canInstall || isInstalled) && (
+            <div className="bot-setting-row">
+              <div className="nudge-info">
+                <span className="bot-setting-label">앱 설치하기</span>
+                <span className="nudge-desc">홈 화면에 추가하여 앱처럼 사용할 수 있습니다</span>
+              </div>
+              {isInstalled ? (
+                <span className="status-badge connected">설치됨</span>
+              ) : (
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={async () => {
+                    const accepted = await installPWA()
+                    if (accepted) toast.success('앱이 설치되었습니다!')
+                  }}
+                  type="button"
+                >
+                  설치
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
