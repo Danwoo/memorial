@@ -1,8 +1,12 @@
 import { get, post } from './client'
 import type { RelatedMemoriesResponse, ReviewQuestionsResponse, InsightsResponse, InlineAIAction, JournalDatesResponse, JournalEntry } from '../types'
 
-export function saveJournal(content: string): Promise<void> {
-  return post('/journals', { content })
+export function saveJournal(content: string, memoryIds?: string[]): Promise<void> {
+  const body: { content: string; memory_ids?: string[] } = { content }
+  if (memoryIds && memoryIds.length > 0) {
+    body.memory_ids = memoryIds
+  }
+  return post('/journals', body)
 }
 
 export function fetchRelatedMemories(content: string): Promise<RelatedMemoriesResponse> {

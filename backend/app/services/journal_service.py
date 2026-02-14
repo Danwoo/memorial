@@ -7,6 +7,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from app.config.llm import get_creative_llm
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.graph_repository import GraphRepository
+from app.repositories.journal_memory_link_repository import JournalMemoryLinkRepository
 from app.repositories.journal_repository import JournalRepository
 from app.repositories.vector_repository import VectorRepository
 
@@ -114,11 +115,13 @@ class JournalService:
         graph_repo: GraphRepository,
         vector_repo: VectorRepository | None = None,
         chat_repo: ChatRepository | None = None,
+        link_repo: JournalMemoryLinkRepository | None = None,
     ):
         self.journal_repo = journal_repo
         self.graph_repo = graph_repo
         self.vector_repo = vector_repo
         self.chat_repo = chat_repo
+        self.link_repo = link_repo
 
     def _analyze_sentiment(self, content: str) -> str:
         """키워드 기반 간이 감정 분석. TODO: LLM 또는 VADER로 교체."""
@@ -138,10 +141,24 @@ class JournalService:
             return "NEGATIVE"
         return "NEUTRAL"
 
-    async def create_entry(self, user_id: UUID | None, content: str) -> dict[str, Any] | None:
-        """저널 항목 생성 (감정 분석 포함)."""
+    async def create_entry(
+        self,
+        user_id: UUID | None,
+        content: str,
+        memory_ids: list[str] | None = None,
+    ) -> dict[str, Any] | None:
+        """저널 항목 생성 (감정 분석 + 메모리 링크 동기화 포함)."""
         mood = self._analyze_sentiment(content)
         journal = await self.journal_repo.create_journal(user_id, content, mood=mood)
+
+        # 메모리 링크 동기화
+        if journal and memory_ids and self.link_repo:
+            try:
+                journal_id = UUID(journal["id"])
+                await self.link_repo.sync_links(journal_id, memory_ids, link_type="manual")
+            except Exception:
+                logger.exception("저널-메모리 링크 동기화 실패 (journal_id=%s)", journal.get("id"))
+
         return journal
 
     async def get_entries(self, user_id: UUID, limit: int = 10) -> list[dict[str, Any]]:

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Save, Loader2, Sparkles, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import TurndownService from 'turndown'
@@ -104,6 +105,7 @@ export default function JournalView() {
   const todayLabel = formatDateKo(todayStr)
   const editorRef = useRef<TiptapEditorHandle>(null)
   const toast = useToast()
+  const location = useLocation()
 
   // 날짜 네비게이션
   const [selectedDate, setSelectedDate] = useState(todayStr)
@@ -156,6 +158,15 @@ export default function JournalView() {
     ],
     [todayLabel],
   )
+
+  // 다른 뷰에서 특정 날짜로 이동 요청 시 처리
+  useEffect(() => {
+    const state = location.state as { date?: string } | null
+    if (state?.date) {
+      setSelectedDate(state.date)
+      window.history.replaceState({}, '')
+    }
+  }, [location.state])
 
   // 마운트 시 저널 날짜 목록 로드
   useEffect(() => {
@@ -355,11 +366,28 @@ export default function JournalView() {
     }
   }, [handleInsertMemory])
 
+  // Tiptap 에디터 HTML에서 삽입된 메모리 블록의 ID를 추출
+  const extractMemoryIds = useCallback((): string[] => {
+    if (editorMode !== 'wysiwyg' || !editorRef.current) return []
+    const html = editorRef.current.getHTML()
+    const ids: string[] = []
+    // Tiptap은 camelCase 속성을 소문자로 렌더링: memoryId → memoryid
+    const regex = /memoryid="([^"]+)"/g
+    let match
+    while ((match = regex.exec(html)) !== null) {
+      if (match[1] && !ids.includes(match[1])) {
+        ids.push(match[1])
+      }
+    }
+    return ids
+  }, [editorMode])
+
   const handleSave = async () => {
     if (!markdownContent.trim()) return
     setIsSaving(true)
     try {
-      await saveJournal(markdownContent)
+      const memoryIds = extractMemoryIds()
+      await saveJournal(markdownContent, memoryIds)
       localStorage.removeItem(JOURNAL_DRAFT_KEY)
       toast.success('저장되었습니다!')
     } catch (e) {

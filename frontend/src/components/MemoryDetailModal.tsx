@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { X, ExternalLink, Trash2, Loader2, Globe, FileText, StickyNote, File, Tag, Pencil, Save, Undo2 } from 'lucide-react'
+import { X, ExternalLink, Trash2, Loader2, Globe, FileText, StickyNote, File, Tag, Pencil, Save, Undo2, BookOpen } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
 import { useFocusTrap } from '../hooks/useFocusTrap'
-import type { MemoryDetail, RelatedMemory } from '../types'
-import { fetchMemoryDetail, deleteMemory, updateMemory, fetchUserTags, fetchRelatedMemoriesById } from '../api'
+import type { MemoryDetail, RelatedMemory, LinkedJournal } from '../types'
+import { fetchMemoryDetail, deleteMemory, updateMemory, fetchUserTags, fetchRelatedMemoriesById, fetchMemoryJournals } from '../api'
 import { formatDateKR } from '../utils'
 import './MemoryDetailModal.css'
 
@@ -34,6 +35,7 @@ interface MemoryDetailModalProps {
 
 export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpdated }: MemoryDetailModalProps) {
   const toast = useToast()
+  const navigate = useNavigate()
   const trapRef = useFocusTrap()
   const [detail, setDetail] = useState<MemoryDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -41,6 +43,8 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
   const [showConfirm, setShowConfirm] = useState(false)
   const [relatedMemories, setRelatedMemories] = useState<RelatedMemory[]>([])
   const [isLoadingRelated, setIsLoadingRelated] = useState(false)
+  const [linkedJournals, setLinkedJournals] = useState<LinkedJournal[]>([])
+  const [isLoadingJournals, setIsLoadingJournals] = useState(false)
 
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
@@ -77,6 +81,11 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
           .then(setRelatedMemories)
           .catch(() => {})
           .finally(() => setIsLoadingRelated(false))
+        setIsLoadingJournals(true)
+        fetchMemoryJournals(memoryId)
+          .then(res => setLinkedJournals(res.journals))
+          .catch(() => {})
+          .finally(() => setIsLoadingJournals(false))
       })
       .catch(() => {
         toast.error('메모리 상세 정보를 불러오지 못했습니다.')
@@ -322,6 +331,45 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
                     ))}
                   </div>
                 ) : null}
+              </div>
+            )}
+
+            {!isEditing && (
+              <div className="memory-detail-section">
+                <h4>관련 저널</h4>
+                {isLoadingJournals ? (
+                  <div className="related-loading">
+                    <Loader2 size={16} className="spin" />
+                    <span>찾는 중...</span>
+                  </div>
+                ) : linkedJournals.length > 0 ? (
+                  <div className="linked-journals-list">
+                    {linkedJournals.map(journal => (
+                      <button
+                        key={journal.journal_id}
+                        className="linked-journal-item"
+                        onClick={() => {
+                          onClose()
+                          navigate(`/journal`, { state: { date: journal.date } })
+                        }}
+                        type="button"
+                      >
+                        <BookOpen size={14} className="linked-journal-icon" />
+                        <div className="linked-journal-content">
+                          <span className="linked-journal-date">{journal.date}</span>
+                          <span className="linked-journal-preview">{journal.preview}</span>
+                        </div>
+                        {journal.mood && (
+                          <span className="linked-journal-mood">
+                            {journal.mood === 'POSITIVE' ? '😊' : journal.mood === 'NEGATIVE' ? '😔' : '📝'}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="linked-journals-empty">아직 이 기억에 대해 작성한 저널이 없습니다.</p>
+                )}
               </div>
             )}
 

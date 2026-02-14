@@ -7,6 +7,7 @@ export type {
   MemoryDetail,
   RelatedMemory,
   SearchResult,
+  LinkedJournal,
 } from './memory'
 
 export type {

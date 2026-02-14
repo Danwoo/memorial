@@ -6,7 +6,9 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Qu
 from app.agents.librarian.graph import librarian_graph
 from app.agents.state import build_librarian_initial_state
 from app.config.auth import get_user_id
-from app.config.dependencies import get_memory_service
+from app.config.dependencies import get_journal_memory_link_repository, get_memory_service
+from app.repositories.journal_memory_link_repository import JournalMemoryLinkRepository
+from app.schemas.journal_schema import LinkedJournalItem, LinkedJournalsResponse
 from app.schemas.memory_schema import (
     BulkActionRequest,
     BulkActionResponse,
@@ -258,6 +260,40 @@ async def get_tags(
 ):
     """사용자의 기존 태그 목록 조회 (자동완성용)."""
     return await memory_service.get_user_tags(user_id, q)
+
+
+@router.get("/{memory_id}/journals", response_model=LinkedJournalsResponse)
+async def get_memory_journals(
+    memory_id: UUID,
+    user_id: UUID = Depends(get_user_id),
+    link_repo: JournalMemoryLinkRepository = Depends(get_journal_memory_link_repository),
+):
+    """해당 메모리를 참조한 저널 목록 역참조 조회."""
+    try:
+        rows = await link_repo.get_journals_by_memory(memory_id)
+        items = []
+        for row in rows:
+            journal_data = row.get("journals")
+            if not journal_data:
+                continue
+            content = journal_data.get("content", "")
+            # 미리보기: 첫 80자
+            preview = content[:80].replace("\n", " ").strip()
+            if len(content) > 80:
+                preview += "..."
+            items.append(
+                LinkedJournalItem(
+                    journal_id=journal_data["id"],
+                    date=journal_data.get("created_at", "")[:10],
+                    preview=preview,
+                    mood=journal_data.get("mood"),
+                    link_type=row.get("link_type", "manual"),
+                )
+            )
+        return LinkedJournalsResponse(journals=items)
+    except Exception:
+        logger.exception("메모리 역참조 저널 조회 실패 (memory_id=%s)", memory_id)
+        return LinkedJournalsResponse(journals=[])
 
 
 @router.get("/{memory_id}", response_model=MemoryDetail)

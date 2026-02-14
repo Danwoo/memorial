@@ -32,7 +32,7 @@ async def create_journal(
 ):
     """새 저널 항목 생성 (감정 분석 포함)."""
     try:
-        result = await service.create_entry(user_id, journal.content)
+        result = await service.create_entry(user_id, journal.content, journal.memory_ids)
         if not result:
             raise HTTPException(
                 status_code=500,

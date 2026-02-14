@@ -52,3 +52,11 @@ export interface SearchResult {
   created_at?: string
   tags?: string[]
 }
+
+export interface LinkedJournal {
+  journal_id: string
+  date: string
+  preview: string
+  mood: string | null
+  link_type: string
+}

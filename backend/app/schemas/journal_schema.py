@@ -8,6 +8,7 @@ class JournalCreate(BaseModel):
     """저널 항목 생성 요청."""
 
     content: str
+    memory_ids: list[str] | None = None
 
 
 class JournalResponse(BaseModel):
@@ -82,3 +83,19 @@ class JournalDatesResponse(BaseModel):
     """저널 날짜 목록 응답."""
 
     dates: list[JournalDateInfo]
+
+
+class LinkedJournalItem(BaseModel):
+    """메모리에 연결된 저널 항목."""
+
+    journal_id: str
+    date: str
+    preview: str
+    mood: str | None = None
+    link_type: str = "manual"
+
+
+class LinkedJournalsResponse(BaseModel):
+    """메모리 역참조 저널 목록 응답."""
+
+    journals: list[LinkedJournalItem]

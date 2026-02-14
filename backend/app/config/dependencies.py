@@ -8,6 +8,7 @@ from app.config.database import get_supabase_client
 # --- Repositories ---
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.graph_repository import GraphRepository
+from app.repositories.journal_memory_link_repository import JournalMemoryLinkRepository
 from app.repositories.journal_repository import JournalRepository
 from app.repositories.memory_repository import MemoryRepository
 from app.repositories.notification_repository import NotificationRepository
@@ -63,6 +64,11 @@ def get_journal_repository(db: Client = Depends(get_db)) -> JournalRepository:
     return JournalRepository(db)
 
 
+def get_journal_memory_link_repository(db: Client = Depends(get_db)) -> JournalMemoryLinkRepository:
+    """JournalMemoryLinkRepository 인스턴스 생성."""
+    return JournalMemoryLinkRepository(db)
+
+
 # --- Service Factories ---
 def get_memory_service(
     memory_repo: MemoryRepository = Depends(get_memory_repository),
@@ -108,9 +114,10 @@ def get_journal_service(
     graph_repo: GraphRepository = Depends(get_graph_repository),
     vector_repo: VectorRepository = Depends(get_vector_repository),
     chat_repo: ChatRepository = Depends(get_chat_repository),
+    link_repo: JournalMemoryLinkRepository = Depends(get_journal_memory_link_repository),
 ) -> JournalService:
     """JournalService 인스턴스 생성."""
-    return JournalService(journal_repo, graph_repo, vector_repo, chat_repo)
+    return JournalService(journal_repo, graph_repo, vector_repo, chat_repo, link_repo)
 
 
 def get_digest_service(
