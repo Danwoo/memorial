@@ -15,9 +15,9 @@ class MemoryCreate(BaseModel):
     """메모리 생성 요청."""
 
     source_type: SourceType = Field(alias="sourceType")
-    url: str | None = None
-    content: str | None = None
-    memo: str | None = None
+    url: str | None = Field(None, max_length=2048)
+    content: str | None = Field(None, max_length=50000)
+    memo: str | None = Field(None, max_length=5000)
 
     class Config:
         populate_by_name = True
@@ -26,9 +26,9 @@ class MemoryCreate(BaseModel):
 class MemoryUpdate(BaseModel):
     """메모리 수정 요청. 전달된 필드만 업데이트."""
 
-    title: str | None = None
-    summary: str | None = None
-    tags: list[str] | None = None
+    title: str | None = Field(None, max_length=200)
+    summary: str | None = Field(None, max_length=2000)
+    tags: list[str] | None = Field(None, max_length=20)
 
 
 BulkActionType = Literal["delete", "add_tags", "remove_tags"]

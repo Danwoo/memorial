@@ -15,6 +15,7 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://localhost:3000",
     ]
+    ALLOWED_ORIGINS: str | None = None  # 쉼표로 구분된 프로덕션 도메인 (예: "https://memoir.fly.dev")
 
     OPENAI_API_KEY: str
 

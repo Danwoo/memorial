@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ToastProvider } from './contexts/ToastContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 import AppLayout from './components/AppLayout'
 import AuthView from './components/AuthView'
 import ChatView from './components/ChatView'
@@ -34,6 +35,7 @@ function RootRoute() {
 
 function App() {
   return (
+    <ErrorBoundary>
     <BrowserRouter>
       <ThemeProvider>
       <AuthProvider>
@@ -67,6 +69,7 @@ function App() {
       </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
+    </ErrorBoundary>
   )
 }
 
