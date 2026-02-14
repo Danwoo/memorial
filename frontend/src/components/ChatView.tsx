@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
   User, Bot, MessageSquareText, ArrowUp,
-  BookOpen, X, Paperclip, ChevronDown, ChevronUp, FileText, Globe, StickyNote,
+  Paperclip, ChevronDown, ChevronUp, FileText, Globe, StickyNote,
 } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import type { ChatMessage, ChatLocationState, BriefingData } from '../types'
@@ -26,9 +26,6 @@ export default function ChatView() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [briefing, setBriefing] = useState<BriefingData | null>(null)
   const [expandedRefs, setExpandedRefs] = useState<Set<number>>(new Set())
-  const [welcomeDismissed, setWelcomeDismissed] = useState(
-    () => localStorage.getItem('memoir-welcome-dismissed') === 'true'
-  )
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -189,11 +186,6 @@ export default function ChatView() {
     }
   }
 
-  const dismissWelcome = useCallback(() => {
-    localStorage.setItem('memoir-welcome-dismissed', 'true')
-    setWelcomeDismissed(true)
-  }, [])
-
   const toggleRefExpand = useCallback((idx: number) => {
     setExpandedRefs(prev => {
       const next = new Set(prev)
@@ -210,10 +202,6 @@ export default function ChatView() {
       default: return <StickyNote size={14} />
     }
   }
-
-  const showWelcomeBanner = briefing !== null
-    && briefing.today_memories.count === 0
-    && !welcomeDismissed
 
   const hasBriefingContent = briefing && briefing.today_memories.count > 0
 
@@ -234,24 +222,6 @@ export default function ChatView() {
           </div>
         ) : messages.length === 0 ? (
           <div className="chat-empty">
-            {showWelcomeBanner && (
-              <div className="welcome-banner">
-                <button className="welcome-banner-close" onClick={dismissWelcome} type="button">
-                  <X size={16} />
-                </button>
-                <BookOpen size={32} className="welcome-banner-icon" />
-                <h3>Memoir에 오신 것을 환영합니다!</h3>
-                <p>웹 페이지, 메모, PDF 등을 저장하면 AI가 지식을 연결해줍니다.</p>
-                <button
-                  className="welcome-banner-cta"
-                  onClick={() => navigate('/memories')}
-                  type="button"
-                >
-                  메모리 추가하기
-                </button>
-              </div>
-            )}
-
             <MessageSquareText size={48} className="state-icon" />
             {hasBriefingContent ? (
               <>
@@ -272,19 +242,19 @@ export default function ChatView() {
               </>
             )}
 
-            {briefing && (
-              <div className="suggested-questions">
+            <div className="suggested-questions">
+              {briefing?.suggested_question && (
                 <button className="suggested-q" onClick={() => setInput(briefing.suggested_question)}>
                   {briefing.suggested_question}
                 </button>
-                <button className="suggested-q" onClick={() => setInput('최근 관심사에 대해 이야기해줘')}>
-                  최근 관심사에 대해 이야기해줘
-                </button>
-                <button className="suggested-q" onClick={() => setInput('저장한 글 중 인상적인 것은?')}>
-                  저장한 글 중 인상적인 것은?
-                </button>
-              </div>
-            )}
+              )}
+              <button className="suggested-q" onClick={() => setInput('최근 관심사에 대해 이야기해줘')}>
+                최근 관심사에 대해 이야기해줘
+              </button>
+              <button className="suggested-q" onClick={() => setInput('저장한 글 중 인상적인 것은?')}>
+                저장한 글 중 인상적인 것은?
+              </button>
+            </div>
           </div>
         ) : (
           messages.map((msg, idx) => (

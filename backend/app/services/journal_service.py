@@ -4,7 +4,7 @@ from uuid import UUID
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from app.config.llm import get_creative_llm
+from app.config.llm import get_analytical_llm, get_creative_llm
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.graph_repository import GraphRepository
 from app.repositories.journal_memory_link_repository import JournalMemoryLinkRepository
@@ -49,33 +49,9 @@ DRAFT_PROMPT = """You are a reflective journal writing assistant. Based on the e
 **Output:** A well-structured journal entry draft in markdown format."""
 
 
-POSITIVE_SENTIMENT_WORDS = [
-    "happy",
-    "good",
-    "great",
-    "excited",
-    "proud",
-    "calm",
-    "평온",
-    "행복",
-    "좋아",
-    "성취",
-    "뿌듯",
-]
-
-NEGATIVE_SENTIMENT_WORDS = [
-    "sad",
-    "bad",
-    "angry",
-    "anxious",
-    "tired",
-    "우울",
-    "슬퍼",
-    "힘들",
-    "피곤",
-    "짜증",
-    "불안",
-]
+SENTIMENT_PROMPT = """Classify the overall mood of the following journal entry.
+Respond with exactly one word: POSITIVE, NEGATIVE, or NEUTRAL.
+No explanation needed."""
 
 COGNITIVE_DISTORTION_PATTERNS = {
     "all_or_nothing": {
@@ -123,23 +99,24 @@ class JournalService:
         self.chat_repo = chat_repo
         self.link_repo = link_repo
 
-    def _analyze_sentiment(self, content: str) -> str:
-        """키워드 기반 간이 감정 분석. TODO: LLM 또는 VADER로 교체."""
-        score = 0
-        content_lower = content.lower()
-
-        for word in POSITIVE_SENTIMENT_WORDS:
-            if word in content_lower:
-                score += 1
-        for word in NEGATIVE_SENTIMENT_WORDS:
-            if word in content_lower:
-                score -= 1
-
-        if score > 0:
-            return "POSITIVE"
-        if score < 0:
-            return "NEGATIVE"
-        return "NEUTRAL"
+    async def _analyze_sentiment(self, content: str) -> str:
+        """LLM 기반 감정 분석. POSITIVE / NEGATIVE / NEUTRAL 반환."""
+        if not content or len(content.strip()) < MIN_CONTENT_LENGTH:
+            return "NEUTRAL"
+        try:
+            llm = get_analytical_llm()
+            messages = [
+                SystemMessage(content=SENTIMENT_PROMPT),
+                HumanMessage(content=content[:500]),
+            ]
+            response = await llm.ainvoke(messages)
+            result = response.content.strip().upper()
+            if result in ("POSITIVE", "NEGATIVE", "NEUTRAL"):
+                return result
+            return "NEUTRAL"
+        except Exception:
+            logger.exception("LLM 감정 분석 실패, NEUTRAL 반환")
+            return "NEUTRAL"
 
     async def create_entry(
         self,
@@ -148,7 +125,7 @@ class JournalService:
         memory_ids: list[str] | None = None,
     ) -> dict[str, Any] | None:
         """저널 항목 생성 (감정 분석 + 메모리 링크 동기화 포함)."""
-        mood = self._analyze_sentiment(content)
+        mood = await self._analyze_sentiment(content)
         journal = await self.journal_repo.create_journal(user_id, content, mood=mood)
 
         # 메모리 링크 동기화
