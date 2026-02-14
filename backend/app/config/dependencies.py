@@ -18,6 +18,7 @@ from app.repositories.vector_repository import VectorRepository
 # --- Services ---
 from app.services.chat_service import ChatService
 from app.services.digest_service import DigestService
+from app.services.export_service import ExportService
 from app.services.graph_service import GraphService
 from app.services.journal_service import JournalService
 from app.services.kakao_channel_service import KakaoChannelService
@@ -135,6 +136,13 @@ def get_kakao_channel_service(
 ) -> KakaoChannelService:
     """KakaoChannelService 인스턴스 생성."""
     return KakaoChannelService(db, memory_service)
+
+
+def get_export_service(
+    db: Client = Depends(get_db),
+) -> ExportService:
+    """ExportService 인스턴스 생성."""
+    return ExportService(db)
 
 
 def get_notification_repository(

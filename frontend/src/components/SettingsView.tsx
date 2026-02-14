@@ -13,6 +13,8 @@ import {
 } from '../api'
 import { getNotificationSettings, updateNotificationSetting } from '../api/notifications'
 import type { NudgeSetting } from '../api/notifications'
+import { fetchExportCounts, exportMemories, exportJournals, exportAll } from '../api/export'
+import type { ExportCounts } from '../api/export'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 import type { ProviderInfo, BotSettings, BotSettingsUpdate, ChannelLinkCode, ChannelStatus } from '../api/integrations'
 import './SettingsView.css'
@@ -49,6 +51,10 @@ export default function SettingsView() {
   const [countdown, setCountdown] = useState('')
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // 데이터 내보내기
+  const [exportCounts, setExportCounts] = useState<ExportCounts | null>(null)
+  const [exportLoading, setExportLoading] = useState<string | null>(null)
+
   // URL 파라미터에서 계정 연결 결과 확인 (OAuth 콜백)
   useEffect(() => {
     const linked = searchParams.get('linked')
@@ -67,15 +73,17 @@ export default function SettingsView() {
       setProviders(status.providers)
       setEmail(status.email)
 
-      // 봇 설정, 채널 상태, 알림 설정을 병렬로 로드
-      const [botResult, channelResult, nudgeResult] = await Promise.allSettled([
+      // 봇 설정, 채널 상태, 알림 설정, 내보내기 건수를 병렬로 로드
+      const [botResult, channelResult, nudgeResult, exportResult] = await Promise.allSettled([
         getBotSettings(),
         getChannelStatus(),
         getNotificationSettings(),
+        fetchExportCounts(),
       ])
       if (botResult.status === 'fulfilled') setBotSettings(botResult.value)
       if (channelResult.status === 'fulfilled') setChannelStatus(channelResult.value)
       if (nudgeResult.status === 'fulfilled') setNudgeSettings(nudgeResult.value.nudges)
+      if (exportResult.status === 'fulfilled') setExportCounts(exportResult.value)
     } catch {
       setProviders([])
     } finally {
@@ -207,6 +215,22 @@ export default function SettingsView() {
     }
   }
 
+  // ─── 데이터 내보내기 핸들러 ────────────────────────────────────────────────
+  const handleExport = async (type: 'memories' | 'journals' | 'all') => {
+    setExportLoading(type)
+    toast.info('내보내기를 준비하고 있습니다...')
+    try {
+      if (type === 'memories') await exportMemories()
+      else if (type === 'journals') await exportJournals()
+      else await exportAll()
+      toast.success('다운로드가 시작됩니다')
+    } catch {
+      toast.error('내보내기에 실패했습니다')
+    } finally {
+      setExportLoading(null)
+    }
+  }
+
   // 연결 코드 만료까지 남은 시간 카운트다운
   const startCountdown = (expiresAt: string) => {
     if (countdownRef.current) clearInterval(countdownRef.current)
@@ -309,6 +333,44 @@ export default function SettingsView() {
               type="button"
             >
               다시 보기
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 데이터 관리 섹션 */}
+      <section className="settings-section">
+        <h2 className="section-title">데이터 관리</h2>
+        <div className="card" style={{ padding: 'var(--space-md) var(--space-xl)' }}>
+          {exportCounts && (
+            <p className="export-counts-info">
+              기억 {exportCounts.memories}개, 저널 {exportCounts.journals}개
+            </p>
+          )}
+          <div className="export-buttons">
+            <button
+              className="btn btn-sm btn-secondary"
+              onClick={() => handleExport('memories')}
+              disabled={exportLoading !== null}
+              type="button"
+            >
+              {exportLoading === 'memories' ? '준비 중...' : '기억 내보내기 (JSON)'}
+            </button>
+            <button
+              className="btn btn-sm btn-secondary"
+              onClick={() => handleExport('journals')}
+              disabled={exportLoading !== null}
+              type="button"
+            >
+              {exportLoading === 'journals' ? '준비 중...' : '저널 내보내기 (Markdown)'}
+            </button>
+            <button
+              className="btn btn-sm btn-secondary"
+              onClick={() => handleExport('all')}
+              disabled={exportLoading !== null}
+              type="button"
+            >
+              {exportLoading === 'all' ? '준비 중...' : '전체 백업 (JSON)'}
             </button>
           </div>
         </div>

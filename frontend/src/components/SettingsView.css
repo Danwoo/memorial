@@ -564,3 +564,21 @@
   font-size: var(--fs-caption);
   color: var(--text-muted);
 }
+
+/* ─── 데이터 내보내기 ─────────────────────────────────── */
+.export-counts-info {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+}
+
+.export-buttons {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.export-buttons .btn {
+  flex: 1;
+  min-width: 140px;
+}
