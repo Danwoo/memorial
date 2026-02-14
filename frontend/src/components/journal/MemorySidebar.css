@@ -93,10 +93,12 @@
 
 /* 메모리 카드 */
 .journal-memory-card {
+  position: relative;
   background-color: var(--bg-tertiary);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
   padding: var(--space-sm);
+  padding-right: 36px;
   cursor: pointer;
   transition: border-color var(--transition-fast), transform var(--transition-fast);
 }
@@ -104,6 +106,34 @@
 .journal-memory-card:hover {
   border-color: var(--accent-primary);
   transform: translateY(-1px);
+}
+
+.journal-memory-card__insert-btn {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: all var(--transition-fast);
+}
+
+.journal-memory-card:hover .journal-memory-card__insert-btn {
+  opacity: 1;
+}
+
+.journal-memory-card__insert-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--accent-bg);
 }
 
 .journal-memory-card__type {

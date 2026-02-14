@@ -1,102 +1,162 @@
-.ai-panel {
-  flex-shrink: 0;
-  border-top: 1px solid var(--border-secondary);
+/* AI 사이드바 (우측 패널) */
+.ai-sidebar {
+  width: 300px;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
   background-color: var(--bg-secondary);
+  border-left: 1px solid var(--border-secondary);
+  height: 100%;
+  overflow: hidden;
 }
 
-.ai-panel__toggle {
+.ai-sidebar__header {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  width: 100%;
   padding: var(--space-sm) var(--space-md);
-  border: none;
-  background: none;
-  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-secondary);
   font-size: var(--fs-body-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-fast);
+  font-weight: 600;
+  color: var(--text-primary);
+  flex-shrink: 0;
 }
 
-.ai-panel__toggle:hover {
-  color: var(--accent-primary);
-  background-color: var(--bg-tertiary);
-}
-
-.ai-panel__content {
-  padding: 0 var(--space-md) var(--space-md);
-  max-height: 280px;
-  overflow-y: auto;
-}
-
-.ai-panel__tabs {
+.ai-sidebar__tabs {
   display: flex;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-secondary);
+  flex-shrink: 0;
 }
 
-.ai-panel-tab {
+.ai-sidebar-tab {
+  flex: 1;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: var(--space-xs) var(--space-sm);
+  padding: var(--space-sm) var(--space-xs);
   border: none;
   background: none;
-  border-radius: var(--radius-sm);
   font-size: var(--fs-caption);
   font-weight: 500;
   color: var(--text-muted);
   cursor: pointer;
   transition: all var(--transition-fast);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
 }
 
-.ai-panel-tab:hover {
+.ai-sidebar-tab:hover {
   color: var(--text-secondary);
   background-color: var(--bg-tertiary);
 }
 
-.ai-panel-tab--active {
+.ai-sidebar-tab--active {
   color: var(--accent-primary);
-  background-color: var(--bg-tertiary);
+  border-bottom-color: var(--accent-primary);
 }
 
-.ai-panel__loading {
+.ai-sidebar__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-sm);
+}
+
+.ai-sidebar__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xl) var(--space-sm);
+  text-align: center;
+}
+
+.ai-sidebar__analyze-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border: 1px dashed var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--fs-body-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ai-sidebar__analyze-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--accent-bg);
+}
+
+.ai-sidebar__hint {
+  color: var(--text-muted);
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.ai-sidebar__loading {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   color: var(--text-muted);
   font-size: var(--fs-body-sm);
-  padding: var(--space-md);
+  padding: var(--space-xl);
   justify-content: center;
 }
 
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.ai-panel__empty {
+.ai-sidebar__no-result {
   color: var(--text-muted);
   font-size: var(--fs-body-sm);
   text-align: center;
   padding: var(--space-md);
+  margin: 0;
+}
+
+.ai-sidebar__refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  margin-top: var(--space-sm);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--fs-caption);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  width: 100%;
+  justify-content: center;
+}
+
+.ai-sidebar__refresh-btn:hover:not(:disabled) {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.ai-sidebar__refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* 성찰 질문 */
+.ai-sidebar__questions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
 .ai-question-item {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-sm);
+  flex-direction: column;
+  gap: var(--space-xs);
   padding: var(--space-sm);
   background-color: var(--bg-tertiary);
   border-radius: var(--radius-sm);
-  margin-bottom: var(--space-xs);
 }
 
 .ai-question-text {
@@ -104,11 +164,10 @@
   font-size: var(--fs-body-sm);
   color: var(--text-primary);
   line-height: 1.4;
-  flex: 1;
 }
 
 .ai-question-insert {
-  flex-shrink: 0;
+  align-self: flex-end;
   padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--accent-primary);
   background: none;
@@ -116,7 +175,6 @@
   font-size: var(--fs-caption);
   color: var(--accent-primary);
   cursor: pointer;
-  white-space: nowrap;
   transition: all var(--transition-fast);
 }
 
@@ -125,7 +183,13 @@
   color: var(--bg-primary);
 }
 
-/* 웰니스 점수 */
+/* 인사이트 */
+.ai-sidebar__insights {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
 .wellness-score {
   display: flex;
   align-items: center;
@@ -133,7 +197,6 @@
   padding: var(--space-sm) var(--space-md);
   background-color: var(--bg-tertiary);
   border-radius: var(--radius-sm);
-  margin-bottom: var(--space-sm);
 }
 
 .wellness-label {
@@ -148,7 +211,6 @@
   color: var(--accent-primary);
 }
 
-/* 인지 왜곡 리스트 */
 .distortion-list {
   display: flex;
   flex-direction: column;
@@ -179,4 +241,20 @@
   font-size: var(--fs-caption);
   color: var(--text-muted);
   line-height: 1.4;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ─── 반응형: ≤1024px → AI 사이드바 접기 ────────────────────── */
+@media (max-width: 1024px) {
+  .ai-sidebar {
+    display: none;
+  }
 }

@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, Brain, Heart, Loader2 } from 'lucide-react'
+import { Brain, Heart, Loader2, Sparkles } from 'lucide-react'
 import { useToast } from '../../contexts/ToastContext'
 import type { ReviewQuestionsResponse, InsightsResponse } from '../../types'
 import { fetchReviewQuestions, fetchInsights } from '../../api'
 import './AIPanel.css'
 
-// AI 분석을 위한 최소 글자 수
 const MIN_CONTENT_LENGTH_FOR_ANALYSIS = 20
 
 interface AIPanelProps {
@@ -15,7 +14,6 @@ interface AIPanelProps {
 
 export function AIPanel({ content, onInsertQuestion }: AIPanelProps) {
   const toast = useToast()
-  const [isOpen, setIsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'questions' | 'insights'>('questions')
   const [questions, setQuestions] = useState<ReviewQuestionsResponse | null>(null)
   const [insights, setInsights] = useState<InsightsResponse | null>(null)
@@ -26,7 +24,6 @@ export function AIPanel({ content, onInsertQuestion }: AIPanelProps) {
       toast.info(`분석하려면 ${MIN_CONTENT_LENGTH_FOR_ANALYSIS}자 이상 작성해주세요.`)
       return
     }
-    setIsOpen(true)
     setIsLoading(true)
     try {
       const [q, i] = await Promise.all([
@@ -43,91 +40,118 @@ export function AIPanel({ content, onInsertQuestion }: AIPanelProps) {
     }
   }
 
+  const hasResults = questions || insights
+
   return (
-    <div className={`ai-panel ${isOpen ? 'ai-panel--open' : ''}`}>
-      <button
-        className="ai-panel__toggle"
-        onClick={() => isOpen ? setIsOpen(false) : handleLoadAnalysis()}
-        type="button"
-      >
+    <div className="ai-sidebar">
+      <div className="ai-sidebar__header">
         <Brain size={16} />
         <span>AI 분석</span>
-        {isOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-      </button>
+      </div>
 
-      {isOpen && (
-        <div className="ai-panel__content">
-          <div className="ai-panel__tabs">
+      <div className="ai-sidebar__tabs">
+        <button
+          className={`ai-sidebar-tab ${activeTab === 'questions' ? 'ai-sidebar-tab--active' : ''}`}
+          onClick={() => setActiveTab('questions')}
+          type="button"
+        >
+          성찰 질문
+        </button>
+        <button
+          className={`ai-sidebar-tab ${activeTab === 'insights' ? 'ai-sidebar-tab--active' : ''}`}
+          onClick={() => setActiveTab('insights')}
+          type="button"
+        >
+          <Heart size={14} />
+          마음 건강
+        </button>
+      </div>
+
+      <div className="ai-sidebar__content">
+        {!hasResults && !isLoading ? (
+          <div className="ai-sidebar__empty">
             <button
-              className={`ai-panel-tab ${activeTab === 'questions' ? 'ai-panel-tab--active' : ''}`}
-              onClick={() => setActiveTab('questions')}
+              className="ai-sidebar__analyze-btn"
+              onClick={handleLoadAnalysis}
               type="button"
             >
-              성찰 질문
+              <Sparkles size={16} />
+              AI 분석 시작
             </button>
+            <p className="ai-sidebar__hint">
+              글을 작성한 후 AI 분석을 요청하면 성찰 질문과 마음 건강 체크를 받을 수 있습니다.
+            </p>
+          </div>
+        ) : isLoading ? (
+          <div className="ai-sidebar__loading">
+            <Loader2 size={20} className="spin" />
+            분석 중...
+          </div>
+        ) : activeTab === 'questions' ? (
+          <div className="ai-sidebar__questions">
+            {questions?.questions.length ? (
+              questions.questions.map((q, i) => (
+                <div key={i} className="ai-question-item">
+                  <p className="ai-question-text">{q}</p>
+                  <button
+                    className="ai-question-insert"
+                    onClick={() => onInsertQuestion(q)}
+                    type="button"
+                  >
+                    답변 작성
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p className="ai-sidebar__no-result">성찰 질문이 없습니다.</p>
+            )}
             <button
-              className={`ai-panel-tab ${activeTab === 'insights' ? 'ai-panel-tab--active' : ''}`}
-              onClick={() => setActiveTab('insights')}
+              className="ai-sidebar__refresh-btn"
+              onClick={handleLoadAnalysis}
+              disabled={isLoading}
               type="button"
             >
-              <Heart size={14} />
-              마음 건강 체크
+              <Sparkles size={14} />
+              다시 분석
             </button>
           </div>
-
-          {isLoading ? (
-            <div className="ai-panel__loading">
-              <Loader2 size={20} className="spin" />
-              분석 중...
-            </div>
-          ) : activeTab === 'questions' ? (
-            <div className="ai-panel__questions">
-              {questions?.questions.length ? (
-                questions.questions.map((q, i) => (
-                  <div key={i} className="ai-question-item">
-                    <p className="ai-question-text">{q}</p>
-                    <button
-                      className="ai-question-insert"
-                      onClick={() => onInsertQuestion(q)}
-                      type="button"
-                    >
-                      답변 작성
-                    </button>
+        ) : (
+          <div className="ai-sidebar__insights">
+            {insights ? (
+              <>
+                <div className="wellness-score">
+                  <span className="wellness-label">웰니스 점수</span>
+                  <span className="wellness-value">{insights.wellness_score}/10</span>
+                </div>
+                {insights.has_distortions && insights.distortions.length > 0 ? (
+                  <div className="distortion-list">
+                    {insights.distortions.map((d, i) => (
+                      <div key={i} className="distortion-item">
+                        <div className="distortion-name">{d.name}</div>
+                        <div className="distortion-trigger">{d.trigger}</div>
+                        <div className="distortion-feedback">{d.feedback}</div>
+                      </div>
+                    ))}
                   </div>
-                ))
-              ) : (
-                <p className="ai-panel__empty">AI 분석 버튼을 눌러 성찰 질문을 생성해보세요.</p>
-              )}
-            </div>
-          ) : (
-            <div className="ai-panel__insights">
-              {insights ? (
-                <>
-                  <div className="wellness-score">
-                    <span className="wellness-label">웰니스 점수</span>
-                    <span className="wellness-value">{insights.wellness_score}/10</span>
-                  </div>
-                  {insights.has_distortions && insights.distortions.length > 0 ? (
-                    <div className="distortion-list">
-                      {insights.distortions.map((d, i) => (
-                        <div key={i} className="distortion-item">
-                          <div className="distortion-name">{d.name}</div>
-                          <div className="distortion-trigger">{d.trigger}</div>
-                          <div className="distortion-feedback">{d.feedback}</div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="ai-panel__empty">인지 왜곡이 감지되지 않았습니다.</p>
-                  )}
-                </>
-              ) : (
-                <p className="ai-panel__empty">AI 분석 버튼을 눌러 마음 건강을 체크해보세요.</p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+                ) : (
+                  <p className="ai-sidebar__no-result">인지 왜곡이 감지되지 않았습니다.</p>
+                )}
+                <button
+                  className="ai-sidebar__refresh-btn"
+                  onClick={handleLoadAnalysis}
+                  disabled={isLoading}
+                  type="button"
+                >
+                  <Sparkles size={14} />
+                  다시 분석
+                </button>
+              </>
+            ) : (
+              <p className="ai-sidebar__no-result">마음 건강 분석 결과가 없습니다.</p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

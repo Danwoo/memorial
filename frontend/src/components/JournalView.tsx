@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Save, Loader2, Sparkles, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
+import { Save, Loader2, Sparkles, ChevronLeft, ChevronRight, Calendar, Check } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import TurndownService from 'turndown'
 import type { EditorMode, RelatedMemory, DigestMemory, DigestData, ChatSessionResponse, JournalDateInfo } from '../types'
@@ -23,6 +23,7 @@ import { MemorySidebar } from './journal/MemorySidebar'
 import { AIBubbleMenu } from './journal/AIBubbleMenu'
 import { AIPanel } from './journal/AIPanel'
 import { SessionPickerModal } from './journal/SessionPickerModal'
+import MemoryDetailModal from './MemoryDetailModal'
 import './JournalView.css'
 
 // 관련 메모리 검색을 트리거하기 위한 최소 글자 수
@@ -34,6 +35,7 @@ const RELATED_MEMORIES_DEBOUNCE_MS = 1500
 // 자동 저장 설정
 const JOURNAL_DRAFT_KEY = 'memoir-journal-draft'
 const AUTOSAVE_DEBOUNCE_MS = 2000
+const SERVER_AUTOSAVE_MS = 5000
 
 
 const turndown = new TurndownService({
@@ -134,7 +136,8 @@ export default function JournalView() {
   const [tiptapEditor, setTiptapEditor] = useState<Editor | null>(null)
   const [starterQuestions, setStarterQuestions] = useState<string[]>([])
   const [isLoadingStarter, setIsLoadingStarter] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
+  const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null)
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'' | 'saving' | 'saved'>('')
 
   const showStarter = isToday && normalize(markdownContent) === normalize(defaultContent) && !isGenerating
 
@@ -344,6 +347,11 @@ export default function JournalView() {
     }
   }, [editorMode])
 
+  // 메모리 카드 클릭 → 상세 모달 열기
+  const handleMemoryCardClick = useCallback((memoryId: string) => {
+    setSelectedMemoryId(memoryId)
+  }, [])
+
   // AI 성찰 질문 → 에디터에 삽입
   const handleInsertQuestion = useCallback((question: string) => {
     if (editorMode === 'wysiwyg' && editorRef.current) {
@@ -381,6 +389,25 @@ export default function JournalView() {
     }
     return ids
   }, [editorMode])
+
+  // 서버 자동 저장: localStorage 저장 후 디바운스로 서버 저장
+  useEffect(() => {
+    if (!isToday) return
+    if (normalize(markdownContent) === normalize(defaultContent)) return
+    const timer = setTimeout(async () => {
+      setAutoSaveStatus('saving')
+      try {
+        const memoryIds = extractMemoryIds()
+        await saveJournal(markdownContent, memoryIds)
+        setAutoSaveStatus('saved')
+        setTimeout(() => setAutoSaveStatus(''), 3000)
+      } catch (e) {
+        console.error('자동 저장 실패', e)
+        setAutoSaveStatus('')
+      }
+    }, SERVER_AUTOSAVE_MS)
+    return () => clearTimeout(timer)
+  }, [markdownContent, defaultContent, isToday, extractMemoryIds])
 
   const handleSave = async () => {
     if (!markdownContent.trim()) return
@@ -476,6 +503,20 @@ export default function JournalView() {
 
   return (
     <div className="journal-view">
+      {/* 메모리 사이드바 (좌측 패널, 오늘일 때만) */}
+      {isToday && (
+        <MemorySidebar
+          todayMemories={digest?.memories ?? []}
+          relatedMemories={relatedMemories}
+          isLoadingRelated={isLoadingRelated}
+          onInsertMemory={handleInsertMemory}
+          onCardClick={handleMemoryCardClick}
+          onDailySummary={handleDailySummary}
+          onSessionDraft={handleSessionDraft}
+          isGenerating={isGenerating}
+        />
+      )}
+
       <div className="journal-editor-section">
         {/* 에디터 헤더 */}
         <div className="journal-editor-header">
@@ -516,6 +557,18 @@ export default function JournalView() {
             )}
           </div>
           <div className="journal-editor-actions">
+            {isToday && autoSaveStatus === 'saved' && (
+              <span className="journal-autosave-status">
+                <Check size={14} />
+                저장됨
+              </span>
+            )}
+            {isToday && autoSaveStatus === 'saving' && (
+              <span className="journal-autosave-status journal-autosave-status--saving">
+                <Loader2 size={14} className="spin" />
+                저장 중...
+              </span>
+            )}
             {isToday && (
               <button
                 className="journal-save-btn"
@@ -651,27 +704,13 @@ export default function JournalView() {
           )}
         </div>
 
-        {/* AI 하단 패널 (오늘일 때만) */}
-        {isToday && (
-          <AIPanel
-            content={markdownContent}
-            onInsertQuestion={handleInsertQuestion}
-          />
-        )}
-      </div>
+        </div>
 
-      {/* 메모리 사이드바 (오늘일 때만) */}
+      {/* AI 사이드바 (우측 패널, 오늘일 때만) */}
       {isToday && (
-        <MemorySidebar
-          todayMemories={digest?.memories ?? []}
-          relatedMemories={relatedMemories}
-          isLoadingRelated={isLoadingRelated}
-          onInsertMemory={handleInsertMemory}
-          onDailySummary={handleDailySummary}
-          onSessionDraft={handleSessionDraft}
-          isGenerating={isGenerating}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
+        <AIPanel
+          content={markdownContent}
+          onInsertQuestion={handleInsertQuestion}
         />
       )}
 
@@ -681,6 +720,15 @@ export default function JournalView() {
           sessions={sessions}
           onSelect={handleSelectSession}
           onClose={() => setShowSessionPicker(false)}
+        />
+      )}
+
+      {/* 메모리 상세 모달 */}
+      {selectedMemoryId && (
+        <MemoryDetailModal
+          memoryId={selectedMemoryId}
+          onClose={() => setSelectedMemoryId(null)}
+          onDeleted={() => setSelectedMemoryId(null)}
         />
       )}
     </div>

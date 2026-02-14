@@ -11,6 +11,7 @@ interface MemorySidebarProps {
   relatedMemories: RelatedMemory[]
   isLoadingRelated: boolean
   onInsertMemory: (memory: DigestMemory | RelatedMemory) => void
+  onCardClick?: (memoryId: string) => void
   onDailySummary: () => void
   onSessionDraft: () => void
   isGenerating: boolean
@@ -23,6 +24,7 @@ export function MemorySidebar({
   relatedMemories,
   isLoadingRelated,
   onInsertMemory,
+  onCardClick,
   onDailySummary,
   onSessionDraft,
   isGenerating,
@@ -89,7 +91,7 @@ export function MemorySidebar({
           <div className="sidebar-empty">관련 메모리 검색 중...</div>
         ) : memories.length > 0 ? (
           memories.map((m) => (
-            <MemoryCard key={m.id} memory={m} onInsert={onInsertMemory} />
+            <MemoryCard key={m.id} memory={m} onInsert={onInsertMemory} onCardClick={onCardClick} />
           ))
         ) : (
           <div className="sidebar-empty">
