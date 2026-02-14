@@ -327,7 +327,7 @@ export default function SettingsView() {
               onClick={() => {
                 localStorage.removeItem('onboarding_completed')
                 toast.info('온보딩 가이드를 다시 시작합니다')
-                navigate('/')
+                navigate('/chat')
                 window.location.reload()
               }}
               type="button"

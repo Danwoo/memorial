@@ -1,0 +1,216 @@
+.landing-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+/* ─── Hero ───────────────────────────────────────── */
+.landing-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 85vh;
+  padding: var(--space-3xl) var(--space-xl);
+  text-align: center;
+  overflow: hidden;
+}
+
+.landing-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  animation: landingFadeUp 0.8s ease-out;
+}
+
+.landing-hero-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-bg) 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.landing-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  color: var(--accent-primary);
+  margin-bottom: var(--space-xl);
+}
+
+.landing-headline {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: var(--space-lg);
+  letter-spacing: -0.02em;
+}
+
+.landing-subtext {
+  font-size: var(--fs-body);
+  line-height: 1.75;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2xl);
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-2xl);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  color: var(--text-inverse);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.landing-cta:hover {
+  background: var(--accent-primary-hover);
+  transform: translateY(-1px);
+}
+
+.landing-cta:active {
+  transform: translateY(0);
+}
+
+/* ─── Features ───────────────────────────────────── */
+.landing-features {
+  padding: var(--space-3xl) var(--space-xl);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.landing-section-title {
+  text-align: center;
+  font-size: var(--fs-headline);
+  font-weight: 700;
+  margin-bottom: var(--space-2xl);
+  color: var(--text-primary);
+}
+
+.landing-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-lg);
+}
+
+.landing-feature-card {
+  padding: var(--space-xl);
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.landing-feature-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.landing-feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--accent-bg);
+  color: var(--accent-primary);
+  margin-bottom: var(--space-md);
+}
+
+.landing-feature-card h3 {
+  font-size: var(--fs-title);
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+}
+
+.landing-feature-card p {
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ─── Tech Stack ─────────────────────────────────── */
+.landing-tech {
+  padding: var(--space-2xl) var(--space-xl);
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.landing-tech-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: center;
+}
+
+.landing-tech-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid;
+  border-radius: var(--radius-full);
+  font-size: var(--fs-body-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.landing-tech-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* ─── Footer ─────────────────────────────────────── */
+.landing-footer {
+  padding: var(--space-xl);
+  text-align: center;
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-secondary);
+}
+
+/* ─── Animation ──────────────────────────────────── */
+@keyframes landingFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Responsive ─────────────────────────────────── */
+@media (max-width: 767px) {
+  .landing-feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-hero {
+    min-height: 70vh;
+    padding: var(--space-2xl) var(--space-lg);
+  }
+
+  .landing-headline {
+    font-size: 1.75rem;
+  }
+}
