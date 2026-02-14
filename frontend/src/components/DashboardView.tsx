@@ -68,7 +68,14 @@ export default function DashboardView() {
   if (loading) {
     return (
       <div className="dashboard-view">
-        <div className="dashboard-loading">불러오는 중...</div>
+        <div className="skeleton skeleton-title" />
+        <div className="skeleton skeleton-card" style={{ height: 140 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+          <div className="skeleton skeleton-stat" />
+          <div className="skeleton skeleton-stat" />
+          <div className="skeleton skeleton-stat" />
+        </div>
+        <div className="skeleton skeleton-card" style={{ height: 120 }} />
       </div>
     )
   }

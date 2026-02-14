@@ -378,7 +378,11 @@ export default function MemoryView() {
         </div>
       )}
       {isLoading ? (
-        <div className="loading-state">로딩 중...</div>
+        <div className="memory-skeleton-list">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="skeleton skeleton-card" />
+          ))}
+        </div>
       ) : memories.length === 0 ? (
         <div className="empty-state">
           <FolderOpen size={48} className="state-icon" />

@@ -528,3 +528,131 @@ select:focus-visible {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ─── S7-5: 스켈레톤 로딩 ──────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 25%,
+    var(--bg-surface-raised) 50%,
+    var(--bg-tertiary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-text {
+  height: 14px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-sm {
+  height: 10px;
+  width: 60%;
+  margin-bottom: 6px;
+}
+
+.skeleton-title {
+  height: 20px;
+  width: 40%;
+  margin-bottom: 12px;
+}
+
+.skeleton-card {
+  height: 80px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 12px;
+}
+
+.skeleton-stat {
+  height: 64px;
+  border-radius: var(--radius-lg);
+}
+
+/* ─── S7-5: 페이지 전환 애니메이션 ──────────────────────── */
+.page-transition {
+  animation: pageIn 200ms ease-out;
+}
+
+@keyframes pageIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 200px;
+}
+
+/* ─── S7-5: 다크↔라이트 전환 애니메이션 ─────────────────── */
+:root,
+:root[data-theme] {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.card,
+.btn,
+.modal-overlay,
+.modal-content {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ─── S7-5: 마이크로 인터랙션 ──────────────────────────── */
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* ─── S7-6: ErrorBoundary 폴백 UI ─────────────────────── */
+.error-boundary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: var(--space-8);
+  text-align: center;
+  gap: var(--space-4);
+}
+
+.error-boundary-icon {
+  font-size: 48px;
+  opacity: 0.5;
+}
+
+.error-boundary h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.error-boundary p {
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+.error-boundary-details {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  max-width: 500px;
+  overflow-x: auto;
+  word-break: break-all;
+}
