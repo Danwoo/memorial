@@ -43,7 +43,9 @@ export default function ChatView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlSessionId])
 
-  // location state 처리: 새 세션 시작 또는 GraphView에서 전달된 토픽
+  // location state 처리: 새 세션 시작, GraphView 토픽, 온보딩 질문
+  const pendingMessageRef = useRef<string | null>(null)
+
   useEffect(() => {
     const state = location.state as ChatLocationState | null
     if (state?.newSession) {
@@ -55,8 +57,26 @@ export default function ChatView() {
       setMessages([])
       setInput(`${state.topic}에 대해 이야기하고 싶어. 내가 저장한 관련 지식을 바탕으로 대화해줘.`)
       window.history.replaceState({}, '')
+    } else if (state?.initialMessage) {
+      setSessionId(null)
+      setMessages([])
+      pendingMessageRef.current = state.initialMessage
+      setInput(state.initialMessage)
+      window.history.replaceState({}, '')
     }
   }, [location.state])
+
+  // 온보딩 등에서 전달된 initialMessage 자동 전송
+  useEffect(() => {
+    if (pendingMessageRef.current && input === pendingMessageRef.current && !isLoading) {
+      pendingMessageRef.current = null
+      const timer = setTimeout(() => {
+        handleSendMessage()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input, isLoading])
 
   // 마운트 시 브리핑 로드 (빈 상태 표시용)
   useEffect(() => {

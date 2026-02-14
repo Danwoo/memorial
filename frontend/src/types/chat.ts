@@ -32,4 +32,5 @@ export interface ChatSessionResponse {
 export interface ChatLocationState {
   newSession?: boolean
   topic?: string
+  initialMessage?: string
 }

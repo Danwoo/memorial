@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme, type ThemePreference } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
@@ -28,6 +28,7 @@ export default function SettingsView() {
   const { user, linkProvider, unlinkProvider } = useAuth()
   const { preference: themePreference, setPreference: setThemePreference } = useTheme()
   const toast = useToast()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [providers, setProviders] = useState<ProviderInfo[]>([])
   const [email, setEmail] = useState<string | null>(null)
@@ -285,6 +286,31 @@ export default function SettingsView() {
               </div>
             </label>
           ))}
+        </div>
+      </section>
+
+      {/* 기타 섹션 */}
+      <section className="settings-section">
+        <h2 className="section-title">기타</h2>
+        <div className="card" style={{ padding: 'var(--space-md) var(--space-xl)' }}>
+          <div className="bot-setting-row" style={{ borderTop: 'none' }}>
+            <div className="nudge-info">
+              <span className="bot-setting-label">온보딩 다시 보기</span>
+              <span className="nudge-desc">제품 소개 가이드를 다시 확인합니다</span>
+            </div>
+            <button
+              className="btn btn-sm btn-secondary"
+              onClick={() => {
+                localStorage.removeItem('onboarding_completed')
+                toast.info('온보딩 가이드를 다시 시작합니다')
+                navigate('/')
+                window.location.reload()
+              }}
+              type="button"
+            >
+              다시 보기
+            </button>
+          </div>
         </div>
       </section>
 
