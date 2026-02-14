@@ -15,6 +15,7 @@ from app.schemas.stats_schema import (
     TimelineGroup,
 )
 from app.utils import parse_iso_datetime
+from app.utils.cache import stats_cache
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,12 @@ class StatsService:
         self.stats_repo = stats_repo
 
     async def get_overview(self, user_id: UUID) -> StatsOverviewResponse:
-        """대시보드 전체 통계 조회."""
+        """대시보드 전체 통계 조회 (5분 TTL 캐시)."""
+        cache_key = f"user:{user_id}:overview"
+        cached = stats_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         memories = await self.stats_repo.get_all_memories(user_id)
 
         now = datetime.now(UTC)
@@ -106,12 +112,14 @@ class StatsService:
         sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)[:TOP_TAGS_LIMIT]
         top_tags = [TagStats(tag=tag, count=cnt) for tag, cnt in sorted_tags]
 
-        return StatsOverviewResponse(
+        result = StatsOverviewResponse(
             overview=overview,
             recent_activity=recent_activity,
             sources=sources,
             top_tags=top_tags,
         )
+        stats_cache.set(cache_key, result)
+        return result
 
     async def get_activity(
         self,
@@ -151,7 +159,12 @@ class StatsService:
         return {"page": page, "limit": limit, "timeline": timeline, "has_more": len(memories) == limit}
 
     async def get_streak(self, user_id: UUID) -> StreakResponse:
-        """활동 스트릭 계산 (메모리 + 저널 기준 연속 활동일)."""
+        """활동 스트릭 계산 (메모리 + 저널 기준 연속 활동일, 5분 TTL 캐시)."""
+        cache_key = f"user:{user_id}:streak"
+        cached = stats_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         active_dates = await self.stats_repo.get_all_active_dates(user_id)
         if not active_dates:
             return StreakResponse(current_streak=0, longest_streak=0, total_active_days=0)
@@ -182,9 +195,11 @@ class StatsService:
             longest_streak = max(longest_streak, streak)
             prev_date = d
 
-        return StreakResponse(
+        result = StreakResponse(
             current_streak=current_streak,
             longest_streak=longest_streak,
             total_active_days=len(active_dates),
             last_active_date=sorted_dates[0] if sorted_dates else None,
         )
+        stats_cache.set(cache_key, result)
+        return result

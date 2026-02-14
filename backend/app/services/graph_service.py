@@ -3,6 +3,7 @@ from typing import Any
 
 from app.repositories.graph_repository import GraphRepository
 from app.repositories.memory_repository import MemoryRepository
+from app.utils.cache import graph_cache
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +30,22 @@ class GraphService:
         try:
             await self.graph_repo.save_entities(entities, memory_id)
             await self.graph_repo.save_relations(relations)
+            graph_cache.clear()
             return True
         except Exception:
             logger.exception("Error saving to graph")
             return False
 
     async def get_visualization_data(self, limit: int = 100, user_id: str | None = None) -> dict[str, Any]:
-        """D3 시각화용 그래프 데이터 조회. user_id로 필터링."""
+        """D3 시각화용 그래프 데이터 조회 (5분 TTL 캐시). user_id로 필터링."""
         if not self.is_available:
             return {"nodes": [], "links": []}
 
-        return await self.graph_repo.get_graph_data(limit, user_id)
+        cache_key = f"graph:{user_id}:{limit}"
+        cached = graph_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        result = await self.graph_repo.get_graph_data(limit, user_id)
+        graph_cache.set(cache_key, result)
+        return result

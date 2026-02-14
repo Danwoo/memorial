@@ -7,6 +7,7 @@ from supabase import Client
 
 from app.schemas.memory_schema import MemoryInDB, SourceType
 from app.utils import parse_iso_datetime
+from app.utils.cache import tags_cache
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +137,13 @@ class MemoryRepository:
         return None
 
     async def get_distinct_tags(self, user_id: UUID, prefix: str = "") -> list[str]:
-        """사용자의 모든 메모리에서 고유 태그 목록 추출."""
+        """사용자의 모든 메모리에서 고유 태그 목록 추출 (10분 TTL 캐시)."""
+        cache_key = f"user:{user_id}:tags"
+        if not prefix:
+            cached = tags_cache.get(cache_key)
+            if cached is not None:
+                return cached
+
         result = await asyncio.to_thread(self._select_tags, str(user_id))
         all_tags: set[str] = set()
         for row in result.data or []:
@@ -145,7 +152,11 @@ class MemoryRepository:
                 for tag in tags:
                     if isinstance(tag, str) and tag.lower().startswith(prefix.lower()):
                         all_tags.add(tag)
-        return sorted(all_tags)
+        sorted_tags = sorted(all_tags)
+
+        if not prefix:
+            tags_cache.set(cache_key, sorted_tags)
+        return sorted_tags
 
     async def delete(self, memory_id: UUID, user_id: UUID) -> bool:
         """Memory 삭제."""

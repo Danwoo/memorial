@@ -5,6 +5,7 @@ from app.repositories.graph_repository import GraphRepository
 from app.repositories.memory_repository import MemoryRepository
 from app.repositories.vector_repository import VectorRepository
 from app.schemas.memory_schema import MemoryInDB, SourceType
+from app.utils.cache import stats_cache, tags_cache
 
 
 class MemoryService:
@@ -37,6 +38,10 @@ class MemoryService:
         )
 
         await self.vector_repo.save_embedding(memory_id=str(memory.id), content=f"{memory.title}\n\n{memory.content}")
+
+        # 통계/태그 캐시 무효화
+        stats_cache.invalidate_prefix(f"user:{user_id}")
+        tags_cache.invalidate(f"user:{user_id}:tags")
 
         return memory
 
@@ -135,6 +140,10 @@ class MemoryService:
     async def delete_memory(self, memory_id: UUID, user_id: UUID) -> bool:
         """Memory 및 연관 그래프 데이터 삭제."""
         deleted = await self.memory_repo.delete(memory_id, user_id)
-        if deleted and self.graph_repo:
-            await self.graph_repo.delete_memory_node(str(memory_id))
+        if deleted:
+            if self.graph_repo:
+                await self.graph_repo.delete_memory_node(str(memory_id))
+            # 통계/태그 캐시 무효화
+            stats_cache.invalidate_prefix(f"user:{user_id}")
+            tags_cache.invalidate(f"user:{user_id}:tags")
         return deleted
