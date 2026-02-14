@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID
 
@@ -5,6 +6,8 @@ import pytest
 
 from app.schemas.memory_schema import MemoryInDB
 from app.services.memory_service import MemoryService
+
+NOW = datetime.now(UTC)
 
 
 class TestMemoryService:
@@ -36,6 +39,7 @@ class TestMemoryService:
         repo.is_connected = True
         repo.save_entities = AsyncMock()
         repo.save_relations = AsyncMock()
+        repo.delete_memory_node = AsyncMock()
         return repo
 
     @pytest.fixture
@@ -55,7 +59,7 @@ class TestMemoryService:
             content="Test content",
             source_type="NOTE",
             status="processing",
-            created_at=None,
+            created_at=NOW,
             updated_at=None,
         )
         mock_memory_repo.create.return_value = expected_memory
@@ -84,7 +88,7 @@ class TestMemoryService:
             content="Test content",
             source_type="NOTE",
             status="completed",
-            created_at=None,
+            created_at=NOW,
             updated_at=None,
         )
         mock_memory_repo.get_by_id.return_value = expected_memory
@@ -124,7 +128,7 @@ class TestMemoryService:
                 content="Content 1",
                 source_type="NOTE",
                 status="completed",
-                created_at=None,
+                created_at=NOW,
                 updated_at=None,
             )
         ]
