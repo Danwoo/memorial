@@ -288,9 +288,26 @@ export default function GraphView() {
     }
   }, [filteredData.links])
 
-  // 클릭 시 카메라를 해당 노드로 이동
+  // S10-5: 더블클릭 감지를 위한 ref
+  const lastClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 })
+
+  // 클릭 시 카메라를 해당 노드로 이동, 더블클릭 시 메모리 상세 모달
   const handleNodeClick = useCallback((node: AnyNode) => {
+    const now = Date.now()
+    const last = lastClickRef.current
+    if (last.id === node.id && now - last.time < 400) {
+      // 더블클릭: 관련 메모리에서 첫 번째 결과를 모달로 열기
+      searchMemories({ q: node.name || node.id, limit: 1 }).then(res => {
+        const first = res.results?.[0]
+        if (first) setSelectedMemoryId(first.id)
+      }).catch(() => {})
+      lastClickRef.current = { id: '', time: 0 }
+      return
+    }
+    lastClickRef.current = { id: node.id, time: now }
+
     setSelectedNode(node)
+    if (showInsights) setShowInsights(false)
     const distance = 60
     const distRatio = 1 + distance / Math.hypot(node.x || 1, node.y || 1, node.z || 1)
     fgRef.current?.cameraPosition(
@@ -298,7 +315,7 @@ export default function GraphView() {
       { x: node.x || 0, y: node.y || 0, z: node.z || 0 },
       1000,
     )
-  }, [])
+  }, [showInsights])
 
   // 배경 클릭 시 선택 해제
   const handleBackgroundClick = useCallback(() => {
@@ -748,21 +765,29 @@ export default function GraphView() {
               <p className="memories-empty">관련 메모리가 없습니다</p>
             )}
             {!isLoadingMemories && relatedMemories.length > 0 && (
-              <ul>
-                {relatedMemories.map(m => (
-                  <li
-                    key={m.id}
-                    className="memory-item"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setSelectedMemoryId(m.id)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedMemoryId(m.id) } }}
-                  >
-                    <BookOpen size={14} className="memory-icon" />
-                    <span className="memory-title">{m.title || m.content?.substring(0, 40) || '메모리'}</span>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul>
+                  {relatedMemories.map(m => (
+                    <li
+                      key={m.id}
+                      className="memory-item"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedMemoryId(m.id)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedMemoryId(m.id) } }}
+                    >
+                      <BookOpen size={14} className="memory-icon" />
+                      <span className="memory-title">{m.title || m.content?.substring(0, 40) || '메모리'}</span>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  className="view-in-memories-link"
+                  onClick={() => navigate('/memories')}
+                >
+                  기억 뷰에서 보기 →
+                </button>
+              </>
             )}
           </div>
 

@@ -459,6 +459,25 @@
   font-style: italic;
 }
 
+.view-in-memories-link {
+  display: block;
+  width: 100%;
+  text-align: right;
+  margin-top: 6px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent-primary);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.view-in-memories-link:hover {
+  text-decoration: underline;
+}
+
 .chat-with-topic-btn {
   width: 100%;
   margin-top: 4px;

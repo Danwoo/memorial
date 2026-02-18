@@ -57,11 +57,70 @@
   margin: 0 0 8px 0;
 }
 
+/* 섹션 헤더 (타이틀 + 링크) */
+.insight-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.insight-section-header .insight-section-title {
+  margin-bottom: 0;
+}
+
+.section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  color: var(--accent-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 2px 0;
+}
+
+.section-link:hover {
+  text-decoration: underline;
+}
+
 /* 클러스터 카드 */
 .insight-cluster-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.insight-cluster-card-wrapper {
+  display: flex;
+  gap: 4px;
+}
+
+.insight-cluster-card-wrapper .insight-cluster-card {
+  flex: 1;
+  min-width: 0;
+}
+
+.cluster-chat-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.cluster-chat-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--accent-bg);
 }
 
 .insight-cluster-card {

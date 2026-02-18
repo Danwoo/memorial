@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   TrendingUp, TrendingDown, Minus,
-  Link2, Zap, CircleDot,
+  Link2, Zap, CircleDot, MessageSquare, BookOpen,
 } from 'lucide-react'
 import type { GraphInsights, ClusterInfo, SearchResult } from '../types'
 import { searchMemories, createGraphRelation } from '../api'
@@ -31,6 +32,7 @@ export default function GraphInsightPanel({
   onHubNodeClick,
   onConnectionCreated,
 }: Props) {
+  const navigate = useNavigate()
   const toast = useToast()
   const [connectingNode, setConnectingNode] = useState<string | null>(null)
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
@@ -109,17 +111,25 @@ export default function GraphInsightPanel({
           </h4>
           <div className="insight-cluster-list">
             {insights.clusters.map((cluster, i) => (
-              <button
-                key={cluster.cluster_id}
-                className="insight-cluster-card"
-                onClick={() => onClusterSelect(cluster)}
-                style={{ borderLeftColor: CLUSTER_COLORS[i % CLUSTER_COLORS.length] }}
-              >
-                <span className="cluster-summary">
-                  {cluster.summary || `클러스터 ${cluster.cluster_id + 1}`}
-                </span>
-                <span className="cluster-meta">{cluster.size}개 엔티티</span>
-              </button>
+              <div key={cluster.cluster_id} className="insight-cluster-card-wrapper">
+                <button
+                  className="insight-cluster-card"
+                  onClick={() => onClusterSelect(cluster)}
+                  style={{ borderLeftColor: CLUSTER_COLORS[i % CLUSTER_COLORS.length] }}
+                >
+                  <span className="cluster-summary">
+                    {cluster.summary || `클러스터 ${cluster.cluster_id + 1}`}
+                  </span>
+                  <span className="cluster-meta">{cluster.size}개 엔티티</span>
+                </button>
+                <button
+                  className="cluster-chat-btn"
+                  onClick={() => navigate('/chat', { state: { topic: cluster.summary || cluster.entities[0] } })}
+                  title="이 주제에 대해 대화하기"
+                >
+                  <MessageSquare size={12} />
+                </button>
+              </div>
             ))}
           </div>
         </div>
@@ -159,10 +169,16 @@ export default function GraphInsightPanel({
       {/* 고립 노드 */}
       {insights.isolated_nodes.length > 0 && (
         <div className="insight-section">
-          <h4 className="insight-section-title">
-            <Link2 size={14} />
-            고립 엔티티
-          </h4>
+          <div className="insight-section-header">
+            <h4 className="insight-section-title">
+              <Link2 size={14} />
+              고립 엔티티
+            </h4>
+            <button className="section-link" onClick={() => navigate('/memories')}>
+              <BookOpen size={12} />
+              기억 뷰에서 보기
+            </button>
+          </div>
           <div className="insight-isolated-list">
             {insights.isolated_nodes.slice(0, 8).map(node => (
               <div key={node.name} className="insight-isolated-item">
