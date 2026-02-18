@@ -4,7 +4,7 @@ export { createChatSession, fetchChatSessions, fetchChatHistory, sendChatMessage
 export type { SSEResult } from './chat'
 export { saveJournal, fetchRelatedMemories, generateJournalDraft, fetchReviewQuestions, fetchInsights, postInlineAssist, fetchJournalDates, fetchJournalsByDate } from './journal'
 export { searchMemories, fetchRelatedMemoriesById } from './search'
-export { fetchStats, fetchDigest, fetchStreak, fetchActivity, fetchBriefing } from './dashboard'
+export { fetchStats, fetchDigest, fetchStreak, fetchActivity, fetchBriefing, fetchDailyInsights } from './dashboard'
 export { fetchGraph, fetchGraphInsights, createGraphRelation } from './graph'
 export { fetchTimeline } from './timeline'
 export { fetchCurrentUser } from './auth'

@@ -7,6 +7,7 @@ from app.routers import (
     digest_router,
     export_router,
     graph_router,
+    insight_router,
     integrations_router,
     journal_router,
     memory_router,
@@ -28,4 +29,5 @@ api_router.include_router(journal_router.router)
 api_router.include_router(digest_router.router)
 api_router.include_router(notification_router.router)
 api_router.include_router(briefing_router.router)
+api_router.include_router(insight_router.router)
 api_router.include_router(export_router.router)

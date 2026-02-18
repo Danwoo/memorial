@@ -21,6 +21,7 @@ from app.services.digest_service import DigestService
 from app.services.export_service import ExportService
 from app.services.graph_insight_service import GraphInsightService
 from app.services.graph_service import GraphService
+from app.services.insight_service import InsightService
 from app.services.journal_service import JournalService
 from app.services.kakao_channel_service import KakaoChannelService
 from app.services.memory_service import MemoryService
@@ -152,6 +153,15 @@ def get_export_service(
 ) -> ExportService:
     """ExportService 인스턴스 생성."""
     return ExportService(db)
+
+
+def get_insight_service(
+    stats_repo: StatsRepository = Depends(get_stats_repository),
+    graph_repo: GraphRepository = Depends(get_graph_repository),
+    journal_repo: JournalRepository = Depends(get_journal_repository),
+) -> InsightService:
+    """InsightService 인스턴스 생성."""
+    return InsightService(stats_repo, graph_repo, journal_repo)
 
 
 def get_notification_repository(

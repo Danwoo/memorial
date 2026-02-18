@@ -56,6 +56,8 @@ export type {
   DigestJournal,
   BriefingData,
   DigestData,
+  DailyInsight,
+  DailyInsightsResponse,
 } from './dashboard'
 
 export type {

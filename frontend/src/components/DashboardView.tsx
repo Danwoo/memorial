@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import {
   Flame, Trophy, Calendar, TrendingUp, Tag,
   BookOpen, Lightbulb, MessageSquare, Network,
-  Pencil,
+  Pencil, Link2, Sparkles,
 } from 'lucide-react'
-import type { StreakData, StatsData, ActivityData, BriefingData } from '../types'
-import { fetchStreak, fetchStats, fetchActivity, fetchBriefing } from '../api'
+import type { StreakData, StatsData, ActivityData, BriefingData, DailyInsight } from '../types'
+import { fetchStreak, fetchStats, fetchActivity, fetchBriefing, fetchDailyInsights } from '../api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import './DashboardView.css'
@@ -97,22 +97,25 @@ export default function DashboardView() {
   const [streak, setStreak] = useState<StreakData | null>(null)
   const [stats, setStats] = useState<StatsData | null>(null)
   const [activity, setActivity] = useState<ActivityData[]>([])
+  const [dailyInsights, setDailyInsights] = useState<DailyInsight[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       try {
-        const [briefingData, streakData, statsData, activityData] = await Promise.all([
+        const [briefingData, streakData, statsData, activityData, insightsData] = await Promise.all([
           fetchBriefing().catch(() => null),
           fetchStreak(),
           fetchStats(),
           fetchActivity(60),
+          fetchDailyInsights().catch(() => ({ insights: [] })),
         ])
         setBriefing(briefingData)
         setStreak(streakData)
         setStats(statsData)
         setActivity(activityData.activity)
+        setDailyInsights(insightsData.insights)
       } catch (err) {
         console.error('대시보드 데이터 로딩 실패:', err)
         toast.error('대시보드 데이터를 불러오지 못했습니다')
@@ -252,6 +255,41 @@ export default function DashboardView() {
           </div>
         </button>
       </div>
+
+      {/* AI 인사이트 */}
+      {dailyInsights.length > 0 && (
+        <div className="ai-insights-section">
+          <h2>
+            <Sparkles size={18} />
+            AI가 발견한 것
+          </h2>
+          <div className="insight-cards">
+            {dailyInsights.map((insight, i) => {
+              const IconMap: Record<string, React.ReactNode> = {
+                TrendingUp: <TrendingUp size={18} />,
+                Link2: <Link2 size={18} />,
+                Pencil: <Pencil size={18} />,
+              }
+              return (
+                <button
+                  key={i}
+                  className="insight-card"
+                  onClick={() => navigate(insight.cta_path)}
+                >
+                  <span className="insight-card-icon">
+                    {IconMap[insight.icon] || <Lightbulb size={18} />}
+                  </span>
+                  <div className="insight-card-body">
+                    <div className="insight-card-title">{insight.title}</div>
+                    <div className="insight-card-desc">{insight.description}</div>
+                    <div className="insight-card-cta">{insight.cta_label} →</div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 스트릭 카드 */}
       {streak && (

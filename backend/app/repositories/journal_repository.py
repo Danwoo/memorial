@@ -83,6 +83,21 @@ class JournalRepository:
         response = await asyncio.to_thread(self._select_by_date, str(user_id), date_str)
         return response.data
 
+    async def get_journals_in_range(
+        self,
+        user_id: UUID,
+        start: datetime,
+        end: datetime,
+    ) -> list[dict[str, Any]]:
+        """날짜 범위 내 저널 목록 조회."""
+        response = await asyncio.to_thread(
+            self._select_range,
+            str(user_id),
+            start.isoformat(),
+            end.isoformat(),
+        )
+        return response.data
+
     # ------------------------------------------------------------------
     # 동기 헬퍼 (스레드에서 실행)
     # ------------------------------------------------------------------
@@ -118,6 +133,16 @@ class JournalRepository:
             .gte("created_at", f"{date_str}T00:00:00")
             .lt("created_at", f"{date_str}T23:59:59.999999")
             .order("created_at", desc=True)
+            .execute()
+        )
+
+    def _select_range(self, user_id: str, start_iso: str, end_iso: str):
+        return (
+            self.db.table("journals")
+            .select("id, created_at")
+            .eq("user_id", user_id)
+            .gte("created_at", start_iso)
+            .lte("created_at", end_iso)
             .execute()
         )
 

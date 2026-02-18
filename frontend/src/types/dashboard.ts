@@ -69,6 +69,19 @@ export interface BriefingData {
   connection_hint: string | null
 }
 
+export interface DailyInsight {
+  type: string
+  icon: string
+  title: string
+  description: string
+  cta_label: string
+  cta_path: string
+}
+
+export interface DailyInsightsResponse {
+  insights: DailyInsight[]
+}
+
 export interface DigestData {
   date: string
   summary: {
