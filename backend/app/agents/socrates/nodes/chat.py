@@ -3,11 +3,17 @@ from uuid import UUID
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
+from app.agents.prompts import (
+    SOCRATES_BASE_PROMPT,
+    build_profile_section,
+    get_mode_prompt,
+)
 from app.agents.state import AgentState
 from app.config.database import get_supabase_client
 from app.config.llm import get_streaming_llm
 from app.repositories.journal_repository import JournalRepository
 from app.repositories.vector_repository import VectorRepository
+from app.services.user_profile_service import get_user_profile
 
 logger = logging.getLogger(__name__)
 
@@ -25,71 +31,6 @@ CONTRADICTION_THRESHOLD = 0.4
 MAX_CONTRADICTING_RESULTS = 3
 # 메모리 미리보기 길이
 MEMORY_CONTEXT_PREVIEW_LENGTH = 100
-
-# 기본 시스템 프롬프트
-SOCRATES_BASE_PROMPT = """You are Socrates, the intellectual companion for the user.
-Your goal is NOT just to answer questions, but to help the user building their own "Knowledge Ontology".
-
-**Core Rules:**
-1. **Context-Aware**: Always consider the retrieved memories (provided in context) before answering.
-2. **Socratic Method**: If the user asks a vague question, ask back to clarify their intent.
-3. **Bridge Builder**: When you see a connection between the user's current thought and a past memory, EXPLICITLY mention it. (e.g., "This reminds me of what you noted about [Project X] last week...")
-4. **Tone**: Intellectual, Supportive, Concise. Respond in the same language the user uses.
-
-**Response Guidelines:**
-- Be concise but insightful
-- Draw connections between ideas
-- Ask follow-up questions to deepen understanding
-- Speak in Korean if the user speaks Korean"""
-
-# 모드별 추가 프롬프트
-INSIGHT_PROMPT = """
-**[Insight Mode Active]**
-Your goal is to help the user think more deeply about the topic.
-- Ask probing questions: "What is the core assumption behind this idea?"
-- Challenge surface-level thoughts: "What evidence supports this?"
-- Connect to broader themes: "How does this relate to your previous thoughts on [X]?"
-- Encourage reflection: "What would change if this assumption were false?"
-"""
-
-COUNTER_ARGUMENT_PROMPT = """
-**[Counter-Argument Mode Active]**
-Your goal is to present the opposing viewpoint to strengthen the user's thinking.
-- Present the strongest counter-argument: "One could argue that..."
-- Reference contradictory memories if found: "In [your note from X], you mentioned..."
-- Steelman the opposition: "The strongest case against this would be..."
-- End with a question: "How would you respond to this critique?"
-"""
-
-SUMMARY_PROMPT = """
-**[Interactive Summary Mode Active]**
-Your goal is to collaboratively create a summary of the topic.
-- Start by identifying key points: "Let me summarize what I understand so far..."
-- Ask for corrections: "Did I capture the essence correctly?"
-- Build on user input: "So the key insight seems to be..."
-- Offer structured output: "Would you like me to organize this as bullet points or paragraphs?"
-"""
-
-EVENING_RITUAL_PROMPT = """
-**[Evening Ritual Mode Active]**
-You are helping the user reflect on their day and consolidate learning.
-- Gently prompt review: "What stood out to you today?"
-- Surface recent memories: "You saved some interesting things today. Want to discuss [X]?"
-- Ask synthesis questions: "What patterns do you notice in what you've been thinking about?"
-- Close with intentionality: "What do you want to explore further tomorrow?"
-"""
-
-
-def get_mode_prompt(mode: str | None) -> str:
-    """대화 모드에 따른 추가 프롬프트 반환."""
-    mode_prompts = {
-        "insight": INSIGHT_PROMPT,
-        "counter": COUNTER_ARGUMENT_PROMPT,
-        "summary": SUMMARY_PROMPT,
-        "evening": EVENING_RITUAL_PROMPT,
-    }
-    return mode_prompts.get(mode, "")
-
 
 # 의도 자동 분류 키워드
 _COUNTER_KEYWORDS = ["반론", "반대", "비판", "다른 관점", "약점", "문제점", "단점", "criticism"]
@@ -276,12 +217,18 @@ async def prepare_socrates_context(
         if mode == "counter" and current_memories:
             contradicting_memories = await _build_contradiction_context(query, current_memories, user_id)
 
+    # 사용자 프로필 조회 (개인화된 프롬프트)
+    user_profile = None
+    if user_id:
+        user_profile = await get_user_profile(user_id)
+
     system_content = _assemble_system_prompt(
         mode,
         context_memories,
         graph_context,
         contradicting_memories,
         journal_context,
+        user_profile,
     )
 
     return [SystemMessage(content=system_content), *messages], current_memories
@@ -304,15 +251,16 @@ def _assemble_system_prompt(
     graph_context: str,
     contradicting_memories: str,
     journal_context: str,
+    user_profile: dict | None = None,
 ) -> str:
-    """시스템 프롬프트에 RAG 컨텍스트 섹션을 조합."""
-    parts = [SOCRATES_BASE_PROMPT, get_mode_prompt(mode)]
+    """시스템 프롬프트에 RAG 컨텍스트 + 사용자 프로필 섹션을 조합."""
+    parts = [SOCRATES_BASE_PROMPT, build_profile_section(user_profile), get_mode_prompt(mode)]
 
     context_sections = [
-        ("Retrieved Memories", context_memories),
-        ("Knowledge Graph Context", graph_context),
-        ("Potentially Contradicting Memories", contradicting_memories),
-        ("Recent Journal Entries", journal_context),
+        ("검색된 기억", context_memories),
+        ("지식 그래프 컨텍스트", graph_context),
+        ("반대 의견 기억", contradicting_memories),
+        ("최근 저널 항목", journal_context),
     ]
     for title, content in context_sections:
         if content:
@@ -340,7 +288,8 @@ async def socrates_node(state: AgentState) -> dict:
             greeting = "🌙 오늘 하루 어떠셨나요? 오늘 저장한 내용들을 함께 돌아볼까요?"
         return {"messages": [AIMessage(content=greeting)], "next_step": "end"}
 
-    lc_messages, _refs = await prepare_socrates_context(messages, mode)
+    user_id = state.get("user_id")
+    lc_messages, _refs = await prepare_socrates_context(messages, mode, user_id=user_id)
     llm = get_streaming_llm()
 
     try:
