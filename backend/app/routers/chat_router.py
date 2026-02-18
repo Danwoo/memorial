@@ -6,6 +6,8 @@ from fastapi.responses import StreamingResponse
 from app.config.auth import get_user_id
 from app.config.dependencies import get_chat_service
 from app.schemas.chat_schema import (
+    ChatFeedbackRequest,
+    ChatFeedbackResponse,
     ChatMessageRequest,
     ChatMessageResponse,
     ChatSessionCreate,
@@ -126,3 +128,57 @@ async def get_history(
         )
         for h in history
     ]
+
+
+@router.post(
+    "/sessions/{session_id}/feedback",
+    response_model=ChatFeedbackResponse,
+)
+async def add_feedback(
+    session_id: UUID,
+    data: ChatFeedbackRequest,
+    user_id: UUID = Depends(get_user_id),
+    chat_service: ChatService = Depends(get_chat_service),
+):
+    """메시지 피드백 저장 (thumbs up/down)."""
+    session = await chat_service.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.get("user_id") != str(user_id):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    success = await chat_service.add_feedback(session_id, data.message_index, user_id, data.rating)
+    return ChatFeedbackResponse(success=success)
+
+
+@router.get("/sessions/{session_id}/feedbacks", response_model=list[dict])
+async def get_feedbacks(
+    session_id: UUID,
+    user_id: UUID = Depends(get_user_id),
+    chat_service: ChatService = Depends(get_chat_service),
+):
+    """세션의 전체 피드백 조회."""
+    session = await chat_service.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.get("user_id") != str(user_id):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    return await chat_service.get_feedbacks(session_id)
+
+
+@router.post("/sessions/{session_id}/summarize", status_code=200)
+async def summarize_session(
+    session_id: UUID,
+    user_id: UUID = Depends(get_user_id),
+    chat_service: ChatService = Depends(get_chat_service),
+):
+    """세션 대화를 요약하여 저장."""
+    session = await chat_service.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.get("user_id") != str(user_id):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    summary = await chat_service.generate_session_summary(session_id)
+    return {"summary": summary}

@@ -1,7 +1,8 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ChatSessionCreate(BaseModel):
@@ -52,3 +53,16 @@ class ChatHistoryResponse(BaseModel):
 
     session_id: UUID
     messages: list[ChatMessageResponse]
+
+
+class ChatFeedbackRequest(BaseModel):
+    """메시지 피드백 요청."""
+
+    message_index: int = Field(..., ge=0)
+    rating: Literal["good", "bad"]
+
+
+class ChatFeedbackResponse(BaseModel):
+    """피드백 저장 결과."""
+
+    success: bool

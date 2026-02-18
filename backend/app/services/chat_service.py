@@ -17,7 +17,16 @@ TITLE_GEN_PROMPT = (
     "AI: {ai_msg}"
 )
 
+SESSION_SUMMARY_PROMPT = (
+    "다음 대화를 한국어 3줄 이내로 요약하세요. "
+    "주요 주제, 핵심 인사이트, 결론을 포함하세요. "
+    "설명 없이 요약만 출력하세요.\n\n{conversation}"
+)
+
 MAX_TITLE_LENGTH = 50
+SESSION_SUMMARY_MSG_THRESHOLD = 4
+PREVIOUS_SESSION_CONTEXT_LIMIT = 3
+CONVERSATION_PREVIEW_LENGTH = 2000
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +78,18 @@ class ChatService:
             # 대화 이력 조회
             messages = await self.chat_repo.get_messages(session_id)
 
+            # 이전 세션 요약 컨텍스트 (첫 메시지일 때만)
+            prev_context = ""
+            if len(messages) == 1:
+                prev_context = await self._get_previous_session_context(user_id)
+
             # RAG 검색, 저널, 모드별 프롬프트 준비
             lc_messages, references = await prepare_socrates_context(messages, mode, user_id=str(user_id))
+
+            # 이전 세션 컨텍스트가 있으면 시스템 프롬프트에 추가
+            if prev_context and lc_messages:
+                original_system = lc_messages[0].content
+                lc_messages[0] = SystemMessage(content=original_system + prev_context)
 
             # LLM에서 토큰 단위 스트리밍
             llm = get_streaming_llm()
@@ -120,6 +139,58 @@ class ChatService:
     async def get_history(self, session_id: UUID) -> list[dict]:
         """세션의 채팅 이력 조회 (DB 타임스탬프 포함)."""
         return await self.chat_repo.get_messages_raw(session_id)
+
+    async def add_feedback(self, session_id: UUID, message_index: int, user_id: UUID, rating: str) -> bool:
+        """메시지 피드백 저장."""
+        return await self.chat_repo.save_feedback(session_id, user_id, message_index, rating)
+
+    async def get_feedbacks(self, session_id: UUID) -> list[dict]:
+        """세션의 전체 피드백 조회."""
+        return await self.chat_repo.get_feedback_for_session(session_id)
+
+    async def generate_session_summary(self, session_id: UUID) -> str | None:
+        """세션의 대화를 LLM으로 요약하여 저장."""
+        try:
+            messages = await self.chat_repo.get_messages_raw(session_id)
+            if len(messages) < SESSION_SUMMARY_MSG_THRESHOLD:
+                return None
+
+            conversation = "\n".join(f"{'사용자' if m['role'] == 'user' else 'AI'}: {m['content']}" for m in messages)[
+                :CONVERSATION_PREVIEW_LENGTH
+            ]
+
+            llm = get_analytical_llm()
+            prompt = SESSION_SUMMARY_PROMPT.format(conversation=conversation)
+            result = await llm.ainvoke([SystemMessage(content=prompt)])
+            summary = result.content.strip()[:500]
+
+            if summary:
+                await self.chat_repo.update_session_summary(session_id, summary)
+                return summary
+        except Exception:
+            logger.exception("세션 요약 생성 실패 (session_id=%s)", session_id)
+        return None
+
+    async def _get_previous_session_context(self, user_id: UUID) -> str:
+        """이전 세션 요약을 컨텍스트 문자열로 조합."""
+        try:
+            summaries = await self.chat_repo.get_recent_session_summaries(
+                user_id,
+                limit=PREVIOUS_SESSION_CONTEXT_LIMIT,
+            )
+            if not summaries:
+                return ""
+
+            lines = []
+            for s in reversed(summaries):
+                date = str(s["created_at"])[:10]
+                title = s.get("title", "")
+                lines.append(f"- [{date}] {title}: {s['summary']}")
+
+            return "\n\n**이전 대화 요약:**\n" + "\n".join(lines)
+        except Exception:
+            logger.exception("이전 세션 컨텍스트 조회 실패")
+            return ""
 
     async def _maybe_generate_title(self, session_id: UUID, user_msg: str, ai_msg: str) -> str | None:
         """첫 대화 완료 시 LLM으로 세션 제목 생성. 이미 제목이 있으면 스킵."""

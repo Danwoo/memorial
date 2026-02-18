@@ -5,10 +5,11 @@ import remarkGfm from 'remark-gfm'
 import {
   User, Bot, MessageSquareText, ArrowUp,
   Paperclip, ChevronDown, ChevronUp, FileText, Globe, StickyNote,
+  ThumbsUp, ThumbsDown,
 } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
-import type { ChatMessage, ChatLocationState, BriefingData } from '../types'
-import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream, fetchBriefing } from '../api'
+import type { ChatMessage, ChatLocationState, BriefingData, ChatFeedback } from '../types'
+import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream, fetchBriefing, sendFeedback, fetchFeedbacks } from '../api'
 import './ChatView.css'
 
 const ERROR_MESSAGE = '죄송합니다, 오류가 발생했습니다. 다시 시도해주세요.'
@@ -26,6 +27,7 @@ export default function ChatView() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [briefing, setBriefing] = useState<BriefingData | null>(null)
   const [expandedRefs, setExpandedRefs] = useState<Set<number>>(new Set())
+  const [feedbacks, setFeedbacks] = useState<Map<number, 'good' | 'bad'>>(new Map())
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -98,13 +100,36 @@ export default function ChatView() {
   const loadHistory = async (sid: string) => {
     setIsLoadingHistory(true)
     try {
-      const history = await fetchChatHistory(sid)
+      const [history, fbList] = await Promise.all([
+        fetchChatHistory(sid),
+        fetchFeedbacks(sid).catch(() => [] as ChatFeedback[]),
+      ])
       setMessages(history)
+      const fbMap = new Map<number, 'good' | 'bad'>()
+      fbList.forEach(fb => fbMap.set(fb.message_index, fb.rating))
+      setFeedbacks(fbMap)
     } catch (error) {
       console.error('채팅 히스토리 로드 실패:', error)
       toast.error('대화 기록을 불러오지 못했습니다.')
     } finally {
       setIsLoadingHistory(false)
+    }
+  }
+
+  const handleFeedback = async (msgIndex: number, rating: 'good' | 'bad') => {
+    if (!sessionId) return
+    const current = feedbacks.get(msgIndex)
+    if (current === rating) return
+    setFeedbacks(prev => new Map(prev).set(msgIndex, rating))
+    try {
+      await sendFeedback(sessionId, msgIndex, rating)
+    } catch {
+      setFeedbacks(prev => {
+        const next = new Map(prev)
+        if (current) next.set(msgIndex, current)
+        else next.delete(msgIndex)
+        return next
+      })
     }
   }
 
@@ -298,6 +323,24 @@ export default function ChatView() {
                           )}
                         </div>
                       )}
+                      <div className="chat-feedback-buttons">
+                        <button
+                          type="button"
+                          className={`chat-feedback-btn${feedbacks.get(idx) === 'good' ? ' active' : ''}`}
+                          onClick={() => handleFeedback(idx, 'good')}
+                          title="도움이 됐어요"
+                        >
+                          <ThumbsUp size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          className={`chat-feedback-btn${feedbacks.get(idx) === 'bad' ? ' active bad' : ''}`}
+                          onClick={() => handleFeedback(idx, 'bad')}
+                          title="아쉬워요"
+                        >
+                          <ThumbsDown size={14} />
+                        </button>
+                      </div>
                     </>
                   ) : (
                     <span className="typing-indicator">...</span>

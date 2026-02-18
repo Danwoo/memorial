@@ -152,6 +152,58 @@ class ChatRepository:
             logger.exception("Error deleting session from Supabase")
             return False
 
+    async def update_session_summary(self, session_id: UUID, summary: str) -> bool:
+        """세션 요약 업데이트."""
+        try:
+            await asyncio.to_thread(self._update_summary, str(session_id), summary)
+            return True
+        except Exception:
+            logger.exception("세션 요약 업데이트 실패 (session_id=%s)", session_id)
+            return False
+
+    async def get_recent_session_summaries(self, user_id: UUID, limit: int = 3) -> list[dict]:
+        """사용자의 최근 세션 요약 조회 (요약이 있는 세션만)."""
+        result = await asyncio.to_thread(self._select_recent_summaries, str(user_id), limit)
+        if not result.data:
+            return []
+        return [
+            {
+                "id": s["id"],
+                "title": s["title"],
+                "summary": s["summary"],
+                "created_at": s["created_at"],
+            }
+            for s in result.data
+        ]
+
+    async def add_feedback(self, session_id: UUID, message_index: int, user_id: UUID, rating: str) -> bool:
+        """메시지에 대한 피드백 저장 (upsert)."""
+        try:
+            await asyncio.to_thread(
+                self._upsert_feedback,
+                str(session_id),
+                message_index,
+                str(user_id),
+                rating,
+            )
+            return True
+        except Exception:
+            logger.exception("피드백 저장 실패")
+            return False
+
+    async def get_feedbacks(self, session_id: UUID) -> list[dict]:
+        """세션의 전체 피드백 조회."""
+        result = await asyncio.to_thread(self._select_feedbacks, str(session_id))
+        if not result.data:
+            return []
+        return [
+            {
+                "message_index": f["message_index"],
+                "rating": f["rating"],
+            }
+            for f in result.data
+        ]
+
     # ------------------------------------------------------------------
     # 동기 헬퍼 (스레드에서 실행)
     # ------------------------------------------------------------------
@@ -193,3 +245,40 @@ class ChatRepository:
     def _delete_session(self, session_id: str):
         # DB CASCADE로 메시지도 함께 삭제
         return self.db.table("chat_sessions").delete().eq("id", session_id).execute()
+
+    def _update_summary(self, session_id: str, summary: str):
+        return (
+            self.db.table("chat_sessions")
+            .update({"summary": summary, "updated_at": datetime.now(UTC).isoformat()})
+            .eq("id", session_id)
+            .execute()
+        )
+
+    def _select_recent_summaries(self, user_id: str, limit: int):
+        return (
+            self.db.table("chat_sessions")
+            .select("id, title, summary, created_at")
+            .eq("user_id", user_id)
+            .not_.is_("summary", "null")
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+
+    def _upsert_feedback(self, session_id: str, message_index: int, user_id: str, rating: str):
+        return (
+            self.db.table("chat_feedback")
+            .upsert(
+                {
+                    "session_id": session_id,
+                    "message_index": message_index,
+                    "user_id": user_id,
+                    "rating": rating,
+                },
+                on_conflict="session_id,message_index",
+            )
+            .execute()
+        )
+
+    def _select_feedbacks(self, session_id: str):
+        return self.db.table("chat_feedback").select("message_index, rating").eq("session_id", session_id).execute()

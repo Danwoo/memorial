@@ -34,3 +34,8 @@ export interface ChatLocationState {
   topic?: string
   initialMessage?: string
 }
+
+export interface ChatFeedback {
+  message_index: number
+  rating: 'good' | 'bad'
+}

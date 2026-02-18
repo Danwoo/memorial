@@ -1,5 +1,5 @@
 import { get, post, postRaw } from './client'
-import type { ChatSessionResponse, ChatMessage, ChatMessagePayload, ChatStreamChunk, ChatReference } from '../types'
+import type { ChatSessionResponse, ChatMessage, ChatMessagePayload, ChatStreamChunk, ChatReference, ChatFeedback } from '../types'
 
 // 새 채팅 세션 생성
 export function createChatSession(): Promise<ChatSessionResponse> {
@@ -14,6 +14,23 @@ export function fetchChatSessions(): Promise<ChatSessionResponse[]> {
 // 특정 세션의 채팅 히스토리 조회
 export function fetchChatHistory(sessionId: string): Promise<ChatMessage[]> {
   return get<ChatMessage[]>(`/chat/sessions/${sessionId}/history`)
+}
+
+// 메시지 피드백 전송
+export function sendFeedback(
+  sessionId: string,
+  messageIndex: number,
+  rating: 'good' | 'bad',
+): Promise<{ success: boolean }> {
+  return post<{ success: boolean }>(`/chat/sessions/${sessionId}/feedback`, {
+    message_index: messageIndex,
+    rating,
+  })
+}
+
+// 세션의 피드백 목록 조회
+export function fetchFeedbacks(sessionId: string): Promise<ChatFeedback[]> {
+  return get<ChatFeedback[]>(`/chat/sessions/${sessionId}/feedbacks`)
 }
 
 // 메시지 전송 후 SSE 스트림 응답 수신

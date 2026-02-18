@@ -467,3 +467,45 @@
   font-size: 0.72rem;
   white-space: nowrap;
 }
+
+.chat-feedback-buttons {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.message.assistant:hover .chat-feedback-buttons,
+.chat-feedback-buttons:has(.active) {
+  opacity: 1;
+}
+
+.chat-feedback-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.chat-feedback-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.chat-feedback-btn.active {
+  color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.chat-feedback-btn.active.bad {
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.1);
+}

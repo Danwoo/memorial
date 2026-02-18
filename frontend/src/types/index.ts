@@ -17,6 +17,7 @@ export type {
   ChatStreamChunk,
   ChatSessionResponse,
   ChatLocationState,
+  ChatFeedback,
 } from './chat'
 
 export type {
