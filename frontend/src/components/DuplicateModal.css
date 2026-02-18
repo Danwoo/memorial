@@ -104,3 +104,46 @@
   font-size: 0.75rem;
   padding: 6px 10px;
 }
+
+.duplicate-count {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+}
+
+.duplicate-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.duplicate-source {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  margin-top: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+.similarity-reason {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.btn-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .duplicate-pair {
+    grid-template-columns: 1fr;
+  }
+}

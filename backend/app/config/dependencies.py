@@ -18,6 +18,7 @@ from app.repositories.vector_repository import VectorRepository
 # --- Services ---
 from app.services.chat_service import ChatService
 from app.services.digest_service import DigestService
+from app.services.duplicate_service import DuplicateService
 from app.services.export_service import ExportService
 from app.services.graph_insight_service import GraphInsightService
 from app.services.graph_service import GraphService
@@ -162,6 +163,14 @@ def get_insight_service(
 ) -> InsightService:
     """InsightService 인스턴스 생성."""
     return InsightService(stats_repo, graph_repo, journal_repo)
+
+
+def get_duplicate_service(
+    memory_repo: MemoryRepository = Depends(get_memory_repository),
+    vector_repo: VectorRepository = Depends(get_vector_repository),
+) -> DuplicateService:
+    """DuplicateService 인스턴스 생성."""
+    return DuplicateService(memory_repo, vector_repo)
 
 
 def get_notification_repository(

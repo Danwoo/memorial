@@ -5,6 +5,7 @@ from app.routers import (
     briefing_router,
     chat_router,
     digest_router,
+    duplicate_router,
     export_router,
     graph_router,
     insight_router,
@@ -18,6 +19,7 @@ from app.routers import (
 
 api_router = APIRouter(prefix="/api/v1")
 
+api_router.include_router(duplicate_router.router)
 api_router.include_router(memory_router.router)
 api_router.include_router(chat_router.router)
 api_router.include_router(graph_router.router)

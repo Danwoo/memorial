@@ -1,6 +1,8 @@
 export { ApiResponseError } from './client'
 export { fetchMemories, fetchMemoryDetail, createMemory, updateMemory, fetchUserTags, deleteMemory, uploadPdfMemory, bulkMemoryAction, fetchMemoryJournals } from './memories'
 export type { MemoryListParams } from './memories'
+export { fetchDuplicates, mergeMemories } from './duplicates'
+export type { DuplicatePair, DuplicatesResponse, MergeResponse } from './duplicates'
 export { createChatSession, fetchChatSessions, fetchChatHistory, sendChatMessage, readSSEStream, sendFeedback, fetchFeedbacks } from './chat'
 export type { SSEResult } from './chat'
 export { saveJournal, fetchRelatedMemories, generateJournalDraft, fetchReviewQuestions, fetchInsights, postInlineAssist, fetchJournalDates, fetchJournalsByDate } from './journal'
