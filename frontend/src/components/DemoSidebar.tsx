@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
@@ -28,6 +28,16 @@ export default function DemoSidebar({ mobileOpen, onMobileClose }: Props) {
   const location = useLocation()
   const [showSessions, setShowSessions] = useState(true)
   const isOnChat = location.pathname.startsWith('/demo/chat')
+
+  // 모바일: Escape 키로 사이드바 닫기
+  useEffect(() => {
+    if (!mobileOpen) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onMobileClose?.()
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [mobileOpen, onMobileClose])
 
   return (
     <>

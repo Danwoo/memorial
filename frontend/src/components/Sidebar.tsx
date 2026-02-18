@@ -103,6 +103,16 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
     return () => window.removeEventListener('session-title-updated', handler)
   }, [loadSessions])
 
+  // 모바일: Escape 키로 사이드바 닫기
+  useEffect(() => {
+    if (!mobileOpen) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onMobileClose?.()
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [mobileOpen, onMobileClose])
+
   const isOnChatPage = location.pathname.startsWith('/chat')
   const sessionGroups = useMemo(() => groupSessions(sessions.slice(0, MAX_SIDEBAR_SESSIONS)), [sessions])
 

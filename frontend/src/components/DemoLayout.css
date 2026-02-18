@@ -3,7 +3,7 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1000;
+  z-index: 1002;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -34,4 +34,19 @@
 .demo-app-container {
   margin-top: 36px;
   height: calc(100vh - 36px) !important;
+}
+
+/* 모바일: 데모 배너 간소화 */
+@media (max-width: 767px) {
+  .demo-banner {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    gap: 4px;
+  }
+
+  .demo-banner-cta {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    margin-left: 6px;
+  }
 }

@@ -48,11 +48,11 @@
   position: fixed;
   top: var(--space-md);
   left: var(--space-md);
-  z-index: 998;
+  z-index: 1001;
   background: var(--bg-secondary);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
-  padding: var(--space-xs);
+  padding: 10px;
   color: var(--text-primary);
   cursor: pointer;
   line-height: 0;
@@ -63,5 +63,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* 데모 모드: 배너 아래로 햄버거 위치 조정 */
+  .demo-app-container .mobile-nav-toggle {
+    top: calc(36px + var(--space-sm));
   }
 }
