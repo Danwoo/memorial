@@ -37,9 +37,11 @@ nul
 
 # Temp files
 *openapi_tmp*
+_ul
 
 # KuzuDB (embedded graph database)
 kuzu_data/
+**/kuzu_data
 *.wal
 
 # Build outputs
