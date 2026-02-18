@@ -2568,12 +2568,12 @@ Sprint 8~10에서 5개 핵심 뷰(Chat, Memory, Journal, Graph, Dashboard)의 �
 
 ### Sprint 11 진행 체크리스트
 
-- [ ] S11-1: 고급 검색 필터 + 정렬
-- [ ] S11-2: 메모리 중복 감지 + 병합
-- [ ] S11-3: 주간/월간 AI 리포트
-- [ ] S11-4: 프로덕션 환경 구성
-- [ ] S11-5: 빌드 + 배포 + CI
-- [ ] S11-6: 배포 검증 + 통합 QA
+- [x] S11-1: 고급 검색 필터 + 정렬 (BE 쿼리 파라미터 6개 + FE 필터바/정렬/CommandPalette 문법)
+- [x] S11-2: 메모리 중복 감지 + 병합 (URL 매칭 + 벡터 유사도 0.90+ 탐지, 태그 합집합 병합)
+- [x] S11-3: 주간/월간 AI 리포트 (LLM 요약 + 주제/소스 분포 + 하이라이트, 1시간 캐시)
+- [x] S11-4: 프로덕션 환경 구성 (vercel.json SPA + 보안 헤더, fly.toml CORS, Dockerfile 헬스체크)
+- [x] S11-5: 빌드 + 배포 + CI (GitHub Actions: FE tsc+build, BE Python 구문 검증)
+- [x] S11-6: 배포 검증 + 통합 QA (정적 검증 + API 엔드포인트 + 브라우저 동작 확인)
 
 ---
 
