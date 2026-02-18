@@ -95,6 +95,8 @@ class MemoryService:
             tags=tags,
             source_url=source_url,
             source_type=source_type,
+            extracted_entities=entities or [],
+            extracted_relations=relations or [],
         )
 
         if self.graph_repo and entities:

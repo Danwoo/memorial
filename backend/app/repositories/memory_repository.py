@@ -113,8 +113,10 @@ class MemoryRepository:
         tags: list[str] | None = None,
         source_url: str | None = None,
         source_type: str | None = None,
+        extracted_entities: list[dict] | None = None,
+        extracted_relations: list[dict] | None = None,
     ) -> bool:
-        """Memory 상태 업데이트. 선택적으로 summary/tags도 갱신."""
+        """Memory 상태 업데이트. 선택적으로 summary/tags/그래프 데이터도 갱신."""
         now = datetime.now(UTC).isoformat()
 
         update_data: dict = {"status": status, "updated_at": now}
@@ -127,6 +129,10 @@ class MemoryRepository:
             update_data["source_url"] = source_url
         if source_type is not None:
             update_data["source_type"] = source_type
+        if extracted_entities is not None:
+            update_data["extracted_entities"] = extracted_entities
+        if extracted_relations is not None:
+            update_data["extracted_relations"] = extracted_relations
 
         result = await asyncio.to_thread(self._update, str(memory_id), update_data)
         return len(result.data) > 0 if result.data else False

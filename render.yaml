@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: memoir-ai-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    region: singapore
+    plan: free
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: UPSTAGE_API_KEY
+        sync: false
+      - key: KUZU_DB_PATH
+        value: /tmp/kuzu_data
+      - key: ALLOWED_ORIGINS
+        sync: false
+    healthCheckPath: /health

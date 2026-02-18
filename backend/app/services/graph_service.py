@@ -36,6 +36,49 @@ class GraphService:
             logger.exception("Error saving to graph")
             return False
 
+    async def rebuild_from_supabase(self) -> dict[str, int]:
+        """Supabase에 저장된 그래프 데이터로 KuzuDB를 리빌드.
+
+        서버 시작 시 호출되어 영구 디스크 없이도 그래프를 복원한다.
+        """
+        if not self.is_available or not self.memory_repo:
+            return {"memories": 0, "entities": 0, "relations": 0}
+
+        memories = await self.memory_repo.get_all(limit=5000)
+        total_entities = 0
+        total_relations = 0
+        rebuilt = 0
+
+        for mem in memories:
+            if mem.get("status") != "completed":
+                continue
+
+            entities = mem.get("extracted_entities") or []
+            relations = mem.get("extracted_relations") or []
+
+            if not entities and not relations:
+                continue
+
+            memory_id = mem["id"]
+            user_id = mem.get("user_id")
+
+            if entities:
+                await self.graph_repo.save_entities(entities, memory_id, user_id)
+                total_entities += len(entities)
+            if relations:
+                await self.graph_repo.save_relations(relations)
+                total_relations += len(relations)
+            rebuilt += 1
+
+        graph_cache.clear()
+        logger.info(
+            "KuzuDB rebuild complete: %d memories, %d entities, %d relations",
+            rebuilt,
+            total_entities,
+            total_relations,
+        )
+        return {"memories": rebuilt, "entities": total_entities, "relations": total_relations}
+
     async def get_visualization_data(self, limit: int = 100, user_id: str | None = None) -> dict[str, Any]:
         """D3 시각화용 그래프 데이터 조회 (5분 TTL 캐시). user_id로 필터링."""
         if not self.is_available:
