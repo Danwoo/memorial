@@ -14,8 +14,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173",
         "http://localhost:3000",
-        "https://memoir-ai.vercel.app",
-        "https://memoir-ai-frontend.vercel.app",
+        "https://memoir-knowledge.vercel.app",
         "https://frontend-three-orcin-64.vercel.app",
     ]
     ALLOWED_ORIGINS: str | None = None  # 쉼표로 구분된 프로덕션 도메인 (예: "https://memoir.fly.dev")
