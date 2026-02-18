@@ -54,11 +54,42 @@ async function handleErrorResponse(res: Response): Promise<never> {
   throw new ApiResponseError(res.status, detail)
 }
 
+// Fly.io 콜드 스타트 등 일시적 네트워크 오류 재시도
+const MAX_RETRIES = 2
+const RETRY_DELAY_MS = 1500
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries = MAX_RETRIES,
+): Promise<Response> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, options)
+      // 502/503/504는 서버 깨어나는 중 — 재시도
+      if (res.status >= 502 && res.status <= 504 && attempt < retries) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)))
+        continue
+      }
+      return res
+    } catch (err) {
+      // 네트워크 에러 (서버 다운 등) — 재시도
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)))
+        continue
+      }
+      throw err
+    }
+  }
+  // 도달하지 않지만 타입 안전성
+  throw new Error('요청 재시도 초과')
+}
+
 // ─── 공개 API 메서드 ─────────────────────────────────────────────────────────
 
 // 타입 안전한 GET 요청
 export async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetchWithRetry(`${API_BASE}${path}`, {
     headers: buildHeaders(),
   })
 
@@ -68,7 +99,7 @@ export async function get<T>(path: string): Promise<T> {
 
 // 타입 안전한 POST 요청 (JSON 전송 및 응답)
 export async function post<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetchWithRetry(`${API_BASE}${path}`, {
     method: 'POST',
     headers: buildHeaders(),
     body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -84,7 +115,7 @@ export async function postRaw(
   body?: unknown,
   signal?: AbortSignal,
 ): Promise<Response> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetchWithRetry(`${API_BASE}${path}`, {
     method: 'POST',
     headers: buildHeaders(),
     body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -103,7 +134,7 @@ export async function postFormData<T>(path: string, formData: FormData): Promise
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetchWithRetry(`${API_BASE}${path}`, {
     method: 'POST',
     headers,
     body: formData,
@@ -115,7 +146,7 @@ export async function postFormData<T>(path: string, formData: FormData): Promise
 
 // 타입 안전한 PUT 요청 (JSON 전송 및 응답)
 export async function put<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetchWithRetry(`${API_BASE}${path}`, {
     method: 'PUT',
     headers: buildHeaders(),
     body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -127,7 +158,7 @@ export async function put<T>(path: string, body?: unknown): Promise<T> {
 
 // 타입 안전한 PATCH 요청 (JSON 전송 및 응답)
 export async function patch<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetchWithRetry(`${API_BASE}${path}`, {
     method: 'PATCH',
     headers: buildHeaders(),
     body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -139,7 +170,7 @@ export async function patch<T>(path: string, body?: unknown): Promise<T> {
 
 // 타입 안전한 DELETE 요청
 export async function del<T = void>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetchWithRetry(`${API_BASE}${path}`, {
     method: 'DELETE',
     headers: buildHeaders(),
   })
