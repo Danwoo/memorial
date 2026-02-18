@@ -54,13 +54,22 @@ export default function LandingPage() {
             <br />
             흩어진 지식이 연결되고, 잊힌 기억이 되살아납니다.
           </p>
-          <button
-            className="landing-cta"
-            onClick={() => navigate('/login')}
-            type="button"
-          >
-            시작하기 <ArrowRight size={18} />
-          </button>
+          <div className="landing-cta-group">
+            <button
+              className="landing-cta"
+              onClick={() => navigate('/login')}
+              type="button"
+            >
+              시작하기 <ArrowRight size={18} />
+            </button>
+            <button
+              className="landing-cta-secondary"
+              onClick={() => navigate('/demo')}
+              type="button"
+            >
+              바로 체험하기
+            </button>
+          </div>
         </div>
         <div className="landing-hero-glow" />
       </section>

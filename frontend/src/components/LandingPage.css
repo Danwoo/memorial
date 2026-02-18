@@ -88,6 +88,36 @@
   transform: translateY(0);
 }
 
+.landing-cta-group {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.landing-cta-secondary {
+  padding: var(--space-md) var(--space-2xl);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  color: var(--accent-primary);
+  background: transparent;
+  border: 2px solid var(--accent-primary);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.landing-cta-secondary:hover {
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  transform: translateY(-1px);
+}
+
+.landing-cta-secondary:active {
+  transform: translateY(0);
+}
+
 /* ─── Features ───────────────────────────────────── */
 .landing-features {
   padding: var(--space-3xl) var(--space-xl);
