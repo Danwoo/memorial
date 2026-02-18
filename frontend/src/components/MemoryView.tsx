@@ -4,13 +4,15 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Globe, FileText, StickyNote, File, FolderOpen, Upload, Plus,
   SlidersHorizontal, SearchX, AlertCircle, CalendarX2,
-  CheckSquare, Square, Trash2, Tag, X, Check,
+  CheckSquare, Square, Trash2, Tag, X, Check, ArrowUpDown, Copy,
 } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import type { Memory, MemoryCreatePayload, SourceType, SearchResult, TimelineData } from '../types'
+import type { MemoryListParams } from '../api/memories'
 import { fetchMemories, createMemory, uploadPdfMemory, searchMemories, fetchTimeline, bulkMemoryAction, fetchUserTags } from '../api'
 import { getSourceIcon, getSimilarityLevel, formatDateKR, formatRelativeDate, timeAgo } from '../utils'
 import MemoryDetailModal from './MemoryDetailModal'
+import DuplicateModal from './DuplicateModal'
 import EmptyState from './EmptyState'
 import './MemoryView.css'
 
@@ -73,6 +75,14 @@ export default function MemoryView() {
   const [bulkLoading, setBulkLoading] = useState(false)
   const tagModalTrapRef = useFocusTrap(showTagModal)
   const tagInputRef = useRef<HTMLInputElement>(null)
+
+  // ── 전체 탭 필터/정렬 상태 ──
+  const [listSortBy, setListSortBy] = useState<'created_at' | 'updated_at' | 'title'>('created_at')
+  const [listSortOrder, setListSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [listSourceFilter, setListSourceFilter] = useState<string>('')
+
+  // ── 중복 감지 모달 상태 ──
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false)
 
   // ── 검색 탭 상태 ──
   const [searchQuery, setSearchQuery] = useState('')
@@ -138,7 +148,13 @@ export default function MemoryView() {
   const loadMemories = useCallback(async () => {
     setIsLoading(true)
     try {
-      const data = await fetchMemories()
+      const params: MemoryListParams = {
+        limit: 100,
+        sort_by: listSortBy,
+        sort_order: listSortOrder,
+      }
+      if (listSourceFilter) params.source_type = listSourceFilter
+      const data = await fetchMemories(params)
       setMemories(data.items || [])
     } catch (error) {
       console.error('메모리 목록 로드 실패:', error)
@@ -146,7 +162,7 @@ export default function MemoryView() {
     } finally {
       setIsLoading(false)
     }
-  }, [toast])
+  }, [toast, listSortBy, listSortOrder, listSourceFilter])
 
   const resetAddModal = () => {
     setShowAddModal(false)
@@ -367,7 +383,38 @@ export default function MemoryView() {
   // ── 탭별 렌더링 ──
 
   const renderAllTab = () => (
-    <div className="memory-grid">
+    <div className="memory-all-tab">
+      <div className="filter-bar">
+        <div className="filter-bar-chips">
+          {['', 'WEB', 'PDF', 'NOTE'].map(st => (
+            <button
+              key={st}
+              className={`filter-chip ${listSourceFilter === st ? 'active' : ''}`}
+              onClick={() => setListSourceFilter(st)}
+            >
+              {st === '' ? '전체' : st === 'WEB' ? '웹' : st === 'PDF' ? 'PDF' : '메모'}
+            </button>
+          ))}
+        </div>
+        <div className="filter-bar-sort">
+          <ArrowUpDown size={14} />
+          <select
+            value={`${listSortBy}:${listSortOrder}`}
+            onChange={e => {
+              const [sb, so] = e.target.value.split(':')
+              setListSortBy(sb as 'created_at' | 'updated_at' | 'title')
+              setListSortOrder(so as 'asc' | 'desc')
+            }}
+          >
+            <option value="created_at:desc">최신순</option>
+            <option value="created_at:asc">오래된순</option>
+            <option value="title:asc">제목 A-Z</option>
+            <option value="title:desc">제목 Z-A</option>
+            <option value="updated_at:desc">최근 수정순</option>
+          </select>
+        </div>
+      </div>
+      <div className="memory-grid">
       {selectMode && memories.length > 0 && (
         <div className="select-header">
           <button className="select-all-btn" onClick={toggleSelectAll}>
@@ -435,6 +482,7 @@ export default function MemoryView() {
           </button>
         ))
       )}
+    </div>
     </div>
   )
 
@@ -627,6 +675,11 @@ export default function MemoryView() {
           <p className="memory-subtitle">저장된 지식을 탐색하세요</p>
         </div>
         <div className="memory-header-actions">
+          {activeTab === 'all' && memories.length >= 10 && !selectMode && (
+            <button className="btn btn-secondary" onClick={() => setShowDuplicateModal(true)}>
+              <Copy size={16} /> 중복 정리
+            </button>
+          )}
           {activeTab === 'all' && memories.length > 0 && (
             <button
               className={`btn ${selectMode ? 'btn-primary' : 'btn-secondary'}`}
@@ -733,6 +786,13 @@ export default function MemoryView() {
             </div>
           </div>
         </div>
+      )}
+
+      {showDuplicateModal && (
+        <DuplicateModal
+          onClose={() => setShowDuplicateModal(false)}
+          onMerged={loadMemories}
+        />
       )}
 
       {showAddModal && (

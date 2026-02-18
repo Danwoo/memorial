@@ -60,6 +60,74 @@
   overflow-y: auto;
 }
 
+/* ── 필터 바 ── */
+
+.memory-all-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--border-secondary);
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.filter-bar-chips {
+  display: flex;
+  gap: 6px;
+}
+
+.filter-chip {
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-secondary);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.filter-chip.active {
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  border-color: var(--accent-primary);
+}
+
+.filter-bar-sort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+}
+
+.filter-bar-sort select {
+  padding: 4px 8px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.filter-bar-sort select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
 /* ── 전체 탭: 그리드 ── */
 
 .memory-grid {
@@ -745,6 +813,16 @@ button.result-card {
   .memory-tab {
     white-space: nowrap;
     font-size: 0.85rem;
+  }
+
+  .filter-bar {
+    padding: var(--space-sm) var(--space-md);
+    flex-wrap: wrap;
+  }
+
+  .filter-bar-chips {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .memory-grid {

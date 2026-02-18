@@ -226,15 +226,29 @@ async def list_memories(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     search: str | None = None,
+    tags: str | None = Query(None, description="쉼표 구분 태그 필터"),
+    source_type: str | None = Query(None, description="소스 타입 필터 (WEB, PDF, NOTE 등)"),
+    date_from: str | None = Query(None, description="시작일 (YYYY-MM-DD)"),
+    date_to: str | None = Query(None, description="종료일 (YYYY-MM-DD)"),
+    sort_by: str = Query("created_at", description="정렬 기준 (created_at, updated_at, title)"),
+    sort_order: str = Query("desc", description="정렬 방향 (asc, desc)"),
     user_id: UUID = Depends(get_user_id),
     memory_service: MemoryService = Depends(get_memory_service),
 ):
-    """페이지네이션된 메모리 목록 조회."""
+    """페이지네이션된 메모리 목록 조회 (필터 + 정렬 지원)."""
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else None
+
     items, total = await memory_service.list_memories(
         user_id=user_id,
         page=page,
         limit=limit,
         search=search,
+        tags=tag_list,
+        source_type=source_type,
+        date_from=date_from,
+        date_to=date_to,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
 
     return MemoryListResponse(

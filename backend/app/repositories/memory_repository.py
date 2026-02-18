@@ -79,9 +79,27 @@ class MemoryRepository:
         page: int = 1,
         limit: int = 20,
         search: str | None = None,
+        tags: list[str] | None = None,
+        source_type: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
     ) -> tuple[list[MemoryInDB], int]:
         """사용자별 페이지네이션 Memory 목록 조회. (items, total_count) 반환."""
-        result = await asyncio.to_thread(self._select_by_user, str(user_id), page, limit, search)
+        result = await asyncio.to_thread(
+            self._select_by_user,
+            str(user_id),
+            page,
+            limit,
+            search,
+            tags,
+            source_type,
+            date_from,
+            date_to,
+            sort_by,
+            sort_order,
+        )
 
         items = [self._row_to_model(row) for row in (result.data or [])]
         total = result.count if result.count else 0
@@ -223,7 +241,19 @@ class MemoryRepository:
         query = query.order("created_at", desc=True).limit(limit)
         return query.execute()
 
-    def _select_by_user(self, user_id: str, page: int, limit: int, search: str | None):
+    def _select_by_user(
+        self,
+        user_id: str,
+        page: int,
+        limit: int,
+        search: str | None,
+        tags: list[str] | None = None,
+        source_type: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
+    ):
         offset = (page - 1) * limit
         query = self.db.table("memories").select("*", count="exact").eq("user_id", user_id)
 
@@ -231,7 +261,21 @@ class MemoryRepository:
             escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             query = query.or_(f"title.ilike.%{escaped}%,content.ilike.%{escaped}%")
 
-        query = query.order("created_at", desc=True).range(offset, offset + limit - 1)
+        if source_type:
+            query = query.eq("source_type", source_type)
+
+        if date_from:
+            query = query.gte("created_at", date_from)
+
+        if date_to:
+            query = query.lte("created_at", date_to + "T23:59:59")
+
+        if tags:
+            query = query.contains("tags", tags)
+
+        allowed_sort = {"created_at", "updated_at", "title"}
+        col = sort_by if sort_by in allowed_sort else "created_at"
+        query = query.order(col, desc=(sort_order == "desc")).range(offset, offset + limit - 1)
         return query.execute()
 
     def _update(self, memory_id: str, update_data: dict):

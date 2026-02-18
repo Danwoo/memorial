@@ -1,9 +1,35 @@
 import { get, post, patch, del, postFormData } from './client'
 import type { Memory, MemoryDetail, MemoryCreatePayload, PaginatedResponse, LinkedJournal } from '../types'
 
-// 메모리 목록 조회 (페이지네이션)
-export function fetchMemories(): Promise<PaginatedResponse<Memory>> {
-  return get<PaginatedResponse<Memory>>('/memories')
+export interface MemoryListParams {
+  page?: number
+  limit?: number
+  search?: string
+  tags?: string[]
+  source_type?: string
+  date_from?: string
+  date_to?: string
+  sort_by?: 'created_at' | 'updated_at' | 'title'
+  sort_order?: 'asc' | 'desc'
+}
+
+// 메모리 목록 조회 (페이지네이션 + 필터 + 정렬)
+export function fetchMemories(params?: MemoryListParams): Promise<PaginatedResponse<Memory>> {
+  if (!params) return get<PaginatedResponse<Memory>>('/memories')
+
+  const sp = new URLSearchParams()
+  if (params.page) sp.set('page', String(params.page))
+  if (params.limit) sp.set('limit', String(params.limit))
+  if (params.search) sp.set('search', params.search)
+  if (params.tags && params.tags.length > 0) sp.set('tags', params.tags.join(','))
+  if (params.source_type) sp.set('source_type', params.source_type)
+  if (params.date_from) sp.set('date_from', params.date_from)
+  if (params.date_to) sp.set('date_to', params.date_to)
+  if (params.sort_by) sp.set('sort_by', params.sort_by)
+  if (params.sort_order) sp.set('sort_order', params.sort_order)
+
+  const qs = sp.toString()
+  return get<PaginatedResponse<Memory>>(`/memories${qs ? `?${qs}` : ''}`)
 }
 
 // 새 메모리 생성 (웹 URL 또는 노트)

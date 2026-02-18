@@ -50,10 +50,31 @@ class MemoryService:
         return await self.memory_repo.get_by_id(memory_id, user_id)
 
     async def list_memories(
-        self, user_id: UUID, page: int = 1, limit: int = 20, search: str | None = None
+        self,
+        user_id: UUID,
+        page: int = 1,
+        limit: int = 20,
+        search: str | None = None,
+        tags: list[str] | None = None,
+        source_type: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
     ) -> tuple[list[MemoryInDB], int]:
         """페이지네이션 Memory 목록 조회."""
-        return await self.memory_repo.get_by_user(user_id=user_id, page=page, limit=limit, search=search)
+        return await self.memory_repo.get_by_user(
+            user_id=user_id,
+            page=page,
+            limit=limit,
+            search=search,
+            tags=tags,
+            source_type=source_type,
+            date_from=date_from,
+            date_to=date_to,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
 
     async def update_memory_after_processing(
         self,

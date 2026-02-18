@@ -52,8 +52,22 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
     const timer = setTimeout(async () => {
       setIsSearching(true)
       try {
+        // 필터 문법 파싱: tag:AI source:web
+        const searchParams: Record<string, string> = {}
+        const cleanQuery = query.replace(/\b(tag|source):(\S+)/gi, (_, key, val) => {
+          searchParams[key.toLowerCase()] = val
+          return ''
+        }).trim()
+
+        const memSearchParams: { q: string; limit?: number; source_type?: string; tags?: string } = {
+          q: cleanQuery || query,
+          limit: 8,
+        }
+        if (searchParams.source) memSearchParams.source_type = searchParams.source.toUpperCase()
+        if (searchParams.tag) memSearchParams.tags = searchParams.tag
+
         const [memoryRes, sessionRes] = await Promise.allSettled([
-          searchMemories({ q: query, limit: 8 }),
+          searchMemories(memSearchParams),
           fetchChatSessions(),
         ])
 
