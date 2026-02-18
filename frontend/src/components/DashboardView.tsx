@@ -2,12 +2,22 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Flame, Trophy, Calendar, TrendingUp, Tag,
-  BookOpen, Lightbulb, Link2, Pencil,
+  BookOpen, Lightbulb, MessageSquare, Network,
+  Pencil,
 } from 'lucide-react'
 import type { StreakData, StatsData, ActivityData, BriefingData } from '../types'
 import { fetchStreak, fetchStats, fetchActivity, fetchBriefing } from '../api'
+import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import './DashboardView.css'
+
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 6) return '새벽이에요'
+  if (hour < 12) return '좋은 아침이에요'
+  if (hour < 18) return '좋은 오후예요'
+  return '좋은 저녁이에요'
+}
 
 function getStreakMessage(streak: number): string {
   if (streak === 0) return '오늘 기록을 시작해보세요!'
@@ -26,8 +36,61 @@ function getHeatStyle(count: number, max: number): React.CSSProperties {
   return { backgroundColor: 'var(--accent-primary)', opacity }
 }
 
+const WEEKDAY_LABELS = ['월', '화', '수', '목', '금', '토', '일']
+
+function buildCalendarGrid(activity: ActivityData[]) {
+  if (activity.length === 0) return { weeks: [] as (ActivityData | null)[][], monthLabels: [] as { label: string; col: number }[] }
+
+  const dateMap = new Map(activity.map(a => [a.date, a]))
+  const endDate = new Date()
+  const startDate = new Date(endDate)
+  startDate.setDate(startDate.getDate() - (activity.length - 1))
+
+  // 첫 주 월요일로 정렬
+  const firstDay = startDate.getDay()
+  const mondayOffset = firstDay === 0 ? 6 : firstDay - 1
+  startDate.setDate(startDate.getDate() - mondayOffset)
+
+  const weeks: (ActivityData | null)[][] = []
+  const monthLabels: { label: string; col: number }[] = []
+  let currentWeek: (ActivityData | null)[] = []
+  let lastMonth = -1
+  const cursor = new Date(startDate)
+
+  while (cursor <= endDate || currentWeek.length > 0) {
+    const dateStr = cursor.toISOString().slice(0, 10)
+    const dayOfWeek = cursor.getDay()
+    const mondayIdx = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+
+    if (mondayIdx === 0 && currentWeek.length > 0) {
+      weeks.push(currentWeek)
+      currentWeek = []
+    }
+
+    const month = cursor.getMonth()
+    if (month !== lastMonth && mondayIdx === 0) {
+      const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
+      monthLabels.push({ label: monthNames[month], col: weeks.length })
+      lastMonth = month
+    }
+
+    if (cursor <= endDate) {
+      currentWeek.push(dateMap.get(dateStr) || { date: dateStr, count: 0 })
+    }
+
+    cursor.setDate(cursor.getDate() + 1)
+    if (cursor > endDate && currentWeek.length > 0) {
+      weeks.push(currentWeek)
+      break
+    }
+  }
+
+  return { weeks, monthLabels }
+}
+
 export default function DashboardView() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const toast = useToast()
 
   const [briefing, setBriefing] = useState<BriefingData | null>(null)
@@ -67,6 +130,8 @@ export default function DashboardView() {
 
   const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), [])
 
+  const calendarData = useMemo(() => buildCalendarGrid(activity), [activity])
+
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null)
 
   const handleCellHover = useCallback((e: React.MouseEvent, day: ActivityData) => {
@@ -78,15 +143,18 @@ export default function DashboardView() {
     })
   }, [])
 
+  const displayName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''
+
   if (loading) {
     return (
       <div className="dashboard-view">
-        <div className="skeleton skeleton-title" />
-        <div className="skeleton skeleton-card" style={{ height: 140 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
-          <div className="skeleton skeleton-stat" />
-          <div className="skeleton skeleton-stat" />
-          <div className="skeleton skeleton-stat" />
+        <div className="skeleton skeleton-title" style={{ width: '60%' }} />
+        <div className="skeleton skeleton-card" style={{ height: 160 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 20 }}>
+          <div className="skeleton skeleton-card" style={{ height: 100 }} />
+          <div className="skeleton skeleton-card" style={{ height: 100 }} />
+          <div className="skeleton skeleton-card" style={{ height: 100 }} />
+          <div className="skeleton skeleton-card" style={{ height: 100 }} />
         </div>
         <div className="skeleton skeleton-card" style={{ height: 120 }} />
       </div>
@@ -95,85 +163,95 @@ export default function DashboardView() {
 
   return (
     <div className="dashboard-view">
-      <h1 className="dashboard-title">대시보드</h1>
-
-      {/* 오늘의 브리핑 */}
-      {briefing && (
-        <div className="briefing-section">
-          <h2 className="briefing-heading">오늘의 브리핑</h2>
-          <div className="briefing-grid">
-            <button
-              className="briefing-card"
-              onClick={() => navigate('/memories')}
-            >
-              <div className="briefing-card-icon">
-                <BookOpen size={20} />
-              </div>
-              <div className="briefing-card-body">
-                <div className="briefing-card-value">
-                  {briefing.today_memories.count > 0
-                    ? `오늘 ${briefing.today_memories.count}개의 새 기억`
-                    : '아직 오늘의 기억이 없어요'}
-                </div>
-                {briefing.today_memories.topics.length > 0 && (
-                  <div className="briefing-card-tags">
-                    {briefing.today_memories.topics.map(t => (
-                      <span key={t} className="briefing-tag">#{t}</span>
-                    ))}
-                  </div>
+      {/* 히어로 브리핑 카드 */}
+      <div className="dashboard-hero">
+        <div className="hero-greeting">
+          <h1>{getGreeting()}{displayName ? `, ${displayName}님` : ''}</h1>
+          <div className="hero-stats">
+            {stats && (
+              <>
+                <span className="hero-stat-item">
+                  <BookOpen size={14} />
+                  오늘 기억 {briefing?.today_memories.count ?? 0}개
+                </span>
+                {briefing && briefing.unreviewed_count > 0 && (
+                  <span className="hero-stat-item hero-stat-action">
+                    <Pencil size={14} />
+                    미회고 {briefing.unreviewed_count}개
+                  </span>
                 )}
-                {briefing.today_memories.count === 0 && (
-                  <div className="briefing-card-hint">첫 메모리를 추가해보세요!</div>
+                {streak && streak.current_streak > 0 && (
+                  <span className="hero-stat-item">
+                    <Flame size={14} />
+                    {streak.current_streak}일 연속
+                  </span>
                 )}
-              </div>
-            </button>
-
-            <button
-              className="briefing-card"
-              onClick={() => navigate('/journal')}
-            >
-              <div className="briefing-card-icon">
-                <Pencil size={20} />
-              </div>
-              <div className="briefing-card-body">
-                <div className="briefing-card-value">
-                  {briefing.unreviewed_count > 0
-                    ? `회고하지 않은 기억 ${briefing.unreviewed_count}개`
-                    : '모든 기억을 회고했어요!'}
-                </div>
-                {briefing.unreviewed_count > 0 && (
-                  <div className="briefing-card-cta">저널 쓰러 가기 →</div>
-                )}
-              </div>
-            </button>
-
-            <button
-              className="briefing-card briefing-card-wide"
-              onClick={() => navigate('/journal', { state: { prefillQuestion: briefing.suggested_question } })}
-            >
-              <div className="briefing-card-icon">
-                <Lightbulb size={20} />
-              </div>
-              <div className="briefing-card-body">
-                <div className="briefing-card-label">오늘의 질문</div>
-                <div className="briefing-card-question">{briefing.suggested_question}</div>
-              </div>
-            </button>
-
-            {briefing.connection_hint && (
-              <button className="briefing-card briefing-card-wide">
-                <div className="briefing-card-icon">
-                  <Link2 size={20} />
-                </div>
-                <div className="briefing-card-body">
-                  <div className="briefing-card-label">연결 발견</div>
-                  <div className="briefing-card-value">{briefing.connection_hint}</div>
-                </div>
-              </button>
+              </>
             )}
           </div>
         </div>
-      )}
+        {briefing?.suggested_question && (
+          <button
+            className="hero-question"
+            onClick={() => navigate('/journal', { state: { prefillQuestion: briefing.suggested_question } })}
+          >
+            <Lightbulb size={18} className="hero-question-icon" />
+            <div className="hero-question-body">
+              <span className="hero-question-label">오늘의 질문</span>
+              <span className="hero-question-text">{briefing.suggested_question}</span>
+            </div>
+          </button>
+        )}
+      </div>
+
+      {/* 퀵 액션 그리드 */}
+      <div className="quick-actions-grid">
+        <button className="quick-action-card" onClick={() => navigate('/journal')}>
+          <div className="quick-action-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
+            <Pencil size={22} />
+          </div>
+          <div className="quick-action-body">
+            <span className="quick-action-title">저널 쓰기</span>
+            <span className="quick-action-sub">
+              {briefing && briefing.unreviewed_count > 0
+                ? `미회고 ${briefing.unreviewed_count}개`
+                : '오늘의 생각 기록'}
+            </span>
+          </div>
+        </button>
+
+        <button className="quick-action-card" onClick={() => navigate('/memories')}>
+          <div className="quick-action-icon" style={{ background: 'rgba(52, 211, 153, 0.1)', color: '#34d399' }}>
+            <BookOpen size={22} />
+          </div>
+          <div className="quick-action-body">
+            <span className="quick-action-title">기억 탐색</span>
+            <span className="quick-action-sub">
+              {stats ? `총 ${stats.overview.total_memories}개` : '기억 둘러보기'}
+            </span>
+          </div>
+        </button>
+
+        <button className="quick-action-card" onClick={() => navigate('/chat')}>
+          <div className="quick-action-icon" style={{ background: 'rgba(251, 146, 60, 0.1)', color: '#fb923c' }}>
+            <MessageSquare size={22} />
+          </div>
+          <div className="quick-action-body">
+            <span className="quick-action-title">Socrates 대화</span>
+            <span className="quick-action-sub">AI와 함께 성찰</span>
+          </div>
+        </button>
+
+        <button className="quick-action-card" onClick={() => navigate('/graph')}>
+          <div className="quick-action-icon" style={{ background: 'rgba(96, 165, 250, 0.1)', color: '#60a5fa' }}>
+            <Network size={22} />
+          </div>
+          <div className="quick-action-body">
+            <span className="quick-action-title">지식 그래프</span>
+            <span className="quick-action-sub">연결 시각화</span>
+          </div>
+        </button>
+      </div>
 
       {/* 스트릭 카드 */}
       {streak && (
@@ -197,44 +275,51 @@ export default function DashboardView() {
         </div>
       )}
 
-      {/* 통계 카드 */}
-      {stats && (
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-value">{stats.overview.total_memories}</div>
-            <div className="stat-label">전체 메모리</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.overview.total_this_week}</div>
-            <div className="stat-label">이번 주</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.overview.total_this_month}</div>
-            <div className="stat-label">이번 달</div>
-          </div>
-        </div>
-      )}
-
-      {/* 활동 히트맵 */}
+      {/* 활동 히트맵 (캘린더 레이아웃) */}
       {activity.length > 0 && (
         <div className="activity-section">
           <h2>
             <TrendingUp size={18} />
             최근 활동
           </h2>
-          <div
-            className="activity-heatmap"
-            onMouseLeave={() => setTooltip(null)}
-          >
-            {activity.map(day => (
-              <div
-                key={day.date}
-                className={`heatmap-cell${day.date === todayStr ? ' heatmap-cell--today' : ''}`}
-                style={getHeatStyle(day.count, maxActivity)}
-                onMouseEnter={(e) => handleCellHover(e, day)}
-                onMouseLeave={() => setTooltip(null)}
-              />
-            ))}
+          <div className="calendar-heatmap" onMouseLeave={() => setTooltip(null)}>
+            {/* 월 라벨 */}
+            <div className="calendar-month-labels">
+              <div className="calendar-weekday-spacer" />
+              {calendarData.monthLabels.map((ml, i) => (
+                <span
+                  key={i}
+                  className="calendar-month-label"
+                  style={{ gridColumnStart: ml.col + 2 }}
+                >
+                  {ml.label}
+                </span>
+              ))}
+            </div>
+            <div className="calendar-grid-wrapper">
+              {/* 요일 라벨 */}
+              <div className="calendar-weekday-labels">
+                {WEEKDAY_LABELS.map((label, i) => (
+                  <span key={i} className="calendar-weekday-label">{i % 2 === 0 ? label : ''}</span>
+                ))}
+              </div>
+              {/* 히트맵 셀 그리드 */}
+              <div className="calendar-cells" style={{ gridTemplateColumns: `repeat(${calendarData.weeks.length}, 14px)` }}>
+                {calendarData.weeks.map((week, wi) =>
+                  week.map((day, di) =>
+                    day ? (
+                      <div
+                        key={`${wi}-${di}`}
+                        className={`heatmap-cell${day.date === todayStr ? ' heatmap-cell--today' : ''}`}
+                        style={{ ...getHeatStyle(day.count, maxActivity), gridColumn: wi + 1, gridRow: di + 1 }}
+                        onMouseEnter={(e) => handleCellHover(e, day)}
+                        onMouseLeave={() => setTooltip(null)}
+                      />
+                    ) : null
+                  )
+                )}
+              </div>
+            </div>
           </div>
           {tooltip && (
             <div
