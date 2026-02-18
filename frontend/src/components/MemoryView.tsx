@@ -11,6 +11,7 @@ import type { Memory, MemoryCreatePayload, SourceType, SearchResult, TimelineDat
 import { fetchMemories, createMemory, uploadPdfMemory, searchMemories, fetchTimeline, bulkMemoryAction, fetchUserTags } from '../api'
 import { getSourceIcon, getSimilarityLevel, formatDateKR, formatRelativeDate, timeAgo } from '../utils'
 import MemoryDetailModal from './MemoryDetailModal'
+import EmptyState from './EmptyState'
 import './MemoryView.css'
 
 // 타임라인 태그 미리보기 최대 개수
@@ -384,11 +385,11 @@ export default function MemoryView() {
           ))}
         </div>
       ) : memories.length === 0 ? (
-        <div className="empty-state">
-          <FolderOpen size={48} className="state-icon" />
-          <h3>아직 저장된 기억이 없습니다</h3>
-          <p>웹 페이지나 메모를 추가해보세요</p>
-        </div>
+        <EmptyState
+          icon={<FolderOpen size={48} />}
+          title="아직 저장된 기억이 없습니다"
+          description="웹 페이지나 메모를 추가해보세요"
+        />
       ) : (
         memories.map((memory, index) => (
           <button
@@ -462,11 +463,11 @@ export default function MemoryView() {
 
     if (!timelineData || timelineData.timeline.length === 0) {
       return (
-        <div className="empty-state">
-          <CalendarX2 size={48} className="state-icon" />
-          <h3>아직 메모리가 없습니다</h3>
-          <p>새로운 지식을 저장해보세요!</p>
-        </div>
+        <EmptyState
+          icon={<CalendarX2 size={48} />}
+          title="아직 메모리가 없습니다"
+          description="새로운 지식을 저장해보세요!"
+        />
       )
     }
 
@@ -579,11 +580,11 @@ export default function MemoryView() {
             <p>AI가 비슷한 기억을 찾고 있습니다...</p>
           </div>
         ) : hasSearched && searchResults.length === 0 ? (
-          <div className="empty-state">
-            <SearchX size={48} className="state-icon" />
-            <h3>관련 기억을 찾지 못했습니다</h3>
-            <p>다른 키워드로 검색해보세요</p>
-          </div>
+          <EmptyState
+            icon={<SearchX size={48} />}
+            title="관련 기억을 찾지 못했습니다"
+            description="다른 키워드로 검색해보세요"
+          />
         ) : (
           searchResults.map(result => (
             <button key={result.id} className="result-card card" onClick={() => setSelectedMemoryId(result.id)} style={{ cursor: 'pointer', textAlign: 'left', width: '100%' }}>

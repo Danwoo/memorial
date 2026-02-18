@@ -171,7 +171,7 @@
 }
 
 .streak-icon {
-  color: #f97316;
+  color: var(--color-warning);
 }
 
 .streak-number {
