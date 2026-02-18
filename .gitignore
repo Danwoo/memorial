@@ -48,3 +48,19 @@ frontend/dist/
 
 # Vite temp files
 *.timestamp-*
+
+# Internal development docs (local only)
+CLAUDE.md
+DESIGN_SPEC.md
+DESIGN_SPEC_V2.md
+DEVELOPMENT_PLAN.md
+HANDOFF.md
+PRODUCT_REVIEW.md
+PROJECT_RETROSPECTIVE.md
+SPRINT_8_12_ROADMAP.md
+docs/
+backend/docs/PROJECT_STATUS.md
+backend/scripts/
+
+# Chrome Extension (contains hardcoded API keys)
+extension/
