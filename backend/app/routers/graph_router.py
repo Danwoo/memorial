@@ -4,7 +4,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.config.auth import get_user_id
-from app.config.dependencies import get_graph_service
+from app.config.dependencies import get_graph_insight_service, get_graph_service
+from app.schemas.graph_insight_schema import (
+    CreateRelationRequest,
+    GraphInsightsResponse,
+)
+from app.services.graph_insight_service import GraphInsightService
 from app.services.graph_service import GraphService
 
 router = APIRouter(prefix="/graph", tags=["graph"])
@@ -22,5 +27,36 @@ async def get_graph(
 
     try:
         return await graph_service.get_visualization_data(limit, str(user_id))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/insights", response_model=GraphInsightsResponse)
+async def get_graph_insights(
+    user_id: UUID = Depends(get_user_id),
+    insight_service: GraphInsightService = Depends(get_graph_insight_service),
+):
+    """그래프 인사이트 분석 결과 조회 (클러스터/트렌드/허브/고립 노드)."""
+    try:
+        return await insight_service.get_insights(str(user_id))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/relations")
+async def create_relation(
+    body: CreateRelationRequest,
+    user_id: UUID = Depends(get_user_id),
+    graph_service: GraphService = Depends(get_graph_service),
+):
+    """수동 관계 생성 (연결 만들기용)."""
+    if not graph_service.is_available:
+        raise HTTPException(status_code=503, detail="그래프 서비스를 사용할 수 없습니다")
+
+    try:
+        await graph_service.graph_repo.save_relations(
+            [{"source": body.source, "target": body.target, "type": body.rel_type}]
+        )
+        return {"ok": True, "message": f"{body.source} → {body.target} 연결 생성됨"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

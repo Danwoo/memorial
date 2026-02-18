@@ -19,6 +19,7 @@ from app.repositories.vector_repository import VectorRepository
 from app.services.chat_service import ChatService
 from app.services.digest_service import DigestService
 from app.services.export_service import ExportService
+from app.services.graph_insight_service import GraphInsightService
 from app.services.graph_service import GraphService
 from app.services.journal_service import JournalService
 from app.services.kakao_channel_service import KakaoChannelService
@@ -108,6 +109,14 @@ def get_graph_service(
 ) -> GraphService:
     """GraphService 인스턴스 생성."""
     return GraphService(graph_repo, memory_repo)
+
+
+def get_graph_insight_service(
+    graph_repo: GraphRepository = Depends(get_graph_repository),
+    stats_repo: StatsRepository = Depends(get_stats_repository),
+) -> GraphInsightService:
+    """GraphInsightService 인스턴스 생성."""
+    return GraphInsightService(graph_repo, stats_repo)
 
 
 def get_journal_service(
