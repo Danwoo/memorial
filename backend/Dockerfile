@@ -20,5 +20,9 @@ COPY app/ ./app/
 # Expose port
 EXPOSE 8000
 
+# 헬스체크
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
 # Run uvicorn
 CMD [".venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

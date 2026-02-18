@@ -3,6 +3,7 @@ primary_region = 'nrt'
 
 [env]
   KUZU_DB_PATH = "/data/kuzu"
+  ALLOWED_ORIGINS = "https://memoir-ai.vercel.app,https://memoir-ai-frontend.vercel.app"
 
 [build]
 
