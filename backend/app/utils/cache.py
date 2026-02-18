@@ -54,3 +54,4 @@ briefing_cache = TTLCache(ttl_seconds=300)  # 브리핑: 5분
 tags_cache = TTLCache(ttl_seconds=600)  # 태그 목록: 10분
 graph_cache = TTLCache(ttl_seconds=300)  # 그래프: 5분
 insights_cache = TTLCache(ttl_seconds=600)  # 인사이트: 10분
+report_cache = TTLCache(ttl_seconds=3600)  # 리포트: 1시간

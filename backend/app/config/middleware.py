@@ -16,6 +16,8 @@ LLM_PATHS = {
     "/api/v1/journal/review-questions",
     "/api/v1/journal/generate-draft",
     "/api/v1/journal/insights",
+    "/api/v1/reports/weekly",
+    "/api/v1/reports/monthly",
 }
 # 메모리 생성 (30req/min)
 WRITE_PATHS = {"/api/v1/memories"}

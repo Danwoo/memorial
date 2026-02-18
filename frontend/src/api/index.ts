@@ -3,6 +3,8 @@ export { fetchMemories, fetchMemoryDetail, createMemory, updateMemory, fetchUser
 export type { MemoryListParams } from './memories'
 export { fetchDuplicates, mergeMemories } from './duplicates'
 export type { DuplicatePair, DuplicatesResponse, MergeResponse } from './duplicates'
+export { fetchWeeklyReport, fetchMonthlyReport } from './reports'
+export type { ReportData, TopicDistribution, SourceDistribution } from './reports'
 export { createChatSession, fetchChatSessions, fetchChatHistory, sendChatMessage, readSSEStream, sendFeedback, fetchFeedbacks } from './chat'
 export type { SSEResult } from './chat'
 export { saveJournal, fetchRelatedMemories, generateJournalDraft, fetchReviewQuestions, fetchInsights, postInlineAssist, fetchJournalDates, fetchJournalsByDate } from './journal'

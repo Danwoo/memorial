@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import {
   Flame, Trophy, Calendar, TrendingUp, Tag,
   BookOpen, Lightbulb, MessageSquare, Network,
-  Pencil, Link2, Sparkles,
+  Pencil, Link2, Sparkles, FileBarChart, Loader2,
 } from 'lucide-react'
 import type { StreakData, StatsData, ActivityData, BriefingData, DailyInsight } from '../types'
-import { fetchStreak, fetchStats, fetchActivity, fetchBriefing, fetchDailyInsights } from '../api'
+import type { ReportData } from '../api/reports'
+import { fetchStreak, fetchStats, fetchActivity, fetchBriefing, fetchDailyInsights, fetchWeeklyReport, fetchMonthlyReport } from '../api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import './DashboardView.css'
@@ -88,17 +89,23 @@ function buildCalendarGrid(activity: ActivityData[]) {
   return { weeks, monthLabels }
 }
 
+type DashboardTab = 'briefing' | 'weekly' | 'monthly'
+
 export default function DashboardView() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const toast = useToast()
 
+  const [activeTab, setActiveTab] = useState<DashboardTab>('briefing')
   const [briefing, setBriefing] = useState<BriefingData | null>(null)
   const [streak, setStreak] = useState<StreakData | null>(null)
   const [stats, setStats] = useState<StatsData | null>(null)
   const [activity, setActivity] = useState<ActivityData[]>([])
   const [dailyInsights, setDailyInsights] = useState<DailyInsight[]>([])
   const [loading, setLoading] = useState(true)
+  const [weeklyReport, setWeeklyReport] = useState<ReportData | null>(null)
+  const [monthlyReport, setMonthlyReport] = useState<ReportData | null>(null)
+  const [reportLoading, setReportLoading] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -126,6 +133,22 @@ export default function DashboardView() {
     load()
   }, [toast])
 
+  useEffect(() => {
+    if (activeTab === 'weekly' && !weeklyReport) {
+      setReportLoading(true)
+      fetchWeeklyReport()
+        .then(setWeeklyReport)
+        .catch(() => toast.error('주간 리포트를 불러오지 못했습니다'))
+        .finally(() => setReportLoading(false))
+    } else if (activeTab === 'monthly' && !monthlyReport) {
+      setReportLoading(true)
+      fetchMonthlyReport()
+        .then(setMonthlyReport)
+        .catch(() => toast.error('월간 리포트를 불러오지 못했습니다'))
+        .finally(() => setReportLoading(false))
+    }
+  }, [activeTab, weeklyReport, monthlyReport, toast])
+
   const maxActivity = useMemo(
     () => Math.max(...activity.map(a => a.count), 1),
     [activity],
@@ -145,6 +168,93 @@ export default function DashboardView() {
       y: rect.top - 8,
     })
   }, [])
+
+  const renderReportTab = (report: ReportData | null) => {
+    if (reportLoading) {
+      return (
+        <div className="report-loading">
+          <Loader2 size={24} className="spinning" />
+          <p>AI 리포트를 생성하고 있습니다...</p>
+        </div>
+      )
+    }
+    if (!report) {
+      return (
+        <div className="report-loading">
+          <p>데이터가 부족합니다.</p>
+        </div>
+      )
+    }
+    return (
+      <div className="report-content">
+        <div className="report-hero">
+          <div className="report-hero-header">
+            <FileBarChart size={20} />
+            <span className="report-period">{report.date_range}</span>
+          </div>
+          <p className="report-summary">{report.llm_summary}</p>
+          <div className="report-stats-row">
+            <div className="report-stat">
+              <span className="report-stat-num">{report.total_memories}</span>
+              <span className="report-stat-label">메모리</span>
+            </div>
+            <div className="report-stat">
+              <span className="report-stat-num">{report.total_journals}</span>
+              <span className="report-stat-label">저널</span>
+            </div>
+            <div className="report-stat">
+              <span className="report-stat-num">{report.topic_distribution.length}</span>
+              <span className="report-stat-label">주제</span>
+            </div>
+          </div>
+        </div>
+
+        {report.highlights.length > 0 && (
+          <div className="report-highlights">
+            <h3>하이라이트</h3>
+            <ul>
+              {report.highlights.map((h, i) => (
+                <li key={i}>{h}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {report.topic_distribution.length > 0 && (
+          <div className="report-topics">
+            <h3>주제 분포</h3>
+            <div className="report-topic-bars">
+              {report.topic_distribution.map(t => (
+                <div key={t.topic} className="report-topic-item">
+                  <span className="report-topic-name">#{t.topic}</span>
+                  <div className="report-topic-bar">
+                    <div
+                      className="report-topic-bar-fill"
+                      style={{ width: `${t.percentage}%` }}
+                    />
+                  </div>
+                  <span className="report-topic-pct">{t.percentage}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {report.source_distribution.length > 0 && (
+          <div className="report-sources">
+            <h3>소스 분포</h3>
+            <div className="report-source-chips">
+              {report.source_distribution.map(s => (
+                <span key={s.source_type} className="report-source-chip">
+                  {s.source_type} ({s.count})
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   const displayName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''
 
@@ -166,6 +276,31 @@ export default function DashboardView() {
 
   return (
     <div className="dashboard-view">
+      {/* 탭 네비게이션 */}
+      <div className="dashboard-tabs">
+        <button
+          className={`dashboard-tab ${activeTab === 'briefing' ? 'active' : ''}`}
+          onClick={() => setActiveTab('briefing')}
+        >
+          오늘 브리핑
+        </button>
+        <button
+          className={`dashboard-tab ${activeTab === 'weekly' ? 'active' : ''}`}
+          onClick={() => setActiveTab('weekly')}
+        >
+          주간 리포트
+        </button>
+        <button
+          className={`dashboard-tab ${activeTab === 'monthly' ? 'active' : ''}`}
+          onClick={() => setActiveTab('monthly')}
+        >
+          월간 리포트
+        </button>
+      </div>
+
+      {activeTab !== 'briefing' ? (
+        renderReportTab(activeTab === 'weekly' ? weeklyReport : monthlyReport)
+      ) : (<>
       {/* 히어로 브리핑 카드 */}
       <div className="dashboard-hero">
         <div className="hero-greeting">
@@ -408,6 +543,7 @@ export default function DashboardView() {
           </div>
         </div>
       )}
+      </>)}
     </div>
   )
 }

@@ -26,6 +26,7 @@ from app.services.insight_service import InsightService
 from app.services.journal_service import JournalService
 from app.services.kakao_channel_service import KakaoChannelService
 from app.services.memory_service import MemoryService
+from app.services.report_service import ReportService
 from app.services.search_service import SearchService
 from app.services.stats_service import StatsService
 
@@ -163,6 +164,14 @@ def get_insight_service(
 ) -> InsightService:
     """InsightService 인스턴스 생성."""
     return InsightService(stats_repo, graph_repo, journal_repo)
+
+
+def get_report_service(
+    stats_repo: StatsRepository = Depends(get_stats_repository),
+    memory_repo: MemoryRepository = Depends(get_memory_repository),
+) -> ReportService:
+    """ReportService 인스턴스 생성."""
+    return ReportService(stats_repo, memory_repo)
 
 
 def get_duplicate_service(
