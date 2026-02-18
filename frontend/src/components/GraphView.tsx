@@ -54,6 +54,7 @@ const NODE_TYPE_KO: Record<string, string> = {
 
 // 관계 타입 한국어 매핑
 const LINK_TYPE_KO: Record<string, string> = {
+  RELATED_TO: '관련',
   RELATES_TO: '관련',
   MENTIONED_IN: '언급됨',
   MENTIONS: '언급',
@@ -61,15 +62,24 @@ const LINK_TYPE_KO: Record<string, string> = {
   HAS_ENTITY: '엔티티 포함',
   ASSOCIATED_WITH: '연관',
   PART_OF: '소속',
+  CAUSED_BY: '원인',
   WORKS_AT: '근무',
   LOCATED_IN: '위치',
   CREATED_BY: '작성자',
+  USED_BY: '사용자',
   USED_IN: '사용됨',
+  USED_FOR: '용도',
+  USES: '사용',
   SIMILAR_TO: '유사',
+  OPPOSITE_OF: '반대',
   DEPENDS_ON: '의존',
   DERIVED_FROM: '파생',
   CONTAINS: '포함',
   BELONGS_TO: '소속',
+  HAS: '보유',
+  IS_A: '분류',
+  BUILT_WITH: '구축',
+  INSPIRED_BY: '영감',
 }
 
 // 한국어 변환 헬퍼
@@ -174,17 +184,17 @@ export default function GraphView() {
   // 3D 노드 렌더링: 구체 + 라벨 스프라이트
   const nodeThreeObject = useCallback((node: AnyNode) => {
     const val = node.val || 1
-    const size = Math.max(1.5, Math.sqrt(val) * 1.5)
+    const size = Math.max(3, Math.sqrt(val) * 2.5)
     const color = node.color || NODE_COLORS['default']
 
     const group = new THREE.Group()
 
     // 구체 메시
-    const geo = new THREE.SphereGeometry(size, 16, 12)
+    const geo = new THREE.SphereGeometry(size, 20, 14)
     const mat = new THREE.MeshLambertMaterial({
       color,
       transparent: true,
-      opacity: 0.9,
+      opacity: 0.92,
     })
     const mesh = new THREE.Mesh(geo, mat)
     group.add(mesh)
@@ -193,14 +203,14 @@ export default function GraphView() {
     nodeMaterials.current.set(node.id, mat)
 
     // 라벨 스프라이트
-    const label = (node.name || node.id).substring(0, 24)
+    const label = (node.name || node.id).substring(0, 30)
     const sprite = new SpriteText(label)
-    sprite.color = bgColor === '#1a1a1a' ? '#ffffff' : '#1f1f1f'
-    sprite.textHeight = Math.max(1.2, size * 0.5)
-    sprite.backgroundColor = bgColor === '#1a1a1a' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.85)'
-    sprite.padding = [0.5, 1] as unknown as number
-    sprite.borderRadius = 1
-    sprite.position.y = -(size + 2)
+    sprite.color = bgColor === '#1a1a1a' ? '#f0f0f0' : '#1a1a1a'
+    sprite.textHeight = Math.max(2.0, size * 0.7)
+    sprite.backgroundColor = bgColor === '#1a1a1a' ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.92)'
+    sprite.padding = [0.8, 1.5] as unknown as number
+    sprite.borderRadius = 1.5
+    sprite.position.y = -(size + 3)
     group.add(sprite)
 
     return group
@@ -489,10 +499,10 @@ export default function GraphView() {
           nodeThreeObjectExtend={false}
           linkColor={(link: GraphLink) =>
             highlightLinks.has(getLinkKey(link))
-              ? (bgColor === '#1a1a1a' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)')
-              : (bgColor === '#1a1a1a' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)')
+              ? (bgColor === '#1a1a1a' ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.7)')
+              : (bgColor === '#1a1a1a' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)')
           }
-          linkWidth={(link: GraphLink) => (highlightLinks.has(getLinkKey(link)) ? 1.5 : 0.3)}
+          linkWidth={(link: GraphLink) => (highlightLinks.has(getLinkKey(link)) ? 3 : 1.2)}
           linkDirectionalArrowLength={3}
           linkDirectionalArrowRelPos={1}
           linkDirectionalParticles={(link: GraphLink) =>
@@ -504,8 +514,10 @@ export default function GraphView() {
           onNodeClick={handleNodeClick}
           onNodeHover={handleNodeHover}
           onBackgroundClick={handleBackgroundClick}
-          cooldownTicks={100}
-          onEngineStop={() => fgRef.current?.zoomToFit(400, 100)}
+          cooldownTicks={120}
+          d3AlphaDecay={0.02}
+          d3VelocityDecay={0.3}
+          onEngineStop={() => fgRef.current?.zoomToFit(400, 60)}
         />
       )}
 
@@ -552,6 +564,15 @@ export default function GraphView() {
             </button>
           </div>
           <h3>{selectedNode.name}</h3>
+          <div className="node-meta">
+            <span className="node-meta-item">연결 {selectedConnections.length}개</span>
+            {selectedNode.properties?.source_type && (
+              <span className="node-meta-item">{selectedNode.properties.source_type as string}</span>
+            )}
+            {selectedNode.properties?.created_at && (
+              <span className="node-meta-item">{(selectedNode.properties.created_at as string).substring(0, 10)}</span>
+            )}
+          </div>
 
           {selectedNode.properties?.summary && (
             <p className="node-summary">{selectedNode.properties.summary as string}</p>

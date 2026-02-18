@@ -279,11 +279,26 @@
 }
 
 .node-info-panel h3 {
-  margin: 0 0 10px 0;
+  margin: 0 0 6px 0;
   font-size: 1.05rem;
   color: var(--text-primary);
   line-height: 1.4;
   word-break: break-word;
+}
+
+.node-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.node-meta-item {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
 }
 
 .node-summary {
