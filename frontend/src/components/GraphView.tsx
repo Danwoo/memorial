@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import ForceGraph3D from 'react-force-graph-3d'
 import SpriteText from 'three-spritetext'
 import * as THREE from 'three'
-import { BookOpen } from 'lucide-react'
-import type { GraphNode, GraphLink, GraphData, SearchResult } from '../types'
+import { BookOpen, Lightbulb } from 'lucide-react'
+import type { GraphNode, GraphLink, GraphData, SearchResult, GraphInsights, ClusterInfo } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
-import { fetchGraph, searchMemories } from '../api'
+import { fetchGraph, fetchGraphInsights, searchMemories } from '../api'
 import MemoryDetailModal from './MemoryDetailModal'
+import GraphInsightPanel, { CLUSTER_COLORS } from './GraphInsightPanel'
 import './GraphView.css'
 
 // 노드 타입별 색상 팔레트
@@ -114,6 +115,12 @@ export default function GraphView() {
   const [searchMatches, setSearchMatches] = useState<GraphNode[]>([])
   const [searchMatchIdx, setSearchMatchIdx] = useState(0)
 
+  // S10-2: 인사이트 패널
+  const [insights, setInsights] = useState<GraphInsights | null>(null)
+  const [insightsLoading, setInsightsLoading] = useState(false)
+  const [showInsights, setShowInsights] = useState(false)
+  const [clusterColorMode, setClusterColorMode] = useState(false)
+
   const bgColor = resolvedTheme === 'dark' ? '#1a1a1a' : '#ffffff'
 
   // 그래프 데이터 조회 및 노드 가공
@@ -135,6 +142,18 @@ export default function GraphView() {
       setLoading(false)
     }
   }, [toast])
+
+  const loadInsights = useCallback(async () => {
+    setInsightsLoading(true)
+    try {
+      const data = await fetchGraphInsights()
+      setInsights(data)
+    } catch {
+      setInsights(null)
+    } finally {
+      setInsightsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     fetchGraphData()
@@ -181,11 +200,26 @@ export default function GraphView() {
     [data.nodes],
   )
 
+  // S10-2: 클러스터 색상 모드에서 노드 색상 결정
+  const getNodeColor = useCallback(
+    (node: GraphNode): string => {
+      if (!clusterColorMode || !insights?.clusters) {
+        return NODE_COLORS[node.label] || NODE_COLORS['default']
+      }
+      const idx = insights.clusters.findIndex(c =>
+        c.entities.includes(node.name || node.id),
+      )
+      if (idx >= 0) return CLUSTER_COLORS[idx % CLUSTER_COLORS.length]
+      return '#555555'
+    },
+    [clusterColorMode, insights],
+  )
+
   // 3D 노드 렌더링: 구체 + 라벨 스프라이트
   const nodeThreeObject = useCallback((node: AnyNode) => {
     const val = node.val || 1
     const size = Math.max(3, Math.sqrt(val) * 2.5)
-    const color = node.color || NODE_COLORS['default']
+    const color = clusterColorMode ? getNodeColor(node) : (node.color || NODE_COLORS['default'])
 
     const group = new THREE.Group()
 
@@ -214,7 +248,7 @@ export default function GraphView() {
     group.add(sprite)
 
     return group
-  }, [bgColor])
+  }, [bgColor, clusterColorMode, getNodeColor])
 
   // 하이라이트 매칭용 링크 키 생성
   const getLinkKey = useCallback((link: GraphLink) => {
@@ -397,6 +431,62 @@ export default function GraphView() {
       })
   }, [selectedNode, filteredData])
 
+  // S10-2: 인사이트 패널 토글
+  const handleToggleInsights = useCallback(() => {
+    const next = !showInsights
+    setShowInsights(next)
+    if (next && !insights && !insightsLoading) {
+      loadInsights()
+    }
+    // 인사이트 열 때는 노드 상세 패널 닫기
+    if (next) setSelectedNode(null)
+  }, [showInsights, insights, insightsLoading, loadInsights])
+
+  // S10-2: 클러스터 선택 → centroid 계산 → 카메라 줌
+  const handleClusterSelect = useCallback(
+    (cluster: ClusterInfo) => {
+      const clusterNodes = filteredData.nodes.filter(n =>
+        cluster.entities.includes(n.name || n.id),
+      ) as AnyNode[]
+
+      if (clusterNodes.length === 0 || !fgRef.current) return
+
+      const cx = clusterNodes.reduce((s, n) => s + (n.x || 0), 0) / clusterNodes.length
+      const cy = clusterNodes.reduce((s, n) => s + (n.y || 0), 0) / clusterNodes.length
+      const cz = clusterNodes.reduce((s, n) => s + (n.z || 0), 0) / clusterNodes.length
+
+      fgRef.current.cameraPosition(
+        { x: cx * 1.5, y: cy * 1.5, z: cz * 1.5 },
+        { x: cx, y: cy, z: cz },
+        1000,
+      )
+
+      // 클러스터 노드만 하이라이트
+      const clusterIds = new Set(clusterNodes.map(n => n.id))
+      nodeMaterials.current.forEach((mat, id) => {
+        mat.opacity = clusterIds.has(id) ? 1.0 : 0.15
+      })
+    },
+    [filteredData.nodes],
+  )
+
+  // S10-2: 노드 이름으로 검색+포커스
+  const focusNodeByName = useCallback(
+    (name: string) => {
+      const node = filteredData.nodes.find(n => (n.name || n.id) === name) as AnyNode | undefined
+      if (!node || !fgRef.current) return
+      setSelectedNode(node)
+      const distance = 60
+      const distRatio = 1 + distance / Math.hypot(node.x || 1, node.y || 1, node.z || 1)
+      fgRef.current.cameraPosition(
+        { x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio },
+        { x: node.x || 0, y: node.y || 0, z: node.z || 0 },
+        1000,
+      )
+    },
+    [filteredData.nodes],
+  )
+
   const isEmptyGraph = !loading && data.nodes.length === 0
 
   return (
@@ -547,6 +637,43 @@ export default function GraphView() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* S10-2: 인사이트 토글 버튼 */}
+      {!loading && !isEmptyGraph && (
+        <div className="graph-insight-controls">
+          <button
+            className={`insight-toggle-btn ${showInsights ? 'active' : ''}`}
+            onClick={handleToggleInsights}
+            title="인사이트 패널"
+          >
+            <Lightbulb size={18} />
+          </button>
+          {insights?.clusters && insights.clusters.length > 0 && (
+            <button
+              className={`cluster-color-btn ${clusterColorMode ? 'active' : ''}`}
+              onClick={() => setClusterColorMode(!clusterColorMode)}
+              title="클러스터 색상 모드"
+            >
+              클러스터
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* S10-2: 인사이트 패널 */}
+      {showInsights && !selectedNode && (
+        <GraphInsightPanel
+          insights={insights}
+          loading={insightsLoading}
+          onClusterSelect={handleClusterSelect}
+          onIsolatedNodeClick={focusNodeByName}
+          onHubNodeClick={focusNodeByName}
+          onConnectionCreated={() => {
+            fetchGraphData()
+            loadInsights()
+          }}
+        />
       )}
 
       {/* 선택된 노드 상세 패널 */}

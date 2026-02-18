@@ -37,6 +37,11 @@ export type {
   GraphNode,
   GraphLink,
   GraphData,
+  ClusterInfo,
+  TrendItem,
+  IsolatedNode,
+  HubNode,
+  GraphInsights,
 } from './graph'
 
 export type {
