@@ -142,11 +142,11 @@ class ChatService:
 
     async def add_feedback(self, session_id: UUID, message_index: int, user_id: UUID, rating: str) -> bool:
         """메시지 피드백 저장."""
-        return await self.chat_repo.save_feedback(session_id, user_id, message_index, rating)
+        return await self.chat_repo.add_feedback(session_id, message_index, user_id, rating)
 
     async def get_feedbacks(self, session_id: UUID) -> list[dict]:
         """세션의 전체 피드백 조회."""
-        return await self.chat_repo.get_feedback_for_session(session_id)
+        return await self.chat_repo.get_feedbacks(session_id)
 
     async def generate_session_summary(self, session_id: UUID) -> str | None:
         """세션의 대화를 LLM으로 요약하여 저장."""
