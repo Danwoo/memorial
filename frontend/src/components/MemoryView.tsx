@@ -9,7 +9,7 @@ import {
 import { useToast } from '../contexts/ToastContext'
 import type { Memory, MemoryCreatePayload, SourceType, SearchResult, TimelineData } from '../types'
 import { fetchMemories, createMemory, uploadPdfMemory, searchMemories, fetchTimeline, bulkMemoryAction, fetchUserTags } from '../api'
-import { getSourceIcon, getSimilarityLevel, formatDateKR, formatRelativeDate } from '../utils'
+import { getSourceIcon, getSimilarityLevel, formatDateKR, formatRelativeDate, timeAgo } from '../utils'
 import MemoryDetailModal from './MemoryDetailModal'
 import './MemoryView.css'
 
@@ -418,8 +418,18 @@ export default function MemoryView() {
             {memory.summary && (
               <p className="memory-summary">{memory.summary}</p>
             )}
+            {memory.tags && memory.tags.length > 0 && (
+              <div className="memory-tags">
+                {memory.tags.slice(0, 3).map((tag) => (
+                  <span key={tag} className="memory-tag-chip">{tag}</span>
+                ))}
+                {memory.tags.length > 3 && (
+                  <span className="memory-tag-chip memory-tag-chip--more">+{memory.tags.length - 3}</span>
+                )}
+              </div>
+            )}
             <div className="memory-meta">
-              <span>{formatDateKR(memory.created_at)}</span>
+              <span>{timeAgo(memory.created_at)}</span>
             </div>
           </button>
         ))

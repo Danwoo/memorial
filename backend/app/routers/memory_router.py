@@ -244,6 +244,7 @@ async def list_memories(
                 title=item.title,
                 summary=item.summary,
                 source_type=item.source_type,
+                tags=item.tags or [],
                 created_at=item.created_at,
             )
             for item in items

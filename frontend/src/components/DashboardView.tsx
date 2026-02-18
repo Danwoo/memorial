@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Flame, Trophy, Calendar, TrendingUp, Tag,
@@ -64,6 +64,19 @@ export default function DashboardView() {
     () => Math.max(...activity.map(a => a.count), 1),
     [activity],
   )
+
+  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), [])
+
+  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null)
+
+  const handleCellHover = useCallback((e: React.MouseEvent, day: ActivityData) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setTooltip({
+      text: `${day.date} · ${day.count}개 활동`,
+      x: rect.left + rect.width / 2,
+      y: rect.top - 8,
+    })
+  }, [])
 
   if (loading) {
     return (
@@ -209,16 +222,28 @@ export default function DashboardView() {
             <TrendingUp size={18} />
             최근 활동
           </h2>
-          <div className="activity-heatmap">
+          <div
+            className="activity-heatmap"
+            onMouseLeave={() => setTooltip(null)}
+          >
             {activity.map(day => (
               <div
                 key={day.date}
-                className="heatmap-cell"
+                className={`heatmap-cell${day.date === todayStr ? ' heatmap-cell--today' : ''}`}
                 style={getHeatStyle(day.count, maxActivity)}
-                title={`${day.date}: ${day.count}개`}
+                onMouseEnter={(e) => handleCellHover(e, day)}
+                onMouseLeave={() => setTooltip(null)}
               />
             ))}
           </div>
+          {tooltip && (
+            <div
+              className="heatmap-tooltip"
+              style={{ left: tooltip.x, top: tooltip.y }}
+            >
+              {tooltip.text}
+            </div>
+          )}
           <div className="heatmap-legend">
             <span>적음</span>
             <div className="heatmap-legend-cells">

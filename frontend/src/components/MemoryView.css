@@ -118,6 +118,26 @@ button.result-card {
   overflow: hidden;
 }
 
+.memory-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.memory-tag-chip {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.memory-tag-chip--more {
+  color: var(--text-muted);
+}
+
 .memory-meta {
   font-size: 0.75rem;
   color: var(--text-muted);

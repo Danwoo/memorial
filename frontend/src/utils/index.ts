@@ -1,2 +1,2 @@
 export { getSourceIcon, getSimilarityLevel } from './format'
-export { formatDateKR, formatRelativeDate } from './date'
+export { formatDateKR, formatRelativeDate, timeAgo } from './date'

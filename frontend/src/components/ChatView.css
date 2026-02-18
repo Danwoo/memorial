@@ -403,9 +403,11 @@
 
 /* 참조 메모리 섹션 */
 .chat-references {
-  margin-top: 8px;
-  border-top: 1px solid var(--border-primary);
-  padding-top: 6px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent-primary);
 }
 
 .chat-references-toggle {
@@ -414,15 +416,16 @@
   gap: 6px;
   background: none;
   border: none;
-  color: var(--text-tertiary);
+  color: var(--accent-primary);
   font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
   padding: 4px 0;
   transition: color 0.15s;
 }
 
 .chat-references-toggle:hover {
-  color: var(--accent-primary);
+  color: var(--accent-primary-hover);
 }
 
 .chat-references-list {

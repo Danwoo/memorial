@@ -91,10 +91,11 @@
 }
 
 .briefing-card-question {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
+  font-size: 0.95rem;
+  color: var(--text-primary);
   line-height: 1.5;
   font-style: italic;
+  font-weight: 500;
 }
 
 .briefing-card-tags {
@@ -239,6 +240,32 @@
   width: 14px;
   height: 14px;
   border-radius: 3px;
+  transition: transform 0.1s ease;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.4);
+  z-index: 1;
+}
+
+.heatmap-cell--today {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+
+.heatmap-tooltip {
+  position: fixed;
+  transform: translateX(-50%) translateY(-100%);
+  padding: 4px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: var(--shadow-md);
 }
 
 .heatmap-legend {

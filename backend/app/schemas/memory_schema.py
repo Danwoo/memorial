@@ -65,6 +65,7 @@ class MemoryListItem(BaseModel):
     title: str
     summary: str | None = None
     source_type: SourceType
+    tags: list[str] = []
     created_at: datetime
 
     class Config:
