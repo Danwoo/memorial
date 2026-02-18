@@ -26,7 +26,7 @@
 검증이 완료된 후에만 커밋한다.
 
 #### 커밋 메시지 규칙
-- **형식**: `타입: 작업 핵심 요약 (P0-N, P1-N)`
+- **형식**: `타입: 작업 핵심 요약 (S8-N)` (Sprint 8~12는 S8-N ~ S12-N 형식)
 - **타입**: `feat`, `fix`, `style`, `refactor`
 - **본문**: 변경사항을 구체적으로 나열 (한국어)
 - **Co-Authored-By 라인 절대 추가하지 않는다**
@@ -50,13 +50,18 @@ fix: 벡터 검색 user_id 필터 추가 + 글로벌 토스트 시스템 + UX �
 
 ## 핵심 참조 문서
 - `PRODUCT_REVIEW.md` — 제품 전략 및 문제점 목록 (v2.1, dogfooding 기준)
-- `DEVELOPMENT_PLAN.md` — 스프린트 1/2 상세 개발 계획서
-- `DESIGN_SPEC.md` — UI/UX 디자인 스펙 (NotebookLM 벤치마크)
+- `DEVELOPMENT_PLAN.md` — Sprint 1~7 완료 기록 + Sprint 8~12 확장 로드맵 (50일, 10/10 달성 목표)
+- `DESIGN_SPEC_V2.md` — 10/10 UX 개선 스펙 (디자인 시스템 통일 + 5개 화면별 CSS/레이아웃 스펙)
+- `SPRINT_8_12_ROADMAP.md` — PM 최종 확정판 Sprint 8~12 로드맵 원본
 
 ## 현재 개발 단계
-- **Phase 1 목표:** 파운더가 매일 사용할 수 있는 상태
-- **스프린트 1 (P0):** 글로벌 토스트, 메모리 상세 모달, 보안 수정, textarea auto-resize, 새 대화 버튼, Escape 닫기, 환영 배너
-- **스프린트 2 (P1):** glass-card 교체, 한국어화, 저널 AI 강화, 반응형, 접근성, Chat AI 자동 판단
+- **Phase 4 목표:** 모든 평가 항목 10/10 달성 + 프로덕션 배포 + 포트폴리오
+- **Sprint 1~7:** 완료 (기능 범위 9.5, 기능 깊이 8.5, UX 8.5)
+- **Sprint 8:** UX 기반 재정비 + Socrates 차별화 시작 (저널 UX 전면 수정, 메모리/채팅/대시보드 UX, Socrates 프로필+프롬프트, 장기 맥락, 그래프 시각화, Supabase 최적화)
+- **Sprint 9:** Socrates 대화 완성 + 저널 심화 (실시간 연결 제안, 품질 튜닝, AI 능동 회고, 채팅 UX 완성도, 한국어 요약)
+- **Sprint 10:** 지식 그래프 인사이트 + 대시보드 재설계 (인사이트 엔진, 클러스터 시각화, 허브 레이아웃, AI 인사이트, UX 폴리싱)
+- **Sprint 11:** 관리 체계 완성 + 프로덕션 배포 (고급 검색, 중복 감지, AI 리포트, Fly.io+Vercel 배포)
+- **Sprint 12:** 배포 안정화 + E2E + 데모 모드 + 포트폴리오
 
 ## 아키텍처 요약
 - **프론트엔드:** React 18 + TypeScript + Vite, Tiptap 에디터, react-force-graph-3d
@@ -65,4 +70,5 @@ fix: 벡터 검색 user_id 필터 추가 + 글로벌 토스트 시스템 + UX �
 - **배포:** Fly.io (무료 티어)
 
 ## 보안 주의
-- 벡터 검색 시 반드시 `user_id` 필터 적용 (chat.py Socrates 에이전트 누락 수정 필요)
+- 벡터 검색 시 반드시 `user_id` 필터 적용 (Sprint 1에서 수정 완료)
+- 프로덕션 배포 시 CORS ALLOWED_ORIGINS 환경변수 필수 설정
