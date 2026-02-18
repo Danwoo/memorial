@@ -61,7 +61,7 @@ fix: 벡터 검색 user_id 필터 추가 + 글로벌 토스트 시스템 + UX �
 - **Sprint 9:** Socrates 대화 완성 + 저널 심화 (실시간 연결 제안, 품질 튜닝, AI 능동 회고, 채팅 UX 완성도, 한국어 요약)
 - **Sprint 10:** 지식 그래프 인사이트 + 대시보드 재설계 (인사이트 엔진, 클러스터 시각화, 허브 레이아웃, AI 인사이트, UX 폴리싱)
 - **Sprint 11:** 완료 — 관리 체계 완성 + 프로덕션 배포 (고급 검색 필터/정렬, 중복 감지/병합, AI 리포트, Vercel+Fly.io 구성, CI)
-- **Sprint 12:** 배포 안정화 + E2E + 데모 모드 + 포트폴리오
+- **Sprint 12:** 완료 — 콜드 스타트 재시도, Playwright E2E, 데모 모드(/demo), README+회고
 
 ## 아키텍처 요약
 - **프론트엔드:** React 18 + TypeScript + Vite, Tiptap 에디터, react-force-graph-3d

@@ -2712,12 +2712,12 @@ UX 완성도 (10/10 검증):
 
 ### Sprint 12 진행 체크리스트
 
-- [ ] S12-1: 배포 후 안정화 + Dogfogging 이슈
-- [ ] S12-2: E2E 테스트 (Playwright 4개 파일)
-- [ ] S12-3: 데모 모드 (`/demo`)
-- [ ] S12-4: 최종 전체 QA
-- [ ] S12-5: 프로젝트 회고 + README
-- [ ] S12-6: 최종 배포 + 지인 배포
+- [x] S12-1: API 콜드 스타트 자동 재시도 (fetchWithRetry — 502/503/504 + 네트워크 에러, 최대 2회)
+- [x] S12-2: Playwright E2E 테스트 4개 파일 (auth, memory, chat, journal) + 설정
+- [x] S12-3: 데모 모드 `/demo` — DemoContext + DemoLayout + 5개 뷰 + 샘플 데이터
+- [x] S12-4: 최종 전체 QA — tsc + Python 구문 + Vite 빌드 통과
+- [x] S12-5: README 최종 정비 + PROJECT_RETROSPECTIVE.md 작성
+- [x] S12-6: 최종 통합 QA — 정적 검증 3종 통과 확인
 
 ---
 
