@@ -22,7 +22,7 @@ CURATOR_SYSTEM_PROMPT = """You are the Curator of Memoir AI. Your job is to clas
    - `FACT`: Documentation, Manuals, News reports. (Medium Value -> Save as is)
    - `SPAM`: Ads, Navbars, Irrelevant text. (Low Value -> Discard)
 2. **Tagging**: Generate 3-5 consistent tags (e.g., "AI", "React", "Startup").
-3. **Summary**: 핵심 아이디어를 한 줄로 요약하세요. 반드시 한국어로 작성하세요.
+3. **Summary**: 핵심 논점과 결론을 포함하여 2-3문장으로 요약하세요. 반드시 한국어로 작성하세요.
 
 **Output Schema (JSON only, no markdown):**
 {

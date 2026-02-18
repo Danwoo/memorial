@@ -83,8 +83,16 @@ class ChatService:
             if len(messages) == 1:
                 prev_context = await self._get_previous_session_context(user_id)
 
+            # 턴 수 계산 (HumanMessage 개수 기준)
+            turn_count = sum(1 for m in messages if isinstance(m, HumanMessage))
+
             # RAG 검색, 저널, 모드별 프롬프트 준비
-            lc_messages, references = await prepare_socrates_context(messages, mode, user_id=str(user_id))
+            lc_messages, references = await prepare_socrates_context(
+                messages,
+                mode,
+                user_id=str(user_id),
+                turn_count=turn_count,
+            )
 
             # 이전 세션 컨텍스트가 있으면 시스템 프롬프트에 추가
             if prev_context and lc_messages:

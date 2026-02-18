@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
-  User, Bot, MessageSquareText, ArrowUp,
+  User, Bot, ArrowUp,
   Paperclip, ChevronDown, ChevronUp, FileText, Globe, StickyNote,
   ThumbsUp, ThumbsDown,
 } from 'lucide-react'
@@ -247,11 +247,14 @@ export default function ChatView() {
           </div>
         ) : messages.length === 0 ? (
           <div className="chat-empty">
-            <MessageSquareText size={48} className="state-icon" />
-            {hasBriefingContent ? (
-              <>
-                <h2>오늘 {briefing.today_memories.count}개의 기억이 쌓였습니다</h2>
-                <p>무엇이 궁금하세요?</p>
+            <div className="chat-empty-branding">
+              <Bot size={56} className="chat-empty-icon" />
+              <h2 className="chat-empty-title">Socrates</h2>
+              <p className="chat-empty-tagline">당신의 기억을 아는 지적 동반자</p>
+            </div>
+            {hasBriefingContent && (
+              <div className="chat-empty-briefing">
+                <p>오늘 {briefing.today_memories.count}개의 기억이 쌓였습니다</p>
                 {briefing.today_memories.topics.length > 0 && (
                   <div className="welcome-stats">
                     {briefing.today_memories.topics.map((t, i) => (
@@ -259,24 +262,19 @@ export default function ChatView() {
                     ))}
                   </div>
                 )}
-              </>
-            ) : (
-              <>
-                <h2>무엇이 궁금하신가요?</h2>
-                <p>저장된 지식을 바탕으로 대화해보세요</p>
-              </>
+              </div>
             )}
 
             <div className="suggested-questions">
               {briefing?.suggested_question && (
-                <button className="suggested-q" onClick={() => setInput(briefing.suggested_question)}>
+                <button className="suggested-q" onClick={() => { pendingMessageRef.current = briefing.suggested_question; setInput(briefing.suggested_question) }}>
                   {briefing.suggested_question}
                 </button>
               )}
-              <button className="suggested-q" onClick={() => setInput('최근 관심사에 대해 이야기해줘')}>
+              <button className="suggested-q" onClick={() => { pendingMessageRef.current = '최근 관심사에 대해 이야기해줘'; setInput('최근 관심사에 대해 이야기해줘') }}>
                 최근 관심사에 대해 이야기해줘
               </button>
-              <button className="suggested-q" onClick={() => setInput('저장한 글 중 인상적인 것은?')}>
+              <button className="suggested-q" onClick={() => { pendingMessageRef.current = '저장한 글 중 인상적인 것은?'; setInput('저장한 글 중 인상적인 것은?') }}>
                 저장한 글 중 인상적인 것은?
               </button>
             </div>
@@ -302,7 +300,8 @@ export default function ChatView() {
                             type="button"
                           >
                             <Paperclip size={14} />
-                            <span>{msg.references.length}개 기억 참조</span>
+                            <span className="chat-references-label">{msg.references.length}개 기억 참조</span>
+                            <span className="chat-references-badge">{msg.references.length}</span>
                             {expandedRefs.has(idx) ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                           </button>
                           {expandedRefs.has(idx) && (
@@ -343,7 +342,14 @@ export default function ChatView() {
                       </div>
                     </>
                   ) : (
-                    <span className="typing-indicator">...</span>
+                    <div className="typing-indicator-container">
+                      <div className="typing-dots">
+                        <span className="typing-dot" />
+                        <span className="typing-dot" />
+                        <span className="typing-dot" />
+                      </div>
+                      <span className="typing-text">Socrates가 생각하고 있습니다...</span>
+                    </div>
                   )
                 ) : (
                   msg.content || <span className="typing-indicator">...</span>

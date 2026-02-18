@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { X, ExternalLink, Trash2, Loader2, Globe, FileText, StickyNote, File, Tag, Pencil, Save, Undo2, BookOpen } from 'lucide-react'
+import { X, ExternalLink, Trash2, Loader2, Globe, FileText, StickyNote, File, Tag, Pencil, Save, Undo2, BookOpen, PenLine } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
 import { useFocusTrap } from '../hooks/useFocusTrap'
@@ -356,7 +356,7 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
                       >
                         <BookOpen size={14} className="linked-journal-icon" />
                         <div className="linked-journal-content">
-                          <span className="linked-journal-date">{journal.date}</span>
+                          <span className="linked-journal-date">{formatDateKR(journal.date)}</span>
                           <span className="linked-journal-preview">{journal.preview}</span>
                         </div>
                         {journal.mood && (
@@ -368,7 +368,20 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
                     ))}
                   </div>
                 ) : (
-                  <p className="linked-journals-empty">아직 이 기억에 대해 작성한 저널이 없습니다.</p>
+                  <div className="linked-journals-empty">
+                    <p>아직 이 기억에 대해 작성한 저널이 없습니다.</p>
+                    <button
+                      className="linked-journals-cta"
+                      onClick={() => {
+                        onClose()
+                        navigate('/journal')
+                      }}
+                      type="button"
+                    >
+                      <PenLine size={14} />
+                      이 기억에 대해 저널을 써보세요
+                    </button>
+                  </div>
                 )}
               </div>
             )}

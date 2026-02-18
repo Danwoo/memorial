@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Plus, Eye } from 'lucide-react'
 import type { DigestMemory, RelatedMemory } from '../../types'
 
 type MemoryItem = DigestMemory | RelatedMemory
@@ -18,25 +18,38 @@ export function MemoryCard({ memory, onInsert, onCardClick }: MemoryCardProps) {
   return (
     <div
       className="journal-memory-card"
-      onClick={() => onCardClick?.(memory.id)}
       draggable
       onDragStart={handleDragStart}
-      title="클릭하여 상세 보기"
     >
       <div className="journal-memory-card__type">{memory.type}</div>
       <div className="journal-memory-card__title">{memory.title}</div>
       <div className="journal-memory-card__summary">{memory.summary}</div>
-      <button
-        className="journal-memory-card__insert-btn"
-        onClick={(e) => {
-          e.stopPropagation()
-          onInsert(memory)
-        }}
-        title="에디터에 삽입"
-        type="button"
-      >
-        <Plus size={14} />
-      </button>
+      <div className="journal-memory-card__actions">
+        <button
+          className="journal-memory-card__action-btn journal-memory-card__action-btn--insert"
+          onClick={(e) => {
+            e.stopPropagation()
+            onInsert(memory)
+          }}
+          title="에디터에 인용"
+          type="button"
+        >
+          <Plus size={12} />
+          <span>인용하기</span>
+        </button>
+        <button
+          className="journal-memory-card__action-btn journal-memory-card__action-btn--detail"
+          onClick={(e) => {
+            e.stopPropagation()
+            onCardClick?.(memory.id)
+          }}
+          title="상세 보기"
+          type="button"
+        >
+          <Eye size={12} />
+          <span>상세 보기</span>
+        </button>
+      </div>
     </div>
   )
 }

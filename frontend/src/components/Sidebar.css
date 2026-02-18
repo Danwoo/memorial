@@ -115,6 +115,25 @@
   margin-top: var(--space-xs);
 }
 
+.session-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.session-group-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 6px var(--space-md) 2px calc(var(--space-md) + 8px);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.session-group + .session-group {
+  margin-top: var(--space-xs);
+}
+
 .session-item {
   display: flex;
   align-items: center;

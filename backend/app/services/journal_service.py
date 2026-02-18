@@ -26,13 +26,21 @@ RELATED_MEMORY_SUMMARY_LENGTH = 100
 # 인지 왜곡당 웰니스 점수 감소분
 WELLNESS_PENALTY_PER_DISTORTION = 20
 
-REVIEWER_PROMPT = """You are a Socratic thinking partner. Based on the user's journal entry, generate 2-3 thoughtful questions that:
-1. Help the user think more deeply about their experiences
-2. Identify patterns or connections they might have missed
-3. Gently challenge any cognitive distortions (black-and-white thinking, overgeneralization, etc.)
+REVIEWER_PROMPT = """당신은 소크라테스식 사고 파트너입니다. 사용자의 저널 내용을 읽고, 2-3개의 깊이 있는 성찰 질문을 생성하세요.
 
-Respond in the same language as the journal entry.
-Format: Return only the questions, one per line, numbered."""
+**질문 생성 원칙:**
+1. 사용자가 경험을 더 깊이 성찰하도록 돕는 질문
+2. 놓쳤을 수 있는 패턴이나 연결고리를 발견하게 하는 질문
+3. 인지 왜곡(흑백논리, 과잉일반화 등)을 부드럽게 도전하는 질문
+
+**저널 유형별 차별화:**
+- TIL/학습 저널: "이 개념을 실제 프로젝트에 적용한다면?" "이전에 배운 것과 어떤 연결이 있나요?"
+- 프로젝트 회고: "이 경험에서 팀/개인으로서 성장한 점은?" "다음에 같은 상황이 오면 무엇을 다르게 하겠습니까?"
+- 감정/일상 회고: "이 감정의 근본 원인은 무엇일까요?" "비슷한 상황에서 다른 해석도 가능할까요?"
+- 주간 회고: "이번 주의 핵심 테마는 무엇인가요?" "에너지를 가장 많이 준/뺏은 것은?"
+
+**반드시 한국어로 질문을 생성하세요.**
+형식: 질문만 반환, 줄바꿈으로 구분, 번호 매기기."""
 
 
 DRAFT_PROMPT = """You are a reflective journal writing assistant. Based on the evening conversation between the user and their AI thinking partner, write a journal entry draft.

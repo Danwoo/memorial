@@ -98,8 +98,6 @@
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
   padding: var(--space-sm);
-  padding-right: 36px;
-  cursor: pointer;
   transition: border-color var(--transition-fast), transform var(--transition-fast);
 }
 
@@ -108,32 +106,42 @@
   transform: translateY(-1px);
 }
 
-.journal-memory-card__insert-btn {
-  position: absolute;
-  top: var(--space-xs);
-  right: var(--space-xs);
+.journal-memory-card__actions {
+  display: flex;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.journal-memory-card:hover .journal-memory-card__actions {
+  opacity: 1;
+}
+
+.journal-memory-card__action-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
+  gap: 4px;
+  padding: 3px 8px;
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-sm);
   background: var(--bg-secondary);
   color: var(--text-muted);
+  font-size: 0.7rem;
   cursor: pointer;
-  opacity: 0;
   transition: all var(--transition-fast);
 }
 
-.journal-memory-card:hover .journal-memory-card__insert-btn {
-  opacity: 1;
-}
-
-.journal-memory-card__insert-btn:hover {
+.journal-memory-card__action-btn--insert:hover {
   border-color: var(--accent-primary);
   color: var(--accent-primary);
   background: var(--accent-bg);
+}
+
+.journal-memory-card__action-btn--detail:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
 }
 
 .journal-memory-card__type {

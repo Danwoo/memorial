@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
@@ -9,6 +9,41 @@ import {
 import type { User, ChatSessionResponse } from '../types'
 import { fetchChatSessions } from '../api'
 import './Sidebar.css'
+
+interface SessionGroup {
+  label: string
+  sessions: ChatSessionResponse[]
+}
+
+function groupSessions(sessions: ChatSessionResponse[]): SessionGroup[] {
+  const now = new Date()
+  const todayStr = now.toISOString().slice(0, 10)
+
+  const weekAgo = new Date(now)
+  weekAgo.setDate(weekAgo.getDate() - 7)
+  const weekAgoStr = weekAgo.toISOString().slice(0, 10)
+
+  const today: ChatSessionResponse[] = []
+  const thisWeek: ChatSessionResponse[] = []
+  const older: ChatSessionResponse[] = []
+
+  for (const s of sessions) {
+    const dateStr = s.created_at.slice(0, 10)
+    if (dateStr === todayStr) {
+      today.push(s)
+    } else if (dateStr >= weekAgoStr) {
+      thisWeek.push(s)
+    } else {
+      older.push(s)
+    }
+  }
+
+  const groups: SessionGroup[] = []
+  if (today.length > 0) groups.push({ label: '오늘', sessions: today })
+  if (thisWeek.length > 0) groups.push({ label: '이번 주', sessions: thisWeek })
+  if (older.length > 0) groups.push({ label: '이전', sessions: older })
+  return groups
+}
 
 interface NavItem {
   to: string
@@ -69,6 +104,7 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
   }, [loadSessions])
 
   const isOnChatPage = location.pathname.startsWith('/chat')
+  const sessionGroups = useMemo(() => groupSessions(sessions.slice(0, MAX_SIDEBAR_SESSIONS)), [sessions])
 
   /** 아바타 표시 문자: 이름 첫 글자 또는 이메일 첫 글자 */
   const avatarInitial = user?.full_name
@@ -134,19 +170,24 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
 
             {showSessions && (
               <div className="session-list">
-                {sessions.slice(0, MAX_SIDEBAR_SESSIONS).map(session => {
-                  const isActive = location.pathname === `/chat/${session.id}`
-                  return (
-                    <button
-                      key={session.id}
-                      className={`session-item ${isActive ? 'active' : ''}`}
-                      onClick={() => navigate(`/chat/${session.id}`)}
-                      title={session.title}
-                    >
-                      <span className="session-title">{session.title}</span>
-                    </button>
-                  )
-                })}
+                {sessionGroups.map(group => (
+                  <div key={group.label} className="session-group">
+                    <div className="session-group-label">{group.label}</div>
+                    {group.sessions.map(session => {
+                      const isActive = location.pathname === `/chat/${session.id}`
+                      return (
+                        <button
+                          key={session.id}
+                          className={`session-item ${isActive ? 'active' : ''}`}
+                          onClick={() => navigate(`/chat/${session.id}`)}
+                          title={session.title}
+                        >
+                          <span className="session-title">{session.title}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                ))}
               </div>
             )}
           </div>

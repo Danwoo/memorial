@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Brain, Heart, Loader2, Sparkles } from 'lucide-react'
 import { useToast } from '../../contexts/ToastContext'
 import type { ReviewQuestionsResponse, InsightsResponse } from '../../types'
@@ -6,6 +6,8 @@ import { fetchReviewQuestions, fetchInsights } from '../../api'
 import './AIPanel.css'
 
 const MIN_CONTENT_LENGTH_FOR_ANALYSIS = 20
+const AUTO_ANALYSIS_MIN_LENGTH = 100
+const AUTO_ANALYSIS_DEBOUNCE_MS = 5000
 
 interface AIPanelProps {
   content: string
@@ -18,13 +20,16 @@ export function AIPanel({ content, onInsertQuestion }: AIPanelProps) {
   const [questions, setQuestions] = useState<ReviewQuestionsResponse | null>(null)
   const [insights, setInsights] = useState<InsightsResponse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isAutoWaiting, setIsAutoWaiting] = useState(false)
+  const hasAutoTriggeredRef = useRef(false)
 
-  const handleLoadAnalysis = async () => {
+  const handleLoadAnalysis = useCallback(async () => {
     if (!content.trim() || content.trim().length < MIN_CONTENT_LENGTH_FOR_ANALYSIS) {
       toast.info(`분석하려면 ${MIN_CONTENT_LENGTH_FOR_ANALYSIS}자 이상 작성해주세요.`)
       return
     }
     setIsLoading(true)
+    setIsAutoWaiting(false)
     try {
       const [q, i] = await Promise.all([
         fetchReviewQuestions(content),
@@ -38,7 +43,23 @@ export function AIPanel({ content, onInsertQuestion }: AIPanelProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [content, toast])
+
+  // 자동 분석: content 100자 이상 + 5초 디바운스
+  useEffect(() => {
+    if (hasAutoTriggeredRef.current) return
+    if (questions || insights) return
+    if (content.trim().length < AUTO_ANALYSIS_MIN_LENGTH) {
+      setIsAutoWaiting(false)
+      return
+    }
+    setIsAutoWaiting(true)
+    const timer = setTimeout(() => {
+      hasAutoTriggeredRef.current = true
+      handleLoadAnalysis()
+    }, AUTO_ANALYSIS_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [content, questions, insights, handleLoadAnalysis])
 
   const hasResults = questions || insights
 
@@ -70,17 +91,29 @@ export function AIPanel({ content, onInsertQuestion }: AIPanelProps) {
       <div className="ai-sidebar__content">
         {!hasResults && !isLoading ? (
           <div className="ai-sidebar__empty">
-            <button
-              className="ai-sidebar__analyze-btn"
-              onClick={handleLoadAnalysis}
-              type="button"
-            >
-              <Sparkles size={16} />
-              AI 분석 시작
-            </button>
-            <p className="ai-sidebar__hint">
-              글을 작성한 후 AI 분석을 요청하면 성찰 질문과 마음 건강 체크를 받을 수 있습니다.
-            </p>
+            {isAutoWaiting ? (
+              <div className="ai-sidebar__auto-waiting">
+                <Loader2 size={16} className="spin" />
+                <span>내용을 분석하고 있습니다...</span>
+              </div>
+            ) : (
+              <>
+                <button
+                  className="ai-sidebar__analyze-btn"
+                  onClick={handleLoadAnalysis}
+                  type="button"
+                >
+                  <Sparkles size={16} />
+                  AI 분석 시작
+                </button>
+                <p className="ai-sidebar__hint">
+                  글을 작성한 후 AI 분석을 요청하면 성찰 질문과 마음 건강 체크를 받을 수 있습니다.
+                  {content.trim().length < AUTO_ANALYSIS_MIN_LENGTH && (
+                    <><br />100자 이상 작성 시 자동으로 분석이 시작됩니다.</>
+                  )}
+                </p>
+              </>
+            )}
           </div>
         ) : isLoading ? (
           <div className="ai-sidebar__loading">

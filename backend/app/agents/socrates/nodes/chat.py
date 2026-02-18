@@ -18,7 +18,7 @@ from app.services.user_profile_service import get_user_profile
 logger = logging.getLogger(__name__)
 
 # RAG 컨텍스트 검색 설정
-VECTOR_SEARCH_LIMIT = 3
+VECTOR_SEARCH_LIMIT = 5
 VECTOR_SEARCH_THRESHOLD = 0.5
 GRAPH_CONTEXT_LIMIT = 8
 GRAPH_KEYWORD_MIN_LENGTH = 3
@@ -31,6 +31,10 @@ CONTRADICTION_THRESHOLD = 0.4
 MAX_CONTRADICTING_RESULTS = 3
 # 메모리 미리보기 길이
 MEMORY_CONTEXT_PREVIEW_LENGTH = 100
+# 연결 제안 설정
+CONNECTION_SUGGEST_LOW = 0.80
+CONNECTION_SUGGEST_HIGH = 0.92
+CONNECTION_TURN_INTERVAL = 3
 
 # 의도 자동 분류 키워드
 _COUNTER_KEYWORDS = ["반론", "반대", "비판", "다른 관점", "약점", "문제점", "단점", "criticism"]
@@ -103,19 +107,45 @@ async def _search_vector_memories(
             filters=filters,
         )
         if results:
-            formatted = "\n".join(_format_memory_line(memory) for memory in results)
+            formatted = "\n\n".join(_format_memory_line(memory, index=i + 1) for i, memory in enumerate(results))
             return formatted, results
     except Exception:
         logger.exception("Vector search failed")
     return "", []
 
 
-def _format_memory_line(memory: dict) -> str:
-    """메모리 항목을 한 줄 컨텍스트 문자열로 포맷."""
+def _format_memory_line(memory: dict, index: int | None = None) -> str:
+    """메모리 항목을 블록 구분자 포함 컨텍스트 문자열로 포맷."""
     date = memory.get("created_at", "")[:10]
     title = memory.get("title", "Untitled")
     summary = memory.get("summary") or memory.get("content", "")[:MEMORY_CONTEXT_PREVIEW_LENGTH]
-    return f"- [{date}] {title}: {summary}..."
+    if index is not None:
+        return f"--- 기억 #{index} ---\n[{date}] {title}\n{summary}"
+    return f"- [{date}] {title}: {summary}"
+
+
+async def _search_connection_suggestions(
+    query: str,
+    vector_repo: VectorRepository,
+    already_referenced_ids: set,
+    user_id: str | None = None,
+) -> dict | None:
+    """0.80~0.92 유사도 범위에서 이미 참조된 ID를 제외하고 1개 연결 후보 반환."""
+    try:
+        filters = {"user_id": str(user_id)} if user_id else {}
+        results = await vector_repo.similarity_search(
+            query,
+            limit=5,
+            threshold=CONNECTION_SUGGEST_LOW,
+            filters=filters,
+        )
+        for r in results:
+            sim = r.get("similarity", 0)
+            if CONNECTION_SUGGEST_LOW <= sim <= CONNECTION_SUGGEST_HIGH and r.get("id") not in already_referenced_ids:
+                return r
+    except Exception:
+        logger.exception("Connection suggestion search failed")
+    return None
 
 
 async def _fetch_graph_context(query: str, limit: int = GRAPH_CONTEXT_LIMIT) -> str:
@@ -180,6 +210,7 @@ async def prepare_socrates_context(
     messages: list[BaseMessage],
     mode: str | None = None,
     user_id: str | None = None,
+    turn_count: int = 0,
 ) -> tuple[list[BaseMessage], list[dict]]:
     """Socrates용 RAG 컨텍스트가 포함된 LangChain 메시지 리스트 준비.
 
@@ -190,6 +221,7 @@ async def prepare_socrates_context(
     contradicting_memories = ""
     graph_context = ""
     journal_context = ""
+    connection_context = ""
     current_memories: list = []
 
     last_message = messages[-1] if messages else None
@@ -217,6 +249,17 @@ async def prepare_socrates_context(
         if mode == "counter" and current_memories:
             contradicting_memories = await _build_contradiction_context(query, current_memories, user_id)
 
+        # 3턴 간격으로 연결 제안 검색
+        if turn_count > 0 and turn_count % CONNECTION_TURN_INTERVAL == 0:
+            referenced_ids = {m.get("id") for m in current_memories}
+            suggestion = await _search_connection_suggestions(query, vector_repo, referenced_ids, user_id)
+            if suggestion:
+                date = suggestion.get("created_at", "")[:10]
+                title = suggestion.get("title", "Untitled")
+                summary = suggestion.get("summary") or suggestion.get("content", "")[:MEMORY_CONTEXT_PREVIEW_LENGTH]
+                connection_context = f"[{date}] {title}: {summary}"
+                logger.debug("연결 제안 발견: %s", title)
+
     # 사용자 프로필 조회 (개인화된 프롬프트)
     user_profile = None
     if user_id:
@@ -229,6 +272,7 @@ async def prepare_socrates_context(
         contradicting_memories,
         journal_context,
         user_profile,
+        connection_context,
     )
 
     return [SystemMessage(content=system_content), *messages], current_memories
@@ -252,6 +296,7 @@ def _assemble_system_prompt(
     contradicting_memories: str,
     journal_context: str,
     user_profile: dict | None = None,
+    connection_context: str = "",
 ) -> str:
     """시스템 프롬프트에 RAG 컨텍스트 + 사용자 프로필 섹션을 조합."""
     parts = [SOCRATES_BASE_PROMPT, build_profile_section(user_profile), get_mode_prompt(mode)]
@@ -265,6 +310,14 @@ def _assemble_system_prompt(
     for title, content in context_sections:
         if content:
             parts.append(f"\n\n**{title}:**\n{content}")
+
+    if connection_context:
+        parts.append(
+            f"\n\n**연결 제안 (자연스럽게 대화에 녹여서 언급하세요):**\n"
+            f"다음 기억이 현재 대화와 관련될 수 있습니다. 적절한 타이밍에 "
+            f"'예전에 저장하신 내용 중...' 형태로 자연스럽게 연결해주세요:\n"
+            f"{connection_context}"
+        )
 
     return "".join(parts)
 

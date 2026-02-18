@@ -51,6 +51,44 @@
   margin-bottom: var(--space-sm);
 }
 
+/* 빈 채팅 브랜딩 */
+.chat-empty-branding {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+}
+
+.chat-empty-icon {
+  color: var(--accent-primary);
+  opacity: 0.8;
+  margin-bottom: var(--space-sm);
+}
+
+.chat-empty-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.chat-empty-tagline {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.chat-empty-briefing {
+  margin-bottom: var(--space-md);
+  text-align: center;
+}
+
+.chat-empty-briefing p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
 /* 환영 배너 */
 .welcome-banner {
   position: relative;
@@ -168,7 +206,18 @@
 .message {
   display: flex;
   gap: var(--space-md);
-  animation: fadeIn var(--transition-normal) ease-out;
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .message.user {
@@ -296,6 +345,51 @@
 @keyframes pulse {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
+}
+
+/* 타이핑 인디케이터 (bouncing dots) */
+.typing-indicator-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+.typing-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 
 .chat-input-container {
@@ -426,6 +520,20 @@
 
 .chat-references-toggle:hover {
   color: var(--accent-primary-hover);
+}
+
+.chat-references-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0 4px;
 }
 
 .chat-references-list {

@@ -154,6 +154,11 @@ export default function JournalView() {
         content: `# 이번 주 회고\n\n## 잘한 점\n\n\n\n## 아쉬운 점\n\n\n\n## 다음 주 계획\n\n`,
       },
       {
+        id: 'project',
+        label: '프로젝트 회고',
+        content: `# ${todayLabel} 프로젝트 회고\n\n## 프로젝트 개요\n\n\n\n## 잘된 점\n\n\n\n## 개선할 점\n\n\n\n## 다음 단계\n\n`,
+      },
+      {
         id: 'free',
         label: '자유 회고',
         content: `# ${todayLabel} 회고\n\n`,
