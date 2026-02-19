@@ -191,14 +191,25 @@ export default function SettingsView() {
     nudgeSettings.find((n) => n.nudge_type === type)
 
   // ─── 카카오톡 채널 연결 핸들러 ──────────────────────────────────────────
+  const KAKAO_CHANNEL_CHAT_URL = 'https://pf.kakao.com/_NxoGzX/chat'
+
   const handleGenerateLinkCode = async () => {
     try {
       setChannelLoading(true)
       const result = await generateChannelLinkCode()
       setLinkCode(result)
       startCountdown(result.expires_at)
+
+      // 클립보드에 연결 명령어 자동 복사
+      const command = `#연결 ${result.code}`
+      try {
+        await navigator.clipboard.writeText(command)
+        toast.success('연결 코드가 클립보드에 복사되었습니다!')
+      } catch {
+        // 클립보드 실패 시 무시 (수동 복사 안내)
+      }
     } catch {
-      toast.error( '연결 코드 생성에 실패했습니다')
+      toast.error('연결 코드 생성에 실패했습니다')
     } finally {
       setChannelLoading(false)
     }
@@ -603,11 +614,44 @@ export default function SettingsView() {
               </div>
             ) : linkCode ? (
               <div className="channel-link-code">
-                <div className="link-code-display">{linkCode.code}</div>
-                <p className="link-code-instruction">
-                  카카오톡에서 Memoir 채널에 다음 메시지를 보내주세요:
-                </p>
-                <div className="link-code-command">#연결 {linkCode.code}</div>
+                <div className="channel-link-steps">
+                  <div className="link-step">
+                    <span className="link-step-number">1</span>
+                    <div className="link-step-content">
+                      <span className="link-step-label">연결 코드 복사 완료</span>
+                      <div className="link-code-command"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(`#연결 ${linkCode.code}`)
+                            toast.success('클립보드에 복사되었습니다!')
+                          } catch { /* ignore */ }
+                        }}
+                        title="클릭하여 다시 복사"
+                        style={{ cursor: 'pointer' }}
+                      >
+                        #연결 {linkCode.code}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="link-step">
+                    <span className="link-step-number">2</span>
+                    <div className="link-step-content">
+                      <span className="link-step-label">카카오톡에서 붙여넣기</span>
+                      <a
+                        href={KAKAO_CHANNEL_CHAT_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn kakao-connect-btn btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', marginTop: '4px' }}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                          <path d="M12 3C6.477 3 2 6.463 2 10.691c0 2.724 1.8 5.113 4.508 6.458-.199.748-.72 2.713-.826 3.132-.13.525.192.518.405.377.167-.11 2.665-1.81 3.747-2.545.7.1 1.42.152 2.166.152 5.523 0 10-3.463 10-7.574C22 6.463 17.523 3 12 3z"/>
+                        </svg>
+                        카카오톡 채널 열기
+                      </a>
+                    </div>
+                  </div>
+                </div>
                 <span className="link-code-timer">남은 시간: {countdown}</span>
               </div>
             ) : (
@@ -617,8 +661,11 @@ export default function SettingsView() {
                   onClick={handleGenerateLinkCode}
                   disabled={channelLoading}
                 >
-                  {channelLoading ? '생성 중...' : '연결 코드 생성'}
+                  {channelLoading ? '생성 중...' : '카카오톡 채널 연결하기'}
                 </button>
+                <p className="channel-connect-hint">
+                  버튼을 누르면 연결 코드가 자동 복사됩니다
+                </p>
               </div>
             )}
           </div>
