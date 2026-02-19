@@ -1,25 +1,25 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, BookOpen, MessageCircle, PenTool, Network } from 'lucide-react'
 import './LandingPage.css'
 
 const FEATURES = [
   {
-    emoji: '📚',
+    icon: BookOpen,
     title: '읽은 것, 바로 저장',
     desc: '기사, 메모, 생각을 한 곳에 모으면 AI가 알아서 정리해줘요.',
   },
   {
-    emoji: '💬',
+    icon: MessageCircle,
     title: '내 기억과 대화',
     desc: '저장한 내용을 기반으로 AI가 답해줘요. 진짜 나를 아는 비서처럼.',
   },
   {
-    emoji: '✍️',
+    icon: PenTool,
     title: '하루 돌아보기',
     desc: '오늘 하루를 저널로 기록하면, AI가 생각을 정리하는 질문을 던져줘요.',
   },
   {
-    emoji: '🔗',
+    icon: Network,
     title: '연결된 지식 발견',
     desc: '흩어진 기억 사이에서 숨겨진 연결고리를 찾아드려요.',
   },
@@ -72,7 +72,9 @@ export default function LandingPage() {
         <div className="landing-feature-grid">
           {FEATURES.map((f) => (
             <div key={f.title} className="landing-feature-card">
-              <div className="landing-feature-emoji">{f.emoji}</div>
+              <div className="landing-feature-icon">
+                <f.icon size={28} />
+              </div>
               <h3>{f.title}</h3>
               <p>{f.desc}</p>
             </div>
