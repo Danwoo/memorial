@@ -9,11 +9,11 @@ from app.services.korean_tokenizer import tokenize, tokens_to_tsvector_input
 
 logger = logging.getLogger(__name__)
 
-# Weighted RRF 파라미터
-RRF_K = 60
+# Weighted RRF 파라미터 (tune_hybrid_params.py 최적화 결과)
+RRF_K = 10
 WEIGHT_DENSE = 1.0
-WEIGHT_SPARSE = 0.8
-WEIGHT_GRAPH = 0.5
+WEIGHT_SPARSE = 1.2
+WEIGHT_GRAPH = 0.3
 
 # 기본 검색 설정
 DEFAULT_DENSE_LIMIT = 20
