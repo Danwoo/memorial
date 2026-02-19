@@ -12,7 +12,9 @@ from app.agents.state import AgentState
 from app.config.database import get_supabase_client
 from app.config.llm import get_streaming_llm
 from app.repositories.journal_repository import JournalRepository
+from app.repositories.memory_repository import MemoryRepository
 from app.repositories.vector_repository import VectorRepository
+from app.services.hybrid_search_service import HybridSearchService
 from app.services.user_profile_service import get_user_profile
 
 logger = logging.getLogger(__name__)
@@ -91,26 +93,35 @@ async def find_contradicting_memories(query: str, current_memories: list, user_i
     return contradicting[:MAX_CONTRADICTING_RESULTS]
 
 
-async def _search_vector_memories(
+async def _search_hybrid_memories(
     query: str,
     vector_repo: VectorRepository,
     limit: int = VECTOR_SEARCH_LIMIT,
     user_id: str | None = None,
 ) -> tuple[str, list]:
-    """벡터 스토어에서 관련 메모리 검색. (포맷된 텍스트, 원본 결과) 반환."""
+    """하이브리드 검색 (Dense + Sparse + Graph). (포맷된 텍스트, 원본 결과) 반환."""
     try:
-        filters = {"user_id": str(user_id)} if user_id else {}
-        results = await vector_repo.similarity_search(
-            query,
+        if not user_id:
+            return "", []
+
+        from app.config.dependencies import get_graph_repository
+
+        graph_repo = get_graph_repository()
+        db = get_supabase_client()
+        memory_repo = MemoryRepository(db)
+
+        hybrid = HybridSearchService(vector_repo, graph_repo, memory_repo)
+        results = await hybrid.search(
+            user_id=UUID(user_id),
+            query=query,
             limit=limit,
-            threshold=VECTOR_SEARCH_THRESHOLD,
-            filters=filters,
+            dense_threshold=0.0,
         )
         if results:
             formatted = "\n\n".join(_format_memory_line(memory, index=i + 1) for i, memory in enumerate(results))
             return formatted, results
     except Exception:
-        logger.exception("Vector search failed")
+        logger.exception("Hybrid search failed")
     return "", []
 
 
@@ -234,12 +245,12 @@ async def prepare_socrates_context(
         if not mode:
             mode = detect_intent(query)
 
-        context_memories, current_memories = await _search_vector_memories(
+        context_memories, current_memories = await _search_hybrid_memories(
             query,
             vector_repo,
             user_id=user_id,
         )
-        logger.debug("RAG 검색 결과: query=%s, memories=%d개", query[:50], len(current_memories))
+        logger.debug("RAG 하이브리드 검색 결과: query=%s, memories=%d개", query[:50], len(current_memories))
         graph_context = await _fetch_graph_context(query)
 
         if user_id:

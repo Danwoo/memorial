@@ -1,11 +1,15 @@
 import contextlib
+import logging
 from uuid import UUID
 
 from app.repositories.graph_repository import GraphRepository
 from app.repositories.memory_repository import MemoryRepository
 from app.repositories.vector_repository import VectorRepository
 from app.schemas.memory_schema import MemoryInDB, SourceType
+from app.services.korean_tokenizer import tokenize, tokens_to_tsvector_input
 from app.utils.cache import stats_cache, tags_cache
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryService:
@@ -37,7 +41,11 @@ class MemoryService:
             summary=summary,
         )
 
-        await self.vector_repo.save_embedding(memory_id=str(memory.id), content=f"{memory.title}\n\n{memory.content}")
+        embed_text = f"{memory.title}\n\n{memory.content}"
+        await self.vector_repo.save_embedding(memory_id=str(memory.id), content=embed_text)
+
+        # 검색용 토큰 저장 (sparse search)
+        await self._save_search_tokens(str(memory.id), embed_text)
 
         # 통계/태그 캐시 무효화
         stats_cache.invalidate_prefix(f"user:{user_id}")
@@ -105,6 +113,13 @@ class MemoryService:
         if self.graph_repo and relations:
             await self.graph_repo.save_relations(relations)
 
+        # Librarian 처리 후 요약+태그 포함하여 토큰 갱신
+        if success and summary:
+            tags_text = " ".join(tags) if tags else ""
+            entity_names = " ".join(e.get("name", "") for e in (entities or []))
+            token_source = f"{summary} {tags_text} {entity_names}".strip()
+            await self._save_search_tokens(str(memory_id), token_source)
+
         return success
 
     async def update_memory(
@@ -159,6 +174,16 @@ class MemoryService:
         elif action == "remove_tags" and tags:
             return await self.memory_repo.remove_tags_bulk(memory_ids, user_id, tags)
         return 0
+
+    async def _save_search_tokens(self, memory_id: str, text: str) -> None:
+        """텍스트를 형태소 분석하여 search_tokens tsvector에 저장."""
+        try:
+            tokens = tokenize(text)
+            token_string = tokens_to_tsvector_input(tokens)
+            if token_string:
+                await self.memory_repo.update_search_tokens(memory_id, token_string)
+        except Exception:
+            logger.warning("search_tokens 저장 실패: memory_id=%s", memory_id, exc_info=True)
 
     async def delete_memory(self, memory_id: UUID, user_id: UUID) -> bool:
         """Memory 및 연관 그래프 데이터 삭제."""

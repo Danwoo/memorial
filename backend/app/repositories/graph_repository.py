@@ -453,6 +453,116 @@ class GraphRepository:
             logger.exception("Error fetching orphan entities")
             return []
 
+    # ------------------------------------------------------------------
+    # 하이브리드 검색용 그래프 검색 메서드
+    # ------------------------------------------------------------------
+    def _sync_search_entities_by_name(self, query: str, user_id: str) -> list[dict]:
+        """엔티티 이름에 쿼리 키워드가 포함된 엔티티 검색 (동기)."""
+        conn = self._get_conn()
+        # 쿼리를 공백 기준으로 분리해서 각 키워드가 이름에 포함되는지 검사
+        keywords = [kw.strip() for kw in query.split() if len(kw.strip()) >= 1]
+        if not keywords:
+            return []
+
+        all_results: list[dict] = []
+        for keyword in keywords[:5]:  # 최대 5개 키워드
+            q = """
+            MATCH (mem:Memory {user_id: $user_id})-[:MENTIONS]->(e:Entity)
+            WHERE contains(lower(e.name), lower($keyword))
+            RETURN DISTINCT e.name AS name, e.type AS type
+            LIMIT 10
+            """
+            results = self._result_to_dicts(conn.execute(q, {"user_id": user_id, "keyword": keyword}))
+            all_results.extend(results)
+
+        # 중복 제거
+        seen: set[str] = set()
+        unique: list[dict] = []
+        for r in all_results:
+            name = r.get("name", "")
+            if name and name not in seen:
+                seen.add(name)
+                unique.append(r)
+        return unique
+
+    async def search_entities_by_name(self, query: str, user_id: str) -> list[dict]:
+        """엔티티 이름에 쿼리 키워드가 포함된 엔티티 검색."""
+        if not self.db:
+            return []
+        try:
+            return await asyncio.to_thread(self._sync_search_entities_by_name, query, user_id)
+        except Exception:
+            logger.exception("엔티티 이름 검색 실패: query='%s'", query)
+            return []
+
+    def _sync_search_memories_by_entities(self, entity_names: list[str], user_id: str, limit: int) -> list[dict]:
+        """엔티티 이름으로 연결된 메모리 ID 검색 (동기)."""
+        conn = self._get_conn()
+        if not entity_names:
+            return []
+
+        all_memory_ids: list[dict] = []
+        for name in entity_names[:10]:  # 최대 10개 엔티티
+            q = f"""
+            MATCH (mem:Memory {{user_id: $user_id}})-[:MENTIONS]->(e:Entity {{name: $name}})
+            RETURN DISTINCT mem.id AS memory_id
+            LIMIT {max(1, min(limit, 20))}
+            """
+            results = self._result_to_dicts(conn.execute(q, {"user_id": user_id, "name": name}))
+            all_memory_ids.extend(results)
+
+        # 중복 제거 및 빈도순 정렬 (많이 등장하는 메모리가 더 관련성 높음)
+        id_counts: dict[str, int] = {}
+        for r in all_memory_ids:
+            mid = r.get("memory_id", "")
+            if mid:
+                id_counts[mid] = id_counts.get(mid, 0) + 1
+
+        sorted_ids = sorted(id_counts.items(), key=lambda x: x[1], reverse=True)
+        return [{"memory_id": mid, "graph_score": count} for mid, count in sorted_ids[:limit]]
+
+    async def search_memories_by_entities(self, entity_names: list[str], user_id: str, limit: int = 10) -> list[dict]:
+        """엔티티 이름으로 연결된 메모리 ID 검색. graph_score는 매칭된 엔티티 수."""
+        if not self.db:
+            return []
+        try:
+            return await asyncio.to_thread(self._sync_search_memories_by_entities, entity_names, user_id, limit)
+        except Exception:
+            logger.exception("엔티티 기반 메모리 검색 실패")
+            return []
+
+    async def search_memories_via_graph(self, query: str, user_id: str, limit: int = 10) -> list[dict]:
+        """쿼리 → 엔티티 이름 매칭 → MENTIONS 엣지 → 메모리 ID 반환.
+
+        그래프 기반 검색 파이프라인:
+        1. 쿼리 키워드로 엔티티 이름 CONTAINS 매칭
+        2. 매칭된 엔티티의 관련 엔티티 1-hop 탐색
+        3. 모든 엔티티에서 MENTIONS 역방향 탐색으로 메모리 ID 수집
+        """
+        if not self.db:
+            return []
+
+        try:
+            # 1단계: 키워드로 엔티티 검색
+            matched_entities = await self.search_entities_by_name(query, user_id)
+            entity_names = [e["name"] for e in matched_entities]
+
+            if not entity_names:
+                return []
+
+            # 2단계: 1-hop 관련 엔티티 추가
+            expanded_names = set(entity_names)
+            for name in entity_names[:3]:  # 상위 3개만 확장
+                related = await self.get_related_context(name, depth=1)
+                for r in related[:3]:
+                    expanded_names.add(r.get("name", ""))
+
+            # 3단계: 엔티티 → 메모리 매핑
+            return await self.search_memories_by_entities(list(expanded_names), user_id, limit)
+        except Exception:
+            logger.exception("그래프 기반 메모리 검색 실패: query='%s'", query)
+            return []
+
     async def get_graph_data(self, limit: int = 100, user_id: str | None = None) -> dict[str, list]:
         """시각화용 그래프 데이터 조회. D3 호환 {nodes, links} 포맷 반환.
 

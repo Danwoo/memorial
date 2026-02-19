@@ -22,6 +22,7 @@ from app.services.duplicate_service import DuplicateService
 from app.services.export_service import ExportService
 from app.services.graph_insight_service import GraphInsightService
 from app.services.graph_service import GraphService
+from app.services.hybrid_search_service import HybridSearchService
 from app.services.insight_service import InsightService
 from app.services.journal_service import JournalService
 from app.services.kakao_channel_service import KakaoChannelService
@@ -94,9 +95,19 @@ def get_chat_service(
 def get_search_service(
     vector_repo: VectorRepository = Depends(get_vector_repository),
     memory_repo: MemoryRepository = Depends(get_memory_repository),
+    graph_repo: GraphRepository = Depends(get_graph_repository),
 ) -> SearchService:
     """SearchService 인스턴스 생성."""
-    return SearchService(vector_repo, memory_repo)
+    return SearchService(vector_repo, memory_repo, graph_repo)
+
+
+def get_hybrid_search_service(
+    vector_repo: VectorRepository = Depends(get_vector_repository),
+    graph_repo: GraphRepository = Depends(get_graph_repository),
+    memory_repo: MemoryRepository = Depends(get_memory_repository),
+) -> HybridSearchService:
+    """HybridSearchService 인스턴스 생성."""
+    return HybridSearchService(vector_repo, graph_repo, memory_repo)
 
 
 def get_stats_service(

@@ -193,6 +193,15 @@ class MemoryRepository:
         result = await asyncio.to_thread(self._delete_bulk, str_ids, str(user_id))
         return len(result.data) if result.data else 0
 
+    async def update_search_tokens(self, memory_id: str, token_string: str) -> bool:
+        """search_tokens tsvector 컬럼 업데이트. token_string은 공백 구분 토큰."""
+        try:
+            await asyncio.to_thread(self._update_search_tokens, memory_id, token_string)
+            return True
+        except Exception:
+            logger.warning("search_tokens 업데이트 실패: memory_id=%s", memory_id)
+            return False
+
     async def add_tags_bulk(self, memory_ids: list[UUID], user_id: UUID, tags: list[str]) -> int:
         """여러 Memory에 태그 추가 (기존 태그에 합집합)."""
         str_ids = [str(mid) for mid in memory_ids]
@@ -301,6 +310,16 @@ class MemoryRepository:
 
     def _select_tags_for_ids(self, memory_ids: list[str], user_id: str):
         return self.db.table("memories").select("id,tags").in_("id", memory_ids).eq("user_id", user_id).execute()
+
+    def _update_search_tokens(self, memory_id: str, token_string: str):
+        """search_tokens를 SQL RPC를 통해 업데이트. to_tsvector('simple', ...) 사용."""
+        self.db.rpc(
+            "update_search_tokens",
+            {
+                "p_memory_id": memory_id,
+                "p_tokens": token_string,
+            },
+        ).execute()
 
     # ------------------------------------------------------------------
     # 변환

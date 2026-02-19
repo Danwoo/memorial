@@ -58,6 +58,24 @@ class VectorRepository:
         response = await asyncio.to_thread(self._rpc_match, rpc_params)
         return response.data
 
+    async def sparse_search(
+        self,
+        query_tokens: str,
+        user_id: str,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        """tsvector 기반 키워드 검색. kiwipiepy 토큰화된 문자열을 입력받는다."""
+        if not query_tokens or not query_tokens.strip():
+            return []
+
+        rpc_params = {
+            "query_tokens": query_tokens,
+            "p_user_id": user_id,
+            "match_count": limit,
+        }
+        response = await asyncio.to_thread(self._rpc_sparse, rpc_params)
+        return response.data if response.data else []
+
     # ------------------------------------------------------------------
     # 동기 헬퍼 (스레드에서 실행)
     # ------------------------------------------------------------------
@@ -67,3 +85,6 @@ class VectorRepository:
 
     def _rpc_match(self, rpc_params: dict):
         return self.db.rpc("match_memories", rpc_params).execute()
+
+    def _rpc_sparse(self, rpc_params: dict):
+        return self.db.rpc("sparse_search", rpc_params).execute()

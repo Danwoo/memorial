@@ -1,25 +1,33 @@
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
+from app.repositories.graph_repository import GraphRepository
 from app.repositories.memory_repository import MemoryRepository
 from app.repositories.vector_repository import VectorRepository
+from app.services.hybrid_search_service import HybridSearchService
 from app.utils import parse_iso_datetime
 
-# 검색 결과에서 content 필드의 최대 미리보기 길이
+logger = logging.getLogger(__name__)
+
 SEARCH_CONTENT_PREVIEW_LENGTH = 500
-# 벡터 검색 시 클라이언트 측 필터링 여유분 배수
 SEARCH_OVERSAMPLE_FACTOR = 2
-# 관련 메모리 검색 기본 유사도 임계값
 RELATED_SIMILARITY_THRESHOLD = 0.3
 
 
 class SearchService:
-    """시맨틱 검색 및 추천 비즈니스 로직."""
+    """시맨틱 검색 및 추천 비즈니스 로직. 하이브리드 검색을 기본 사용."""
 
-    def __init__(self, vector_repo: VectorRepository, memory_repo: MemoryRepository | None = None):
+    def __init__(
+        self,
+        vector_repo: VectorRepository,
+        memory_repo: MemoryRepository | None = None,
+        graph_repo: GraphRepository | None = None,
+    ):
         self.vector_repo = vector_repo
         self.memory_repo = memory_repo
+        self.hybrid = HybridSearchService(vector_repo, graph_repo, memory_repo)
 
     async def search(
         self,
@@ -31,32 +39,33 @@ class SearchService:
         days: int | None = None,
         tags: list[str] | None = None,
     ) -> dict[str, Any]:
-        """필터링 지원 시맨틱 검색. 검색 결과와 적용된 필터 반환."""
-        filters: dict[str, Any] = {"user_id": str(user_id)}
+        """하이브리드 검색 (Dense + Sparse + Graph + RRF)."""
         filters_applied: dict[str, Any] = {}
 
         if source_type:
-            filters["source_type"] = source_type
             filters_applied["source_type"] = source_type
-
         if days:
             filters_applied["days"] = days
-
         if tags:
             filters_applied["tags"] = tags
 
-        # 클라이언트 측 필터링 여유분을 고려하여 배수 조회
-        results = await self.vector_repo.similarity_search(
+        # 하이브리드 검색 실행 (threshold=0.0으로 전체 결과 가져온 후 클라이언트 필터링)
+        raw_results = await self.hybrid.search(
+            user_id=user_id,
             query=query,
             limit=limit * SEARCH_OVERSAMPLE_FACTOR,
-            threshold=threshold,
-            filters=filters,
+            dense_threshold=0.0,
         )
 
+        # 클라이언트 측 필터링
         filtered_results = []
         now = datetime.now(UTC)
 
-        for r in results:
+        for r in raw_results:
+            # source_type 필터
+            if source_type and r.get("source_type") != source_type:
+                continue
+
             # 기간 필터
             if days:
                 created_at_str = r.get("created_at")
@@ -78,10 +87,12 @@ class SearchService:
                 {
                     "id": str(r.get("id", "")),
                     "title": r.get("title", "Untitled"),
-                    "content": r.get("content", "")[:SEARCH_CONTENT_PREVIEW_LENGTH],
+                    "content": (r.get("content") or "")[:SEARCH_CONTENT_PREVIEW_LENGTH],
                     "summary": r.get("summary"),
                     "source_type": r.get("source_type", "NOTE"),
-                    "similarity": r.get("similarity", 0),
+                    "similarity": r.get("similarity", r.get("hybrid_score", 0)),
+                    "hybrid_score": r.get("hybrid_score", 0),
+                    "search_sources": r.get("search_sources", []),
                     "created_at": r.get("created_at"),
                     "tags": r.get("tags"),
                 }
@@ -120,7 +131,6 @@ class SearchService:
             filters={"user_id": str(user_id)},
         )
 
-        # 원본 Memory 제외
         related = []
         for item in similar:
             if str(item.get("id")) != memory_id:
