@@ -17,12 +17,20 @@ DISCONNECT_COMMAND = "#해제"
 HELP_COMMAND = "#도움말"
 
 HELP_TEXT = (
-    "Memoir 사용법\n\n"
-    "- URL 전송: 웹 페이지를 Memoir에 저장합니다\n"
-    "- 텍스트 전송: 노트로 저장합니다\n"
-    "- #연결 MEMOIR-XXXXXX: 계정을 연결합니다\n"
-    "- #해제: 채널 연결을 해제합니다\n"
-    "- #도움말: 이 안내를 표시합니다"
+    "Memoir AI 카카오톡 가이드\n"
+    "━━━━━━━━━━━━━━━\n\n"
+    "[기억 저장하기]\n"
+    "URL 보내기 → 웹 페이지를 자동 저장\n"
+    "예) https://news.example.com/article\n\n"
+    "텍스트 보내기 → 메모로 저장\n"
+    "예) 오늘 회의에서 Q3 매출 목표 15% 상향 결정\n\n"
+    "[명령어]\n"
+    "#도움말 → 이 안내 표시\n"
+    "#연결 MEMOIR-XXXXXX → 계정 연결\n"
+    "#해제 → 채널 연결 해제\n\n"
+    "━━━━━━━━━━━━━━━\n"
+    "저장된 기억은 memoir-knowledge.vercel.app 에서\n"
+    "AI 검색, 지식 그래프, 인사이트로 활용할 수 있습니다."
 )
 
 # 연결 코드 유효 시간
@@ -181,7 +189,11 @@ class KakaoChannelService:
         ).execute()
 
         return KakaoSkillResponse.simple_text(
-            "계정 연결이 완료되었습니다! 이제 URL이나 텍스트를 보내면 Memoir에 자동 저장됩니다."
+            "계정 연결 완료!\n\n"
+            "이제 이 채팅에서:\n"
+            "- URL을 보내면 → 웹 페이지 자동 저장\n"
+            "- 텍스트를 보내면 → 메모로 저장\n\n"
+            "사용법이 궁금하면 #도움말 을 입력하세요."
         )
 
     def _handle_disconnect(self, bot_user_key: str) -> KakaoSkillResponse:
@@ -206,10 +218,18 @@ class KakaoChannelService:
                 source_url=processed.get("source_url"),
             )
             title = processed["title"][:KAKAO_TITLE_MAX_LENGTH]
-            return KakaoSkillResponse.simple_text(f"저장 완료! '{title}'이(가) Memoir에 추가되었습니다.")
+            return KakaoSkillResponse.simple_text(
+                f"웹 페이지 저장 완료!\n\n제목: {title}\nmemoir-knowledge.vercel.app 에서 확인하세요."
+            )
         except Exception:
             logger.exception("Failed to save URL memory from Kakao: %s", url)
-            return KakaoSkillResponse.simple_text("URL 저장에 실패했습니다. 잠시 후 다시 시도해주세요.")
+            return KakaoSkillResponse.simple_text(
+                "URL 저장에 실패했습니다.\n\n"
+                "가능한 원인:\n"
+                "- URL이 올바르지 않음\n"
+                "- 접근이 제한된 페이지\n\n"
+                "잠시 후 다시 시도해주세요."
+            )
 
     async def _save_text_memory(self, text: str, user_id: str) -> KakaoSkillResponse:
         """일반 텍스트를 노트 Memory로 저장."""
@@ -223,17 +243,22 @@ class KakaoChannelService:
                 source_url=None,
             )
             preview = text[:KAKAO_PREVIEW_MAX_LENGTH] + "..." if len(text) > KAKAO_PREVIEW_MAX_LENGTH else text
-            return KakaoSkillResponse.simple_text(f"메모 저장 완료! '{preview}'이(가) Memoir에 추가되었습니다.")
+            return KakaoSkillResponse.simple_text(
+                f"메모 저장 완료!\n\n내용: {preview}\nmemoir-knowledge.vercel.app 에서 확인하세요."
+            )
         except Exception:
             logger.exception("Failed to save text memory from Kakao")
-            return KakaoSkillResponse.simple_text("메모 저장에 실패했습니다. 잠시 후 다시 시도해주세요.")
+            return KakaoSkillResponse.simple_text("메모 저장에 실패했습니다.\n잠시 후 다시 시도해주세요.")
 
     @staticmethod
     def _build_link_required_response() -> KakaoSkillResponse:
         return KakaoSkillResponse.simple_text(
-            "Memoir 계정과 연결되지 않았습니다.\n\n"
-            "1. memoir.dev 에서 Settings 페이지로 이동\n"
-            "2. '카카오톡 채널 연결' 에서 연결 코드 생성\n"
-            "3. 이 채팅에서 '#연결 MEMOIR-XXXXXX' 입력\n\n"
-            "도움말: #도움말"
+            "Memoir 계정 연결이 필요합니다.\n\n"
+            "[연결 방법]\n"
+            "1. memoir-knowledge.vercel.app 접속\n"
+            "2. 로그인 → 설정(Settings) 페이지\n"
+            "3. '카카오톡 채널 연결'에서 연결 코드 생성\n"
+            "4. 이 채팅에 '#연결 MEMOIR-XXXXXX' 입력\n\n"
+            "연결 후 URL이나 텍스트를 보내면\n"
+            "Memoir에 자동 저장됩니다."
         )

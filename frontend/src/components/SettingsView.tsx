@@ -737,7 +737,15 @@ export default function SettingsView() {
               </div>
             </div>
             <div className="provider-actions">
-              <span className="status-badge upcoming">준비 중</span>
+              <a
+                href="https://github.com/Danwoo/memorial/tree/main/extension"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="status-badge connected"
+                style={{ textDecoration: 'none', cursor: 'pointer' }}
+              >
+                설치 가이드
+              </a>
             </div>
           </div>
         </div>
