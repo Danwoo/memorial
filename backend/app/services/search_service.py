@@ -57,6 +57,8 @@ class SearchService:
             dense_threshold=0.0,
         )
 
+        logger.info("검색 raw 결과: %d건 (query=%r)", len(raw_results), query[:50])
+
         # 클라이언트 측 필터링
         filtered_results = []
         now = datetime.now(UTC)
@@ -100,6 +102,8 @@ class SearchService:
 
             if len(filtered_results) >= limit:
                 break
+
+        logger.info("검색 필터링 후: %d건 (filters=%s)", len(filtered_results), filters_applied)
 
         return {
             "query": query,

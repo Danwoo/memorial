@@ -1,10 +1,13 @@
 import asyncio
+import logging
 from typing import Any
 
 from langchain_openai import OpenAIEmbeddings
 from supabase import Client
 
 from app.config.settings import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 class VectorRepository:
@@ -56,7 +59,9 @@ class VectorRepository:
         }
 
         response = await asyncio.to_thread(self._rpc_match, rpc_params)
-        return response.data
+        results = response.data or []
+        logger.debug("Dense search 결과: %d건 (threshold=%.2f)", len(results), threshold)
+        return results
 
     async def sparse_search(
         self,

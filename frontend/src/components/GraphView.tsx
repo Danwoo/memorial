@@ -240,7 +240,7 @@ export default function GraphView() {
     const label = (node.name || node.id).substring(0, 30)
     const sprite = new SpriteText(label)
     sprite.color = bgColor === '#1a1a1a' ? '#f0f0f0' : '#1a1a1a'
-    sprite.textHeight = Math.max(2.0, size * 0.7)
+    sprite.textHeight = Math.max(4.0, size * 0.7)
     sprite.backgroundColor = bgColor === '#1a1a1a' ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.92)'
     sprite.padding = [0.8, 1.5] as unknown as number
     sprite.borderRadius = 1.5

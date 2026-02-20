@@ -75,6 +75,14 @@ class HybridSearchService:
         if enable_graph and self.graph_repo:
             graph_results = await self._graph_search(query, user_id_str)
 
+        logger.info(
+            "하이브리드 검색 축별 결과 — dense=%d, sparse=%d, graph=%d (query=%r)",
+            len(dense_results),
+            len(sparse_results),
+            len(graph_results),
+            query[:50],
+        )
+
         # 4. Weighted RRF fusion
         fused = self._rrf_fusion(dense_results, sparse_results, graph_results)
 
