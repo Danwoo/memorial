@@ -2,7 +2,6 @@ import logging
 from dataclasses import dataclass
 
 from app.config.database import get_supabase_client
-from app.config.dependencies import get_graph_repository
 from app.repositories.graph_repository import GraphRepository
 from app.repositories.journal_repository import JournalRepository
 from app.repositories.memory_repository import MemoryRepository
@@ -31,6 +30,9 @@ def get_agent_container() -> AgentServiceContainer:
     memory_repo = MemoryRepository(db)
     vector_repo = VectorRepository(db)
     journal_repo = JournalRepository(db)
+    # 순환 import 방지: dependencies.py가 아닌 직접 lazy import
+    from app.config.dependencies import get_graph_repository
+
     graph_repo = get_graph_repository()
     hybrid_search = HybridSearchService(vector_repo, graph_repo, memory_repo)
     memory_service = MemoryService(memory_repo, vector_repo, graph_repo)

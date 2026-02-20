@@ -162,7 +162,7 @@ class TestJournalService:
 
     def test_detect_cognitive_distortions_none(self, journal_service):
         """인지 왜곡이 없는 텍스트에서 빈 결과 반환"""
-        content = "오늘 산책을 하며 좋은 시간을 보냈다."
+        content = "공원에서 산책을 하며 좋은 시간을 보냈다."
 
         result = journal_service.detect_cognitive_distortions(content)
 
