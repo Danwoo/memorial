@@ -5,6 +5,16 @@ from supabase import Client
 
 from app.config.database import get_supabase_client
 
+# ─── DI 구조 설명 ──────────────────────────────────────────────────────────
+# FastAPI의 Depends 시스템을 활용한 의존성 주입 컨테이너.
+#
+# 계층 구조:
+#   DB Client (Supabase) → Repository → Service → Router
+#
+# 각 팩토리 함수는 FastAPI 라우터에서 Depends()로 주입됨.
+# Repository는 DB 클라이언트를 받고, Service는 Repository를 받는 구조.
+# GraphRepository만 @lru_cache로 싱글톤 관리 (KuzuDB 초기화 비용 절감).
+# ────────────────────────────────────────────────────────────────────────────
 # --- Repositories ---
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.graph_repository import GraphRepository
