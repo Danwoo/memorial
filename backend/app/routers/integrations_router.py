@@ -301,6 +301,33 @@ def get_channel_status(
         raise HTTPException(status_code=500, detail="Failed to get channel status") from e
 
 
+@router.post("/kakao/channel/link-by-token")
+def complete_link_by_token(
+    body: dict,
+    user_id: UUID = Depends(get_user_id),
+    channel_service: KakaoChannelService = Depends(get_kakao_channel_service),
+):
+    """카카오 채널 토큰 기반 연결 완료. 카카오톡에서 받은 링크로 웹에서 호출."""
+    token = body.get("token")
+    if not token:
+        raise HTTPException(status_code=400, detail="token is required")
+    try:
+        result = channel_service.complete_link_by_token(token, str(user_id))
+        if not result["success"]:
+            error_messages = {
+                "invalid_token": "유효하지 않은 토큰입니다.",
+                "already_used": "이미 사용된 토큰입니다.",
+                "expired": "만료된 토큰입니다. 카카오톡에서 다시 메시지를 보내주세요.",
+            }
+            raise HTTPException(status_code=400, detail=error_messages.get(result["error"], "연결에 실패했습니다."))
+        return {"success": True, "message": "카카오톡 채널이 연결되었습니다!"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to complete link by token")
+        raise HTTPException(status_code=500, detail="Failed to complete link") from e
+
+
 @router.delete("/kakao/channel/disconnect")
 def disconnect_channel(
     user_id: UUID = Depends(get_user_id),

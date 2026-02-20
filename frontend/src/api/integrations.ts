@@ -98,3 +98,10 @@ export async function getChannelStatus(): Promise<ChannelStatus> {
 export async function disconnectChannel(): Promise<void> {
   return del('/integrations/kakao/channel/disconnect')
 }
+
+// 카카오톡 채널 토큰 기반 자동 연결 (카카오 봇에서 받은 링크로 호출)
+export async function completeKakaoLinkByToken(
+  token: string,
+): Promise<{ success: boolean; message: string }> {
+  return post<{ success: boolean; message: string }>('/integrations/kakao/channel/link-by-token', { token })
+}

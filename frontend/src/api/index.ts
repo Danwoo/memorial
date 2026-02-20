@@ -13,5 +13,5 @@ export { fetchStats, fetchDigest, fetchStreak, fetchActivity, fetchBriefing, fet
 export { fetchGraph, fetchGraphInsights, createGraphRelation } from './graph'
 export { fetchTimeline } from './timeline'
 export { fetchCurrentUser } from './auth'
-export { getIntegrationStatus, storeProviderToken, getBotSettings, updateBotSettings, generateChannelLinkCode, getChannelStatus, disconnectChannel } from './integrations'
+export { getIntegrationStatus, storeProviderToken, getBotSettings, updateBotSettings, generateChannelLinkCode, getChannelStatus, disconnectChannel, completeKakaoLinkByToken } from './integrations'
 export type { ProviderInfo, IntegrationStatus, DeliveryLogEntry, BotSettings, BotSettingsUpdate, ChannelLinkCode, ChannelStatus } from './integrations'

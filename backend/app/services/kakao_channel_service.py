@@ -82,7 +82,7 @@ class KakaoChannelService:
 
         user_id = self.lookup_user_id(bot_user_key)
         if not user_id:
-            return self._build_link_required_response()
+            return self._build_link_required_response(bot_user_key, plusfriend_user_key)
 
         if utterance == DISCONNECT_COMMAND:
             return self._handle_disconnect(bot_user_key)
@@ -250,15 +250,83 @@ class KakaoChannelService:
             logger.exception("Failed to save text memory from Kakao")
             return KakaoSkillResponse.simple_text("메모 저장에 실패했습니다.\n잠시 후 다시 시도해주세요.")
 
-    @staticmethod
-    def _build_link_required_response() -> KakaoSkillResponse:
+    def _build_link_required_response(
+        self,
+        bot_user_key: str,
+        plusfriend_user_key: str | None = None,
+    ) -> KakaoSkillResponse:
+        """미연결 사용자에게 연결 링크 제공."""
+        token = self._generate_link_token(bot_user_key, plusfriend_user_key)
+        link_url = f"https://memoir-knowledge.vercel.app/kakao-link?token={token}"
         return KakaoSkillResponse.simple_text(
             "Memoir 계정 연결이 필요합니다.\n\n"
-            "[연결 방법]\n"
-            "1. memoir-knowledge.vercel.app 접속\n"
-            "2. 로그인 → 설정(Settings) 페이지\n"
-            "3. '카카오톡 채널 연결'에서 연결 코드 생성\n"
-            "4. 이 채팅에 '#연결 MEMOIR-XXXXXX' 입력\n\n"
+            "아래 링크를 눌러 연결하세요:\n"
+            f"{link_url}\n\n"
             "연결 후 URL이나 텍스트를 보내면\n"
             "Memoir에 자동 저장됩니다."
         )
+
+    def _generate_link_token(
+        self,
+        bot_user_key: str,
+        plusfriend_user_key: str | None = None,
+    ) -> str:
+        """봇 사용자용 연결 토큰 생성. 기존 유효 토큰이 있으면 재사용."""
+        existing = (
+            self.db.table("pending_kakao_link_tokens")
+            .select("token, expires_at")
+            .eq("bot_user_key", bot_user_key)
+            .eq("used", False)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if existing.data:
+            expires_at = datetime.fromisoformat(existing.data[0]["expires_at"].replace("Z", "+00:00"))
+            if datetime.now(UTC) < expires_at:
+                return existing.data[0]["token"]
+
+        token = secrets.token_urlsafe(24)
+        self.db.table("pending_kakao_link_tokens").insert(
+            {
+                "token": token,
+                "bot_user_key": bot_user_key,
+                "plusfriend_user_key": plusfriend_user_key,
+            }
+        ).execute()
+        return token
+
+    def complete_link_by_token(self, token: str, user_id: str) -> dict:
+        """토큰으로 채널 연결 완료. 프론트엔드에서 호출."""
+        result = (
+            self.db.table("pending_kakao_link_tokens")
+            .select("bot_user_key, plusfriend_user_key, expires_at, used")
+            .eq("token", token)
+            .limit(1)
+            .execute()
+        )
+        if not result.data:
+            return {"success": False, "error": "invalid_token"}
+
+        row = result.data[0]
+        if row["used"]:
+            return {"success": False, "error": "already_used"}
+
+        expires_at = datetime.fromisoformat(row["expires_at"].replace("Z", "+00:00"))
+        if datetime.now(UTC) > expires_at:
+            return {"success": False, "error": "expired"}
+
+        self.db.table("pending_kakao_link_tokens").update({"used": True}).eq("token", token).execute()
+
+        self.db.table("kakao_channel_mappings").upsert(
+            {
+                "user_id": user_id,
+                "bot_user_key": row["bot_user_key"],
+                "plusfriend_user_key": row["plusfriend_user_key"],
+                "channel_status": "active",
+                "updated_at": "now()",
+            },
+            on_conflict="bot_user_key",
+        ).execute()
+
+        return {"success": True}

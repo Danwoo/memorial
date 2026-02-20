@@ -10,6 +10,7 @@ import AppLayout from './components/AppLayout'
 import DemoLayout from './components/DemoLayout'
 import AuthView from './components/AuthView'
 import ChatView from './components/ChatView'
+import KakaoLinkPage from './components/KakaoLinkPage'
 import LandingPage from './components/LandingPage'
 import './App.css'
 
@@ -53,6 +54,7 @@ function App() {
             {/* 공개 라우트 */}
             <Route path="/" element={<RootRoute />} />
             <Route path="/login" element={<AuthView />} />
+            <Route path="/kakao-link" element={<KakaoLinkPage />} />
 
             {/* 데모 모드 — 인증 불필요, 읽기 전용 */}
             <Route path="demo" element={<DemoLayout />}>
