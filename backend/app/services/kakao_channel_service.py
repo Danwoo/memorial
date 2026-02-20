@@ -139,7 +139,7 @@ class KakaoChannelService:
         """채널 매핑 소프트 삭제 (status를 inactive로 변경)."""
         result = (
             self.db.table("kakao_channel_mappings")
-            .update({"channel_status": "inactive", "updated_at": "now()"})
+            .update({"channel_status": "inactive", "updated_at": datetime.now(UTC).isoformat()})
             .eq("user_id", user_id)
             .eq("channel_status", "active")
             .execute()
@@ -183,7 +183,7 @@ class KakaoChannelService:
                 "bot_user_key": bot_user_key,
                 "plusfriend_user_key": plusfriend_user_key,
                 "channel_status": "active",
-                "updated_at": "now()",
+                "updated_at": datetime.now(UTC).isoformat(),
             },
             on_conflict="bot_user_key",
         ).execute()
@@ -198,9 +198,9 @@ class KakaoChannelService:
 
     def _handle_disconnect(self, bot_user_key: str) -> KakaoSkillResponse:
         """채팅 명령으로 채널 연결 해제."""
-        self.db.table("kakao_channel_mappings").update({"channel_status": "inactive", "updated_at": "now()"}).eq(
-            "bot_user_key", bot_user_key
-        ).execute()
+        self.db.table("kakao_channel_mappings").update(
+            {"channel_status": "inactive", "updated_at": datetime.now(UTC).isoformat()}
+        ).eq("bot_user_key", bot_user_key).execute()
 
         return KakaoSkillResponse.simple_text(
             "채널 연결이 해제되었습니다. 다시 연결하려면 Settings에서 새 연결 코드를 생성해주세요."
@@ -324,7 +324,7 @@ class KakaoChannelService:
                 "bot_user_key": row["bot_user_key"],
                 "plusfriend_user_key": row["plusfriend_user_key"],
                 "channel_status": "active",
-                "updated_at": "now()",
+                "updated_at": datetime.now(UTC).isoformat(),
             },
             on_conflict="bot_user_key",
         ).execute()

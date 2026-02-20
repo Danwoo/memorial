@@ -102,15 +102,6 @@ def get_chat_service(
     return ChatService(chat_repo)
 
 
-def get_search_service(
-    vector_repo: VectorRepository = Depends(get_vector_repository),
-    memory_repo: MemoryRepository = Depends(get_memory_repository),
-    graph_repo: GraphRepository = Depends(get_graph_repository),
-) -> SearchService:
-    """SearchService 인스턴스 생성."""
-    return SearchService(vector_repo, memory_repo, graph_repo)
-
-
 def get_hybrid_search_service(
     vector_repo: VectorRepository = Depends(get_vector_repository),
     graph_repo: GraphRepository = Depends(get_graph_repository),
@@ -118,6 +109,16 @@ def get_hybrid_search_service(
 ) -> HybridSearchService:
     """HybridSearchService 인스턴스 생성."""
     return HybridSearchService(vector_repo, graph_repo, memory_repo)
+
+
+def get_search_service(
+    vector_repo: VectorRepository = Depends(get_vector_repository),
+    memory_repo: MemoryRepository = Depends(get_memory_repository),
+    graph_repo: GraphRepository = Depends(get_graph_repository),
+    hybrid_search: HybridSearchService = Depends(get_hybrid_search_service),
+) -> SearchService:
+    """SearchService 인스턴스 생성."""
+    return SearchService(vector_repo, memory_repo, graph_repo, hybrid_search=hybrid_search)
 
 
 def get_stats_service(
@@ -172,10 +173,12 @@ def get_kakao_channel_service(
 
 
 def get_export_service(
-    db: Client = Depends(get_db),
+    memory_repo: MemoryRepository = Depends(get_memory_repository),
+    journal_repo: JournalRepository = Depends(get_journal_repository),
+    chat_repo: ChatRepository = Depends(get_chat_repository),
 ) -> ExportService:
     """ExportService 인스턴스 생성."""
-    return ExportService(db)
+    return ExportService(memory_repo, journal_repo, chat_repo)
 
 
 def get_insight_service(

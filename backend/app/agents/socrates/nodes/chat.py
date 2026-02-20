@@ -3,16 +3,15 @@ from uuid import UUID
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
+from app.agents.container import get_agent_container
 from app.agents.prompts import (
     SOCRATES_BASE_PROMPT,
     build_profile_section,
     get_mode_prompt,
 )
 from app.agents.state import AgentState
-from app.config.database import get_supabase_client
 from app.config.llm import get_streaming_llm
 from app.repositories.journal_repository import JournalRepository
-from app.repositories.memory_repository import MemoryRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.hybrid_search_service import HybridSearchService
 from app.services.user_profile_service import get_user_profile
@@ -62,9 +61,15 @@ def detect_intent(message: str) -> str | None:
     return None
 
 
-async def find_contradicting_memories(query: str, current_memories: list, user_id: str | None = None) -> list:
+async def find_contradicting_memories(
+    query: str,
+    current_memories: list,
+    user_id: str | None = None,
+    vector_repo: VectorRepository | None = None,
+) -> list:
     """현재 주제와 반대되는 메모리를 벡터 검색으로 탐색."""
-    vector_repo = VectorRepository(get_supabase_client())
+    if not vector_repo:
+        vector_repo = get_agent_container().vector_repo
     filters = {"user_id": str(user_id)} if user_id else {}
 
     contradiction_queries = [
@@ -95,7 +100,7 @@ async def find_contradicting_memories(query: str, current_memories: list, user_i
 
 async def _search_hybrid_memories(
     query: str,
-    vector_repo: VectorRepository,
+    hybrid_search: HybridSearchService,
     limit: int = VECTOR_SEARCH_LIMIT,
     user_id: str | None = None,
 ) -> tuple[str, list]:
@@ -104,14 +109,7 @@ async def _search_hybrid_memories(
         if not user_id:
             return "", []
 
-        from app.config.dependencies import get_graph_repository
-
-        graph_repo = get_graph_repository()
-        db = get_supabase_client()
-        memory_repo = MemoryRepository(db)
-
-        hybrid = HybridSearchService(vector_repo, graph_repo, memory_repo)
-        results = await hybrid.search(
+        results = await hybrid_search.search(
             user_id=UUID(user_id),
             query=query,
             limit=limit,
@@ -238,8 +236,7 @@ async def prepare_socrates_context(
     last_message = messages[-1] if messages else None
     if isinstance(last_message, HumanMessage):
         query = last_message.content
-        db = get_supabase_client()
-        vector_repo = VectorRepository(db)
+        container = get_agent_container()
 
         # mode가 명시적으로 전달되지 않으면 메시지에서 자동 분류
         if not mode:
@@ -247,23 +244,24 @@ async def prepare_socrates_context(
 
         context_memories, current_memories = await _search_hybrid_memories(
             query,
-            vector_repo,
+            container.hybrid_search,
             user_id=user_id,
         )
         logger.debug("RAG 하이브리드 검색 결과: query=%s, memories=%d개", query[:50], len(current_memories))
         graph_context = await _fetch_graph_context(query)
 
         if user_id:
-            journal_repo = JournalRepository(db)
-            journal_context = await _fetch_journal_context(user_id, journal_repo)
+            journal_context = await _fetch_journal_context(user_id, container.journal_repo)
 
         if mode == "counter" and current_memories:
-            contradicting_memories = await _build_contradiction_context(query, current_memories, user_id)
+            contradicting_memories = await _build_contradiction_context(
+                query, current_memories, user_id, container.vector_repo
+            )
 
         # 3턴 간격으로 연결 제안 검색
         if turn_count > 0 and turn_count % CONNECTION_TURN_INTERVAL == 0:
             referenced_ids = {m.get("id") for m in current_memories}
-            suggestion = await _search_connection_suggestions(query, vector_repo, referenced_ids, user_id)
+            suggestion = await _search_connection_suggestions(query, container.vector_repo, referenced_ids, user_id)
             if suggestion:
                 date = suggestion.get("created_at", "")[:10]
                 title = suggestion.get("title", "Untitled")
@@ -289,10 +287,15 @@ async def prepare_socrates_context(
     return [SystemMessage(content=system_content), *messages], current_memories
 
 
-async def _build_contradiction_context(query: str, current_memories: list, user_id: str | None = None) -> str:
+async def _build_contradiction_context(
+    query: str,
+    current_memories: list,
+    user_id: str | None = None,
+    vector_repo: VectorRepository | None = None,
+) -> str:
     """반론 검색 후 포맷된 컨텍스트 문자열 반환."""
     try:
-        contradicting = await find_contradicting_memories(query, current_memories, user_id)
+        contradicting = await find_contradicting_memories(query, current_memories, user_id, vector_repo)
         if contradicting:
             return "\n".join(_format_memory_line(memory) for memory in contradicting)
     except Exception:

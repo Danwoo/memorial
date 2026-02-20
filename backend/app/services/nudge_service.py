@@ -102,17 +102,11 @@ async def evening_review_job() -> None:
 
     for user_id in users:
         try:
-            all_memories = await memory_repo.get_all(user_id=UUID(user_id))
-            today_memories = []
-            for mem in all_memories:
-                created_str = mem.get("created_at", "")
-                if created_str:
-                    try:
-                        created_at = parse_iso_datetime(created_str)
-                        if today_start <= created_at <= today_end:
-                            today_memories.append(mem)
-                    except (ValueError, TypeError):
-                        continue
+            today_memories = await memory_repo.get_by_date_range(
+                user_id=UUID(user_id),
+                start=today_start.isoformat(),
+                end=today_end.isoformat(),
+            )
 
             count = len(today_memories)
             if count == 0:
@@ -211,24 +205,11 @@ async def connection_discovery_job() -> None:
 
     for user_id in users:
         try:
-            all_memories = await memory_repo.get_all(user_id=UUID(user_id))
-
-            # 어제 저장된 메모리 추출
-            recent_memories = []
-            older_memories = []
-            for mem in all_memories:
-                created_str = mem.get("created_at", "")
-                if not created_str:
-                    continue
-                try:
-                    created_at = parse_iso_datetime(created_str)
-                except (ValueError, TypeError):
-                    continue
-
-                if yesterday_start <= created_at <= yesterday_end:
-                    recent_memories.append(mem)
-                elif created_at < yesterday_start - timedelta(days=CONNECTION_MIN_GAP_DAYS):
-                    older_memories.append(mem)
+            recent_memories = await memory_repo.get_by_date_range(
+                user_id=UUID(user_id),
+                start=yesterday_start.isoformat(),
+                end=yesterday_end.isoformat(),
+            )
 
             if not recent_memories:
                 continue

@@ -66,6 +66,11 @@ class StatsRepository:
         sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
         return dict(sorted_tags[:limit])
 
+    async def count_journals_in_range(self, user_id: UUID, start: datetime, end: datetime) -> int:
+        """기간 내 저널 수 조회."""
+        result = await asyncio.to_thread(self._count_journals_range, str(user_id), start.isoformat(), end.isoformat())
+        return result.count or 0
+
     # ------------------------------------------------------------------
     # 동기 헬퍼 (스레드에서 실행)
     # ------------------------------------------------------------------
@@ -90,6 +95,16 @@ class StatsRepository:
             .eq("user_id", user_id)
             .order("created_at", desc=True)
             .range(offset, offset + limit - 1)
+            .execute()
+        )
+
+    def _count_journals_range(self, user_id: str, start_iso: str, end_iso: str):
+        return (
+            self.db.table("journals")
+            .select("id", count="exact")
+            .eq("user_id", user_id)
+            .gte("created_at", start_iso)
+            .lte("created_at", end_iso)
             .execute()
         )
 

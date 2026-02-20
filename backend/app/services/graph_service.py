@@ -36,6 +36,18 @@ class GraphService:
             logger.exception("Error saving to graph")
             return False
 
+    async def create_relation(self, relations: list[dict[str, str]]) -> bool:
+        """수동 관계 생성."""
+        if not self.is_available:
+            return False
+        try:
+            await self.graph_repo.save_relations(relations)
+            graph_cache.clear()
+            return True
+        except Exception:
+            logger.exception("Error creating relation")
+            return False
+
     async def rebuild_from_supabase(self) -> dict[str, int]:
         """Supabase에 저장된 그래프 데이터로 KuzuDB를 리빌드.
 
