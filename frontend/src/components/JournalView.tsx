@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Save, Loader2, Sparkles, ChevronLeft, ChevronRight, Calendar, Check } from 'lucide-react'
+import { Save, Loader2, Check } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import TurndownService from 'turndown'
 import type { EditorMode, RelatedMemory, DigestMemory, DigestData, ChatSessionResponse, JournalDateInfo } from '../types'
@@ -23,6 +23,9 @@ import { MemorySidebar } from './journal/MemorySidebar'
 import { AIBubbleMenu } from './journal/AIBubbleMenu'
 import { AIPanel } from './journal/AIPanel'
 import { SessionPickerModal } from './journal/SessionPickerModal'
+import { JournalDateNav } from './journal/JournalDateNav'
+import { JournalStarter } from './journal/JournalStarter'
+import { useJournalAutosave } from '../hooks/useJournalAutosave'
 import MemoryDetailModal from './MemoryDetailModal'
 import './JournalView.css'
 
@@ -32,10 +35,7 @@ const MIN_CONTENT_LENGTH_FOR_RELATED = 20
 // 관련 메모리 디바운스 지연 시간(ms)
 const RELATED_MEMORIES_DEBOUNCE_MS = 1500
 
-// 자동 저장 설정
 const JOURNAL_DRAFT_KEY = 'memoir-journal-draft'
-const AUTOSAVE_DEBOUNCE_MS = 2000
-const SERVER_AUTOSAVE_MS = 5000
 
 
 const turndown = new TurndownService({
@@ -96,12 +96,6 @@ function formatDateKo(dateStr: string): string {
   return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function shiftDate(dateStr: string, days: number): string {
-  const d = new Date(dateStr + 'T00:00:00')
-  d.setDate(d.getDate() + days)
-  return toDateStr(d)
-}
-
 export default function JournalView() {
   const todayStr = toDateStr(new Date())
   const todayLabel = formatDateKo(todayStr)
@@ -137,7 +131,6 @@ export default function JournalView() {
   const [starterQuestions, setStarterQuestions] = useState<string[]>([])
   const [isLoadingStarter, setIsLoadingStarter] = useState(false)
   const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null)
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'' | 'saving' | 'saved'>('')
 
   const showStarter = isToday && normalize(markdownContent) === normalize(defaultContent) && !isGenerating
 
@@ -165,6 +158,36 @@ export default function JournalView() {
       },
     ],
     [todayLabel],
+  )
+
+  // Tiptap 에디터 HTML에서 삽입된 메모리 블록의 ID를 추출
+  const extractMemoryIds = useCallback((): string[] => {
+    if (editorMode !== 'wysiwyg' || !editorRef.current) return []
+    const html = editorRef.current.getHTML()
+    const ids: string[] = []
+    // Tiptap은 camelCase 속성을 소문자로 렌더링: memoryId → memoryid
+    const regex = /memoryid="([^"]+)"/g
+    let match
+    while ((match = regex.exec(html)) !== null) {
+      if (match[1] && !ids.includes(match[1])) {
+        ids.push(match[1])
+      }
+    }
+    return ids
+  }, [editorMode])
+
+  // 서버 저장 함수 (useJournalAutosave에 전달)
+  const serverSave = useCallback(async (content: string, memoryIds: string[]) => {
+    await saveJournal(content, memoryIds)
+  }, [])
+
+  // 자동 저장 훅
+  const { autoSaveStatus } = useJournalAutosave(
+    markdownContent,
+    defaultContent,
+    isToday,
+    extractMemoryIds,
+    serverSave,
   )
 
   // 다른 뷰에서 특정 날짜로 이동 요청 시 처리
@@ -227,16 +250,6 @@ export default function JournalView() {
       .finally(() => setIsLoadingHistory(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate])
-
-  // 자동 저장: 오늘일 때만 localStorage에 디바운스 저장
-  useEffect(() => {
-    if (!isToday) return
-    if (normalize(markdownContent) === normalize(defaultContent)) return
-    const timer = setTimeout(() => {
-      localStorage.setItem(JOURNAL_DRAFT_KEY, markdownContent)
-    }, AUTOSAVE_DEBOUNCE_MS)
-    return () => clearTimeout(timer)
-  }, [markdownContent, defaultContent, isToday])
 
   // 다이제스트 로드 시 회고 질문 자동 생성
   useEffect(() => {
@@ -379,41 +392,6 @@ export default function JournalView() {
     }
   }, [handleInsertMemory])
 
-  // Tiptap 에디터 HTML에서 삽입된 메모리 블록의 ID를 추출
-  const extractMemoryIds = useCallback((): string[] => {
-    if (editorMode !== 'wysiwyg' || !editorRef.current) return []
-    const html = editorRef.current.getHTML()
-    const ids: string[] = []
-    // Tiptap은 camelCase 속성을 소문자로 렌더링: memoryId → memoryid
-    const regex = /memoryid="([^"]+)"/g
-    let match
-    while ((match = regex.exec(html)) !== null) {
-      if (match[1] && !ids.includes(match[1])) {
-        ids.push(match[1])
-      }
-    }
-    return ids
-  }, [editorMode])
-
-  // 서버 자동 저장: localStorage 저장 후 디바운스로 서버 저장
-  useEffect(() => {
-    if (!isToday) return
-    if (normalize(markdownContent) === normalize(defaultContent)) return
-    const timer = setTimeout(async () => {
-      setAutoSaveStatus('saving')
-      try {
-        const memoryIds = extractMemoryIds()
-        await saveJournal(markdownContent, memoryIds)
-        setAutoSaveStatus('saved')
-        setTimeout(() => setAutoSaveStatus(''), 3000)
-      } catch (e) {
-        console.error('자동 저장 실패', e)
-        setAutoSaveStatus('')
-      }
-    }, SERVER_AUTOSAVE_MS)
-    return () => clearTimeout(timer)
-  }, [markdownContent, defaultContent, isToday, extractMemoryIds])
-
   const handleSave = async () => {
     if (!markdownContent.trim()) return
     setIsSaving(true)
@@ -525,42 +503,13 @@ export default function JournalView() {
       <div className="journal-editor-section">
         {/* 에디터 헤더 */}
         <div className="journal-editor-header">
-          <div className="journal-date-nav">
-            <button
-              className="journal-date-nav__btn"
-              onClick={() => setSelectedDate(shiftDate(selectedDate, -1))}
-              type="button"
-              aria-label="이전 날짜"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              className="journal-date-nav__current"
-              onClick={() => setShowDatePicker(!showDatePicker)}
-              type="button"
-            >
-              <Calendar size={14} />
-              <span>{isToday ? '오늘의 저널' : formatDateKo(selectedDate)}</span>
-            </button>
-            <button
-              className="journal-date-nav__btn"
-              onClick={() => setSelectedDate(shiftDate(selectedDate, 1))}
-              disabled={selectedDate >= todayStr}
-              type="button"
-              aria-label="다음 날짜"
-            >
-              <ChevronRight size={18} />
-            </button>
-            {!isToday && (
-              <button
-                className="journal-date-nav__today"
-                onClick={() => setSelectedDate(todayStr)}
-                type="button"
-              >
-                오늘
-              </button>
-            )}
-          </div>
+          <JournalDateNav
+            currentDate={selectedDate}
+            todayStr={todayStr}
+            isToday={isToday}
+            onDateChange={setSelectedDate}
+            onToggleDatePicker={() => setShowDatePicker(!showDatePicker)}
+          />
           <div className="journal-editor-actions">
             {isToday && autoSaveStatus === 'saved' && (
               <span className="journal-autosave-status">
@@ -628,56 +577,14 @@ export default function JournalView() {
 
         {/* 시작 도우미 (오늘일 때만) */}
         {showStarter && (
-          <div className="journal-starter">
-            <div className="journal-starter__section">
-              <span className="journal-starter__label">템플릿 선택</span>
-              <div className="journal-template-chips">
-                {templates.map((t) => (
-                  <button
-                    key={t.id}
-                    className="journal-template-chip"
-                    onClick={() => handleTemplateSelect(t.content)}
-                    type="button"
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {isLoadingStarter ? (
-              <div className="journal-starter__loading">
-                <Loader2 size={16} className="spin" />
-                회고 질문 생성 중...
-              </div>
-            ) : starterQuestions.length > 0 ? (
-              <div className="journal-starter__section">
-                <span className="journal-starter__label">오늘의 회고 질문</span>
-                <div className="journal-starter-questions">
-                  {starterQuestions.map((q, i) => (
-                    <button
-                      key={i}
-                      className="journal-starter-question"
-                      onClick={() => handleStarterQuestion(q)}
-                      type="button"
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <button
-                className="journal-starter__cta"
-                onClick={handleAskAI}
-                disabled={isLoadingStarter}
-                type="button"
-              >
-                <Sparkles size={16} />
-                AI에게 질문받기
-              </button>
-            )}
-          </div>
+          <JournalStarter
+            templates={templates}
+            starterQuestions={starterQuestions}
+            isLoadingStarter={isLoadingStarter}
+            onSelectTemplate={handleTemplateSelect}
+            onStarterQuestion={handleStarterQuestion}
+            onAskAI={handleAskAI}
+          />
         )}
 
         {/* 에디터 영역 */}
