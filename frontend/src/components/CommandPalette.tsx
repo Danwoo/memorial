@@ -105,7 +105,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
       if (item.kind === 'memory') {
         navigate('/memories')
       } else if (item.kind === 'session') {
-        navigate('/chat', { state: { sessionId: item.data.id } })
+        navigate(`/chat/${item.data.id}`)
       }
     },
     [navigate, onClose],

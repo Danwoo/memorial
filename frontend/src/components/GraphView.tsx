@@ -13,8 +13,7 @@ import GraphLegend from './graph/GraphLegend'
 import { NODE_COLORS } from './graph/graphConstants'
 import './GraphView.css'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyNode = GraphNode & { x?: number; y?: number; [k: string]: any }
+type AnyNode = GraphNode & { x?: number; y?: number; vx?: number; vy?: number; fx?: number; fy?: number }
 
 export default function GraphView() {
   const navigate = useNavigate()

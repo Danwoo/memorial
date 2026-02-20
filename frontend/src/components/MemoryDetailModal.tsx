@@ -29,6 +29,8 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
   const toast = useToast()
   const navigate = useNavigate()
   const trapRef = useFocusTrap()
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
   const [detail, setDetail] = useState<MemoryDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -81,10 +83,11 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
       })
       .catch(() => {
         toast.error('메모리 상세 정보를 불러오지 못했습니다.')
-        onClose()
+        onCloseRef.current()
       })
       .finally(() => setIsLoading(false))
-  }, [memoryId, onClose, toast])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memoryId])
 
   const enterEditMode = useCallback(() => {
     if (!detail) return

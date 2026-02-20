@@ -28,23 +28,26 @@ export function useJournalAutosave(
     return () => clearTimeout(timer)
   }, [markdownContent, defaultContent, isToday])
 
-  // 서버 자동 저장
+  // 서버 자동 저장 (언마운트/deps 변경 시 상태 갱신 방지)
   useEffect(() => {
     if (!isToday) return
     if (normalize(markdownContent) === normalize(defaultContent)) return
+    let cancelled = false
     const timer = setTimeout(async () => {
       setAutoSaveStatus('saving')
       try {
         const memoryIds = extractMemoryIds()
         await serverSave(markdownContent, memoryIds)
-        setAutoSaveStatus('saved')
-        setTimeout(() => setAutoSaveStatus(''), 3000)
+        if (!cancelled) {
+          setAutoSaveStatus('saved')
+          setTimeout(() => { if (!cancelled) setAutoSaveStatus('') }, 3000)
+        }
       } catch (e) {
         console.error('자동 저장 실패', e)
-        setAutoSaveStatus('')
+        if (!cancelled) setAutoSaveStatus('')
       }
     }, SERVER_AUTOSAVE_MS)
-    return () => clearTimeout(timer)
+    return () => { cancelled = true; clearTimeout(timer) }
   }, [markdownContent, defaultContent, isToday, extractMemoryIds, serverSave])
 
   return { autoSaveStatus, JOURNAL_DRAFT_KEY }

@@ -1,3 +1,14 @@
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import { useToast } from '../../contexts/ToastContext'
+import {
+  getIntegrationStatus,
+  getBotSettings,
+  updateBotSettings,
+  generateChannelLinkCode,
+  getChannelStatus,
+  disconnectChannel,
+} from '../../api'
 import type { ProviderInfo, BotSettings, BotSettingsUpdate, ChannelLinkCode, ChannelStatus } from '../../api/integrations'
 
 const PROVIDER_LABELS: Record<string, string> = {
@@ -9,47 +20,173 @@ const SUPPORTED_PROVIDERS = ['google', 'kakao'] as const
 
 const KAKAO_CHANNEL_CHAT_URL = 'https://pf.kakao.com/_NxoGzX/chat'
 
-interface IntegrationsTabProps {
-  loading: boolean
-  providers: ProviderInfo[]
-  actionLoading: string | null
-  botSettings: BotSettings | null
-  botLoading: boolean
-  channelStatus: ChannelStatus | null
-  channelLoading: boolean
-  linkCode: ChannelLinkCode | null
-  countdown: string
-  kakaoLinked: boolean
-  isProviderLinked: (provider: string) => boolean
-  getProviderIdentity: (provider: string) => ProviderInfo | undefined
-  handleLink: (provider: 'google' | 'kakao') => Promise<void>
-  handleUnlink: (provider: string) => Promise<void>
-  handleBotSettingChange: (update: BotSettingsUpdate) => Promise<void>
-  handleGenerateLinkCode: () => Promise<void>
-  handleDisconnectChannel: () => Promise<void>
-  onCopyLinkCode: (code: string) => void
-}
+export default function IntegrationsTab() {
+  const { user, linkProvider, unlinkProvider } = useAuth()
+  const toast = useToast()
 
-export default function IntegrationsTab({
-  loading,
-  providers,
-  actionLoading,
-  botSettings,
-  botLoading,
-  channelStatus,
-  channelLoading,
-  linkCode,
-  countdown,
-  kakaoLinked,
-  isProviderLinked,
-  getProviderIdentity,
-  handleLink,
-  handleUnlink,
-  handleBotSettingChange,
-  handleGenerateLinkCode,
-  handleDisconnectChannel,
-  onCopyLinkCode,
-}: IntegrationsTabProps) {
+  const [providers, setProviders] = useState<ProviderInfo[]>([])
+  const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [botSettings, setBotSettings] = useState<BotSettings | null>(null)
+  const [botLoading, setBotLoading] = useState(false)
+  const [channelStatus, setChannelStatus] = useState<ChannelStatus | null>(null)
+  const [channelLoading, setChannelLoading] = useState(false)
+  const [linkCode, setLinkCode] = useState<ChannelLinkCode | null>(null)
+  const [countdown, setCountdown] = useState('')
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // 연동 상태 + 봇 설정 + 채널 상태 로드
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        setLoading(true)
+        const status = await getIntegrationStatus()
+        if (cancelled) return
+        setProviders(status.providers)
+
+        const [botResult, channelResult] = await Promise.allSettled([
+          getBotSettings(),
+          getChannelStatus(),
+        ])
+        if (cancelled) return
+        if (botResult.status === 'fulfilled') setBotSettings(botResult.value)
+        if (channelResult.status === 'fulfilled') setChannelStatus(channelResult.value)
+      } catch {
+        if (!cancelled) setProviders([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  // 카운트다운 정리
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current)
+    }
+  }, [])
+
+  const isProviderLinked = useCallback(
+    (provider: string) => providers.some((p) => p.provider === provider),
+    [providers],
+  )
+
+  const getProviderIdentity = useCallback(
+    (provider: string) => providers.find((p) => p.provider === provider),
+    [providers],
+  )
+
+  const kakaoLinked = isProviderLinked('kakao')
+
+  const handleLink = async (provider: 'google' | 'kakao') => {
+    try {
+      setActionLoading(provider)
+      await linkProvider(provider)
+    } catch {
+      toast.error(`${PROVIDER_LABELS[provider]} 연결에 실패했습니다`)
+      setActionLoading(null)
+    }
+  }
+
+  const handleUnlink = async (provider: string) => {
+    if (providers.length <= 1) {
+      toast.error('최소 1개의 로그인 방식이 필요합니다')
+      return
+    }
+    const identity = getProviderIdentity(provider)
+    if (!identity) return
+
+    try {
+      setActionLoading(provider)
+      await unlinkProvider({
+        id: identity.identity_id,
+        user_id: user?.id ?? '',
+        identity_id: identity.identity_id,
+        provider: provider,
+      })
+      // 상태 다시 로드
+      const status = await getIntegrationStatus()
+      setProviders(status.providers)
+      toast.success(`${PROVIDER_LABELS[provider] ?? provider} 연결이 해제되었습니다`)
+    } catch {
+      toast.error('연결 해제에 실패했습니다')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleBotSettingChange = async (update: BotSettingsUpdate) => {
+    try {
+      setBotLoading(true)
+      const updated = await updateBotSettings(update)
+      setBotSettings(updated)
+      toast.success('다이제스트 설정이 저장되었습니다')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '설정 저장에 실패했습니다'
+      toast.error(message)
+    } finally {
+      setBotLoading(false)
+    }
+  }
+
+  const startCountdown = (expiresAt: string) => {
+    if (countdownRef.current) clearInterval(countdownRef.current)
+    const update = () => {
+      const diff = new Date(expiresAt).getTime() - Date.now()
+      if (diff <= 0) {
+        setCountdown('만료됨')
+        setLinkCode(null)
+        if (countdownRef.current) clearInterval(countdownRef.current)
+        return
+      }
+      const min = Math.floor(diff / 60000)
+      const sec = Math.floor((diff % 60000) / 1000)
+      setCountdown(`${min}:${String(sec).padStart(2, '0')}`)
+    }
+    update()
+    countdownRef.current = setInterval(update, 1000)
+  }
+
+  const handleGenerateLinkCode = async () => {
+    try {
+      setChannelLoading(true)
+      const result = await generateChannelLinkCode()
+      setLinkCode(result)
+      startCountdown(result.expires_at)
+      try {
+        await navigator.clipboard.writeText(`#연결 ${result.code}`)
+        toast.success('연결 코드가 클립보드에 복사되었습니다!')
+      } catch { /* 클립보드 실패 시 무시 */ }
+    } catch {
+      toast.error('연결 코드 생성에 실패했습니다')
+    } finally {
+      setChannelLoading(false)
+    }
+  }
+
+  const handleDisconnectChannel = async () => {
+    try {
+      setChannelLoading(true)
+      await disconnectChannel()
+      setChannelStatus({ connected: false, bot_user_key: null, linked_at: null })
+      toast.success('카카오톡 채널 연결이 해제되었습니다')
+    } catch {
+      toast.error('채널 연결 해제에 실패했습니다')
+    } finally {
+      setChannelLoading(false)
+    }
+  }
+
+  const handleCopyLinkCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(`#연결 ${code}`)
+      toast.success('클립보드에 복사되었습니다!')
+    } catch { /* ignore */ }
+  }
+
   return (
     <div className="settings-tab-content">
       {/* 연결된 계정 */}
@@ -150,7 +287,7 @@ export default function IntegrationsTab({
                   <div className="link-step-content">
                     <span className="link-step-label">연결 코드 복사 완료</span>
                     <div className="link-code-command"
-                      onClick={() => onCopyLinkCode(linkCode.code)}
+                      onClick={() => handleCopyLinkCode(linkCode.code)}
                       title="클릭하여 다시 복사"
                     >
                       #연결 {linkCode.code}

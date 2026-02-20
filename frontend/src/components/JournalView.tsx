@@ -69,9 +69,9 @@ function markdownToHtml(md: string): string {
     .replace(/^> (.+)$/gm, '<blockquote><p>$1</p></blockquote>')
     .replace(/^---$/gm, '<hr>')
     .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`)
+    .replace(/(<li>.*?<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`)
     .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-    .replace(/^(?!<[hubloas]|<hr|<li|<blockquote)(.+)$/gm, '<p>$1</p>')
+    .replace(/^(?!<(?:h[1-6]|ul|ol|li|blockquote|hr|a|p|s|code|strong|em)[ >/])(.+)$/gm, '<p>$1</p>')
     .replace(/<\/blockquote>\s*<blockquote>/g, '\n')
 }
 
@@ -86,9 +86,12 @@ function syncContentToEditor(
   }
 }
 
-// YYYY-MM-DD 형식 날짜 헬퍼
+// YYYY-MM-DD 형식 날짜 헬퍼 (로컬 타임존 기준)
 function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 function formatDateKo(dateStr: string): string {
@@ -97,7 +100,7 @@ function formatDateKo(dateStr: string): string {
 }
 
 export default function JournalView() {
-  const todayStr = toDateStr(new Date())
+  const todayStr = useMemo(() => toDateStr(new Date()), [])
   const todayLabel = formatDateKo(todayStr)
   const editorRef = useRef<TiptapEditorHandle>(null)
   const toast = useToast()
