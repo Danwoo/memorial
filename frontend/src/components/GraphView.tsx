@@ -1,8 +1,6 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import ForceGraph3D from 'react-force-graph-3d'
-import SpriteText from 'three-spritetext'
-import * as THREE from 'three'
+import ForceGraph2D from 'react-force-graph-2d'
 import { BookOpen, Lightbulb } from 'lucide-react'
 import type { GraphNode, GraphLink, GraphData, SearchResult, GraphInsights, ClusterInfo } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
@@ -89,7 +87,7 @@ function toKo(type: string, map: Record<string, string>): string {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyNode = GraphNode & { x?: number; y?: number; z?: number; [k: string]: any }
+type AnyNode = GraphNode & { x?: number; y?: number; [k: string]: any }
 
 export default function GraphView() {
   const navigate = useNavigate()
@@ -97,31 +95,33 @@ export default function GraphView() {
   const toast = useToast()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null)
-  const nodeMaterials = useRef<Map<string, THREE.MeshLambertMaterial>>(new Map())
 
   const [data, setData] = useState<GraphData>({ nodes: [], links: [] })
   const [loading, setLoading] = useState(true)
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
   const [highlightLinks, setHighlightLinks] = useState<Set<string>>(new Set())
+  const [highlightNodes, setHighlightNodes] = useState<Set<string> | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
 
-  // P2-11: 관련 메모리 조회
+  // 관련 메모리 조회
   const [relatedMemories, setRelatedMemories] = useState<SearchResult[]>([])
   const [isLoadingMemories, setIsLoadingMemories] = useState(false)
   const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null)
 
-  // P2-11: 검색 결과 하이라이트
+  // 검색 결과 하이라이트
   const [searchMatches, setSearchMatches] = useState<GraphNode[]>([])
   const [searchMatchIdx, setSearchMatchIdx] = useState(0)
 
-  // S10-2: 인사이트 패널
+  // 인사이트 패널
   const [insights, setInsights] = useState<GraphInsights | null>(null)
   const [insightsLoading, setInsightsLoading] = useState(false)
   const [showInsights, setShowInsights] = useState(false)
   const [clusterColorMode, setClusterColorMode] = useState(false)
 
   const bgColor = resolvedTheme === 'dark' ? '#1a1a1a' : '#ffffff'
+  const textColor = resolvedTheme === 'dark' ? '#f0f0f0' : '#1a1a1a'
+  const labelBg = resolvedTheme === 'dark' ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.92)'
 
   // 그래프 데이터 조회 및 노드 가공
   const fetchGraphData = useCallback(async () => {
@@ -159,7 +159,7 @@ export default function GraphView() {
     fetchGraphData()
   }, [fetchGraphData])
 
-  // P2-11: 선택 노드 변경 시 관련 메모리 조회
+  // 선택 노드 변경 시 관련 메모리 조회
   useEffect(() => {
     if (!selectedNode) {
       setRelatedMemories([])
@@ -200,7 +200,7 @@ export default function GraphView() {
     [data.nodes],
   )
 
-  // S10-2: 클러스터 색상 모드에서 노드 색상 결정
+  // 클러스터 색상 모드에서 노드 색상 결정
   const getNodeColor = useCallback(
     (node: GraphNode): string => {
       if (!clusterColorMode || !insights?.clusters) {
@@ -215,40 +215,54 @@ export default function GraphView() {
     [clusterColorMode, insights],
   )
 
-  // 3D 노드 렌더링: 구체 + 라벨 스프라이트
-  const nodeThreeObject = useCallback((node: AnyNode) => {
+  // 2D 노드 Canvas 렌더링
+  const nodeCanvasObject = useCallback((node: AnyNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const val = node.val || 1
     const size = Math.max(3, Math.sqrt(val) * 2.5)
     const color = clusterColorMode ? getNodeColor(node) : (node.color || NODE_COLORS['default'])
-
-    const group = new THREE.Group()
-
-    // 구체 메시
-    const geo = new THREE.SphereGeometry(size, 20, 14)
-    const mat = new THREE.MeshLambertMaterial({
-      color,
-      transparent: true,
-      opacity: 0.92,
-    })
-    const mesh = new THREE.Mesh(geo, mat)
-    group.add(mesh)
-
-    // 호버 하이라이트를 위해 재질 참조 저장
-    nodeMaterials.current.set(node.id, mat)
-
-    // 라벨 스프라이트
     const label = (node.name || node.id).substring(0, 30)
-    const sprite = new SpriteText(label)
-    sprite.color = bgColor === '#1a1a1a' ? '#f0f0f0' : '#1a1a1a'
-    sprite.textHeight = Math.max(4.0, size * 0.7)
-    sprite.backgroundColor = bgColor === '#1a1a1a' ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.92)'
-    sprite.padding = [0.8, 1.5] as unknown as number
-    sprite.borderRadius = 1.5
-    sprite.position.y = -(size + 3)
-    group.add(sprite)
 
-    return group
-  }, [bgColor, clusterColorMode, getNodeColor])
+    // 하이라이트 상태에 따른 투명도
+    const isHighlighted = !highlightNodes || highlightNodes.has(node.id)
+    const alpha = isHighlighted ? 0.92 : 0.12
+
+    // 원 그리기
+    ctx.beginPath()
+    ctx.arc(node.x || 0, node.y || 0, size, 0, 2 * Math.PI)
+    ctx.fillStyle = color
+    ctx.globalAlpha = alpha
+    ctx.fill()
+    ctx.globalAlpha = 1
+
+    // 라벨 (줌 레벨에 따라 보이기)
+    if (globalScale > 0.6 && isHighlighted) {
+      const fontSize = Math.max(3.5, size * 0.7) / globalScale
+      ctx.font = `500 ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'top'
+
+      const textWidth = ctx.measureText(label).width
+      const padding = 2 / globalScale
+      const labelY = (node.y || 0) + size + 2 / globalScale
+
+      // 라벨 배경
+      ctx.fillStyle = labelBg
+      ctx.globalAlpha = isHighlighted ? 0.85 : 0.3
+      ctx.fillRect(
+        (node.x || 0) - textWidth / 2 - padding,
+        labelY - padding,
+        textWidth + padding * 2,
+        fontSize + padding * 2,
+      )
+      ctx.globalAlpha = 1
+
+      // 라벨 텍스트
+      ctx.fillStyle = textColor
+      ctx.globalAlpha = isHighlighted ? 1 : 0.2
+      ctx.fillText(label, node.x || 0, labelY)
+      ctx.globalAlpha = 1
+    }
+  }, [clusterColorMode, getNodeColor, highlightNodes, labelBg, textColor])
 
   // 하이라이트 매칭용 링크 키 생성
   const getLinkKey = useCallback((link: GraphLink) => {
@@ -257,7 +271,7 @@ export default function GraphView() {
     return `${sid}-${tid}`
   }, [])
 
-  // 호버 시 연결된 노드/링크 하이라이트 (Three.js 재질 직접 조작)
+  // 호버 시 연결된 노드/링크 하이라이트
   const handleNodeHover = useCallback((node: AnyNode | null) => {
     if (node) {
       const connectedIds = new Set<string>([node.id])
@@ -273,25 +287,18 @@ export default function GraphView() {
         }
       })
 
-      // 연결되지 않은 노드 흐리게 처리
-      nodeMaterials.current.forEach((mat, id) => {
-        mat.opacity = connectedIds.has(id) ? 1.0 : 0.1
-      })
-
+      setHighlightNodes(connectedIds)
       setHighlightLinks(connectedLinkKeys)
     } else {
-      // 모든 노드 불투명도 복원
-      nodeMaterials.current.forEach(mat => {
-        mat.opacity = 0.9
-      })
+      setHighlightNodes(null)
       setHighlightLinks(new Set())
     }
   }, [filteredData.links])
 
-  // S10-5: 더블클릭 감지를 위한 ref
+  // 더블클릭 감지를 위한 ref
   const lastClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 })
 
-  // 클릭 시 카메라를 해당 노드로 이동, 더블클릭 시 메모리 상세 모달
+  // 클릭 시 해당 노드로 이동, 더블클릭 시 메모리 상세 모달
   const handleNodeClick = useCallback((node: AnyNode) => {
     const now = Date.now()
     const last = lastClickRef.current
@@ -308,32 +315,28 @@ export default function GraphView() {
 
     setSelectedNode(node)
     if (showInsights) setShowInsights(false)
-    const distance = 60
-    const distRatio = 1 + distance / Math.hypot(node.x || 1, node.y || 1, node.z || 1)
-    fgRef.current?.cameraPosition(
-      { x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio },
-      { x: node.x || 0, y: node.y || 0, z: node.z || 0 },
-      1000,
-    )
+    // 2D 카메라 이동
+    if (fgRef.current) {
+      fgRef.current.centerAt(node.x || 0, node.y || 0, 600)
+      fgRef.current.zoom(4, 600)
+    }
   }, [showInsights])
 
   // 배경 클릭 시 선택 해제
   const handleBackgroundClick = useCallback(() => {
     setSelectedNode(null)
     setHighlightLinks(new Set())
+    setHighlightNodes(null)
     setSearchMatches([])
-    nodeMaterials.current.forEach(mat => {
-      mat.opacity = 0.9
-    })
   }, [])
 
-  // P2-11: 검색 하이라이트 — 모든 매치를 찾아 하이라이트
+  // 검색 하이라이트 — 모든 매치를 찾아 하이라이트
   const handleSearch = useCallback(
     (query: string) => {
       if (!query.trim()) {
         setSearchMatches([])
         setSearchMatchIdx(0)
-        nodeMaterials.current.forEach(mat => { mat.opacity = 0.9 })
+        setHighlightNodes(null)
         return
       }
       const q = query.toLowerCase()
@@ -346,29 +349,22 @@ export default function GraphView() {
       // 매치 노드만 밝게, 나머지 흐리게
       if (matches.length > 0) {
         const matchIds = new Set(matches.map(n => n.id))
-        nodeMaterials.current.forEach((mat, id) => {
-          mat.opacity = matchIds.has(id) ? 1.0 : 0.15
-        })
+        setHighlightNodes(matchIds)
         // 첫 매치로 카메라 이동
         const first = matches[0] as AnyNode
         if (fgRef.current) {
-          const distance = 60
-          const distRatio = 1 + distance / Math.hypot(first.x || 1, first.y || 1, first.z || 1)
-          fgRef.current.cameraPosition(
-            { x: (first.x || 0) * distRatio, y: (first.y || 0) * distRatio, z: (first.z || 0) * distRatio },
-            { x: first.x || 0, y: first.y || 0, z: first.z || 0 },
-            1000,
-          )
+          fgRef.current.centerAt(first.x || 0, first.y || 0, 600)
+          fgRef.current.zoom(3, 600)
         }
         setSelectedNode(matches[0])
       } else {
-        nodeMaterials.current.forEach(mat => { mat.opacity = 0.9 })
+        setHighlightNodes(null)
       }
     },
     [filteredData.nodes],
   )
 
-  // P2-11: 검색 매치 간 이동 (위/아래 화살표)
+  // 검색 매치 간 이동 (위/아래 화살표)
   const navigateSearchMatch = useCallback(
     (direction: 1 | -1) => {
       if (searchMatches.length === 0) return
@@ -377,13 +373,8 @@ export default function GraphView() {
       const node = searchMatches[nextIdx] as AnyNode
       setSelectedNode(searchMatches[nextIdx])
       if (fgRef.current) {
-        const distance = 60
-        const distRatio = 1 + distance / Math.hypot(node.x || 1, node.y || 1, node.z || 1)
-        fgRef.current.cameraPosition(
-          { x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio },
-          { x: node.x || 0, y: node.y || 0, z: node.z || 0 },
-          1000,
-        )
+        fgRef.current.centerAt(node.x || 0, node.y || 0, 600)
+        fgRef.current.zoom(3, 600)
       }
     },
     [searchMatches, searchMatchIdx],
@@ -399,19 +390,14 @@ export default function GraphView() {
     })
   }, [])
 
-  // P2-11: 연결 노드 클릭 시 해당 노드로 카메라 이동
+  // 연결 노드 클릭 시 해당 노드로 카메라 이동
   const handleConnectionClick = useCallback(
     (nodeId: string) => {
       const target = filteredData.nodes.find(n => n.id === nodeId) as AnyNode | undefined
       if (!target || !fgRef.current) return
       setSelectedNode(target)
-      const distance = 60
-      const distRatio = 1 + distance / Math.hypot(target.x || 1, target.y || 1, target.z || 1)
-      fgRef.current.cameraPosition(
-        { x: (target.x || 0) * distRatio, y: (target.y || 0) * distRatio, z: (target.z || 0) * distRatio },
-        { x: target.x || 0, y: target.y || 0, z: target.z || 0 },
-        1000,
-      )
+      fgRef.current.centerAt(target.x || 0, target.y || 0, 600)
+      fgRef.current.zoom(4, 600)
     },
     [filteredData.nodes],
   )
@@ -448,7 +434,7 @@ export default function GraphView() {
       })
   }, [selectedNode, filteredData])
 
-  // S10-2: 인사이트 패널 토글
+  // 인사이트 패널 토글
   const handleToggleInsights = useCallback(() => {
     const next = !showInsights
     setShowInsights(next)
@@ -459,7 +445,7 @@ export default function GraphView() {
     if (next) setSelectedNode(null)
   }, [showInsights, insights, insightsLoading, loadInsights])
 
-  // S10-2: 클러스터 선택 → centroid 계산 → 카메라 줌
+  // 클러스터 선택 → centroid 계산 → 카메라 줌
   const handleClusterSelect = useCallback(
     (cluster: ClusterInfo) => {
       const clusterNodes = filteredData.nodes.filter(n =>
@@ -470,36 +456,25 @@ export default function GraphView() {
 
       const cx = clusterNodes.reduce((s, n) => s + (n.x || 0), 0) / clusterNodes.length
       const cy = clusterNodes.reduce((s, n) => s + (n.y || 0), 0) / clusterNodes.length
-      const cz = clusterNodes.reduce((s, n) => s + (n.z || 0), 0) / clusterNodes.length
 
-      fgRef.current.cameraPosition(
-        { x: cx * 1.5, y: cy * 1.5, z: cz * 1.5 },
-        { x: cx, y: cy, z: cz },
-        1000,
-      )
+      fgRef.current.centerAt(cx, cy, 600)
+      fgRef.current.zoom(3, 600)
 
       // 클러스터 노드만 하이라이트
       const clusterIds = new Set(clusterNodes.map(n => n.id))
-      nodeMaterials.current.forEach((mat, id) => {
-        mat.opacity = clusterIds.has(id) ? 1.0 : 0.15
-      })
+      setHighlightNodes(clusterIds)
     },
     [filteredData.nodes],
   )
 
-  // S10-2: 노드 이름으로 검색+포커스
+  // 노드 이름으로 검색+포커스
   const focusNodeByName = useCallback(
     (name: string) => {
       const node = filteredData.nodes.find(n => (n.name || n.id) === name) as AnyNode | undefined
       if (!node || !fgRef.current) return
       setSelectedNode(node)
-      const distance = 60
-      const distRatio = 1 + distance / Math.hypot(node.x || 1, node.y || 1, node.z || 1)
-      fgRef.current.cameraPosition(
-        { x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio },
-        { x: node.x || 0, y: node.y || 0, z: node.z || 0 },
-        1000,
-      )
+      fgRef.current.centerAt(node.x || 0, node.y || 0, 600)
+      fgRef.current.zoom(4, 600)
     },
     [filteredData.nodes],
   )
@@ -597,26 +572,32 @@ export default function GraphView() {
         </div>
       )}
 
-      {/* 3D 포스 그래프 */}
+      {/* 2D 포스 그래프 */}
       {!loading && !isEmptyGraph && (
-        <ForceGraph3D
+        <ForceGraph2D
           ref={fgRef}
           graphData={filteredData}
-          nodeThreeObject={nodeThreeObject}
-          nodeThreeObjectExtend={false}
+          nodeCanvasObject={nodeCanvasObject}
+          nodePointerAreaPaint={(node: AnyNode, color, ctx) => {
+            const size = Math.max(3, Math.sqrt(node.val || 1) * 2.5)
+            ctx.beginPath()
+            ctx.arc(node.x || 0, node.y || 0, size + 2, 0, 2 * Math.PI)
+            ctx.fillStyle = color
+            ctx.fill()
+          }}
           linkColor={(link: GraphLink) =>
             highlightLinks.has(getLinkKey(link))
-              ? (bgColor === '#1a1a1a' ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.7)')
-              : (bgColor === '#1a1a1a' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)')
+              ? (bgColor === '#1a1a1a' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)')
+              : (bgColor === '#1a1a1a' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)')
           }
-          linkWidth={(link: GraphLink) => (highlightLinks.has(getLinkKey(link)) ? 3 : 1.2)}
-          linkDirectionalArrowLength={3}
+          linkWidth={(link: GraphLink) => (highlightLinks.has(getLinkKey(link)) ? 2 : 0.5)}
+          linkDirectionalArrowLength={4}
           linkDirectionalArrowRelPos={1}
           linkDirectionalParticles={(link: GraphLink) =>
-            highlightLinks.has(getLinkKey(link)) ? 3 : 0
+            highlightLinks.has(getLinkKey(link)) ? 2 : 0
           }
-          linkDirectionalParticleWidth={1.5}
-          linkDirectionalParticleSpeed={0.006}
+          linkDirectionalParticleWidth={2}
+          linkDirectionalParticleSpeed={0.008}
           backgroundColor={bgColor}
           onNodeClick={handleNodeClick}
           onNodeHover={handleNodeHover}
@@ -624,7 +605,7 @@ export default function GraphView() {
           cooldownTicks={120}
           d3AlphaDecay={0.02}
           d3VelocityDecay={0.3}
-          onEngineStop={() => fgRef.current?.zoomToFit(400, 60)}
+          onEngineStop={() => fgRef.current?.zoomToFit(400, 40)}
         />
       )}
 
@@ -656,7 +637,7 @@ export default function GraphView() {
         </div>
       )}
 
-      {/* S10-2: 인사이트 토글 버튼 */}
+      {/* 인사이트 토글 버튼 */}
       {!loading && !isEmptyGraph && (
         <div className="graph-insight-controls">
           <button
@@ -678,7 +659,7 @@ export default function GraphView() {
         </div>
       )}
 
-      {/* S10-2: 인사이트 패널 */}
+      {/* 인사이트 패널 */}
       {showInsights && !selectedNode && (
         <GraphInsightPanel
           insights={insights}
@@ -757,7 +738,7 @@ export default function GraphView() {
             </div>
           )}
 
-          {/* P2-11: 관련 메모리 */}
+          {/* 관련 메모리 */}
           <div className="node-memories">
             <h4>관련 메모리</h4>
             {isLoadingMemories && <p className="memories-loading">불러오는 중...</p>}
@@ -803,14 +784,13 @@ export default function GraphView() {
       {/* 조작 안내 */}
       {!loading && !isEmptyGraph && (
         <div className="graph-controls">
-          <span>드래그: 회전</span>
+          <span>드래그: 이동</span>
           <span>스크롤: 확대/축소</span>
           <span>클릭: 포커스</span>
-          <span>우클릭 드래그: 이동</span>
         </div>
       )}
 
-      {/* P2-11: 메모리 상세 모달 */}
+      {/* 메모리 상세 모달 */}
       {selectedMemoryId && (
         <MemoryDetailModal
           memoryId={selectedMemoryId}
