@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { X, ExternalLink, Trash2, Loader2, Globe, FileText, StickyNote, File, Tag, Pencil, Save, Undo2, BookOpen, PenLine } from 'lucide-react'
+import { X, ExternalLink, Trash2, Loader2, Tag, Pencil, Save, Undo2, BookOpen, PenLine } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import type { MemoryDetail, RelatedMemory, LinkedJournal } from '../types'
 import { fetchMemoryDetail, deleteMemory, updateMemory, fetchUserTags, fetchRelatedMemoriesById, fetchMemoryJournals } from '../api'
 import { formatDateKR } from '../utils'
+import SourceIcon from './shared/SourceIcon'
 import './MemoryDetailModal.css'
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -15,15 +16,6 @@ const SOURCE_LABELS: Record<string, string> = {
   KAKAO: '카카오톡',
   CHAT_HISTORY: '대화 기록',
   JOURNAL: '저널',
-}
-
-function SourceIcon({ type }: { type: string }) {
-  switch (type) {
-    case 'WEB': return <Globe size={16} />
-    case 'PDF': return <FileText size={16} />
-    case 'NOTE': return <StickyNote size={16} />
-    default: return <File size={16} />
-  }
 }
 
 interface MemoryDetailModalProps {
@@ -37,6 +29,8 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
   const toast = useToast()
   const navigate = useNavigate()
   const trapRef = useFocusTrap()
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
   const [detail, setDetail] = useState<MemoryDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -89,10 +83,11 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
       })
       .catch(() => {
         toast.error('메모리 상세 정보를 불러오지 못했습니다.')
-        onClose()
+        onCloseRef.current()
       })
       .finally(() => setIsLoading(false))
-  }, [memoryId, onClose, toast])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memoryId])
 
   const enterEditMode = useCallback(() => {
     if (!detail) return

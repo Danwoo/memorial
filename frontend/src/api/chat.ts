@@ -63,6 +63,7 @@ export async function readSSEStream(
   let references: ChatReference[] | undefined
 
   try {
+    let finished = false
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const { done, value } = await reader.read()
@@ -84,6 +85,7 @@ export async function readSSEStream(
           }
           if (data.done) {
             if (data.title) title = data.title
+            finished = true
             break
           }
           if (data.references) {
@@ -98,6 +100,7 @@ export async function readSSEStream(
           // 파싱 불가능한 SSE 라인 무시
         }
       }
+      if (finished) break
     }
   } finally {
     reader.releaseLock()

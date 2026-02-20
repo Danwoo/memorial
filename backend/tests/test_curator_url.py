@@ -10,6 +10,7 @@ sys.path.insert(0, backend_dir)
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(os.getenv("CI") == "true", reason="CI 환경에서 외부 네트워크 호출 불가")
 async def test_curator_url():
     """curator_node URL 처리 기본 테스트."""
     from app.agents.librarian.nodes.curator import curator_node

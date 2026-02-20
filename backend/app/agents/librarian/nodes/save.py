@@ -1,12 +1,8 @@
 import logging
 from uuid import UUID
 
+from app.agents.container import get_agent_container
 from app.agents.state import AgentState
-from app.config.database import get_supabase_client
-from app.config.dependencies import get_graph_repository
-from app.repositories.memory_repository import MemoryRepository
-from app.repositories.vector_repository import VectorRepository
-from app.services.memory_service import MemoryService
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +22,9 @@ async def save_node(state: AgentState) -> dict:
         return {"next_step": "end", "error": "No memory_id provided"}
 
     try:
-        db = get_supabase_client()
-        memory_repo = MemoryRepository(db)
-        vector_repo = VectorRepository(db)
-        graph_repo = get_graph_repository()
-
-        memory_service = MemoryService(memory_repo, vector_repo, graph_repo)
+        container = get_agent_container()
+        memory_service = container.memory_service
+        graph_repo = container.graph_repo
 
         classification = state.get("classification", "FACT")
         summary = state.get("summary", "")

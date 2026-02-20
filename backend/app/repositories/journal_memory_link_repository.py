@@ -16,14 +16,11 @@ class JournalMemoryLinkRepository:
         memory_ids: list[str],
         link_type: str = "manual",
     ) -> int:
-        """저널에 연결된 메모리 목록을 동기화. 기존 링크 삭제 후 새로 삽입."""
+        """저널에 연결된 메모리 목록을 동기화. 삽입 먼저 → 미포함 항목 삭제."""
         if not memory_ids:
             return 0
 
-        # 기존 해당 타입 링크 삭제
-        await asyncio.to_thread(self._delete_by_journal_and_type, str(journal_id), link_type)
-
-        # 새 링크 삽입
+        # 새 링크 삽입 (upsert)
         rows = [
             {
                 "journal_id": str(journal_id),
@@ -33,6 +30,10 @@ class JournalMemoryLinkRepository:
             for mid in memory_ids
         ]
         response = await asyncio.to_thread(self._upsert_links, rows)
+
+        # 새 목록에 없는 기존 링크 삭제
+        await asyncio.to_thread(self._delete_excluded, str(journal_id), link_type, memory_ids)
+
         return len(response.data) if response.data else 0
 
     async def get_journals_by_memory(self, memory_id: UUID) -> list[dict]:
@@ -57,6 +58,12 @@ class JournalMemoryLinkRepository:
             .eq("link_type", link_type)
             .execute()
         )
+
+    def _delete_excluded(self, journal_id: str, link_type: str, keep_ids: list[str]):
+        query = self.db.table("journal_memory_links").delete().eq("journal_id", journal_id).eq("link_type", link_type)
+        for mid in keep_ids:
+            query = query.neq("memory_id", mid)
+        return query.execute()
 
     def _upsert_links(self, rows: list[dict]):
         return self.db.table("journal_memory_links").upsert(rows, on_conflict="journal_id,memory_id").execute()

@@ -5,6 +5,16 @@ from supabase import Client
 
 from app.config.database import get_supabase_client
 
+# ─── DI 구조 설명 ──────────────────────────────────────────────────────────
+# FastAPI의 Depends 시스템을 활용한 의존성 주입 컨테이너.
+#
+# 계층 구조:
+#   DB Client (Supabase) → Repository → Service → Router
+#
+# 각 팩토리 함수는 FastAPI 라우터에서 Depends()로 주입됨.
+# Repository는 DB 클라이언트를 받고, Service는 Repository를 받는 구조.
+# GraphRepository만 @lru_cache로 싱글톤 관리 (KuzuDB 초기화 비용 절감).
+# ────────────────────────────────────────────────────────────────────────────
 # --- Repositories ---
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.graph_repository import GraphRepository
@@ -92,15 +102,6 @@ def get_chat_service(
     return ChatService(chat_repo)
 
 
-def get_search_service(
-    vector_repo: VectorRepository = Depends(get_vector_repository),
-    memory_repo: MemoryRepository = Depends(get_memory_repository),
-    graph_repo: GraphRepository = Depends(get_graph_repository),
-) -> SearchService:
-    """SearchService 인스턴스 생성."""
-    return SearchService(vector_repo, memory_repo, graph_repo)
-
-
 def get_hybrid_search_service(
     vector_repo: VectorRepository = Depends(get_vector_repository),
     graph_repo: GraphRepository = Depends(get_graph_repository),
@@ -108,6 +109,16 @@ def get_hybrid_search_service(
 ) -> HybridSearchService:
     """HybridSearchService 인스턴스 생성."""
     return HybridSearchService(vector_repo, graph_repo, memory_repo)
+
+
+def get_search_service(
+    vector_repo: VectorRepository = Depends(get_vector_repository),
+    memory_repo: MemoryRepository = Depends(get_memory_repository),
+    graph_repo: GraphRepository = Depends(get_graph_repository),
+    hybrid_search: HybridSearchService = Depends(get_hybrid_search_service),
+) -> SearchService:
+    """SearchService 인스턴스 생성."""
+    return SearchService(vector_repo, memory_repo, graph_repo, hybrid_search=hybrid_search)
 
 
 def get_stats_service(
@@ -162,10 +173,12 @@ def get_kakao_channel_service(
 
 
 def get_export_service(
-    db: Client = Depends(get_db),
+    memory_repo: MemoryRepository = Depends(get_memory_repository),
+    journal_repo: JournalRepository = Depends(get_journal_repository),
+    chat_repo: ChatRepository = Depends(get_chat_repository),
 ) -> ExportService:
     """ExportService 인스턴스 생성."""
-    return ExportService(db)
+    return ExportService(memory_repo, journal_repo, chat_repo)
 
 
 def get_insight_service(

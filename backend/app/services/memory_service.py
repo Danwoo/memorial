@@ -105,6 +105,7 @@ class MemoryService:
             source_type=source_type,
             extracted_entities=entities or [],
             extracted_relations=relations or [],
+            user_id=UUID(user_id) if user_id else None,
         )
 
         if self.graph_repo and entities:

@@ -100,22 +100,15 @@ class DigestService:
         }
 
     async def _get_today_memories(self, start: datetime, end: datetime, user_id: UUID | None = None) -> list[dict]:
-        """오늘 생성된 Memory 조회."""
+        """오늘 생성된 Memory 조회 (DB 날짜 범위 쿼리)."""
+        if not user_id:
+            return []
         try:
-            all_memories = await self.memory_repo.get_all(user_id=user_id)
-
-            today_memories = []
-            for memory in all_memories:
-                created_at_str = memory.get("created_at", "")
-                if created_at_str:
-                    try:
-                        created_at = parse_iso_datetime(created_at_str)
-                        if start <= created_at <= end:
-                            today_memories.append(memory)
-                    except (ValueError, TypeError) as e:
-                        logger.debug("Skipping memory with unparseable date: %s", e)
-
-            return today_memories
+            return await self.memory_repo.get_by_date_range(
+                user_id=user_id,
+                start=start.isoformat(),
+                end=end.isoformat(),
+            )
         except Exception:
             logger.exception("Error fetching today's memories")
             return []

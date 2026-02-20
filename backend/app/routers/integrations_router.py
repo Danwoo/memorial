@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import time
+from datetime import UTC, datetime
 from uuid import UUID
 
 import httpx
@@ -127,7 +128,7 @@ async def store_provider_token(
 
 
 @router.get("/bot-settings", response_model=BotSettingsResponse)
-def get_bot_settings(
+async def get_bot_settings(
     user_id: UUID = Depends(get_user_id),
     db: Client = Depends(get_db),
 ):
@@ -135,7 +136,9 @@ def get_bot_settings(
     try:
         uid = str(user_id)
 
-        settings_result = db.table("kakao_bot_settings").select("*").eq("user_id", uid).execute()
+        settings_result = await asyncio.to_thread(
+            lambda: db.table("kakao_bot_settings").select("*").eq("user_id", uid).execute()
+        )
 
         if settings_result.data:
             data = settings_result.data[0]
@@ -149,13 +152,15 @@ def get_bot_settings(
         else:
             response = BotSettingsResponse()
 
-        log_result = (
-            db.table("kakao_delivery_log")
-            .select("digest_date, status, error_message, delivered_at")
-            .eq("user_id", uid)
-            .order("delivered_at", desc=True)
-            .limit(1)
-            .execute()
+        log_result = await asyncio.to_thread(
+            lambda: (
+                db.table("kakao_delivery_log")
+                .select("digest_date, status, error_message, delivered_at")
+                .eq("user_id", uid)
+                .order("delivered_at", desc=True)
+                .limit(1)
+                .execute()
+            )
         )
 
         if log_result.data:
@@ -168,7 +173,7 @@ def get_bot_settings(
 
 
 @router.put("/bot-settings", response_model=BotSettingsResponse)
-def update_bot_settings(
+async def update_bot_settings(
     request: BotSettingsUpdateRequest,
     user_id: UUID = Depends(get_user_id),
     db: Client = Depends(get_db),
@@ -183,7 +188,9 @@ def update_bot_settings(
     # 활성화 시 카카오 토큰 존재 여부 검증
     if update_data.get("enabled"):
         try:
-            token_result = db.table("kakao_tokens").select("user_id").eq("user_id", uid).execute()
+            token_result = await asyncio.to_thread(
+                lambda: db.table("kakao_tokens").select("user_id").eq("user_id", uid).execute()
+            )
             if not token_result.data:
                 raise HTTPException(
                     status_code=400,
@@ -196,10 +203,12 @@ def update_bot_settings(
             raise HTTPException(status_code=500, detail="Token verification failed") from e
 
     try:
-        upsert_data = {"user_id": uid, **update_data, "updated_at": "now()"}
-        db.table("kakao_bot_settings").upsert(upsert_data, on_conflict="user_id").execute()
+        upsert_data = {"user_id": uid, **update_data, "updated_at": datetime.now(UTC).isoformat()}
+        await asyncio.to_thread(
+            lambda: db.table("kakao_bot_settings").upsert(upsert_data, on_conflict="user_id").execute()
+        )
 
-        return get_bot_settings(user_id=user_id, db=db)
+        return await get_bot_settings(user_id=user_id, db=db)
     except HTTPException:
         raise
     except Exception as e:
@@ -274,13 +283,13 @@ async def _schedule_librarian_for_kakao(
 
 
 @router.post("/kakao/channel/link-code", response_model=ChannelLinkCodeResponse)
-def generate_channel_link_code(
+async def generate_channel_link_code(
     user_id: UUID = Depends(get_user_id),
     channel_service: KakaoChannelService = Depends(get_kakao_channel_service),
 ):
     """카카오 채널 페어링용 임시 연결 코드 생성."""
     try:
-        result = channel_service.generate_link_code(str(user_id))
+        result = await asyncio.to_thread(channel_service.generate_link_code, str(user_id))
         return ChannelLinkCodeResponse(**result)
     except Exception as e:
         logger.exception("Failed to generate link code")
@@ -288,13 +297,13 @@ def generate_channel_link_code(
 
 
 @router.get("/kakao/channel/status", response_model=ChannelStatusResponse)
-def get_channel_status(
+async def get_channel_status(
     user_id: UUID = Depends(get_user_id),
     channel_service: KakaoChannelService = Depends(get_kakao_channel_service),
 ):
     """카카오 채널 연결 상태 확인."""
     try:
-        result = channel_service.get_channel_status(str(user_id))
+        result = await asyncio.to_thread(channel_service.get_channel_status, str(user_id))
         return ChannelStatusResponse(**result)
     except Exception as e:
         logger.exception("Failed to get channel status")
@@ -302,7 +311,7 @@ def get_channel_status(
 
 
 @router.post("/kakao/channel/link-by-token")
-def complete_link_by_token(
+async def complete_link_by_token(
     body: dict,
     user_id: UUID = Depends(get_user_id),
     channel_service: KakaoChannelService = Depends(get_kakao_channel_service),
@@ -312,7 +321,7 @@ def complete_link_by_token(
     if not token:
         raise HTTPException(status_code=400, detail="token is required")
     try:
-        result = channel_service.complete_link_by_token(token, str(user_id))
+        result = await asyncio.to_thread(channel_service.complete_link_by_token, token, str(user_id))
         if not result["success"]:
             error_messages = {
                 "invalid_token": "유효하지 않은 토큰입니다.",
@@ -329,13 +338,13 @@ def complete_link_by_token(
 
 
 @router.delete("/kakao/channel/disconnect")
-def disconnect_channel(
+async def disconnect_channel(
     user_id: UUID = Depends(get_user_id),
     channel_service: KakaoChannelService = Depends(get_kakao_channel_service),
 ):
     """카카오 채널 연결 해제 (소프트 삭제)."""
     try:
-        success = channel_service.disconnect_channel(str(user_id))
+        success = await asyncio.to_thread(channel_service.disconnect_channel, str(user_id))
         if not success:
             raise HTTPException(status_code=404, detail="No active channel connection found")
         return {"success": True, "message": "채널 연결이 해제되었습니다"}

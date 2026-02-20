@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from uuid import UUID
 
@@ -104,12 +103,7 @@ class DuplicateService:
         merge_tags = merge.tags or []
         merged_tags = list(dict.fromkeys(keep_tags + merge_tags))
 
-        await asyncio.to_thread(
-            self.memory_repo._update_with_owner,
-            str(keep_id),
-            str(user_id),
-            {"tags": merged_tags},
-        )
+        await self.memory_repo.update_tags(keep_id, user_id, merged_tags)
         await self.memory_repo.delete(merge_id, user_id)
 
         return merged_tags

@@ -5,6 +5,13 @@ import { supabase } from '../lib/supabase'
 import { storeProviderToken } from '../api'
 import type { User } from '../types'
 
+// ─── 인증 플로우 설명 ──────────────────────────────────────────────────────
+// 1. Supabase OAuth (Google/Kakao) → 세션 발급 → access_token을 localStorage에 저장
+// 2. API 클라이언트(client.ts)가 localStorage의 토큰을 Authorization 헤더에 자동 첨부
+// 3. 카카오 로그인 시 provider_token을 백엔드에 별도 저장 (카카오톡 메시지 전송용)
+// 4. onAuthStateChange로 세션 갱신/만료를 실시간 감지하여 UI 상태 동기화
+// ────────────────────────────────────────────────────────────────────────────
+
 // ─── 타입 정의 ──────────────────────────────────────────────────────────────
 
 interface AuthContextValue {

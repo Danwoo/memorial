@@ -1,93 +1,19 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ForceGraph2D from 'react-force-graph-2d'
-import { BookOpen, Lightbulb } from 'lucide-react'
+import { Lightbulb } from 'lucide-react'
 import type { GraphNode, GraphLink, GraphData, SearchResult, GraphInsights, ClusterInfo } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
 import { fetchGraph, fetchGraphInsights, searchMemories } from '../api'
 import MemoryDetailModal from './MemoryDetailModal'
 import GraphInsightPanel, { CLUSTER_COLORS } from './GraphInsightPanel'
+import NodeInfoPanel from './graph/NodeInfoPanel'
+import GraphLegend from './graph/GraphLegend'
+import { NODE_COLORS } from './graph/graphConstants'
 import './GraphView.css'
 
-// 노드 타입별 색상 팔레트
-const NODE_COLORS: Record<string, string> = {
-  Memory: '#a78bfa',
-  Entity: '#34d399',
-  Concept: '#60a5fa',
-  Person: '#f472b6',
-  Organization: '#fb923c',
-  Company: '#fb923c',
-  Technology: '#22d3ee',
-  Platform: '#a3e635',
-  Product: '#e879f9',
-  Location: '#fbbf24',
-  Event: '#f87171',
-  Topic: '#818cf8',
-  Idea: '#818cf8',
-  Framework: '#22d3ee',
-  Language: '#60a5fa',
-  Tool: '#34d399',
-  default: '#9ca3af',
-}
-
-// 노드 타입 한국어 매핑
-const NODE_TYPE_KO: Record<string, string> = {
-  Memory: '메모리',
-  Entity: '엔티티',
-  Concept: '개념',
-  Person: '인물',
-  Organization: '조직',
-  Company: '회사',
-  Technology: '기술',
-  Platform: '플랫폼',
-  Product: '제품',
-  Location: '장소',
-  Event: '이벤트',
-  Topic: '주제',
-  Idea: '아이디어',
-  Framework: '프레임워크',
-  Language: '언어',
-  Tool: '도구',
-}
-
-// 관계 타입 한국어 매핑
-const LINK_TYPE_KO: Record<string, string> = {
-  RELATED_TO: '관련',
-  RELATES_TO: '관련',
-  MENTIONED_IN: '언급됨',
-  MENTIONS: '언급',
-  HAS_TAG: '태그',
-  HAS_ENTITY: '엔티티 포함',
-  ASSOCIATED_WITH: '연관',
-  PART_OF: '소속',
-  CAUSED_BY: '원인',
-  WORKS_AT: '근무',
-  LOCATED_IN: '위치',
-  CREATED_BY: '작성자',
-  USED_BY: '사용자',
-  USED_IN: '사용됨',
-  USED_FOR: '용도',
-  USES: '사용',
-  SIMILAR_TO: '유사',
-  OPPOSITE_OF: '반대',
-  DEPENDS_ON: '의존',
-  DERIVED_FROM: '파생',
-  CONTAINS: '포함',
-  BELONGS_TO: '소속',
-  HAS: '보유',
-  IS_A: '분류',
-  BUILT_WITH: '구축',
-  INSPIRED_BY: '영감',
-}
-
-// 한국어 변환 헬퍼
-function toKo(type: string, map: Record<string, string>): string {
-  return map[type] || type
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyNode = GraphNode & { x?: number; y?: number; [k: string]: any }
+type AnyNode = GraphNode & { x?: number; y?: number; vx?: number; vy?: number; fx?: number; fy?: number }
 
 export default function GraphView() {
   const navigate = useNavigate()
@@ -611,30 +537,11 @@ export default function GraphView() {
 
       {/* 범례 */}
       {!loading && nodeTypes.length > 0 && (
-        <div className="graph-legend">
-          <h4>노드 유형</h4>
-          <div className="legend-items">
-            {nodeTypes.map(type => (
-              <button
-                key={type}
-                className={`legend-item ${hiddenTypes.has(type) ? 'legend-item-hidden' : ''}`}
-                onClick={() => toggleType(type)}
-                aria-pressed={!hiddenTypes.has(type)}
-                aria-label={`${toKo(type, NODE_TYPE_KO)} 노드 필터`}
-              >
-                <span
-                  className="legend-dot"
-                  style={{
-                    backgroundColor: hiddenTypes.has(type)
-                      ? '#444'
-                      : NODE_COLORS[type] || NODE_COLORS['default'],
-                  }}
-                />
-                <span className="legend-label">{toKo(type, NODE_TYPE_KO)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        <GraphLegend
+          nodeTypes={nodeTypes}
+          hiddenTypes={hiddenTypes}
+          onToggleType={toggleType}
+        />
       )}
 
       {/* 인사이트 토글 버튼 */}
@@ -676,109 +583,17 @@ export default function GraphView() {
 
       {/* 선택된 노드 상세 패널 */}
       {selectedNode && (
-        <div className="node-info-panel">
-          <div className="node-info-header">
-            <span
-              className="node-type-badge"
-              style={{ backgroundColor: selectedNode.color }}
-            >
-              {toKo(selectedNode.label, NODE_TYPE_KO)}
-            </span>
-            <button className="close-btn" onClick={() => setSelectedNode(null)} aria-label="패널 닫기">
-              &times;
-            </button>
-          </div>
-          <h3>{selectedNode.name}</h3>
-          <div className="node-meta">
-            <span className="node-meta-item">연결 {selectedConnections.length}개</span>
-            {selectedNode.properties?.source_type && (
-              <span className="node-meta-item">{selectedNode.properties.source_type as string}</span>
-            )}
-            {selectedNode.properties?.created_at && (
-              <span className="node-meta-item">{(selectedNode.properties.created_at as string).substring(0, 10)}</span>
-            )}
-          </div>
-
-          {selectedNode.properties?.summary && (
-            <p className="node-summary">{selectedNode.properties.summary as string}</p>
-          )}
-
-          {selectedNode.properties?.tags && (
-            <div className="node-tags">
-              {(selectedNode.properties.tags as string[]).map((tag: string, i: number) => (
-                <span key={i} className="node-tag">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {selectedConnections.length > 0 && (
-            <div className="node-connections">
-              <h4>연결 ({selectedConnections.length})</h4>
-              <ul>
-                {selectedConnections.slice(0, 10).map((conn, i) => (
-                  <li
-                    key={i}
-                    className="conn-clickable"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleConnectionClick(conn.id)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleConnectionClick(conn.id) } }}
-                  >
-                    <span className="conn-dot" style={{ backgroundColor: conn.color }} />
-                    <span className="conn-type">{toKo(conn.type, LINK_TYPE_KO)}</span>
-                    <span className="conn-name">{conn.name}</span>
-                  </li>
-                ))}
-                {selectedConnections.length > 10 && (
-                  <li className="conn-more">+{selectedConnections.length - 10}개 더</li>
-                )}
-              </ul>
-            </div>
-          )}
-
-          {/* 관련 메모리 */}
-          <div className="node-memories">
-            <h4>관련 메모리</h4>
-            {isLoadingMemories && <p className="memories-loading">불러오는 중...</p>}
-            {!isLoadingMemories && relatedMemories.length === 0 && (
-              <p className="memories-empty">관련 메모리가 없습니다</p>
-            )}
-            {!isLoadingMemories && relatedMemories.length > 0 && (
-              <>
-                <ul>
-                  {relatedMemories.map(m => (
-                    <li
-                      key={m.id}
-                      className="memory-item"
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setSelectedMemoryId(m.id)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedMemoryId(m.id) } }}
-                    >
-                      <BookOpen size={14} className="memory-icon" />
-                      <span className="memory-title">{m.title || m.content?.substring(0, 40) || '메모리'}</span>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  className="view-in-memories-link"
-                  onClick={() => navigate('/memories')}
-                >
-                  기억 뷰에서 보기 →
-                </button>
-              </>
-            )}
-          </div>
-
-          <button
-            className="chat-with-topic-btn"
-            onClick={() => handleStartChat(selectedNode)}
-          >
-            이 주제로 대화하기
-          </button>
-        </div>
+        <NodeInfoPanel
+          node={selectedNode}
+          connections={selectedConnections}
+          relatedMemories={relatedMemories}
+          isLoadingMemories={isLoadingMemories}
+          onClose={() => setSelectedNode(null)}
+          onConnectionClick={handleConnectionClick}
+          onMemoryClick={setSelectedMemoryId}
+          onStartChat={handleStartChat}
+          onViewMemories={() => navigate('/memories')}
+        />
       )}
 
       {/* 조작 안내 */}
