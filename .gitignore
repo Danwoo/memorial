@@ -66,3 +66,4 @@ backend/scripts/
 
 # Chrome Extension (contains hardcoded API keys)
 extension/
+.vercel
