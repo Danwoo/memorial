@@ -1,24 +1,7 @@
-import { API_BASE } from './client'
-import { get } from './client'
-
-function getAuthToken(): string | null {
-  return localStorage.getItem('auth_token')
-}
-
-function buildAuthHeaders(): HeadersInit {
-  const headers: Record<string, string> = {}
-  const token = getAuthToken()
-  if (token) headers['Authorization'] = `Bearer ${token}`
-  return headers
-}
+import { get, getBlob } from './client'
 
 async function downloadFile(path: string, filename: string): Promise<void> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: buildAuthHeaders(),
-  })
-  if (!res.ok) throw new Error(`Export failed: ${res.status}`)
-
-  const blob = await res.blob()
+  const blob = await getBlob(path)
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url

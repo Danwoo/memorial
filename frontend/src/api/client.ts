@@ -168,6 +168,16 @@ export async function patch<T>(path: string, body?: unknown): Promise<T> {
   return res.json() as Promise<T>
 }
 
+// 인증 헤더 포함 GET 요청 후 Blob 반환 (파일 다운로드용)
+export async function getBlob(path: string): Promise<Blob> {
+  const res = await fetchWithRetry(`${API_BASE}${path}`, {
+    headers: buildHeaders(),
+  })
+
+  if (!res.ok) await handleErrorResponse(res)
+  return res.blob()
+}
+
 // 타입 안전한 DELETE 요청
 export async function del<T = void>(path: string): Promise<T> {
   const res = await fetchWithRetry(`${API_BASE}${path}`, {
