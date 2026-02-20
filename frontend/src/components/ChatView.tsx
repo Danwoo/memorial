@@ -4,12 +4,13 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
   User, Bot, ArrowUp,
-  Paperclip, ChevronDown, ChevronUp, FileText, Globe, StickyNote,
+  Paperclip, ChevronDown, ChevronUp,
   ThumbsUp, ThumbsDown,
 } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import type { ChatMessage, ChatLocationState, BriefingData, ChatFeedback } from '../types'
 import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream, fetchBriefing, sendFeedback, fetchFeedbacks } from '../api'
+import SourceIcon from './shared/SourceIcon'
 import './ChatView.css'
 
 const ERROR_MESSAGE = '죄송합니다, 오류가 발생했습니다. 다시 시도해주세요.'
@@ -220,14 +221,6 @@ export default function ChatView() {
     })
   }, [])
 
-  const getSourceIcon = (sourceType: string) => {
-    switch (sourceType) {
-      case 'WEB': return <Globe size={14} />
-      case 'PDF': return <FileText size={14} />
-      default: return <StickyNote size={14} />
-    }
-  }
-
   const hasBriefingContent = briefing && briefing.today_memories.count > 0
 
   return (
@@ -313,7 +306,7 @@ export default function ChatView() {
                                   onClick={() => navigate(`/memories`)}
                                   type="button"
                                 >
-                                  {getSourceIcon(ref.source_type)}
+                                  <SourceIcon type={ref.source_type} size={14} />
                                   <span className="chat-reference-title">{ref.title}</span>
                                   <span className="chat-reference-date">{ref.created_at}</span>
                                 </button>
