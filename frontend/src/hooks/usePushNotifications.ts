@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { API_BASE } from '../api/client'
+import { get, post } from '../api/client'
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -35,9 +35,7 @@ export function usePushNotifications() {
       await navigator.serviceWorker.ready
 
       // VAPID 공개키 조회
-      const keyRes = await fetch(`${API_BASE}/settings/push/vapid-key`)
-      if (!keyRes.ok) throw new Error('VAPID 키 조회 실패')
-      const { publicKey } = await keyRes.json()
+      const { publicKey } = await get<{ publicKey: string }>('/settings/push/vapid-key')
 
       // Push 구독
       const subscription = await reg.pushManager.subscribe({
@@ -47,24 +45,11 @@ export function usePushNotifications() {
 
       const subJson = subscription.toJSON()
 
-      // 백엔드에 구독 정보 전송
-      const keys = Object.keys(localStorage).filter(
-        (k) => k.startsWith('sb-') && k.endsWith('-auth-token'),
-      )
-      const tokenData = keys.length > 0 ? JSON.parse(localStorage.getItem(keys[0]) || '{}') : null
-      const accessToken = tokenData?.access_token
-
-      await fetch(`${API_BASE}/settings/push/subscribe`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          endpoint: subJson.endpoint,
-          p256dh: subJson.keys?.p256dh || '',
-          auth: subJson.keys?.auth || '',
-        }),
+      // 백엔드에 구독 정보 전송 (API 클라이언트가 인증 토큰 자동 처리)
+      await post('/settings/push/subscribe', {
+        endpoint: subJson.endpoint,
+        p256dh: subJson.keys?.p256dh || '',
+        auth: subJson.keys?.auth || '',
       })
 
       setIsSubscribed(true)

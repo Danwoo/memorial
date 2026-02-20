@@ -83,6 +83,11 @@ class JournalRepository:
         response = await asyncio.to_thread(self._select_by_date, str(user_id), date_str)
         return response.data
 
+    async def get_all_for_export(self, user_id: UUID, limit: int = 10000) -> list[dict]:
+        """내보내기용 전체 저널 조회."""
+        result = await asyncio.to_thread(self._select_all_for_export, str(user_id), limit)
+        return result.data or []
+
     async def get_journals_in_range(
         self,
         user_id: UUID,
@@ -143,6 +148,16 @@ class JournalRepository:
             .eq("user_id", user_id)
             .gte("created_at", start_iso)
             .lte("created_at", end_iso)
+            .execute()
+        )
+
+    def _select_all_for_export(self, user_id: str, limit: int):
+        return (
+            self.db.table("journals")
+            .select("id, content, mood, tags, created_at, updated_at")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .limit(limit)
             .execute()
         )
 

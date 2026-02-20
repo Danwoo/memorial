@@ -101,18 +101,8 @@ class ReportService:
 
     async def _count_journals(self, user_id: UUID, start: datetime, end: datetime) -> int:
         """기간 내 저널 수 조회."""
-        import asyncio
-
         try:
-            result = await asyncio.to_thread(
-                lambda: self.stats_repo.db.table("journals")
-                .select("id", count="exact")
-                .eq("user_id", str(user_id))
-                .gte("created_at", start.isoformat())
-                .lte("created_at", end.isoformat())
-                .execute()
-            )
-            return result.count or 0
+            return await self.stats_repo.count_journals_in_range(user_id, start, end)
         except Exception:
             return 0
 

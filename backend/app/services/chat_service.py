@@ -45,9 +45,9 @@ class ChatService:
         """새 채팅 세션 생성."""
         return await self.chat_repo.create_session(user_id, title)
 
-    async def get_session(self, session_id: UUID) -> dict | None:
-        """ID로 세션 조회."""
-        return await self.chat_repo.get_session(session_id)
+    async def get_session(self, session_id: UUID, user_id: UUID | None = None) -> dict | None:
+        """ID로 세션 조회. user_id 지정 시 소유권도 함께 검증."""
+        return await self.chat_repo.get_session(session_id, user_id)
 
     async def list_sessions(self, user_id: UUID) -> list[dict]:
         """사용자의 전체 세션 목록 조회 (최신순)."""

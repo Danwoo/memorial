@@ -73,6 +73,17 @@ class MemoryRepository:
         result = await asyncio.to_thread(self._select_all, str(user_id) if user_id else None, limit)
         return result.data or []
 
+    async def get_by_date_range(
+        self,
+        user_id: UUID,
+        start: str,
+        end: str,
+        limit: int = 1000,
+    ) -> list[dict]:
+        """날짜 범위로 Memory 조회 (raw dict 반환). start/end는 ISO 문자열."""
+        result = await asyncio.to_thread(self._select_by_date_range, str(user_id), start, end, limit)
+        return result.data or []
+
     async def get_by_user(
         self,
         user_id: UUID,
@@ -115,6 +126,7 @@ class MemoryRepository:
         source_type: str | None = None,
         extracted_entities: list[dict] | None = None,
         extracted_relations: list[dict] | None = None,
+        user_id: UUID | None = None,
     ) -> bool:
         """Memory 상태 업데이트. 선택적으로 summary/tags/그래프 데이터도 갱신."""
         now = datetime.now(UTC).isoformat()
@@ -134,7 +146,7 @@ class MemoryRepository:
         if extracted_relations is not None:
             update_data["extracted_relations"] = extracted_relations
 
-        result = await asyncio.to_thread(self._update, str(memory_id), update_data)
+        result = await asyncio.to_thread(self._update, str(memory_id), update_data, str(user_id) if user_id else None)
         return len(result.data) > 0 if result.data else False
 
     async def update_fields(
@@ -181,6 +193,21 @@ class MemoryRepository:
         if not prefix:
             tags_cache.set(cache_key, sorted_tags)
         return sorted_tags
+
+    async def get_all_for_export(self, user_id: UUID, limit: int = 10000) -> list[dict]:
+        """내보내기용 전체 Memory 조회."""
+        result = await asyncio.to_thread(self._select_all_for_export, str(user_id), limit)
+        return result.data or []
+
+    async def update_tags(self, memory_id: UUID, user_id: UUID, tags: list[str]) -> bool:
+        """사용자 소유 메모리의 태그 업데이트."""
+        result = await asyncio.to_thread(
+            self._update_with_owner,
+            str(memory_id),
+            str(user_id),
+            {"tags": tags, "updated_at": datetime.now(UTC).isoformat()},
+        )
+        return len(result.data) > 0 if result.data else False
 
     async def delete(self, memory_id: UUID, user_id: UUID) -> bool:
         """Memory 삭제."""
@@ -249,6 +276,18 @@ class MemoryRepository:
     def _select_single(self, memory_id: str, user_id: str):
         return self.db.table("memories").select("*").eq("id", memory_id).eq("user_id", user_id).single().execute()
 
+    def _select_by_date_range(self, user_id: str, start: str, end: str, limit: int):
+        return (
+            self.db.table("memories")
+            .select("*")
+            .eq("user_id", user_id)
+            .gte("created_at", start)
+            .lte("created_at", end)
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+
     def _select_all(self, user_id: str | None, limit: int):
         query = self.db.table("memories").select("*")
         if user_id is not None:
@@ -293,8 +332,11 @@ class MemoryRepository:
         query = query.order(col, desc=(sort_order == "desc")).range(offset, offset + limit - 1)
         return query.execute()
 
-    def _update(self, memory_id: str, update_data: dict):
-        return self.db.table("memories").update(update_data).eq("id", memory_id).execute()
+    def _update(self, memory_id: str, update_data: dict, user_id: str | None = None):
+        query = self.db.table("memories").update(update_data).eq("id", memory_id)
+        if user_id:
+            query = query.eq("user_id", user_id)
+        return query.execute()
 
     def _update_with_owner(self, memory_id: str, user_id: str, update_data: dict):
         return self.db.table("memories").update(update_data).eq("id", memory_id).eq("user_id", user_id).execute()
@@ -307,6 +349,16 @@ class MemoryRepository:
 
     def _delete_bulk(self, memory_ids: list[str], user_id: str):
         return self.db.table("memories").delete().in_("id", memory_ids).eq("user_id", user_id).execute()
+
+    def _select_all_for_export(self, user_id: str, limit: int):
+        return (
+            self.db.table("memories")
+            .select("id, title, summary, content, tags, source_url, source_type, created_at, updated_at")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
 
     def _select_tags_for_ids(self, memory_ids: list[str], user_id: str):
         return self.db.table("memories").select("id,tags").in_("id", memory_ids).eq("user_id", user_id).execute()

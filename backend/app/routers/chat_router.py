@@ -61,11 +61,9 @@ async def update_session(
     chat_service: ChatService = Depends(get_chat_service),
 ):
     """세션 제목 업데이트."""
-    session = await chat_service.get_session(session_id)
+    session = await chat_service.get_session(session_id, user_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    if session.get("user_id") != str(user_id):
-        raise HTTPException(status_code=403, detail="Access denied")
 
     await chat_service.update_session_title(session_id, data.title)
     session["title"] = data.title
@@ -85,11 +83,9 @@ async def send_message(
     chat_service: ChatService = Depends(get_chat_service),
 ):
     """메시지 전송 후 SSE 스트리밍으로 AI 응답 반환."""
-    session = await chat_service.get_session(session_id)
+    session = await chat_service.get_session(session_id, user_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    if session.get("user_id") != str(user_id):
-        raise HTTPException(status_code=403, detail="Access denied")
 
     return StreamingResponse(
         chat_service.send_message(session_id, user_id, data.content, data.mode),
@@ -112,11 +108,9 @@ async def get_history(
     chat_service: ChatService = Depends(get_chat_service),
 ):
     """특정 세션의 채팅 이력 조회."""
-    session = await chat_service.get_session(session_id)
+    session = await chat_service.get_session(session_id, user_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    if session.get("user_id") != str(user_id):
-        raise HTTPException(status_code=403, detail="Access denied")
 
     history = await chat_service.get_history(session_id)
 
@@ -141,11 +135,9 @@ async def add_feedback(
     chat_service: ChatService = Depends(get_chat_service),
 ):
     """메시지 피드백 저장 (thumbs up/down)."""
-    session = await chat_service.get_session(session_id)
+    session = await chat_service.get_session(session_id, user_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    if session.get("user_id") != str(user_id):
-        raise HTTPException(status_code=403, detail="Access denied")
 
     success = await chat_service.add_feedback(session_id, data.message_index, user_id, data.rating)
     return ChatFeedbackResponse(success=success)
@@ -158,11 +150,9 @@ async def get_feedbacks(
     chat_service: ChatService = Depends(get_chat_service),
 ):
     """세션의 전체 피드백 조회."""
-    session = await chat_service.get_session(session_id)
+    session = await chat_service.get_session(session_id, user_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    if session.get("user_id") != str(user_id):
-        raise HTTPException(status_code=403, detail="Access denied")
 
     return await chat_service.get_feedbacks(session_id)
 
@@ -174,11 +164,9 @@ async def summarize_session(
     chat_service: ChatService = Depends(get_chat_service),
 ):
     """세션 대화를 요약하여 저장."""
-    session = await chat_service.get_session(session_id)
+    session = await chat_service.get_session(session_id, user_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    if session.get("user_id") != str(user_id):
-        raise HTTPException(status_code=403, detail="Access denied")
 
     summary = await chat_service.generate_session_summary(session_id)
     return {"summary": summary}

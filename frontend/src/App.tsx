@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ChatSessionProvider } from './contexts/ChatSessionContext'
 import { DemoProvider } from './contexts/DemoContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ToastProvider } from './contexts/ToastContext'
@@ -72,7 +73,9 @@ function App() {
               element={
                 <DemoProvider>
                   <ProtectedRoute>
-                    <AppLayout />
+                    <ChatSessionProvider>
+                      <AppLayout />
+                    </ChatSessionProvider>
                   </ProtectedRoute>
                 </DemoProvider>
               }

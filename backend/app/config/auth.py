@@ -1,12 +1,34 @@
+import logging
 from uuid import UUID
 
 import httpx
+import jwt as pyjwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config.settings import get_settings
 
+logger = logging.getLogger(__name__)
+
 security = HTTPBearer(auto_error=False)
+
+
+def _verify_jwt_local(token: str, secret: str) -> dict | None:
+    """PyJWT로 로컬 검증. 성공 시 사용자 dict, 실패 시 None 반환."""
+    try:
+        payload = pyjwt.decode(
+            token,
+            secret,
+            algorithms=["HS256"],
+            audience="authenticated",
+        )
+        return {
+            "id": UUID(payload["sub"]),
+            "email": payload.get("email"),
+            "role": payload.get("role", "authenticated"),
+        }
+    except (pyjwt.InvalidTokenError, KeyError, ValueError):
+        return None
 
 
 async def get_current_user(
@@ -14,6 +36,7 @@ async def get_current_user(
 ) -> dict | None:
     """Supabase JWT 토큰을 검증하고 사용자 정보 반환.
 
+    SUPABASE_JWT_SECRET 설정 시 로컬 PyJWT 검증 우선, 실패 시 HTTP 폴백.
     토큰 미제공 시 None 반환 (선택적 인증 엔드포인트용).
     토큰이 유효하지 않으면 401 예외 발생.
     """
@@ -24,6 +47,14 @@ async def get_current_user(
 
     token = credentials.credentials
 
+    # 로컬 JWT 검증 시도 (설정된 경우)
+    if settings.SUPABASE_JWT_SECRET:
+        result = _verify_jwt_local(token, settings.SUPABASE_JWT_SECRET)
+        if result:
+            return result
+        logger.debug("로컬 JWT 검증 실패, HTTP 폴백")
+
+    # HTTP 폴백: Supabase /auth/v1/user 호출
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(

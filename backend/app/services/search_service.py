@@ -24,10 +24,12 @@ class SearchService:
         vector_repo: VectorRepository,
         memory_repo: MemoryRepository | None = None,
         graph_repo: GraphRepository | None = None,
+        *,
+        hybrid_search: HybridSearchService | None = None,
     ):
         self.vector_repo = vector_repo
         self.memory_repo = memory_repo
-        self.hybrid = HybridSearchService(vector_repo, graph_repo, memory_repo)
+        self.hybrid = hybrid_search or HybridSearchService(vector_repo, graph_repo, memory_repo)
 
     async def search(
         self,

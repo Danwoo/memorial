@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { useChatSession } from '../contexts/ChatSessionContext'
 import {
   MessageSquare, BookOpen, PenLine, Network, BarChart3,
   Settings as SettingsIcon,
@@ -73,6 +74,7 @@ interface SidebarProps {
 export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: SidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { refreshFlag } = useChatSession()
   const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
   const [showSessions, setShowSessions] = useState(true)
 
@@ -96,12 +98,10 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
     }
   }, [location.pathname, loadSessions])
 
-  // 세션 제목 자동 생성 시 목록 새로고침
+  // 세션 제목 자동 생성 시 목록 새로고침 (ChatSessionContext 연동)
   useEffect(() => {
-    const handler = () => loadSessions()
-    window.addEventListener('session-title-updated', handler)
-    return () => window.removeEventListener('session-title-updated', handler)
-  }, [loadSessions])
+    if (refreshFlag > 0) loadSessions()
+  }, [refreshFlag, loadSessions])
 
   // 모바일: Escape 키로 사이드바 닫기
   useEffect(() => {

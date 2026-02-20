@@ -4,12 +4,14 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
   User, Bot, ArrowUp,
-  Paperclip, ChevronDown, ChevronUp, FileText, Globe, StickyNote,
+  Paperclip, ChevronDown, ChevronUp,
   ThumbsUp, ThumbsDown,
 } from 'lucide-react'
+import { useChatSession } from '../contexts/ChatSessionContext'
 import { useToast } from '../contexts/ToastContext'
 import type { ChatMessage, ChatLocationState, BriefingData, ChatFeedback } from '../types'
 import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream, fetchBriefing, sendFeedback, fetchFeedbacks } from '../api'
+import SourceIcon from './shared/SourceIcon'
 import './ChatView.css'
 
 const ERROR_MESSAGE = '죄송합니다, 오류가 발생했습니다. 다시 시도해주세요.'
@@ -18,6 +20,7 @@ export default function ChatView() {
   const location = useLocation()
   const navigate = useNavigate()
   const { sessionId: urlSessionId } = useParams<{ sessionId: string }>()
+  const { triggerRefresh } = useChatSession()
   const toast = useToast()
 
   const [sessionId, setSessionId] = useState<string | null>(urlSessionId ?? null)
@@ -44,6 +47,7 @@ export default function ChatView() {
 
   // location state 처리: 새 세션 시작, GraphView 토픽, 온보딩 질문
   const pendingMessageRef = useRef<string | null>(null)
+  const handleSendRef = useRef<() => void>(() => {})
 
   useEffect(() => {
     const state = location.state as ChatLocationState | null
@@ -70,11 +74,10 @@ export default function ChatView() {
     if (pendingMessageRef.current && input === pendingMessageRef.current && !isLoading) {
       pendingMessageRef.current = null
       const timer = setTimeout(() => {
-        handleSendMessage()
+        handleSendRef.current()
       }, 100)
       return () => clearTimeout(timer)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [input, isLoading])
 
   // 마운트 시 브리핑 로드 (빈 상태 표시용)
@@ -133,7 +136,7 @@ export default function ChatView() {
     }
   }
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = useCallback(async () => {
     if (!input.trim() || isLoading) return
 
     const userMessage = input.trim()
@@ -184,7 +187,7 @@ export default function ChatView() {
 
       // 세션 제목이 자동 생성되면 사이드바에 알림
       if (result.title) {
-        window.dispatchEvent(new CustomEvent('session-title-updated'))
+        triggerRefresh()
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return
@@ -195,7 +198,9 @@ export default function ChatView() {
       abortControllerRef.current = null
       setIsLoading(false)
     }
-  }
+  }, [input, isLoading, sessionId, navigate, toast, triggerRefresh])
+
+  handleSendRef.current = handleSendMessage
 
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current
@@ -219,14 +224,6 @@ export default function ChatView() {
       return next
     })
   }, [])
-
-  const getSourceIcon = (sourceType: string) => {
-    switch (sourceType) {
-      case 'WEB': return <Globe size={14} />
-      case 'PDF': return <FileText size={14} />
-      default: return <StickyNote size={14} />
-    }
-  }
 
   const hasBriefingContent = briefing && briefing.today_memories.count > 0
 
@@ -313,7 +310,7 @@ export default function ChatView() {
                                   onClick={() => navigate(`/memories`)}
                                   type="button"
                                 >
-                                  {getSourceIcon(ref.source_type)}
+                                  <SourceIcon type={ref.source_type} size={14} />
                                   <span className="chat-reference-title">{ref.title}</span>
                                   <span className="chat-reference-date">{ref.created_at}</span>
                                 </button>

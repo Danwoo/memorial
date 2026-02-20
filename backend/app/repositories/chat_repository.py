@@ -49,9 +49,9 @@ class ChatRepository:
             "created_at": datetime.now(UTC).isoformat(),
         }
 
-    async def get_session(self, session_id: UUID) -> dict | None:
-        """ID로 세션 조회."""
-        result = await asyncio.to_thread(self._select_session, str(session_id))
+    async def get_session(self, session_id: UUID, user_id: UUID | None = None) -> dict | None:
+        """ID로 세션 조회. user_id 지정 시 소유권도 함께 검증."""
+        result = await asyncio.to_thread(self._select_session, str(session_id), str(user_id) if user_id else None)
 
         if result.data and len(result.data) > 0:
             session = result.data[0]
@@ -176,6 +176,11 @@ class ChatRepository:
             for s in result.data
         ]
 
+    async def get_sessions_for_export(self, user_id: UUID, limit: int = 10000) -> list[dict]:
+        """내보내기용 세션 목록 조회."""
+        result = await asyncio.to_thread(self._select_sessions_for_export, str(user_id), limit)
+        return result.data or []
+
     async def add_feedback(self, session_id: UUID, message_index: int, user_id: UUID, rating: str) -> bool:
         """메시지에 대한 피드백 저장 (upsert)."""
         try:
@@ -211,8 +216,11 @@ class ChatRepository:
     def _insert_session(self, data: dict):
         return self.db.table("chat_sessions").insert(data).execute()
 
-    def _select_session(self, session_id: str):
-        return self.db.table("chat_sessions").select("*").eq("id", session_id).execute()
+    def _select_session(self, session_id: str, user_id: str | None = None):
+        query = self.db.table("chat_sessions").select("*").eq("id", session_id)
+        if user_id:
+            query = query.eq("user_id", user_id)
+        return query.execute()
 
     def _select_sessions_by_user(self, user_id: str):
         return (
@@ -277,6 +285,16 @@ class ChatRepository:
                 },
                 on_conflict="session_id,message_index",
             )
+            .execute()
+        )
+
+    def _select_sessions_for_export(self, user_id: str, limit: int):
+        return (
+            self.db.table("chat_sessions")
+            .select("id, title, created_at")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .limit(limit)
             .execute()
         )
 

@@ -12,6 +12,7 @@ TOP_INTERESTS_LIMIT = 5
 RECENT_DAYS = 14
 
 _profile_cache: dict[str, tuple[float, dict]] = {}
+MAX_PROFILE_CACHE_SIZE = 256
 
 
 async def get_user_profile(user_id: UUID | str) -> dict | None:
@@ -29,6 +30,9 @@ async def get_user_profile(user_id: UUID | str) -> dict | None:
 
     try:
         profile = await _build_profile(uid)
+        if len(_profile_cache) >= MAX_PROFILE_CACHE_SIZE:
+            oldest_key = min(_profile_cache, key=lambda k: _profile_cache[k][0])
+            del _profile_cache[oldest_key]
         _profile_cache[uid] = (time.time(), profile)
         return profile
     except Exception:

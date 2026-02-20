@@ -65,10 +65,13 @@ class HybridSearchService:
         # 1. Dense vector search
         dense_results = await self._dense_search(query, user_id_str, dense_threshold)
 
-        # 2. Sparse keyword search
+        # 2. Sparse keyword search (실패 시 dense 결과만 사용)
         sparse_results = []
         if enable_sparse:
-            sparse_results = await self._sparse_search(query, user_id_str)
+            try:
+                sparse_results = await self._sparse_search(query, user_id_str)
+            except Exception:
+                logger.warning("Sparse 검색 실패, dense 결과만 사용", exc_info=True)
 
         # 3. Graph-based search
         graph_results = []
