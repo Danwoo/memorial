@@ -1,18 +1,56 @@
 import { get, post, postRaw } from './client'
 import type { ChatSessionResponse, ChatMessage, ChatMessagePayload, ChatStreamChunk, ChatReference, ChatFeedback } from '../types'
+import { isDemoMode } from '../contexts/DemoContext'
+import { DEMO_SESSIONS, DEMO_CHAT_MESSAGES, DEMO_CHAT_RESPONSES } from '../data/demo-data'
+
+function createDemoSSEResponse(userMessage: string): Response {
+  const match = DEMO_CHAT_RESPONSES.find(r =>
+    r.keywords.some(k => userMessage.includes(k))
+  ) ?? DEMO_CHAT_RESPONSES[0]
+
+  const encoder = new TextEncoder()
+  let index = 0
+
+  const stream = new ReadableStream({
+    async pull(controller) {
+      if (index < match.content.length) {
+        const chunk = match.content.slice(index, index + 3)
+        index += 3
+        const data = JSON.stringify({ content: chunk })
+        controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+        await new Promise(r => setTimeout(r, 30))
+      } else {
+        const doneData = JSON.stringify({
+          done: true,
+          title: '데모 대화',
+          references: match.references,
+        })
+        controller.enqueue(encoder.encode(`data: ${doneData}\n\n`))
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(stream, {
+    headers: { 'Content-Type': 'text/event-stream' },
+  })
+}
 
 // 새 채팅 세션 생성
 export function createChatSession(): Promise<ChatSessionResponse> {
+  if (isDemoMode()) return Promise.resolve(DEMO_SESSIONS[0])
   return post<ChatSessionResponse>('/chat/sessions', {})
 }
 
 // 사용자의 전체 채팅 세션 목록 조회
 export function fetchChatSessions(): Promise<ChatSessionResponse[]> {
+  if (isDemoMode()) return Promise.resolve(DEMO_SESSIONS)
   return get<ChatSessionResponse[]>('/chat/sessions')
 }
 
 // 특정 세션의 채팅 히스토리 조회
 export function fetchChatHistory(sessionId: string): Promise<ChatMessage[]> {
+  if (isDemoMode()) return Promise.resolve(DEMO_CHAT_MESSAGES[sessionId] ?? [])
   return get<ChatMessage[]>(`/chat/sessions/${sessionId}/history`)
 }
 
@@ -22,6 +60,7 @@ export function sendFeedback(
   messageIndex: number,
   rating: 'good' | 'bad',
 ): Promise<{ success: boolean }> {
+  if (isDemoMode()) return Promise.resolve({ success: true })
   return post<{ success: boolean }>(`/chat/sessions/${sessionId}/feedback`, {
     message_index: messageIndex,
     rating,
@@ -30,6 +69,7 @@ export function sendFeedback(
 
 // 세션의 피드백 목록 조회
 export function fetchFeedbacks(sessionId: string): Promise<ChatFeedback[]> {
+  if (isDemoMode()) return Promise.resolve([])
   return get<ChatFeedback[]>(`/chat/sessions/${sessionId}/feedbacks`)
 }
 
@@ -39,6 +79,7 @@ export function sendChatMessage(
   payload: ChatMessagePayload,
   signal?: AbortSignal,
 ): Promise<Response> {
+  if (isDemoMode()) return Promise.resolve(createDemoSSEResponse(payload.content))
   return postRaw(`/chat/sessions/${sessionId}/messages`, payload, signal)
 }
 

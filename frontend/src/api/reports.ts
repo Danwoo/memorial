@@ -1,4 +1,6 @@
 import { get } from './client'
+import { isDemoMode } from '../contexts/DemoContext'
+import { DEMO_WEEKLY_REPORT, DEMO_MONTHLY_REPORT } from '../data/demo-data'
 
 export interface TopicDistribution {
   topic: string
@@ -24,9 +26,11 @@ export interface ReportData {
 }
 
 export function fetchWeeklyReport(): Promise<ReportData> {
+  if (isDemoMode()) return Promise.resolve(DEMO_WEEKLY_REPORT)
   return get<ReportData>('/reports/weekly')
 }
 
 export function fetchMonthlyReport(): Promise<ReportData> {
+  if (isDemoMode()) return Promise.resolve(DEMO_MONTHLY_REPORT)
   return get<ReportData>('/reports/monthly')
 }
