@@ -15,20 +15,12 @@ import NotificationsTab from './settings/NotificationsTab'
 import DataTab from './settings/DataTab'
 import './SettingsView.css'
 
-const PROVIDER_LABELS: Record<string, string> = {
-  google: 'Google',
-  kakao: 'Kakao',
-}
-
-type SettingsTab = 'notifications' | 'integrations' | 'data'
-
 export default function SettingsView() {
   const { user } = useAuth()
   const { preference: themePreference, setPreference: setThemePreference } = useTheme()
   const toast = useToast()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [activeTab, setActiveTab] = useState<SettingsTab>('integrations')
 
   // 알림 (넛지) 설정
   const [nudgeSettings, setNudgeSettings] = useState<NudgeSetting[]>([])
@@ -44,7 +36,8 @@ export default function SettingsView() {
   useEffect(() => {
     const linked = searchParams.get('linked')
     if (linked) {
-      toast.success(`${PROVIDER_LABELS[linked] ?? linked} 계정이 연결되었습니다!`)
+      const label = linked === 'google' ? 'Google' : linked === 'kakao' ? 'Kakao' : linked
+      toast.success(`${label} 계정이 연결되었습니다!`)
       searchParams.delete('linked')
       setSearchParams(searchParams, { replace: true })
     }
@@ -136,34 +129,13 @@ export default function SettingsView() {
         setThemePreference={setThemePreference}
       />
 
-      {/* 탭 네비게이션 */}
-      <nav className="settings-tabs">
-        <button
-          className={`settings-tab ${activeTab === 'integrations' ? 'settings-tab--active' : ''}`}
-          onClick={() => setActiveTab('integrations')}
-          type="button"
-        >
-          연동
-        </button>
-        <button
-          className={`settings-tab ${activeTab === 'notifications' ? 'settings-tab--active' : ''}`}
-          onClick={() => setActiveTab('notifications')}
-          type="button"
-        >
-          알림
-        </button>
-        <button
-          className={`settings-tab ${activeTab === 'data' ? 'settings-tab--active' : ''}`}
-          onClick={() => setActiveTab('data')}
-          type="button"
-        >
-          데이터
-        </button>
-      </nav>
+      <section className="settings-section">
+        <h2 className="settings-section-title">연동</h2>
+        <IntegrationsTab />
+      </section>
 
-      {/* 탭 콘텐츠 */}
-      {activeTab === 'integrations' && <IntegrationsTab />}
-      {activeTab === 'notifications' && (
+      <section className="settings-section">
+        <h2 className="settings-section-title">알림</h2>
         <NotificationsTab
           pushSupported={pushSupported}
           pushSubscribed={pushSubscribed}
@@ -174,8 +146,10 @@ export default function SettingsView() {
           handleNudgeToggle={handleNudgeToggle}
           handleNudgeHourChange={handleNudgeHourChange}
         />
-      )}
-      {activeTab === 'data' && (
+      </section>
+
+      <section className="settings-section">
+        <h2 className="settings-section-title">데이터</h2>
         <DataTab
           exportCounts={exportCounts}
           exportLoading={exportLoading}
@@ -185,7 +159,7 @@ export default function SettingsView() {
           handleOnboardingReset={handleOnboardingReset}
           handleInstallPWA={handleInstallPWA}
         />
-      )}
+      </section>
     </div>
   )
 }
