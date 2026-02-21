@@ -24,7 +24,14 @@ from app.schemas.integration_schema import (
     ProviderInfo,
     StoreProviderTokenRequest,
 )
-from app.services.kakao_channel_service import KakaoChannelService
+from app.services.kakao_channel_service import (
+    DISCONNECT_COMMAND,
+    HELP_COMMAND,
+    KAKAO_PREVIEW_MAX_LENGTH,
+    LINK_CODE_PATTERN,
+    URL_PATTERN,
+    KakaoChannelService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -228,30 +235,80 @@ async def kakao_webhook(
     """카카오 OpenBuilder 스킬 웹훅. 인증 불필요 (카카오 서버에서 직접 호출).
 
     카카오 OpenBuilder 타임아웃은 5초이므로 응답을 최대한 빠르게 반환해야 한다.
-    Librarian 처리 등 후속 작업은 모두 BackgroundTasks로 응답 반환 후 실행한다.
+    텍스트/URL 저장은 LLM 호출이 필요해 5초를 초과하므로
+    즉시 확인 응답을 반환하고 실제 저장은 BackgroundTasks로 처리한다.
     """
     try:
-        utterance = request.userRequest.utterance
+        utterance = request.userRequest.utterance.strip()
         bot_user_key = request.userRequest.user.id
         plusfriend_user_key = request.userRequest.user.properties.get("plusfriendUserKey")
 
-        response = await channel_service.process_webhook(
-            utterance=utterance,
-            bot_user_key=bot_user_key,
-            plusfriend_user_key=plusfriend_user_key,
-        )
+        # --- 빠른 명령어: 즉시 처리 (DB 조회/업데이트만, 5초 이내 보장) ---
+        if utterance == HELP_COMMAND:
+            response = await channel_service.process_webhook(utterance, bot_user_key, plusfriend_user_key)
+            return response.model_dump()
 
-        # Librarian 스케줄링: 응답 반환 후 백그라운드에서 실행 (타임아웃 방지)
-        if not utterance.strip().startswith("#"):
-            background_tasks.add_task(
-                _run_librarian_for_kakao,
-                bot_user_key,
+        link_match = LINK_CODE_PATTERN.match(utterance)
+        if link_match:
+            response = await channel_service.process_webhook(utterance, bot_user_key, plusfriend_user_key)
+            return response.model_dump()
+
+        # 사용자 조회
+        user_id = await asyncio.to_thread(channel_service.lookup_user_id, bot_user_key)
+        if not user_id:
+            response = await asyncio.to_thread(
+                channel_service._build_link_required_response, bot_user_key, plusfriend_user_key
             )
+            return response.model_dump()
 
-        return response.model_dump()
+        if utterance == DISCONNECT_COMMAND:
+            response = await channel_service.process_webhook(utterance, bot_user_key, plusfriend_user_key)
+            return response.model_dump()
+
+        # --- 텍스트/URL: 즉시 응답 + 백그라운드 저장 (LLM 호출 5초 초과 방지) ---
+        is_url = URL_PATTERN.match(utterance)
+        if is_url:
+            background_tasks.add_task(_save_url_in_background, channel_service, utterance, user_id, bot_user_key)
+            return KakaoSkillResponse.simple_text(
+                "URL 저장 중입니다.\n\nmemoir-knowledge.vercel.app 에서 곧 확인하실 수 있습니다."
+            ).model_dump()
+
+        # 일반 텍스트 메모
+        preview = (
+            utterance[:KAKAO_PREVIEW_MAX_LENGTH] + "..." if len(utterance) > KAKAO_PREVIEW_MAX_LENGTH else utterance
+        )
+        background_tasks.add_task(_save_text_in_background, channel_service, utterance, user_id, bot_user_key)
+        return KakaoSkillResponse.simple_text(
+            f"메모 저장 중입니다.\n\n내용: {preview}\nmemoir-knowledge.vercel.app 에서 곧 확인하실 수 있습니다."
+        ).model_dump()
+
     except Exception:
         logger.exception("카카오 웹훅 처리 중 오류 발생")
         return KakaoSkillResponse.simple_text("처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.").model_dump()
+
+
+async def _save_text_in_background(
+    channel_service: KakaoChannelService, text: str, user_id: str, bot_user_key: str
+) -> None:
+    """백그라운드: 텍스트 메모 저장 + Librarian 처리."""
+    try:
+        await channel_service._save_text_memory(text, user_id)
+        logger.info("카카오 텍스트 메모 백그라운드 저장 완료: user=%s", user_id)
+    except Exception:
+        logger.exception("카카오 텍스트 메모 백그라운드 저장 실패")
+    await _run_librarian_for_kakao(bot_user_key)
+
+
+async def _save_url_in_background(
+    channel_service: KakaoChannelService, url: str, user_id: str, bot_user_key: str
+) -> None:
+    """백그라운드: URL 크롤링 + 메모리 저장 + Librarian 처리."""
+    try:
+        await channel_service._save_url_memory(url, user_id)
+        logger.info("카카오 URL 메모리 백그라운드 저장 완료: user=%s", user_id)
+    except Exception:
+        logger.exception("카카오 URL 메모리 백그라운드 저장 실패")
+    await _run_librarian_for_kakao(bot_user_key)
 
 
 async def _run_librarian_for_kakao(bot_user_key: str) -> None:
