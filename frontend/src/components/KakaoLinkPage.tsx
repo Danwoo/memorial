@@ -57,8 +57,13 @@ export default function KakaoLinkPage() {
   const handleOAuthLogin = async (provider: 'google' | 'kakao') => {
     if (!supabase) return
     setLoginPending(true)
+    // OAuth redirect URL에 토큰을 포함 — 카카오톡 인앱 브라우저에서
+    // 외부 브라우저로 전환 시 sessionStorage가 유실되므로 URL로 전달
+    const redirectUrl = token
+      ? `${window.location.origin}/kakao-link?token=${encodeURIComponent(token)}`
+      : `${window.location.origin}/kakao-link`
     const options: { redirectTo: string; scopes?: string } = {
-      redirectTo: `${window.location.origin}/kakao-link`,
+      redirectTo: redirectUrl,
     }
     if (provider === 'kakao') {
       options.scopes = 'account_email profile_nickname talk_message'
