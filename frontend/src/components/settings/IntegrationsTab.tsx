@@ -1,15 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
-import {
-  getIntegrationStatus,
-  getBotSettings,
-  updateBotSettings,
-  generateChannelLinkCode,
-  getChannelStatus,
-  disconnectChannel,
-} from '../../api'
-import type { ProviderInfo, BotSettings, BotSettingsUpdate, ChannelLinkCode, ChannelStatus } from '../../api/integrations'
+import { getIntegrationStatus } from '../../api'
+import type { ProviderInfo } from '../../api/integrations'
 
 const PROVIDER_LABELS: Record<string, string> = {
   google: 'Google',
@@ -18,8 +11,6 @@ const PROVIDER_LABELS: Record<string, string> = {
 
 const SUPPORTED_PROVIDERS = ['google', 'kakao'] as const
 
-const KAKAO_CHANNEL_CHAT_URL = 'https://pf.kakao.com/_NxoGzX/chat'
-
 export default function IntegrationsTab() {
   const { user, linkProvider, unlinkProvider } = useAuth()
   const toast = useToast()
@@ -27,15 +18,7 @@ export default function IntegrationsTab() {
   const [providers, setProviders] = useState<ProviderInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const [botSettings, setBotSettings] = useState<BotSettings | null>(null)
-  const [botLoading, setBotLoading] = useState(false)
-  const [channelStatus, setChannelStatus] = useState<ChannelStatus | null>(null)
-  const [channelLoading, setChannelLoading] = useState(false)
-  const [linkCode, setLinkCode] = useState<ChannelLinkCode | null>(null)
-  const [countdown, setCountdown] = useState('')
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // 연동 상태 + 봇 설정 + 채널 상태 로드
   useEffect(() => {
     let cancelled = false
     const load = async () => {
@@ -44,14 +27,6 @@ export default function IntegrationsTab() {
         const status = await getIntegrationStatus()
         if (cancelled) return
         setProviders(status.providers)
-
-        const [botResult, channelResult] = await Promise.allSettled([
-          getBotSettings(),
-          getChannelStatus(),
-        ])
-        if (cancelled) return
-        if (botResult.status === 'fulfilled') setBotSettings(botResult.value)
-        if (channelResult.status === 'fulfilled') setChannelStatus(channelResult.value)
       } catch {
         if (!cancelled) setProviders([])
       } finally {
@@ -60,13 +35,6 @@ export default function IntegrationsTab() {
     }
     load()
     return () => { cancelled = true }
-  }, [])
-
-  // 카운트다운 정리
-  useEffect(() => {
-    return () => {
-      if (countdownRef.current) clearInterval(countdownRef.current)
-    }
   }, [])
 
   const isProviderLinked = useCallback(
@@ -78,8 +46,6 @@ export default function IntegrationsTab() {
     (provider: string) => providers.find((p) => p.provider === provider),
     [providers],
   )
-
-  const kakaoLinked = isProviderLinked('kakao')
 
   const handleLink = async (provider: 'google' | 'kakao') => {
     try {
@@ -107,7 +73,6 @@ export default function IntegrationsTab() {
         identity_id: identity.identity_id,
         provider: provider,
       })
-      // 상태 다시 로드
       const status = await getIntegrationStatus()
       setProviders(status.providers)
       toast.success(`${PROVIDER_LABELS[provider] ?? provider} 연결이 해제되었습니다`)
@@ -116,75 +81,6 @@ export default function IntegrationsTab() {
     } finally {
       setActionLoading(null)
     }
-  }
-
-  const handleBotSettingChange = async (update: BotSettingsUpdate) => {
-    try {
-      setBotLoading(true)
-      const updated = await updateBotSettings(update)
-      setBotSettings(updated)
-      toast.success('다이제스트 설정이 저장되었습니다')
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '설정 저장에 실패했습니다'
-      toast.error(message)
-    } finally {
-      setBotLoading(false)
-    }
-  }
-
-  const startCountdown = (expiresAt: string) => {
-    if (countdownRef.current) clearInterval(countdownRef.current)
-    const update = () => {
-      const diff = new Date(expiresAt).getTime() - Date.now()
-      if (diff <= 0) {
-        setCountdown('만료됨')
-        setLinkCode(null)
-        if (countdownRef.current) clearInterval(countdownRef.current)
-        return
-      }
-      const min = Math.floor(diff / 60000)
-      const sec = Math.floor((diff % 60000) / 1000)
-      setCountdown(`${min}:${String(sec).padStart(2, '0')}`)
-    }
-    update()
-    countdownRef.current = setInterval(update, 1000)
-  }
-
-  const handleGenerateLinkCode = async () => {
-    try {
-      setChannelLoading(true)
-      const result = await generateChannelLinkCode()
-      setLinkCode(result)
-      startCountdown(result.expires_at)
-      try {
-        await navigator.clipboard.writeText(`#연결 ${result.code}`)
-        toast.success('연결 코드가 클립보드에 복사되었습니다!')
-      } catch { /* 클립보드 실패 시 무시 */ }
-    } catch {
-      toast.error('연결 코드 생성에 실패했습니다')
-    } finally {
-      setChannelLoading(false)
-    }
-  }
-
-  const handleDisconnectChannel = async () => {
-    try {
-      setChannelLoading(true)
-      await disconnectChannel()
-      setChannelStatus({ connected: false, bot_user_key: null, linked_at: null })
-      toast.success('카카오톡 채널 연결이 해제되었습니다')
-    } catch {
-      toast.error('채널 연결 해제에 실패했습니다')
-    } finally {
-      setChannelLoading(false)
-    }
-  }
-
-  const handleCopyLinkCode = async (code: string) => {
-    try {
-      await navigator.clipboard.writeText(`#연결 ${code}`)
-      toast.success('클립보드에 복사되었습니다!')
-    } catch { /* ignore */ }
   }
 
   return (
@@ -253,144 +149,8 @@ export default function IntegrationsTab() {
         )}
       </div>
 
-      {/* 카카오톡 채널 */}
-      <h3 className="tab-section-title">카카오톡 채널</h3>
-      <div className="settings-card">
-        <div className="channel-header">
-          <div className="integration-left">
-            <div className="provider-icon kakao-icon">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                <path d="M12 3C6.477 3 2 6.463 2 10.691c0 2.724 1.8 5.113 4.508 6.458-.199.748-.72 2.713-.826 3.132-.13.525.192.518.405.377.167-.11 2.665-1.81 3.747-2.545.7.1 1.42.152 2.166.152 5.523 0 10-3.463 10-7.574C22 6.463 17.523 3 12 3z"/>
-              </svg>
-            </div>
-            <div className="integration-info">
-              <span className="setting-label">채널 연결</span>
-              <span className="setting-desc">카카오톡에서 URL이나 메모를 보내 바로 저장</span>
-            </div>
-          </div>
-          {channelStatus?.connected && (
-            <div className="integration-actions">
-              <span className="status-badge connected">연결됨</span>
-              <button className="btn btn-secondary btn-sm" onClick={handleDisconnectChannel} disabled={channelLoading}>
-                {channelLoading ? '...' : '해제'}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {!channelStatus?.connected && (
-          <div className="channel-connect-section">
-            {linkCode ? (
-              <div className="channel-link-steps">
-                <div className="link-step">
-                  <span className="link-step-number">1</span>
-                  <div className="link-step-content">
-                    <span className="link-step-label">연결 코드 복사 완료</span>
-                    <div className="link-code-command"
-                      onClick={() => handleCopyLinkCode(linkCode.code)}
-                      title="클릭하여 다시 복사"
-                    >
-                      #연결 {linkCode.code}
-                    </div>
-                  </div>
-                </div>
-                <div className="link-step">
-                  <span className="link-step-number">2</span>
-                  <div className="link-step-content">
-                    <span className="link-step-label">카카오톡에서 붙여넣기</span>
-                    <a href={KAKAO_CHANNEL_CHAT_URL} target="_blank" rel="noopener noreferrer"
-                      className="btn kakao-connect-btn btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', marginTop: '4px' }}>
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 3C6.477 3 2 6.463 2 10.691c0 2.724 1.8 5.113 4.508 6.458-.199.748-.72 2.713-.826 3.132-.13.525.192.518.405.377.167-.11 2.665-1.81 3.747-2.545.7.1 1.42.152 2.166.152 5.523 0 10-3.463 10-7.574C22 6.463 17.523 3 12 3z"/></svg>
-                      채널 열기
-                    </a>
-                  </div>
-                </div>
-                <span className="link-code-timer">남은 시간: {countdown}</span>
-              </div>
-            ) : (
-              <div className="channel-connect-cta">
-                <p className="setting-desc">카카오톡 Memoir 채널에 아무 메시지를 보내면 자동 연결 링크를 받을 수 있습니다.</p>
-                <div className="channel-connect-buttons">
-                  <a href={KAKAO_CHANNEL_CHAT_URL} target="_blank" rel="noopener noreferrer"
-                    className="btn kakao-connect-btn btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 3C6.477 3 2 6.463 2 10.691c0 2.724 1.8 5.113 4.508 6.458-.199.748-.72 2.713-.826 3.132-.13.525.192.518.405.377.167-.11 2.665-1.81 3.747-2.545.7.1 1.42.152 2.166.152 5.523 0 10-3.463 10-7.574C22 6.463 17.523 3 12 3z"/></svg>
-                    카카오톡에서 연결
-                  </a>
-                  <button className="btn btn-secondary btn-sm" onClick={handleGenerateLinkCode} disabled={channelLoading}>
-                    {channelLoading ? '생성 중...' : '코드로 연결'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* 카카오톡 다이제스트 */}
-      <div className="settings-card">
-        <div className="setting-row" style={{ borderTop: 'none' }}>
-          <div className="setting-info">
-            <span className="setting-label">일일 다이제스트</span>
-            <span className="setting-desc">매일 정해진 시간에 오늘의 기록을 카카오톡으로 전송</span>
-          </div>
-          {!kakaoLinked ? (
-            <span className="status-badge">카카오 연결 필요</span>
-          ) : (
-            <label className="toggle-switch">
-              <input
-                type="checkbox"
-                checked={botSettings?.enabled ?? false}
-                onChange={(e) => handleBotSettingChange({ enabled: e.target.checked })}
-                disabled={botLoading}
-              />
-              <span className="toggle-slider" />
-            </label>
-          )}
-        </div>
-
-        {kakaoLinked && botSettings?.enabled && (
-          <>
-            <div className="setting-row setting-sub">
-              <span className="setting-label">발송 시간</span>
-              <select
-                value={botSettings?.delivery_hour ?? 21}
-                onChange={(e) => handleBotSettingChange({ delivery_hour: Number(e.target.value) })}
-                disabled={botLoading}
-              >
-                {Array.from({ length: 24 }, (_, i) => (
-                  <option key={i} value={i}>{String(i).padStart(2, '0')}:00</option>
-                ))}
-              </select>
-            </div>
-            <div className="setting-row setting-sub">
-              <span className="setting-label">포함 항목</span>
-              <div className="bot-checkboxes">
-                <label><input type="checkbox" checked={botSettings?.include_memories ?? true}
-                  onChange={(e) => handleBotSettingChange({ include_memories: e.target.checked })} disabled={botLoading} /> 기억</label>
-                <label><input type="checkbox" checked={botSettings?.include_journals ?? true}
-                  onChange={(e) => handleBotSettingChange({ include_journals: e.target.checked })} disabled={botLoading} /> 일기</label>
-                <label><input type="checkbox" checked={botSettings?.include_insights ?? true}
-                  onChange={(e) => handleBotSettingChange({ include_insights: e.target.checked })} disabled={botLoading} /> 인사이트</label>
-              </div>
-            </div>
-            {botSettings?.last_delivery && (
-              <div className="setting-row setting-sub">
-                <span className="setting-label">최근 발송</span>
-                <span className={`delivery-status ${botSettings.last_delivery.status}`}>
-                  {botSettings.last_delivery.status === 'success' && '발송 완료'}
-                  {botSettings.last_delivery.status === 'failed' && '발송 실패'}
-                  {botSettings.last_delivery.status === 'token_expired' && '토큰 만료'}
-                  {botSettings.last_delivery.status === 'no_content' && '콘텐츠 없음'}
-                  {' — '}
-                  {new Date(botSettings.last_delivery.delivered_at).toLocaleString('ko-KR')}
-                </span>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
       {/* Chrome Extension */}
+      <h3 className="tab-section-title">확장 기능</h3>
       <div className="settings-card">
         <div className="setting-row integration-row" style={{ borderTop: 'none' }}>
           <div className="integration-left">
@@ -408,6 +168,24 @@ export default function IntegrationsTab() {
           <a href="https://github.com/Danwoo/memorial/tree/main/extension" target="_blank" rel="noopener noreferrer"
             className="btn btn-sm btn-secondary" style={{ textDecoration: 'none' }}>
             설치 가이드
+          </a>
+        </div>
+        <div className="setting-row integration-row">
+          <div className="integration-left">
+            <div className="provider-icon kakao-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M12 3C6.477 3 2 6.463 2 10.691c0 2.724 1.8 5.113 4.508 6.458-.199.748-.72 2.713-.826 3.132-.13.525.192.518.405.377.167-.11 2.665-1.81 3.747-2.545.7.1 1.42.152 2.166.152 5.523 0 10-3.463 10-7.574C22 6.463 17.523 3 12 3z"/>
+              </svg>
+            </div>
+            <div className="integration-info">
+              <span className="setting-label">카카오톡 봇</span>
+              <span className="setting-desc">카카오톡에서 URL이나 메모를 보내 바로 저장</span>
+            </div>
+          </div>
+          <a href="https://pf.kakao.com/_NxoGzX/chat" target="_blank" rel="noopener noreferrer"
+            className="btn btn-sm kakao-connect-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 3C6.477 3 2 6.463 2 10.691c0 2.724 1.8 5.113 4.508 6.458-.199.748-.72 2.713-.826 3.132-.13.525.192.518.405.377.167-.11 2.665-1.81 3.747-2.545.7.1 1.42.152 2.166.152 5.523 0 10-3.463 10-7.574C22 6.463 17.523 3 12 3z"/></svg>
+            채널 열기
           </a>
         </div>
       </div>
