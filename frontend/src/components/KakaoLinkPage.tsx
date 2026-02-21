@@ -5,7 +5,12 @@ import { supabase } from '../lib/supabase'
 import { completeKakaoLinkByToken } from '../api'
 import './AuthView.css'
 
-type LinkStatus = 'loading' | 'linking' | 'success' | 'error' | 'login-required'
+type LinkStatus = 'loading' | 'linking' | 'success' | 'error' | 'login-required' | 'redirecting'
+
+// 카카오톡 인앱 브라우저 감지
+function isKakaoTalkInAppBrowser(): boolean {
+  return /KAKAOTALK/i.test(navigator.userAgent)
+}
 
 export default function KakaoLinkPage() {
   const { user, isLoading } = useAuth()
@@ -16,6 +21,16 @@ export default function KakaoLinkPage() {
   const [status, setStatus] = useState<LinkStatus>('loading')
   const [errorMsg, setErrorMsg] = useState('')
   const [loginPending, setLoginPending] = useState(false)
+
+  // 카카오톡 인앱 브라우저 → 외부 브라우저로 강제 전환
+  // OAuth 로그인이 인앱 브라우저에서 정상 동작하지 않으므로 외부 브라우저 필요
+  useEffect(() => {
+    if (!isKakaoTalkInAppBrowser()) return
+    setStatus('redirecting')
+    const currentUrl = window.location.href
+    // 카카오톡 인앱 브라우저에서 외부 브라우저로 열기
+    window.location.href = `kakaotalk://web/openExternal?url=${encodeURIComponent(currentUrl)}`
+  }, [])
 
   // URL 토큰을 sessionStorage에 보관 (OAuth 리다이렉트 후에도 유지)
   useEffect(() => {
@@ -85,6 +100,21 @@ export default function KakaoLinkPage() {
           <h1>Memoir AI</h1>
           <p>카카오톡 채널 연결</p>
         </div>
+
+        {status === 'redirecting' && (
+          <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+            <div className="loading-spinner" />
+            <p style={{ color: 'var(--text-secondary)', marginTop: '1rem' }}>
+              외부 브라우저로 이동 중...
+            </p>
+            <p style={{ color: 'var(--text-tertiary, #999)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+              자동으로 이동하지 않으면{' '}
+              <a href={window.location.href} target="_blank" rel="noopener noreferrer">
+                여기를 눌러주세요
+              </a>
+            </p>
+          </div>
+        )}
 
         {status === 'loading' && (
           <div style={{ textAlign: 'center', padding: '2rem 0' }}>
