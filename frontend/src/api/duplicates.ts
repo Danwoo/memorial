@@ -1,4 +1,5 @@
 import { get, post } from './client'
+import { isDemoMode } from '../contexts/DemoContext'
 
 export interface DuplicatePairItem {
   id: string
@@ -27,10 +28,12 @@ export interface MergeResponse {
 }
 
 export function fetchDuplicates(): Promise<DuplicatesResponse> {
+  if (isDemoMode()) return Promise.resolve({ pairs: [], total: 0 })
   return get<DuplicatesResponse>('/memories/duplicates')
 }
 
 export function mergeMemories(keepId: string, mergeId: string): Promise<MergeResponse> {
+  if (isDemoMode()) return Promise.reject(new Error('데모 모드에서는 병합할 수 없습니다.'))
   return post<MergeResponse>('/memories/duplicates/merge', {
     keep_id: keepId,
     merge_id: mergeId,

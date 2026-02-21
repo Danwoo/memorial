@@ -1,11 +1,16 @@
 import { Outlet, useNavigate } from 'react-router-dom'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Menu, Sparkles } from 'lucide-react'
-import { DemoProvider } from '../contexts/DemoContext'
-import DemoSidebar from './DemoSidebar'
+import { DemoProvider, DEMO_USER } from '../contexts/DemoContext'
+import { AuthContext } from '../contexts/AuthContext'
+import { ChatSessionProvider } from '../contexts/ChatSessionContext'
+import Sidebar from './Sidebar'
 import CommandPalette from './CommandPalette'
 import '../App.css'
 import './DemoLayout.css'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const noop = async (..._args: any[]) => {}
 
 export default function DemoLayout() {
   const navigate = useNavigate()
@@ -14,30 +19,45 @@ export default function DemoLayout() {
 
   const closeMobile = useCallback(() => setMobileOpen(false), [])
 
+  const demoAuthValue = useMemo(() => ({
+    user: DEMO_USER as import('../types').User,
+    session: null,
+    isLoading: false,
+    signInWithGoogle: noop,
+    signInWithKakao: noop,
+    signOut: noop,
+    linkProvider: noop as (provider: 'google' | 'kakao') => Promise<void>,
+    unlinkProvider: noop as (identity: import('@supabase/supabase-js').UserIdentity) => Promise<void>,
+  }), [])
+
   return (
     <DemoProvider demo>
-      <div className="demo-banner">
-        <Sparkles size={14} />
-        <span>데모 모드 — 샘플 데이터로 체험 중</span>
-        <button className="demo-banner-cta" onClick={() => navigate('/login')} type="button">
-          회원가입하고 시작하기
-        </button>
-      </div>
-      <div className="app-container demo-app-container">
-        <button
-          className="mobile-nav-toggle"
-          onClick={() => setMobileOpen(true)}
-          type="button"
-          aria-label="메뉴 열기"
-        >
-          <Menu size={22} />
-        </button>
-        <DemoSidebar mobileOpen={mobileOpen} onMobileClose={closeMobile} />
-        <main className="main-content" id="main-content">
-          <Outlet />
-        </main>
-        <CommandPalette isOpen={showCmdPalette} onClose={() => setShowCmdPalette(false)} />
-      </div>
+      <AuthContext.Provider value={demoAuthValue}>
+        <ChatSessionProvider>
+          <div className="demo-banner">
+            <Sparkles size={14} />
+            <span>데모 모드 — 샘플 데이터로 체험 중</span>
+            <button className="demo-banner-cta" onClick={() => navigate('/login')} type="button">
+              회원가입하고 시작하기
+            </button>
+          </div>
+          <div className="app-container demo-app-container">
+            <button
+              className="mobile-nav-toggle"
+              onClick={() => setMobileOpen(true)}
+              type="button"
+              aria-label="메뉴 열기"
+            >
+              <Menu size={22} />
+            </button>
+            <Sidebar user={DEMO_USER} mobileOpen={mobileOpen} onMobileClose={closeMobile} />
+            <main className="main-content" id="main-content">
+              <Outlet />
+            </main>
+            <CommandPalette isOpen={showCmdPalette} onClose={() => setShowCmdPalette(false)} />
+          </div>
+        </ChatSessionProvider>
+      </AuthContext.Provider>
     </DemoProvider>
   )
 }
