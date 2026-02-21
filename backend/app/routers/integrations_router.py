@@ -225,7 +225,11 @@ async def kakao_webhook(
     background_tasks: BackgroundTasks,
     channel_service: KakaoChannelService = Depends(get_kakao_channel_service),
 ):
-    """카카오 OpenBuilder 스킬 웹훅. 인증 불필요 (카카오 서버에서 직접 호출)."""
+    """카카오 OpenBuilder 스킬 웹훅. 인증 불필요 (카카오 서버에서 직접 호출).
+
+    카카오 OpenBuilder 타임아웃은 5초이므로 응답을 최대한 빠르게 반환해야 한다.
+    Librarian 처리 등 후속 작업은 모두 BackgroundTasks로 응답 반환 후 실행한다.
+    """
     try:
         utterance = request.userRequest.utterance
         bot_user_key = request.userRequest.user.id
@@ -237,11 +241,12 @@ async def kakao_webhook(
             plusfriend_user_key=plusfriend_user_key,
         )
 
-        # 신규 저장된 메모리에 대해 Librarian 백그라운드 처리 스케줄링
-        user_id = channel_service.lookup_user_id(bot_user_key)
-        is_content_message = not utterance.startswith("#")
-        if user_id and is_content_message:
-            await _schedule_librarian_for_kakao(background_tasks, user_id)
+        # Librarian 스케줄링: 응답 반환 후 백그라운드에서 실행 (타임아웃 방지)
+        if not utterance.strip().startswith("#"):
+            background_tasks.add_task(
+                _run_librarian_for_kakao,
+                bot_user_key,
+            )
 
         return response.model_dump()
     except Exception:
@@ -249,15 +254,24 @@ async def kakao_webhook(
         return KakaoSkillResponse.simple_text("처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.").model_dump()
 
 
-async def _schedule_librarian_for_kakao(
-    background_tasks: BackgroundTasks,
-    user_id: str,
-) -> None:
-    """가장 최근 카카오 메모리에 대해 Librarian 백그라운드 처리 스케줄링."""
+async def _run_librarian_for_kakao(bot_user_key: str) -> None:
+    """백그라운드: 카카오 메모리에 대해 user_id 조회 후 Librarian 처리."""
     try:
         from app.config.database import get_supabase_client
 
         db = get_supabase_client()
+        result = (
+            db.table("kakao_channel_mappings")
+            .select("user_id")
+            .eq("bot_user_key", bot_user_key)
+            .eq("channel_status", "active")
+            .limit(1)
+            .execute()
+        )
+        if not result.data:
+            return
+        user_id = result.data[0]["user_id"]
+
         latest = (
             db.table("memories")
             .select("id, content")
@@ -267,16 +281,13 @@ async def _schedule_librarian_for_kakao(
             .limit(1)
             .execute()
         )
-        if latest.data:
-            memory = latest.data[0]
-            background_tasks.add_task(
-                _process_with_librarian,
-                memory["id"],
-                memory["content"],
-                user_id,
-            )
+        if not latest.data:
+            return
+
+        memory = latest.data[0]
+        await _process_with_librarian(memory["id"], memory["content"], user_id)
     except Exception:
-        logger.exception("Failed to schedule Librarian for Kakao memory")
+        logger.exception("Failed to run Librarian for Kakao memory")
 
 
 # --- 채널 연동 관리 ---
