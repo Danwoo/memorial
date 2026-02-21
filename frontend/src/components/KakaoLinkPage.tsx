@@ -31,7 +31,7 @@ export default function KakaoLinkPage() {
 
     if (!token) {
       setStatus('error')
-      setErrorMsg('연결 토큰이 없습니다.')
+      setErrorMsg('연결 토큰이 없습니다. 카카오톡에서 Memoir 채널에 메시지를 보내 새 링크를 받아주세요.')
       return
     }
 
@@ -48,7 +48,13 @@ export default function KakaoLinkPage() {
         setStatus('success')
       })
       .catch((err: unknown) => {
-        const detail = err instanceof Error ? err.message : '연결에 실패했습니다.'
+        const raw = err instanceof Error ? err.message : ''
+        let detail = '연결에 실패했습니다.'
+        if (raw.includes('만료') || raw.includes('expired')) {
+          detail = '링크가 만료되었습니다. 카카오톡에서 Memoir 채널에 메시지를 보내 새 링크를 받아주세요.'
+        } else if (raw) {
+          detail = raw
+        }
         setStatus('error')
         setErrorMsg(detail)
       })
@@ -147,10 +153,10 @@ export default function KakaoLinkPage() {
             </p>
             <button
               className="btn btn-primary"
-              onClick={() => navigate('/settings')}
+              onClick={() => navigate('/chat')}
               style={{ width: '100%' }}
             >
-              설정으로 이동
+              Memoir 시작하기
             </button>
           </div>
         )}
@@ -171,13 +177,15 @@ export default function KakaoLinkPage() {
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
               {errorMsg}
             </p>
-            <button
+            <a
+              href="https://pf.kakao.com/_NxoGzX/chat"
+              target="_blank"
+              rel="noopener noreferrer"
               className="btn btn-primary"
-              onClick={() => navigate('/settings')}
-              style={{ width: '100%' }}
+              style={{ width: '100%', textAlign: 'center', textDecoration: 'none', display: 'block' }}
             >
-              설정으로 이동
-            </button>
+              카카오톡에서 새 링크 받기
+            </a>
           </div>
         )}
       </div>
