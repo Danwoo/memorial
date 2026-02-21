@@ -287,11 +287,14 @@ class KakaoChannelService:
                 return existing.data[0]["token"]
 
         token = secrets.token_urlsafe(24)
+        # DB 기본 만료 시간(10분)보다 넉넉하게 30분 설정 — 모바일 OAuth 대응
+        expires_at = (datetime.now(UTC) + timedelta(minutes=30)).isoformat()
         self.db.table("pending_kakao_link_tokens").insert(
             {
                 "token": token,
                 "bot_user_key": bot_user_key,
                 "plusfriend_user_key": plusfriend_user_key,
+                "expires_at": expires_at,
             }
         ).execute()
         return token
