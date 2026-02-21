@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useChatSession } from '../contexts/ChatSessionContext'
 import { useToast } from '../contexts/ToastContext'
+import { useDemoMode } from '../contexts/DemoContext'
 import type { ChatMessage, ChatLocationState, BriefingData, ChatFeedback } from '../types'
 import { createChatSession, fetchChatHistory, sendChatMessage, readSSEStream, fetchBriefing, sendFeedback, fetchFeedbacks } from '../api'
 import SourceIcon from './shared/SourceIcon'
@@ -22,6 +23,8 @@ export default function ChatView() {
   const { sessionId: urlSessionId } = useParams<{ sessionId: string }>()
   const { triggerRefresh } = useChatSession()
   const toast = useToast()
+  const { isDemoMode: isDemo } = useDemoMode()
+  const pathPrefix = isDemo ? '/demo' : ''
 
   const [sessionId, setSessionId] = useState<string | null>(urlSessionId ?? null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -155,7 +158,7 @@ export default function ChatView() {
         const session = await createChatSession()
         currentSessionId = session.id
         setSessionId(currentSessionId)
-        navigate(`/chat/${currentSessionId}`, { replace: true })
+        navigate(`${pathPrefix}/chat/${currentSessionId}`, { replace: true })
       }
 
       const response = await sendChatMessage(
@@ -198,7 +201,7 @@ export default function ChatView() {
       abortControllerRef.current = null
       setIsLoading(false)
     }
-  }, [input, isLoading, sessionId, navigate, toast, triggerRefresh])
+  }, [input, isLoading, sessionId, navigate, toast, triggerRefresh, pathPrefix])
 
   handleSendRef.current = handleSendMessage
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useChatSession } from '../contexts/ChatSessionContext'
+import { useDemoMode } from '../contexts/DemoContext'
 import {
   MessageSquare, BookOpen, PenLine, Network, BarChart3,
   Settings as SettingsIcon,
@@ -52,14 +53,19 @@ interface NavItem {
   label: string
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { to: '/chat',      icon: <MessageSquare size={20} />, label: '대화' },
-  { to: '/memories',  icon: <BookOpen size={20} />,      label: '기억' },
-  { to: '/journal',   icon: <PenLine size={20} />,       label: '저널' },
-  { to: '/graph',     icon: <Network size={20} />,       label: '그래프' },
-  { to: '/dashboard', icon: <BarChart3 size={20} />,     label: '대시보드' },
-  { to: '/settings',  icon: <SettingsIcon size={20} />,  label: '설정' },
-]
+function getNavItems(prefix: string): NavItem[] {
+  const items: NavItem[] = [
+    { to: `${prefix}/chat`,      icon: <MessageSquare size={20} />, label: '대화' },
+    { to: `${prefix}/memories`,  icon: <BookOpen size={20} />,      label: '기억' },
+    { to: `${prefix}/journal`,   icon: <PenLine size={20} />,       label: '저널' },
+    { to: `${prefix}/graph`,     icon: <Network size={20} />,       label: '그래프' },
+    { to: `${prefix}/dashboard`, icon: <BarChart3 size={20} />,     label: '대시보드' },
+  ]
+  if (!prefix) {
+    items.push({ to: '/settings', icon: <SettingsIcon size={20} />, label: '설정' })
+  }
+  return items
+}
 
 // 사이드바에 표시할 최대 세션 수
 const MAX_SIDEBAR_SESSIONS = 8
@@ -75,6 +81,8 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
   const navigate = useNavigate()
   const location = useLocation()
   const { refreshFlag } = useChatSession()
+  const { isDemoMode: isDemo } = useDemoMode()
+  const prefix = isDemo ? '/demo' : ''
   const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
   const [showSessions, setShowSessions] = useState(true)
 
@@ -91,12 +99,14 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
     loadSessions()
   }, [loadSessions])
 
+  const chatPathPrefix = `${prefix}/chat`
+
   // 채팅 페이지 진입 시 세션 목록 새로고침
   useEffect(() => {
-    if (location.pathname.startsWith('/chat')) {
+    if (location.pathname.startsWith(chatPathPrefix)) {
       loadSessions()
     }
-  }, [location.pathname, loadSessions])
+  }, [location.pathname, loadSessions, chatPathPrefix])
 
   // 세션 제목 자동 생성 시 목록 새로고침 (ChatSessionContext 연동)
   useEffect(() => {
@@ -113,7 +123,8 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
     return () => document.removeEventListener('keydown', handler)
   }, [mobileOpen, onMobileClose])
 
-  const isOnChatPage = location.pathname.startsWith('/chat')
+  const navItems = useMemo(() => getNavItems(prefix), [prefix])
+  const isOnChatPage = location.pathname.startsWith(chatPathPrefix)
   const sessionGroups = useMemo(() => groupSessions(sessions.slice(0, MAX_SIDEBAR_SESSIONS)), [sessions])
 
   /** 아바타 표시 문자: 이름 첫 글자 또는 이메일 첫 글자 */
@@ -142,18 +153,18 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
       <nav className="sidebar-nav">
         <button
           className="new-chat-btn"
-          onClick={() => navigate('/chat', { state: { newSession: true } })}
+          onClick={() => navigate(`${prefix}/chat`, { state: { newSession: true } })}
           type="button"
         >
           <Plus size={18} />
           <span>새 대화</span>
         </button>
 
-        {NAV_ITEMS.map(({ to, icon, label }) => (
+        {navItems.map(({ to, icon, label }) => (
           <NavLink
             key={to}
             to={to}
-            end={to === '/chat'}
+            end={to === `${prefix}/chat`}
             className={({ isActive }) =>
               `nav-item ${isActive ? 'active' : ''}`
             }
@@ -184,12 +195,12 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
                   <div key={group.label} className="session-group">
                     <div className="session-group-label">{group.label}</div>
                     {group.sessions.map(session => {
-                      const isActive = location.pathname === `/chat/${session.id}`
+                      const isActive = location.pathname === `${prefix}/chat/${session.id}`
                       return (
                         <button
                           key={session.id}
                           className={`session-item ${isActive ? 'active' : ''}`}
-                          onClick={() => navigate(`/chat/${session.id}`)}
+                          onClick={() => navigate(`${prefix}/chat/${session.id}`)}
                           title={session.title}
                         >
                           <span className="session-title">{session.title}</span>
