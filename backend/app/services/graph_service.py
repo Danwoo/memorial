@@ -104,3 +104,30 @@ class GraphService:
         result = await self.graph_repo.get_graph_data(limit, user_id)
         graph_cache.set(cache_key, result)
         return result
+
+    async def get_ego_data(self, node_name: str, depth: int = 1, user_id: str | None = None) -> dict[str, Any]:
+        """Ego Graph 서브그래프 조회 (5분 TTL 캐시)."""
+        if not self.is_available:
+            return {"nodes": [], "links": []}
+
+        cache_key = f"graph:ego:{user_id}:{node_name}:{depth}"
+        cached = graph_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        result = await self.graph_repo.get_ego_graph(node_name, depth, user_id)
+        graph_cache.set(cache_key, result)
+        return result
+
+    async def get_ego_default(self, user_id: str) -> dict[str, Any]:
+        """기본 Ego Graph: 연결 수 최다 노드 중심 1-hop 서브그래프."""
+        if not self.is_available:
+            return {"nodes": [], "links": [], "center_node": None}
+
+        center = await self.graph_repo.get_default_ego_node(user_id)
+        if not center:
+            return {"nodes": [], "links": [], "center_node": None}
+
+        data = await self.get_ego_data(center, 1, user_id)
+        data["center_node"] = center
+        return data
