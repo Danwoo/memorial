@@ -1,16 +1,17 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import ForceGraph2D from 'react-force-graph-2d'
-import { Lightbulb, Maximize, ZoomIn, ZoomOut, Expand } from 'lucide-react'
+import { Lightbulb, Maximize, ZoomIn, ZoomOut } from 'lucide-react'
 import type { GraphNode, GraphLink, GraphData, SearchResult, GraphInsights, ClusterInfo } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
-import { fetchGraph, fetchGraphInsights, searchMemories, fetchEgoGraph, fetchEgoDefault } from '../api'
+import { fetchGraph, fetchGraphInsights, searchMemories } from '../api'
 import MemoryDetailModal from './MemoryDetailModal'
 import GraphInsightPanel, { CLUSTER_COLORS } from './GraphInsightPanel'
 import NodeInfoPanel from './graph/NodeInfoPanel'
 import GraphLegend from './graph/GraphLegend'
-import { NODE_COLORS, NODE_TYPE_KO, toKo } from './graph/graphConstants'
+import { NODE_COLORS, NODE_TYPE_KO } from './graph/graphConstants'
+import { smartSearch, type SearchCandidate } from '../utils/searchUtils'
 import './GraphView.css'
 
 type AnyNode = GraphNode & { x?: number; y?: number; vx?: number; vy?: number; fx?: number; fy?: number }
@@ -28,18 +29,12 @@ export default function GraphView() {
   const cameraRestoredRef = useRef(false)
 
   const [data, setData] = useState<GraphData>({ nodes: [], links: [] })
-  const [maxVal, setMaxVal] = useState(1)
   const [loading, setLoading] = useState(true)
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
   const [highlightLinks, setHighlightLinks] = useState<Set<string>>(new Set())
   const [highlightNodes, setHighlightNodes] = useState<Set<string> | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
-
-  // Ego 그래프 모드
-  const [viewMode, setViewMode] = useState<'ego' | 'full'>('ego')
-  const [egoCenter, setEgoCenter] = useState<string | null>(null)
-  const [egoDepth, setEgoDepth] = useState(1)
 
   // 관련 메모리 조회
   const [relatedMemories, setRelatedMemories] = useState<SearchResult[]>([])
@@ -49,24 +44,11 @@ export default function GraphView() {
   // 검색 결과 하이라이트
   const [searchMatches, setSearchMatches] = useState<GraphNode[]>([])
   const [searchMatchIdx, setSearchMatchIdx] = useState(0)
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [searchCandidates, setSearchCandidates] = useState<SearchCandidate[]>([])
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false)
 
-  // 온보딩 코치마크
+  // 온보딩 오버레이
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem(ONBOARDING_KEY))
-  const showOnboardingRef = useRef(showOnboarding)
-  showOnboardingRef.current = showOnboarding
-
-  // 호버 툴팁
-  const [hoverNode, setHoverNode] = useState<{ node: GraphNode; x: number; y: number } | null>(null)
-  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const mousePos = useRef({ x: 0, y: 0 })
-
-  // 줌 레벨 기반 라벨 표시 제어
-  const [zoomTier, setZoomTier] = useState<'far' | 'mid' | 'close'>('far')
-  const zoomTierRef = useRef<'far' | 'mid' | 'close'>('far')
-  const currentZoomRef = useRef(1)
-  const labelBoundsRef = useRef<Array<{ x1: number; y1: number; x2: number; y2: number }>>([])
-  const lastFrameRef = useRef(0)
 
   // 인사이트 패널
   const [insights, setInsights] = useState<GraphInsights | null>(null)
@@ -78,32 +60,25 @@ export default function GraphView() {
   const textColor = resolvedTheme === 'dark' ? '#f0f0f0' : '#1a1a1a'
   const labelBg = resolvedTheme === 'dark' ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.92)'
 
-  // 그래프 데이터 조회 및 노드 가공 (ego/full 모드 지원)
-  const processNodes = useCallback((json: { nodes: { id: string; label: string; properties: Record<string, unknown>; name?: string; group?: string; val?: number }[]; links: GraphLink[] }) => {
-    const processedNodes: GraphNode[] = json.nodes.map(n => ({
-      ...n,
-      val: n.val || 1,
-      color: NODE_COLORS[n.label] || NODE_COLORS['default'],
-      name: n.name || (n.properties?.name as string) || (n.properties?.title as string) || n.id,
-    }))
-    const mv = processedNodes.reduce((max, n) => Math.max(max, n.val || 1), 1)
-    return { nodes: processedNodes, links: json.links, mv }
-  }, [])
-
+  // 그래프 데이터 조회 및 노드 가공
   const fetchGraphData = useCallback(async () => {
     try {
       setLoading(true)
       const json = await fetchGraph(300)
-      const { nodes, links, mv } = processNodes(json)
-      setMaxVal(mv)
-      setData({ nodes, links })
+      const processedNodes: GraphNode[] = json.nodes.map(n => ({
+        ...n,
+        val: n.val || 1,
+        color: NODE_COLORS[n.label] || NODE_COLORS['default'],
+        name: n.name || (n.properties?.name as string) || (n.properties?.title as string) || n.id,
+      }))
+      setData({ nodes: processedNodes, links: json.links })
     } catch (err) {
       console.error('그래프 데이터 로딩 실패:', err)
       toast.error('지식 그래프를 불러오지 못했습니다')
     } finally {
       setLoading(false)
     }
-  }, [toast, processNodes])
+  }, [toast])
 
   const loadInsights = useCallback(async () => {
     setInsightsLoading(true)
@@ -118,52 +93,8 @@ export default function GraphView() {
   }, [])
 
   useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setSelectedNode(null)
-    setHighlightNodes(null)
-    setHighlightLinks(new Set())
-
-    const loadData = async () => {
-      try {
-        let result: { nodes: { id: string; label: string; properties: Record<string, unknown>; name?: string; group?: string; val?: number }[]; links: GraphLink[]; center_node?: string | null }
-
-        if (viewMode === 'ego') {
-          if (egoCenter) {
-            result = await fetchEgoGraph(egoCenter, egoDepth)
-          } else {
-            result = await fetchEgoDefault()
-            if (!cancelled && result.center_node) {
-              setEgoCenter(result.center_node)
-            }
-          }
-        } else {
-          result = await fetchGraph(300)
-        }
-
-        if (!cancelled) {
-          const { nodes, links, mv } = processNodes(result)
-          setMaxVal(mv)
-          setData({ nodes, links })
-          cameraRestoredRef.current = false
-        }
-      } catch {
-        if (!cancelled) toast.error('그래프를 불러올 수 없습니다')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    loadData()
-    return () => { cancelled = true }
-  }, [viewMode, egoCenter, egoDepth, toast, processNodes])
-
-  // 마우스 좌표 트래킹 (호버 툴팁용)
-  useEffect(() => {
-    const handler = (e: MouseEvent) => { mousePos.current = { x: e.clientX, y: e.clientY } }
-    window.addEventListener('mousemove', handler)
-    return () => window.removeEventListener('mousemove', handler)
-  }, [])
+    fetchGraphData()
+  }, [fetchGraphData])
 
   // 다른 뷰에서 focusNodeId로 진입 시 해당 노드 포커스
   useEffect(() => {
@@ -181,28 +112,14 @@ export default function GraphView() {
     }
   }, [location.state, data.nodes])
 
-  // 온보딩 닫기
-  const dismissOnboarding = useCallback(() => {
-    setShowOnboarding(false)
-    localStorage.setItem(ONBOARDING_KEY, '1')
-  }, [])
-
   // 카메라 상태 sessionStorage 저장 (디바운스 500ms)
   const cameraSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleZoom = useCallback(({ k, x, y }: { k: number; x: number; y: number }) => {
-    if (showOnboardingRef.current) dismissOnboarding()
-    currentZoomRef.current = k
-    // 줌 구간이 변경될 때만 state 업데이트 (불필요한 리렌더 방지)
-    const tier: 'far' | 'mid' | 'close' = k < 1.0 ? 'far' : k < 2.0 ? 'mid' : 'close'
-    if (tier !== zoomTierRef.current) {
-      zoomTierRef.current = tier
-      setZoomTier(tier)
-    }
     if (cameraSaveTimerRef.current) clearTimeout(cameraSaveTimerRef.current)
     cameraSaveTimerRef.current = setTimeout(() => {
       sessionStorage.setItem(CAMERA_STORAGE_KEY, JSON.stringify({ k, x, y }))
     }, 500)
-  }, [dismissOnboarding])
+  }, [])
 
   // 줌 컨트롤 핸들러
   const handleZoomToFit = useCallback(() => {
@@ -219,6 +136,12 @@ export default function GraphView() {
     if (!fgRef.current) return
     const currentZoom = fgRef.current.zoom()
     fgRef.current.zoom(currentZoom / 1.5, 300)
+  }, [])
+
+  // 온보딩 닫기
+  const dismissOnboarding = useCallback(() => {
+    setShowOnboarding(false)
+    localStorage.setItem(ONBOARDING_KEY, '1')
   }, [])
 
   // 선택 노드 변경 시 관련 메모리 조회
@@ -256,23 +179,6 @@ export default function GraphView() {
     return { nodes: visibleNodes, links: visibleLinks }
   }, [data, hiddenTypes])
 
-  // 줌 레벨별 라벨 표시 노드 제한
-  const sortedNodesByVal = useMemo(
-    () => [...filteredData.nodes].sort((a, b) => (b.val || 1) - (a.val || 1)),
-    [filteredData.nodes],
-  )
-
-  const labelNodeLimit = useMemo(() => {
-    if (zoomTier === 'far') return 15
-    if (zoomTier === 'mid') return 40
-    return Infinity
-  }, [zoomTier])
-
-  const topNodeIds = useMemo(
-    () => new Set(sortedNodesByVal.slice(0, labelNodeLimit).map(n => n.id)),
-    [sortedNodesByVal, labelNodeLimit],
-  )
-
   // 범례용 고유 노드 타입 목록
   const nodeTypes = useMemo(
     () => [...new Set(data.nodes.map(n => n.label))].sort(),
@@ -296,18 +202,8 @@ export default function GraphView() {
 
   // 2D 노드 Canvas 렌더링
   const nodeCanvasObject = useCallback((node: AnyNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
-    // 새 프레임 시작 시 라벨 바운드 리스트 초기화
-    const now = performance.now()
-    if (now - lastFrameRef.current > 10) {
-      labelBoundsRef.current = []
-      lastFrameRef.current = now
-    }
-
     const val = node.val || 1
-    const MIN_NODE_SIZE = 5
-    const MAX_NODE_SIZE = 25
-    const normalizedVal = Math.log2(val + 1) / Math.log2(maxVal + 1)
-    const size = MIN_NODE_SIZE + normalizedVal * (MAX_NODE_SIZE - MIN_NODE_SIZE)
+    const size = Math.max(3, Math.sqrt(val) * 2.5)
     const color = clusterColorMode ? getNodeColor(node) : (node.color || NODE_COLORS['default'])
     const label = (node.name || node.id).substring(0, 30)
 
@@ -323,49 +219,35 @@ export default function GraphView() {
     ctx.fill()
     ctx.globalAlpha = 1
 
-    // 라벨 표시 조건: 줌 레벨별 상위 노드만 + 충돌 감지
-    const showLabel = isHighlighted && (
-      globalScale > 3.0 ||
-      (globalScale > 0.6 && topNodeIds.has(node.id))
-    )
-    if (showLabel) {
-      const fontSize = Math.max(3.5, size * 0.55) / globalScale
+    // 라벨 (줌 레벨에 따라 보이기)
+    if (globalScale > 0.6 && isHighlighted) {
+      const fontSize = Math.max(3.5, size * 0.7) / globalScale
       ctx.font = `500 ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'top'
+
       const textWidth = ctx.measureText(label).width
       const padding = 2 / globalScale
       const labelY = (node.y || 0) + size + 2 / globalScale
 
-      const bounds = {
-        x1: (node.x || 0) - textWidth / 2 - padding,
-        y1: labelY - padding,
-        x2: (node.x || 0) + textWidth / 2 + padding,
-        y2: labelY + fontSize + padding,
-      }
-
-      // 충돌 체크
-      const hasCollision = labelBoundsRef.current.some(
-        b => !(bounds.x2 < b.x1 || bounds.x1 > b.x2 || bounds.y2 < b.y1 || bounds.y1 > b.y2)
+      // 라벨 배경
+      ctx.fillStyle = labelBg
+      ctx.globalAlpha = isHighlighted ? 0.85 : 0.3
+      ctx.fillRect(
+        (node.x || 0) - textWidth / 2 - padding,
+        labelY - padding,
+        textWidth + padding * 2,
+        fontSize + padding * 2,
       )
+      ctx.globalAlpha = 1
 
-      if (!hasCollision) {
-        labelBoundsRef.current.push(bounds)
-
-        // 라벨 배경
-        ctx.fillStyle = labelBg
-        ctx.globalAlpha = isHighlighted ? 0.85 : 0.3
-        ctx.fillRect(bounds.x1, bounds.y1, textWidth + padding * 2, fontSize + padding * 2)
-        ctx.globalAlpha = 1
-
-        // 라벨 텍스트
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'top'
-        ctx.fillStyle = textColor
-        ctx.globalAlpha = isHighlighted ? 1 : 0.2
-        ctx.fillText(label, node.x || 0, labelY)
-        ctx.globalAlpha = 1
-      }
+      // 라벨 텍스트
+      ctx.fillStyle = textColor
+      ctx.globalAlpha = isHighlighted ? 1 : 0.2
+      ctx.fillText(label, node.x || 0, labelY)
+      ctx.globalAlpha = 1
     }
-  }, [clusterColorMode, getNodeColor, highlightNodes, labelBg, textColor, maxVal, topNodeIds])
+  }, [clusterColorMode, getNodeColor, highlightNodes, labelBg, textColor])
 
   // 하이라이트 매칭용 링크 키 생성
   const getLinkKey = useCallback((link: GraphLink) => {
@@ -374,25 +256,8 @@ export default function GraphView() {
     return `${sid}-${tid}`
   }, [])
 
-  // 호버 시 연결된 노드/링크 하이라이트 + 툴팁
+  // 호버 시 연결된 노드/링크 하이라이트
   const handleNodeHover = useCallback((node: AnyNode | null) => {
-    if (showOnboardingRef.current) dismissOnboarding()
-
-    // 호버 툴팁 (200ms 딜레이)
-    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
-    if (node && node.id !== selectedNode?.id) {
-      hoverTimerRef.current = setTimeout(() => {
-        setHoverNode({
-          node,
-          x: mousePos.current.x,
-          y: mousePos.current.y,
-        })
-      }, 200)
-    } else {
-      setHoverNode(null)
-    }
-
-    // 하이라이트 로직
     if (node) {
       const connectedIds = new Set<string>([node.id])
       const connectedLinkKeys = new Set<string>()
@@ -413,15 +278,13 @@ export default function GraphView() {
       setHighlightNodes(null)
       setHighlightLinks(new Set())
     }
-  }, [filteredData.links, dismissOnboarding, selectedNode?.id])
+  }, [filteredData.links])
 
   // 더블클릭 감지를 위한 ref
   const lastClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 })
 
   // 클릭 시 해당 노드로 이동, 더블클릭 시 메모리 상세 모달
   const handleNodeClick = useCallback((node: AnyNode) => {
-    if (showOnboardingRef.current) dismissOnboarding()
-    setHoverNode(null)
     const now = Date.now()
     const last = lastClickRef.current
     if (last.id === node.id && now - last.time < 400) {
@@ -437,17 +300,12 @@ export default function GraphView() {
 
     setSelectedNode(node)
     if (showInsights) setShowInsights(false)
-    // Ego 모드에서 다른 노드 클릭 시 중심 전환
-    if (viewMode === 'ego' && node.id !== egoCenter) {
-      setEgoCenter(node.id)
-      setEgoDepth(1)
-    }
     // 2D 카메라 이동
     if (fgRef.current) {
       fgRef.current.centerAt(node.x || 0, node.y || 0, 600)
       fgRef.current.zoom(4, 600)
     }
-  }, [showInsights, dismissOnboarding, viewMode, egoCenter])
+  }, [showInsights])
 
   // 배경 클릭 시 선택 해제
   const handleBackgroundClick = useCallback(() => {
@@ -457,39 +315,52 @@ export default function GraphView() {
     setSearchMatches([])
   }, [])
 
-  // 검색 하이라이트 — 모든 매치를 찾아 하이라이트
-  const handleSearch = useCallback(
-    (query: string) => {
-      if (!query.trim()) {
-        setSearchMatches([])
-        setSearchMatchIdx(0)
-        setHighlightNodes(null)
-        return
-      }
-      const q = query.toLowerCase()
-      const matches = filteredData.nodes.filter(n =>
-        (n.name || n.id).toLowerCase().includes(q),
-      )
-      setSearchMatches(matches)
-      setSearchMatchIdx(0)
+  // 스마트 검색 디바운스 타이머
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-      // 매치 노드만 밝게, 나머지 흐리게
-      if (matches.length > 0) {
-        const matchIds = new Set(matches.map(n => n.id))
+  // 스마트 검색 onChange 핸들러
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const q = e.target.value
+    setSearchQuery(q)
+
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+
+    if (!q.trim()) {
+      setSearchCandidates([])
+      setShowSearchDropdown(false)
+      setHighlightNodes(null)
+      setSearchMatches([])
+      return
+    }
+
+    searchTimerRef.current = setTimeout(() => {
+      const results = smartSearch(q, data.nodes)
+      setSearchCandidates(results)
+      setShowSearchDropdown(results.length > 0)
+
+      if (results.length > 0) {
+        const matchIds = new Set(results.map(r => r.id))
         setHighlightNodes(matchIds)
-        // 첫 매치로 카메라 이동
-        const first = matches[0] as AnyNode
-        if (fgRef.current) {
-          fgRef.current.centerAt(first.x || 0, first.y || 0, 600)
-          fgRef.current.zoom(3, 600)
-        }
-        setSelectedNode(matches[0])
+        const matchNodes = data.nodes.filter(n => matchIds.has(n.id))
+        setSearchMatches(matchNodes)
+        setSearchMatchIdx(0)
       } else {
         setHighlightNodes(null)
+        setSearchMatches([])
       }
-    },
-    [filteredData.nodes],
-  )
+    }, 300)
+  }, [data.nodes])
+
+  // 후보 클릭 핸들러
+  const handleCandidateClick = useCallback((candidate: SearchCandidate) => {
+    setShowSearchDropdown(false)
+    setHighlightNodes(new Set([candidate.id]))
+    const node = data.nodes.find(n => n.id === candidate.id) as AnyNode | undefined
+    if (node && fgRef.current) {
+      fgRef.current.centerAt(node.x || 0, node.y || 0, 400)
+      fgRef.current.zoom(3, 400)
+    }
+  }, [data.nodes])
 
   // 검색 매치 간 이동 (위/아래 화살표)
   const navigateSearchMatch = useCallback(
@@ -622,23 +493,11 @@ export default function GraphView() {
               type="text"
               placeholder="노드 검색..."
               value={searchQuery}
-              onChange={e => {
-                const value = e.target.value
-                setSearchQuery(value)
-                if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
-                if (!value.trim()) {
-                  handleSearch('')
-                } else {
-                  searchTimerRef.current = setTimeout(() => handleSearch(value), 300)
-                }
-              }}
+              onChange={handleSearchChange}
               onKeyDown={e => {
                 if (e.key === 'Enter') {
-                  if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
-                  if (searchMatches.length > 0) {
+                  if (searchMatches.length > 0 && searchQuery.trim()) {
                     navigateSearchMatch(1)
-                  } else {
-                    handleSearch(searchQuery)
                   }
                 }
                 if (e.key === 'ArrowDown' && searchMatches.length > 0) {
@@ -651,8 +510,15 @@ export default function GraphView() {
                 }
                 if (e.key === 'Escape') {
                   setSearchQuery('')
-                  handleSearch('')
+                  setSearchCandidates([])
+                  setShowSearchDropdown(false)
+                  setHighlightNodes(null)
+                  setSearchMatches([])
                 }
+              }}
+              onBlur={() => {
+                // 드롭다운 클릭이 먼저 처리되도록 약간의 딜레이
+                setTimeout(() => setShowSearchDropdown(false), 200)
               }}
             />
             {searchMatches.length > 0 && (
@@ -661,36 +527,22 @@ export default function GraphView() {
               </span>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Ego/전체 모드 토글 */}
-      {!loading && !isEmptyGraph && (
-        <div className="graph-mode-toggle">
-          <button
-            className={`graph-mode-btn ${viewMode === 'ego' ? 'active' : ''}`}
-            onClick={() => { setViewMode('ego'); setEgoCenter(null); setEgoDepth(1) }}
-          >
-            로컬
-          </button>
-          <button
-            className={`graph-mode-btn ${viewMode === 'full' ? 'active' : ''}`}
-            onClick={() => setViewMode('full')}
-          >
-            전체
-          </button>
-        </div>
-      )}
-
-      {/* Ego 중심 노드 정보 바 */}
-      {viewMode === 'ego' && egoCenter && !loading && (
-        <div className="ego-info-bar">
-          <span className="ego-center-name">{egoCenter}</span>
-          <span>중심 · {egoDepth === 1 ? '1단계' : '2단계'}</span>
-          {egoDepth < 2 && (
-            <button className="ego-expand-btn" onClick={() => setEgoDepth(2)}>
-              <Expand size={12} /> 더 보기
-            </button>
+          {showSearchDropdown && searchCandidates.length > 0 && (
+            <div className="search-dropdown">
+              {searchCandidates.map(c => (
+                <button
+                  key={c.id}
+                  className="search-dropdown-item"
+                  onClick={() => handleCandidateClick(c)}
+                >
+                  <span className="search-item-name">{c.name}</span>
+                  <span className="search-item-meta">
+                    <span className="search-item-type">{NODE_TYPE_KO[c.label] || c.label}</span>
+                    <span className="search-item-val">연결 {c.val}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -744,9 +596,7 @@ export default function GraphView() {
           graphData={filteredData}
           nodeCanvasObject={nodeCanvasObject}
           nodePointerAreaPaint={(node: AnyNode, color, ctx) => {
-            const val = node.val || 1
-            const normalizedVal = Math.log2(val + 1) / Math.log2(maxVal + 1)
-            const size = 5 + normalizedVal * 20
+            const size = Math.max(3, Math.sqrt(node.val || 1) * 2.5)
             ctx.beginPath()
             ctx.arc(node.x || 0, node.y || 0, size + 2, 0, 2 * Math.PI)
             ctx.fillStyle = color
@@ -784,37 +634,10 @@ export default function GraphView() {
                 fgRef.current?.centerAt(-x / k, -y / k, 0)
               } catch { fgRef.current?.zoomToFit(400, 40) }
             } else {
-              // 밀집 영역 중심 줌: 노드 좌표 평균으로 centerAt + 적절한 줌
-              const nodes = filteredData.nodes as AnyNode[]
-              if (nodes.length === 0) return
-              const withPos = nodes.filter(n => n.x !== undefined && n.y !== undefined)
-              if (withPos.length === 0) {
-                fgRef.current?.zoomToFit(400, 40)
-                return
-              }
-              const cx = withPos.reduce((s, n) => s + (n.x || 0), 0) / withPos.length
-              const cy = withPos.reduce((s, n) => s + (n.y || 0), 0) / withPos.length
-              fgRef.current?.centerAt(cx, cy, 400)
-              fgRef.current?.zoom(2.5, 400)
+              fgRef.current?.zoomToFit(400, 40)
             }
           }}
         />
-      )}
-
-      {/* 호버 툴팁 */}
-      {hoverNode && (
-        <div
-          className="graph-hover-tooltip"
-          style={{
-            left: hoverNode.x + 12,
-            top: hoverNode.y - 10,
-          }}
-        >
-          <span className="hover-tooltip-name">{hoverNode.node.name || hoverNode.node.id}</span>
-          <span className="hover-tooltip-meta">
-            {toKo(hoverNode.node.label, NODE_TYPE_KO)} &middot; 연결 {hoverNode.node.val || 1}개
-          </span>
-        </div>
       )}
 
       {/* 범례 */}
@@ -878,26 +701,12 @@ export default function GraphView() {
         />
       )}
 
-      {/* 조작 안내 (첫 방문 시 강조 코치마크 / 이후 간소 힌트) */}
+      {/* 조작 안내 */}
       {!loading && !isEmptyGraph && (
-        <div className={`graph-controls ${showOnboarding ? 'graph-controls--onboarding' : ''}`}>
-          {showOnboarding ? (
-            <>
-              <span>드래그로 이동</span>
-              <span className="graph-controls-divider" />
-              <span>스크롤로 확대/축소</span>
-              <span className="graph-controls-divider" />
-              <span>노드 클릭으로 상세 보기</span>
-              <span className="graph-controls-divider" />
-              <span>더블클릭으로 메모리 열기</span>
-            </>
-          ) : (
-            <>
-              <span>드래그: 이동</span>
-              <span>스크롤: 확대/축소</span>
-              <span>클릭: 포커스</span>
-            </>
-          )}
+        <div className="graph-controls">
+          <span>드래그: 이동</span>
+          <span>스크롤: 확대/축소</span>
+          <span>클릭: 포커스</span>
         </div>
       )}
 
@@ -913,6 +722,24 @@ export default function GraphView() {
           <button className="graph-zoom-btn" onClick={handleZoomOut} title="축소">
             <ZoomOut size={16} />
           </button>
+        </div>
+      )}
+
+      {/* 첫 방문 온보딩 오버레이 */}
+      {showOnboarding && !loading && !isEmptyGraph && (
+        <div className="graph-onboarding-overlay" onClick={dismissOnboarding}>
+          <div className="graph-onboarding-card" onClick={e => e.stopPropagation()}>
+            <h3>지식 그래프 사용법</h3>
+            <ul>
+              <li>드래그로 화면을 이동할 수 있습니다</li>
+              <li>스크롤(또는 핀치)로 확대/축소할 수 있습니다</li>
+              <li>노드를 클릭하면 상세 정보를 볼 수 있습니다</li>
+              <li>더블클릭하면 관련 메모리를 열 수 있습니다</li>
+            </ul>
+            <button className="graph-onboarding-btn" onClick={dismissOnboarding}>
+              확인
+            </button>
+          </div>
         </div>
       )}
 
