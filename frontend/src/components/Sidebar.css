@@ -159,10 +159,23 @@
   color: var(--accent-primary);
 }
 
+.session-item-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
 .session-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.session-time {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 1px;
 }
 
 /* ─── 푸터 ─────────────────────────────────────────────────────────────── */

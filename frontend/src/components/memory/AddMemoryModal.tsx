@@ -17,6 +17,7 @@ export default function AddMemoryModal({ onClose, onAdded }: AddMemoryModalProps
   const [newUrl, setNewUrl] = useState('')
   const [newNote, setNewNote] = useState('')
   const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -27,9 +28,11 @@ export default function AddMemoryModal({ onClose, onAdded }: AddMemoryModalProps
   }, [onClose])
 
   const addMemory = async () => {
+    if (isSubmitting) return
+    setIsSubmitting(true)
     try {
       if (addType === 'PDF') {
-        if (!pdfFile) return
+        if (!pdfFile) { setIsSubmitting(false); return }
         await uploadPdfMemory(pdfFile)
       } else {
         const payload: MemoryCreatePayload = addType === 'WEB'
@@ -43,6 +46,7 @@ export default function AddMemoryModal({ onClose, onAdded }: AddMemoryModalProps
     } catch (error) {
       console.error('메모리 추가 실패:', error)
       toast.error('메모리 추가에 실패했습니다.')
+      setIsSubmitting(false)
     }
   }
 
@@ -106,8 +110,8 @@ export default function AddMemoryModal({ onClose, onAdded }: AddMemoryModalProps
           <button className="btn btn-secondary" onClick={onClose}>
             취소
           </button>
-          <button className="btn btn-primary" onClick={addMemory}>
-            저장
+          <button className="btn btn-primary" onClick={addMemory} disabled={isSubmitting}>
+            {isSubmitting ? '저장 중...' : '저장'}
           </button>
         </div>
       </div>

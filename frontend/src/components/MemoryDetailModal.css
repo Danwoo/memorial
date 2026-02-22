@@ -163,6 +163,13 @@
   padding: var(--space-sm);
 }
 
+.related-empty {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  margin: 0;
+  padding: var(--space-sm) 0;
+}
+
 .related-list {
   display: flex;
   flex-direction: column;
@@ -301,6 +308,34 @@
 .linked-journals-cta:hover {
   background: var(--accent-primary);
   color: white;
+}
+
+/* ── 크로스 네비게이션 ── */
+
+.memory-detail-cross-nav {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.btn-cross-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-cross-nav:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--accent-bg);
 }
 
 /* ── 삭제 액션 ── */
