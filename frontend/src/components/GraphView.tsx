@@ -1,11 +1,11 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import ForceGraph2D from 'react-force-graph-2d'
-import { Lightbulb, Maximize, ZoomIn, ZoomOut } from 'lucide-react'
+import { Lightbulb, Maximize, ZoomIn, ZoomOut, Expand } from 'lucide-react'
 import type { GraphNode, GraphLink, GraphData, SearchResult, GraphInsights, ClusterInfo } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
-import { fetchGraph, fetchGraphInsights, searchMemories } from '../api'
+import { fetchGraph, fetchGraphInsights, searchMemories, fetchEgoGraph, fetchEgoDefault } from '../api'
 import MemoryDetailModal from './MemoryDetailModal'
 import GraphInsightPanel, { CLUSTER_COLORS } from './GraphInsightPanel'
 import NodeInfoPanel from './graph/NodeInfoPanel'
@@ -35,6 +35,11 @@ export default function GraphView() {
   const [highlightNodes, setHighlightNodes] = useState<Set<string> | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
+
+  // Ego 그래프 모드
+  const [viewMode, setViewMode] = useState<'ego' | 'full'>('ego')
+  const [egoCenter, setEgoCenter] = useState<string | null>(null)
+  const [egoDepth, setEgoDepth] = useState(1)
 
   // 관련 메모리 조회
   const [relatedMemories, setRelatedMemories] = useState<SearchResult[]>([])
@@ -73,27 +78,32 @@ export default function GraphView() {
   const textColor = resolvedTheme === 'dark' ? '#f0f0f0' : '#1a1a1a'
   const labelBg = resolvedTheme === 'dark' ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.92)'
 
-  // 그래프 데이터 조회 및 노드 가공
+  // 그래프 데이터 조회 및 노드 가공 (ego/full 모드 지원)
+  const processNodes = useCallback((json: { nodes: { id: string; label: string; properties: Record<string, unknown>; name?: string; group?: string; val?: number }[]; links: GraphLink[] }) => {
+    const processedNodes: GraphNode[] = json.nodes.map(n => ({
+      ...n,
+      val: n.val || 1,
+      color: NODE_COLORS[n.label] || NODE_COLORS['default'],
+      name: n.name || (n.properties?.name as string) || (n.properties?.title as string) || n.id,
+    }))
+    const mv = processedNodes.reduce((max, n) => Math.max(max, n.val || 1), 1)
+    return { nodes: processedNodes, links: json.links, mv }
+  }, [])
+
   const fetchGraphData = useCallback(async () => {
     try {
       setLoading(true)
       const json = await fetchGraph(300)
-      const processedNodes: GraphNode[] = json.nodes.map(n => ({
-        ...n,
-        val: n.val || 1,
-        color: NODE_COLORS[n.label] || NODE_COLORS['default'],
-        name: n.name || (n.properties?.name as string) || (n.properties?.title as string) || n.id,
-      }))
-      const mv = processedNodes.reduce((max, n) => Math.max(max, n.val || 1), 1)
+      const { nodes, links, mv } = processNodes(json)
       setMaxVal(mv)
-      setData({ nodes: processedNodes, links: json.links })
+      setData({ nodes, links })
     } catch (err) {
       console.error('그래프 데이터 로딩 실패:', err)
       toast.error('지식 그래프를 불러오지 못했습니다')
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [toast, processNodes])
 
   const loadInsights = useCallback(async () => {
     setInsightsLoading(true)
@@ -108,8 +118,45 @@ export default function GraphView() {
   }, [])
 
   useEffect(() => {
-    fetchGraphData()
-  }, [fetchGraphData])
+    let cancelled = false
+    setLoading(true)
+    setSelectedNode(null)
+    setHighlightNodes(null)
+    setHighlightLinks(new Set())
+
+    const loadData = async () => {
+      try {
+        let result: { nodes: { id: string; label: string; properties: Record<string, unknown>; name?: string; group?: string; val?: number }[]; links: GraphLink[]; center_node?: string | null }
+
+        if (viewMode === 'ego') {
+          if (egoCenter) {
+            result = await fetchEgoGraph(egoCenter, egoDepth)
+          } else {
+            result = await fetchEgoDefault()
+            if (!cancelled && result.center_node) {
+              setEgoCenter(result.center_node)
+            }
+          }
+        } else {
+          result = await fetchGraph(300)
+        }
+
+        if (!cancelled) {
+          const { nodes, links, mv } = processNodes(result)
+          setMaxVal(mv)
+          setData({ nodes, links })
+          cameraRestoredRef.current = false
+        }
+      } catch {
+        if (!cancelled) toast.error('그래프를 불러올 수 없습니다')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadData()
+    return () => { cancelled = true }
+  }, [viewMode, egoCenter, egoDepth, toast, processNodes])
 
   // 마우스 좌표 트래킹 (호버 툴팁용)
   useEffect(() => {
@@ -390,12 +437,17 @@ export default function GraphView() {
 
     setSelectedNode(node)
     if (showInsights) setShowInsights(false)
+    // Ego 모드에서 다른 노드 클릭 시 중심 전환
+    if (viewMode === 'ego' && node.id !== egoCenter) {
+      setEgoCenter(node.id)
+      setEgoDepth(1)
+    }
     // 2D 카메라 이동
     if (fgRef.current) {
       fgRef.current.centerAt(node.x || 0, node.y || 0, 600)
       fgRef.current.zoom(4, 600)
     }
-  }, [showInsights, dismissOnboarding])
+  }, [showInsights, dismissOnboarding, viewMode, egoCenter])
 
   // 배경 클릭 시 선택 해제
   const handleBackgroundClick = useCallback(() => {
@@ -609,6 +661,37 @@ export default function GraphView() {
               </span>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Ego/전체 모드 토글 */}
+      {!loading && !isEmptyGraph && (
+        <div className="graph-mode-toggle">
+          <button
+            className={`graph-mode-btn ${viewMode === 'ego' ? 'active' : ''}`}
+            onClick={() => { setViewMode('ego'); setEgoCenter(null); setEgoDepth(1) }}
+          >
+            로컬
+          </button>
+          <button
+            className={`graph-mode-btn ${viewMode === 'full' ? 'active' : ''}`}
+            onClick={() => setViewMode('full')}
+          >
+            전체
+          </button>
+        </div>
+      )}
+
+      {/* Ego 중심 노드 정보 바 */}
+      {viewMode === 'ego' && egoCenter && !loading && (
+        <div className="ego-info-bar">
+          <span className="ego-center-name">{egoCenter}</span>
+          <span>중심 · {egoDepth === 1 ? '1단계' : '2단계'}</span>
+          {egoDepth < 2 && (
+            <button className="ego-expand-btn" onClick={() => setEgoDepth(2)}>
+              <Expand size={12} /> 더 보기
+            </button>
+          )}
         </div>
       )}
 
