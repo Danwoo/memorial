@@ -31,6 +31,38 @@ async def get_graph(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+@router.get("/ego/default", response_model=dict[str, Any])
+async def get_ego_default(
+    user_id: UUID = Depends(get_user_id),
+    graph_service: GraphService = Depends(get_graph_service),
+):
+    """기본 Ego Graph: 연결 수 최다 허브 노드 중심 1-hop 서브그래프."""
+    if not graph_service.is_available:
+        return {"nodes": [], "links": [], "center_node": None}
+
+    try:
+        return await graph_service.get_ego_default(str(user_id))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/ego", response_model=dict[str, Any])
+async def get_ego_graph(
+    node_name: str = Query(..., min_length=1),
+    depth: int = Query(1, ge=1, le=3),
+    user_id: UUID = Depends(get_user_id),
+    graph_service: GraphService = Depends(get_graph_service),
+):
+    """특정 노드 중심 N-hop Ego Graph 서브그래프 조회."""
+    if not graph_service.is_available:
+        return {"nodes": [], "links": []}
+
+    try:
+        return await graph_service.get_ego_data(node_name, depth, str(user_id))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 @router.get("/insights", response_model=GraphInsightsResponse)
 async def get_graph_insights(
     user_id: UUID = Depends(get_user_id),
