@@ -36,3 +36,15 @@ export function createGraphRelation(source: string, target: string, relType = 'R
   if (isDemoMode()) return Promise.resolve({ ok: true, message: '데모 모드' })
   return post('/graph/relations', { source, target, rel_type: relType })
 }
+
+// Ego 그래프 조회 (특정 노드 중심 N-hop)
+export function fetchEgoGraph(nodeName: string, depth = 1): Promise<GraphApiResponse & { center_node?: string }> {
+  if (isDemoMode()) return Promise.resolve({ ...DEMO_GRAPH as unknown as GraphApiResponse, center_node: nodeName })
+  return get<GraphApiResponse & { center_node?: string }>(`/graph/ego?node_name=${encodeURIComponent(nodeName)}&depth=${depth}`)
+}
+
+// Ego 그래프 기본 조회 (가장 연결이 많은 노드 중심)
+export function fetchEgoDefault(): Promise<GraphApiResponse & { center_node?: string | null }> {
+  if (isDemoMode()) return Promise.resolve({ ...DEMO_GRAPH as unknown as GraphApiResponse, center_node: null })
+  return get<GraphApiResponse & { center_node?: string | null }>('/graph/ego/default')
+}
