@@ -13,6 +13,7 @@ import AuthView from './components/AuthView'
 import ChatView from './components/ChatView'
 import KakaoLinkPage from './components/KakaoLinkPage'
 import LandingPage from './components/LandingPage'
+import NotFoundPage from './components/NotFoundPage'
 import './App.css'
 
 // 코드 스플리팅: 무거운 뷰를 동적 import로 분리
@@ -84,7 +85,11 @@ function App() {
               <Route path="search" element={<Navigate to="/memories?tab=search" replace />} />
               <Route path="timeline" element={<Navigate to="/memories?tab=timeline" replace />} />
               <Route path="dashboard" element={<Suspense fallback={<div className="page-loading" />}><DashboardView /></Suspense>} />
+              <Route path="*" element={<NotFoundPage />} />
             </Route>
+
+            {/* 매칭되지 않는 모든 경로 → 404 */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </ToastProvider>
       </AuthProvider>

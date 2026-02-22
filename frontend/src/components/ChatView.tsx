@@ -34,7 +34,9 @@ export default function ChatView() {
   const [briefing, setBriefing] = useState<BriefingData | null>(null)
   const [expandedRefs, setExpandedRefs] = useState<Set<number>>(new Set())
   const [feedbacks, setFeedbacks] = useState<Map<number, 'good' | 'bad'>>(new Map())
+  const [showScrollBtn, setShowScrollBtn] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -95,6 +97,17 @@ export default function ChatView() {
     }
   }, [])
 
+  // 스트리밍 중 탭/브라우저 닫기 경고
+  useEffect(() => {
+    if (!isLoading) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isLoading])
+
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
@@ -102,6 +115,13 @@ export default function ChatView() {
   useEffect(() => {
     scrollToBottom()
   }, [messages, scrollToBottom])
+
+  const handleMessagesScroll = useCallback(() => {
+    const el = messagesContainerRef.current
+    if (!el) return
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+    setShowScrollBtn(distFromBottom > 200)
+  }, [])
 
   const loadHistory = async (sid: string) => {
     setIsLoadingHistory(true)
@@ -239,7 +259,8 @@ export default function ChatView() {
         </div>
       </div>
 
-      <div className="chat-messages" aria-live="polite" aria-label="대화 메시지">
+      <div className="chat-messages-wrapper">
+      <div className="chat-messages" ref={messagesContainerRef} onScroll={handleMessagesScroll} aria-live="polite" aria-label="대화 메시지">
         {isLoadingHistory ? (
           <div className="chat-empty">
             <div className="loading-spinner"></div>
@@ -359,6 +380,18 @@ export default function ChatView() {
           ))
         )}
         <div ref={messagesEndRef} />
+      </div>
+
+      {showScrollBtn && (
+        <button
+          className="chat-scroll-bottom-btn"
+          onClick={scrollToBottom}
+          title="맨 아래로"
+          type="button"
+        >
+          <ChevronDown size={20} />
+        </button>
+      )}
       </div>
 
       <div className="chat-input-container">

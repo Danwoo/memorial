@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { X, ExternalLink, Trash2, Loader2, Tag, Pencil, Save, Undo2, BookOpen, PenLine } from 'lucide-react'
+import { X, ExternalLink, Trash2, Loader2, Tag, Pencil, Save, Undo2, BookOpen, PenLine, Network, MessageSquare } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
 import { useFocusTrap } from '../hooks/useFocusTrap'
@@ -37,6 +37,7 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
   const [showConfirm, setShowConfirm] = useState(false)
   const [relatedMemories, setRelatedMemories] = useState<RelatedMemory[]>([])
   const [isLoadingRelated, setIsLoadingRelated] = useState(false)
+  const [relatedFailed, setRelatedFailed] = useState(false)
   const [linkedJournals, setLinkedJournals] = useState<LinkedJournal[]>([])
   const [isLoadingJournals, setIsLoadingJournals] = useState(false)
 
@@ -71,9 +72,13 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
       .then(data => {
         setDetail(data)
         setIsLoadingRelated(true)
-        fetchRelatedMemoriesById(memoryId)
+        setRelatedFailed(false)
+        const relatedTimeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('timeout')), 10_000)
+        )
+        Promise.race([fetchRelatedMemoriesById(memoryId), relatedTimeout])
           .then(setRelatedMemories)
-          .catch(() => {})
+          .catch(() => setRelatedFailed(true))
           .finally(() => setIsLoadingRelated(false))
         setIsLoadingJournals(true)
         fetchMemoryJournals(memoryId)
@@ -301,7 +306,7 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
               </div>
             )}
 
-            {!isEditing && (isLoadingRelated || relatedMemories.length > 0) && (
+            {!isEditing && (
               <div className="memory-detail-section">
                 <h4>관련 메모리</h4>
                 {isLoadingRelated ? (
@@ -325,7 +330,11 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
                       </div>
                     ))}
                   </div>
-                ) : null}
+                ) : (
+                  <p className="related-empty">
+                    {relatedFailed ? '관련 기억을 찾지 못했습니다.' : '아직 연결된 기억이 없습니다.'}
+                  </p>
+                )}
               </div>
             )}
 
@@ -378,6 +387,34 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
                     </button>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* 크로스 네비게이션 */}
+            {!isEditing && (
+              <div className="memory-detail-cross-nav">
+                <button
+                  className="btn-cross-nav"
+                  onClick={() => {
+                    onClose()
+                    navigate('/graph', { state: { focusNodeId: memoryId } })
+                  }}
+                  type="button"
+                >
+                  <Network size={14} />
+                  그래프에서 보기
+                </button>
+                <button
+                  className="btn-cross-nav"
+                  onClick={() => {
+                    onClose()
+                    navigate('/chat', { state: { topic: detail.title } })
+                  }}
+                  type="button"
+                >
+                  <MessageSquare size={14} />
+                  이 주제로 대화하기
+                </button>
               </div>
             )}
 

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import ForceGraph2D from 'react-force-graph-2d'
-import { Lightbulb } from 'lucide-react'
+import { Lightbulb, Maximize, ZoomIn, ZoomOut } from 'lucide-react'
 import type { GraphNode, GraphLink, GraphData, SearchResult, GraphInsights, ClusterInfo } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
@@ -15,12 +15,17 @@ import './GraphView.css'
 
 type AnyNode = GraphNode & { x?: number; y?: number; vx?: number; vy?: number; fx?: number; fy?: number }
 
+const CAMERA_STORAGE_KEY = 'memoir-graph-camera'
+const ONBOARDING_KEY = 'memoir-graph-visited'
+
 export default function GraphView() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { resolvedTheme } = useTheme()
   const toast = useToast()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null)
+  const cameraRestoredRef = useRef(false)
 
   const [data, setData] = useState<GraphData>({ nodes: [], links: [] })
   const [loading, setLoading] = useState(true)
@@ -38,6 +43,9 @@ export default function GraphView() {
   // 검색 결과 하이라이트
   const [searchMatches, setSearchMatches] = useState<GraphNode[]>([])
   const [searchMatchIdx, setSearchMatchIdx] = useState(0)
+
+  // 온보딩 오버레이
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem(ONBOARDING_KEY))
 
   // 인사이트 패널
   const [insights, setInsights] = useState<GraphInsights | null>(null)
@@ -84,6 +92,54 @@ export default function GraphView() {
   useEffect(() => {
     fetchGraphData()
   }, [fetchGraphData])
+
+  // 다른 뷰에서 focusNodeId로 진입 시 해당 노드 포커스
+  useEffect(() => {
+    const state = location.state as { focusNodeId?: string } | null
+    if (state?.focusNodeId && data.nodes.length > 0) {
+      const target = data.nodes.find(n => n.id === state.focusNodeId) as AnyNode | undefined
+      if (target && fgRef.current) {
+        setSelectedNode(target)
+        setTimeout(() => {
+          fgRef.current?.centerAt(target.x || 0, target.y || 0, 600)
+          fgRef.current?.zoom(4, 600)
+        }, 500)
+      }
+      window.history.replaceState({}, '')
+    }
+  }, [location.state, data.nodes])
+
+  // 카메라 상태 sessionStorage 저장 (디바운스 500ms)
+  const cameraSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const handleZoom = useCallback(({ k, x, y }: { k: number; x: number; y: number }) => {
+    if (cameraSaveTimerRef.current) clearTimeout(cameraSaveTimerRef.current)
+    cameraSaveTimerRef.current = setTimeout(() => {
+      sessionStorage.setItem(CAMERA_STORAGE_KEY, JSON.stringify({ k, x, y }))
+    }, 500)
+  }, [])
+
+  // 줌 컨트롤 핸들러
+  const handleZoomToFit = useCallback(() => {
+    fgRef.current?.zoomToFit(400, 40)
+  }, [])
+
+  const handleZoomIn = useCallback(() => {
+    if (!fgRef.current) return
+    const currentZoom = fgRef.current.zoom()
+    fgRef.current.zoom(currentZoom * 1.5, 300)
+  }, [])
+
+  const handleZoomOut = useCallback(() => {
+    if (!fgRef.current) return
+    const currentZoom = fgRef.current.zoom()
+    fgRef.current.zoom(currentZoom / 1.5, 300)
+  }, [])
+
+  // 온보딩 닫기
+  const dismissOnboarding = useCallback(() => {
+    setShowOnboarding(false)
+    localStorage.setItem(ONBOARDING_KEY, '1')
+  }, [])
 
   // 선택 노드 변경 시 관련 메모리 조회
   useEffect(() => {
@@ -531,7 +587,21 @@ export default function GraphView() {
           cooldownTicks={120}
           d3AlphaDecay={0.02}
           d3VelocityDecay={0.3}
-          onEngineStop={() => fgRef.current?.zoomToFit(400, 40)}
+          onZoom={handleZoom}
+          onEngineStop={() => {
+            if (cameraRestoredRef.current) return
+            cameraRestoredRef.current = true
+            const saved = sessionStorage.getItem(CAMERA_STORAGE_KEY)
+            if (saved) {
+              try {
+                const { k, x, y } = JSON.parse(saved)
+                fgRef.current?.zoom(k, 0)
+                fgRef.current?.centerAt(-x / k, -y / k, 0)
+              } catch { fgRef.current?.zoomToFit(400, 40) }
+            } else {
+              fgRef.current?.zoomToFit(400, 40)
+            }
+          }}
         />
       )}
 
@@ -602,6 +672,39 @@ export default function GraphView() {
           <span>드래그: 이동</span>
           <span>스크롤: 확대/축소</span>
           <span>클릭: 포커스</span>
+        </div>
+      )}
+
+      {/* 줌 컨트롤 패널 */}
+      {!loading && !isEmptyGraph && (
+        <div className="graph-zoom-controls">
+          <button className="graph-zoom-btn" onClick={handleZoomToFit} title="전체 보기">
+            <Maximize size={16} />
+          </button>
+          <button className="graph-zoom-btn" onClick={handleZoomIn} title="확대">
+            <ZoomIn size={16} />
+          </button>
+          <button className="graph-zoom-btn" onClick={handleZoomOut} title="축소">
+            <ZoomOut size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* 첫 방문 온보딩 오버레이 */}
+      {showOnboarding && !loading && !isEmptyGraph && (
+        <div className="graph-onboarding-overlay" onClick={dismissOnboarding}>
+          <div className="graph-onboarding-card" onClick={e => e.stopPropagation()}>
+            <h3>지식 그래프 사용법</h3>
+            <ul>
+              <li>드래그로 화면을 이동할 수 있습니다</li>
+              <li>스크롤(또는 핀치)로 확대/축소할 수 있습니다</li>
+              <li>노드를 클릭하면 상세 정보를 볼 수 있습니다</li>
+              <li>더블클릭하면 관련 메모리를 열 수 있습니다</li>
+            </ul>
+            <button className="graph-onboarding-btn" onClick={dismissOnboarding}>
+              확인
+            </button>
+          </div>
         </div>
       )}
 

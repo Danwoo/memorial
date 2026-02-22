@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 const JOURNAL_DRAFT_KEY = 'memoir-journal-draft'
 const AUTOSAVE_DEBOUNCE_MS = 2000
@@ -17,6 +17,25 @@ export function useJournalAutosave(
   serverSave: (content: string, memoryIds: string[]) => Promise<unknown>,
 ) {
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>('')
+  const [isDirty, setIsDirty] = useState(false)
+  const lastSavedRef = useRef(markdownContent)
+
+  // 내용 변경 시 dirty 플래그 갱신
+  useEffect(() => {
+    if (!isToday) {
+      setIsDirty(false)
+      return
+    }
+    const hasContent = normalize(markdownContent) !== normalize(defaultContent)
+    const changed = markdownContent !== lastSavedRef.current
+    setIsDirty(hasContent && changed)
+  }, [markdownContent, defaultContent, isToday])
+
+  // 수동 저장 완료 시 dirty 해제 콜백
+  const markSaved = useCallback(() => {
+    lastSavedRef.current = markdownContent
+    setIsDirty(false)
+  }, [markdownContent])
 
   // localStorage 디바운스 저장
   useEffect(() => {
@@ -39,6 +58,8 @@ export function useJournalAutosave(
         const memoryIds = extractMemoryIds()
         await serverSave(markdownContent, memoryIds)
         if (!cancelled) {
+          lastSavedRef.current = markdownContent
+          setIsDirty(false)
           setAutoSaveStatus('saved')
           setTimeout(() => { if (!cancelled) setAutoSaveStatus('') }, 3000)
         }
@@ -50,5 +71,16 @@ export function useJournalAutosave(
     return () => { cancelled = true; clearTimeout(timer) }
   }, [markdownContent, defaultContent, isToday, extractMemoryIds, serverSave])
 
-  return { autoSaveStatus, JOURNAL_DRAFT_KEY }
+  // 브라우저 탭 닫기 경고
+  useEffect(() => {
+    if (!isDirty) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isDirty])
+
+  return { autoSaveStatus, isDirty, markSaved, JOURNAL_DRAFT_KEY }
 }
