@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { useLocation } from 'react-router-dom'
-import { Save, Loader2, Check } from 'lucide-react'
+import { useLocation, useBlocker } from 'react-router-dom'
+import { Save, Loader2, Check, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import TurndownService from 'turndown'
 import type { EditorMode, RelatedMemory, DigestMemory, DigestData, ChatSessionResponse, JournalDateInfo } from '../types'
@@ -135,6 +135,25 @@ export default function JournalView() {
   const [isLoadingStarter, setIsLoadingStarter] = useState(false)
   const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null)
 
+  // 좌/우 패널 collapse 상태
+  const [leftCollapsed, setLeftCollapsed] = useState(() => {
+    try {
+      const saved = localStorage.getItem('memoir-journal-panels')
+      return saved ? JSON.parse(saved).left ?? false : false
+    } catch { return false }
+  })
+  const [rightCollapsed, setRightCollapsed] = useState(() => {
+    try {
+      const saved = localStorage.getItem('memoir-journal-panels')
+      return saved ? JSON.parse(saved).right ?? false : false
+    } catch { return false }
+  })
+
+  // collapse 상태 localStorage 저장
+  useEffect(() => {
+    localStorage.setItem('memoir-journal-panels', JSON.stringify({ left: leftCollapsed, right: rightCollapsed }))
+  }, [leftCollapsed, rightCollapsed])
+
   const showStarter = isToday && normalize(markdownContent) === normalize(defaultContent) && !isGenerating
 
   const templates = useMemo(
@@ -185,12 +204,19 @@ export default function JournalView() {
   }, [])
 
   // 자동 저장 훅
-  const { autoSaveStatus } = useJournalAutosave(
+  const { autoSaveStatus, isDirty, markSaved } = useJournalAutosave(
     markdownContent,
     defaultContent,
     isToday,
     extractMemoryIds,
     serverSave,
+  )
+
+  // 라우트 이탈 시 미저장 내용 경고
+  useBlocker(({ currentLocation, nextLocation }) =>
+    isDirty && currentLocation.pathname !== nextLocation.pathname
+      ? !window.confirm('저장하지 않은 내용이 있습니다. 페이지를 떠나시겠습니까?')
+      : false
   )
 
   // 다른 뷰에서 특정 날짜로 이동 요청 시 처리
@@ -402,6 +428,7 @@ export default function JournalView() {
       const memoryIds = extractMemoryIds()
       await saveJournal(markdownContent, memoryIds)
       localStorage.removeItem(JOURNAL_DRAFT_KEY)
+      markSaved()
       toast.success('저장되었습니다!')
     } catch (e) {
       console.error('저널 저장 실패', e)
@@ -487,8 +514,14 @@ export default function JournalView() {
     }
   }, [])
 
+  const journalViewClass = [
+    'journal-view',
+    leftCollapsed && isToday ? 'journal-view--left-collapsed' : '',
+    rightCollapsed && isToday ? 'journal-view--right-collapsed' : '',
+  ].filter(Boolean).join(' ')
+
   return (
-    <div className="journal-view">
+    <div className={journalViewClass}>
       {/* 메모리 사이드바 (좌측 패널, 오늘일 때만) */}
       {isToday && (
         <MemorySidebar
@@ -500,12 +533,24 @@ export default function JournalView() {
           onDailySummary={handleDailySummary}
           onSessionDraft={handleSessionDraft}
           isGenerating={isGenerating}
+          collapsed={leftCollapsed}
+          onToggleCollapse={() => setLeftCollapsed(!leftCollapsed)}
         />
       )}
 
       <div className="journal-editor-section">
         {/* 에디터 헤더 */}
         <div className="journal-editor-header">
+          {isToday && (
+            <button
+              className="journal-panel-toggle journal-panel-toggle--left"
+              onClick={() => setLeftCollapsed(!leftCollapsed)}
+              title={leftCollapsed ? '메모리 사이드바 열기' : '메모리 사이드바 닫기'}
+              type="button"
+            >
+              {leftCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+            </button>
+          )}
           <JournalDateNav
             currentDate={selectedDate}
             todayStr={todayStr}
@@ -535,6 +580,16 @@ export default function JournalView() {
               >
                 <Save size={16} />
                 {isSaving ? '저장 중...' : '저장'}
+              </button>
+            )}
+            {isToday && (
+              <button
+                className="journal-panel-toggle journal-panel-toggle--right"
+                onClick={() => setRightCollapsed(!rightCollapsed)}
+                title={rightCollapsed ? 'AI 패널 열기' : 'AI 패널 닫기'}
+                type="button"
+              >
+                {rightCollapsed ? <PanelRightOpen size={18} /> : <PanelRightClose size={18} />}
               </button>
             )}
           </div>
@@ -626,6 +681,7 @@ export default function JournalView() {
         <AIPanel
           content={markdownContent}
           onInsertQuestion={handleInsertQuestion}
+          collapsed={rightCollapsed}
         />
       )}
 

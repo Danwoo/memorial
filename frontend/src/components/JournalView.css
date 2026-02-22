@@ -8,6 +8,40 @@
   overflow: hidden;
 }
 
+/* 패널 collapse 상태 */
+.journal-view--left-collapsed {
+  grid-template-columns: 0px 1fr 300px;
+}
+
+.journal-view--right-collapsed {
+  grid-template-columns: 280px 1fr 0px;
+}
+
+.journal-view--left-collapsed.journal-view--right-collapsed {
+  grid-template-columns: 0px 1fr 0px;
+}
+
+/* 패널 토글 버튼 */
+.journal-panel-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.journal-panel-toggle:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
 /* 에디터 섹션 (중앙) */
 .journal-editor-section {
   display: flex;

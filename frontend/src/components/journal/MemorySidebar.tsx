@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { BookOpen, Sparkles, FileText, Zap, ChevronUp, ChevronDown } from 'lucide-react'
+import { BookOpen, Sparkles, FileText, Zap, ChevronUp, ChevronDown, List, LayoutList } from 'lucide-react'
 import type { DigestMemory, RelatedMemory } from '../../types'
 import { MemoryCard } from './MemoryCard'
 import './MemorySidebar.css'
@@ -32,6 +32,7 @@ export function MemorySidebar({
   onToggleCollapse,
 }: MemorySidebarProps) {
   const [activeTab, setActiveTab] = useState<SidebarTab>('today')
+  const [compact, setCompact] = useState(() => localStorage.getItem('memoir-sidebar-compact') === '1')
 
   // 다이제스트 메모리 유형별 집계
   const topicCounts = useMemo(() => {
@@ -46,8 +47,14 @@ export function MemorySidebar({
   const memories = activeTab === 'today' ? todayMemories : relatedMemories
   const isLoading = activeTab === 'related' && isLoadingRelated
 
+  const toggleCompact = () => {
+    const next = !compact
+    setCompact(next)
+    localStorage.setItem('memoir-sidebar-compact', next ? '1' : '0')
+  }
+
   return (
-    <div className={`memory-sidebar ${collapsed ? 'memory-sidebar--collapsed' : ''}`}>
+    <div className={`memory-sidebar ${collapsed ? 'memory-sidebar--collapsed' : ''} ${compact ? 'memory-sidebar--compact' : ''}`}>
       {/* 모바일 접기/펼치기 토글 */}
       {onToggleCollapse && (
         <button className="memory-sidebar__collapse-toggle" onClick={onToggleCollapse} type="button">
@@ -57,6 +64,14 @@ export function MemorySidebar({
         </button>
       )}
       <div className="memory-sidebar__tabs">
+        <button
+          className="memory-sidebar__compact-toggle"
+          onClick={toggleCompact}
+          title={compact ? '상세 보기' : '컴팩트 보기'}
+          type="button"
+        >
+          {compact ? <LayoutList size={14} /> : <List size={14} />}
+        </button>
         <button
           className={`sidebar-tab ${activeTab === 'today' ? 'sidebar-tab--active' : ''}`}
           onClick={() => setActiveTab('today')}

@@ -40,9 +40,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const addToast = useCallback((type: ToastType, message: string) => {
-    const id = nextId++
-    setToasts(prev => [...prev, { id, type, message }])
-    setTimeout(() => dismiss(id), AUTO_DISMISS_MS)
+    setToasts(prev => {
+      if (prev.some(t => t.type === type && t.message === message)) return prev
+      const id = nextId++
+      setTimeout(() => dismiss(id), AUTO_DISMISS_MS)
+      return [...prev, { id, type, message }]
+    })
   }, [dismiss])
 
   const success = useCallback((msg: string) => addToast('success', msg), [addToast])

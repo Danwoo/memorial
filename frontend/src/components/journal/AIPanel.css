@@ -252,6 +252,15 @@
   to { transform: rotate(360deg); }
 }
 
+/* ─── 데스크톱 collapsed 상태 ────────────────────── */
+.ai-sidebar--collapsed {
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  border-left: none;
+  padding: 0;
+}
+
 /* ─── 반응형: ≤1024px → AI 사이드바 접기 ────────────────────── */
 @media (max-width: 1024px) {
   .ai-sidebar {
