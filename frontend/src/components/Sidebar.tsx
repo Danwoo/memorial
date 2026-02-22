@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import type { User, ChatSessionResponse } from '../types'
 import { fetchChatSessions } from '../api'
+import { timeAgo } from '../utils'
 import './Sidebar.css'
 
 interface SessionGroup {
@@ -203,7 +204,10 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
                           onClick={() => navigate(`${prefix}/chat/${session.id}`)}
                           title={session.title}
                         >
-                          <span className="session-title">{session.title}</span>
+                          <div className="session-item-content">
+                            <span className="session-title">{session.title}</span>
+                            <span className="session-time">{timeAgo(session.created_at)}</span>
+                          </div>
                         </button>
                       )
                     })}

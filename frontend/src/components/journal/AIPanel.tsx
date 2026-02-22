@@ -9,12 +9,15 @@ const MIN_CONTENT_LENGTH_FOR_ANALYSIS = 20
 const AUTO_ANALYSIS_MIN_LENGTH = 100
 const AUTO_ANALYSIS_DEBOUNCE_MS = 5000
 
+const ANALYSIS_TIMEOUT_MS = 15_000
+
 interface AIPanelProps {
   content: string
   onInsertQuestion: (question: string) => void
+  collapsed?: boolean
 }
 
-export function AIPanel({ content, onInsertQuestion }: AIPanelProps) {
+export function AIPanel({ content, onInsertQuestion, collapsed }: AIPanelProps) {
   const toast = useToast()
   const [activeTab, setActiveTab] = useState<'questions' | 'insights'>('questions')
   const [questions, setQuestions] = useState<ReviewQuestionsResponse | null>(null)
@@ -30,16 +33,26 @@ export function AIPanel({ content, onInsertQuestion }: AIPanelProps) {
     }
     setIsLoading(true)
     setIsAutoWaiting(false)
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), ANALYSIS_TIMEOUT_MS)
+    )
     try {
-      const [q, i] = await Promise.all([
-        fetchReviewQuestions(content),
-        fetchInsights(content),
-      ])
+      const [q, i] = await Promise.race([
+        Promise.all([
+          fetchReviewQuestions(content),
+          fetchInsights(content),
+        ]),
+        timeout.then(() => { throw new Error('timeout') }),
+      ]) as [typeof questions, typeof insights]
       setQuestions(q)
       setInsights(i)
     } catch (err) {
-      console.error('AI 분석 실패', err)
-      toast.error('AI 분석에 실패했습니다.')
+      if (err instanceof Error && err.message === 'timeout') {
+        toast.error('분석에 시간이 오래 걸리고 있습니다. 나중에 다시 시도해주세요.')
+      } else {
+        console.error('AI 분석 실패', err)
+        toast.error('AI 분석에 실패했습니다.')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -64,7 +77,7 @@ export function AIPanel({ content, onInsertQuestion }: AIPanelProps) {
   const hasResults = questions || insights
 
   return (
-    <div className="ai-sidebar">
+    <div className={`ai-sidebar ${collapsed ? 'ai-sidebar--collapsed' : ''}`}>
       <div className="ai-sidebar__header">
         <Brain size={16} />
         <span>AI 분석</span>
