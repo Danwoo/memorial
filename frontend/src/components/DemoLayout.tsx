@@ -1,10 +1,12 @@
 import { Outlet, useNavigate } from 'react-router-dom'
-import { useState, useCallback, useMemo } from 'react'
-import { Menu, Sparkles } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Sparkles } from 'lucide-react'
 import { DemoProvider, DEMO_USER } from '../contexts/DemoContext'
 import { AuthContext } from '../contexts/AuthContext'
 import { ChatSessionProvider } from '../contexts/ChatSessionContext'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import Sidebar from './Sidebar'
+import MobileTabBar from './MobileTabBar'
 import CommandPalette from './CommandPalette'
 import '../App.css'
 import './DemoLayout.css'
@@ -14,10 +16,8 @@ const noop = async (..._args: any[]) => {}
 
 export default function DemoLayout() {
   const navigate = useNavigate()
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 767px)')
   const [showCmdPalette, setShowCmdPalette] = useState(false)
-
-  const closeMobile = useCallback(() => setMobileOpen(false), [])
 
   const demoAuthValue = useMemo(() => ({
     user: DEMO_USER as import('../types').User,
@@ -41,19 +41,12 @@ export default function DemoLayout() {
               회원가입하고 시작하기
             </button>
           </div>
-          <div className="app-container demo-app-container">
-            <button
-              className="mobile-nav-toggle"
-              onClick={() => setMobileOpen(true)}
-              type="button"
-              aria-label="메뉴 열기"
-            >
-              <Menu size={22} />
-            </button>
-            <Sidebar user={DEMO_USER} mobileOpen={mobileOpen} onMobileClose={closeMobile} />
+          <div className={`app-container demo-app-container ${isMobile ? 'app-container--mobile' : ''}`}>
+            {!isMobile && <Sidebar user={DEMO_USER} />}
             <main className="main-content" id="main-content">
               <Outlet />
             </main>
+            {isMobile && <MobileTabBar user={DEMO_USER} prefix="/demo" />}
             <CommandPalette isOpen={showCmdPalette} onClose={() => setShowCmdPalette(false)} />
           </div>
         </ChatSessionProvider>

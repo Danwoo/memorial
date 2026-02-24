@@ -160,22 +160,6 @@
   --shadow-focus: 0 0 0 2px rgba(138,180,248,0.30);
 }
 
-/* ─── 접근성: 포커스 인디케이터 ────────────────────────────────── */
-:focus-visible {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: 2px;
-}
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
-[tabindex]:focus-visible {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: 2px;
-}
-
 /* Reset */
 *, *::before, *::after {
   box-sizing: border-box;
