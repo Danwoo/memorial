@@ -1,11 +1,15 @@
+import ipaddress
 import re
+import socket
 from urllib.parse import urlparse
 
 import httpx
 from bs4 import BeautifulSoup
+from fastapi import HTTPException
 
 # HTTP 요청 타임아웃 (초)
-WEB_FETCH_TIMEOUT = 30.0
+WEB_FETCH_TIMEOUT = 15.0
+HEAD_TIMEOUT = 5.0
 PDF_PARSE_TIMEOUT = 60.0
 # 노트 제목 자동 추출 최대 길이
 NOTE_TITLE_MAX_LENGTH = 50
@@ -15,8 +19,101 @@ NOISE_TAGS = ["script", "style", "nav", "footer", "header", "aside", "noscript"]
 UPSTAGE_DOCUMENT_PARSE_URL = "https://api.upstage.ai/v1/document-ai/document-parse"
 
 
+# SSRF 방어용 차단 IP 대역
+_BLOCKED_NETWORKS = [
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("::1/128"),
+]
+
+
+def validate_url(url: str) -> str:
+    """URL 스킴 및 내부 IP 차단 검증 (SSRF 방어).
+
+    http/https만 허용하고, 내부 네트워크 IP로 해석되는 호스트를 차단한다.
+    검증 통과 시 정규화된 URL을 반환한다.
+    """
+    parsed = urlparse(url)
+
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(
+            status_code=422,
+            detail=f"허용되지 않는 URL 스킴: {parsed.scheme}. http 또는 https만 지원합니다.",
+        )
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise HTTPException(status_code=422, detail="URL에서 호스트명을 추출할 수 없습니다.")
+
+    # DNS 해석 후 IP 주소가 내부 대역인지 검사
+    try:
+        addr_infos = socket.getaddrinfo(hostname, None)
+    except socket.gaierror:
+        raise HTTPException(
+            status_code=422,
+            detail=f"호스트를 해석할 수 없습니다: {hostname}",
+        ) from None
+
+    for addr_info in addr_infos:
+        ip = ipaddress.ip_address(addr_info[4][0])
+        for network in _BLOCKED_NETWORKS:
+            if ip in network:
+                raise HTTPException(
+                    status_code=422,
+                    detail="내부 네트워크 주소에 대한 요청은 허용되지 않습니다.",
+                )
+
+    return url
+
+
+async def validate_content_type(url: str) -> None:
+    """HEAD 요청으로 Content-Type 사전 검증.
+
+    text/html 또는 text/plain이 아닌 응답은 거부한다.
+    HEAD를 지원하지 않는 서버는 조용히 통과시킨다.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=HEAD_TIMEOUT) as client:
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            resp = await client.head(url, headers=headers, follow_redirects=True)
+
+            content_type = resp.headers.get("content-type", "")
+            if (
+                resp.status_code < 400
+                and content_type
+                and "text/html" not in content_type
+                and "text/plain" not in content_type
+            ):
+                raise HTTPException(
+                    status_code=415,
+                    detail=f"지원하지 않는 콘텐츠 타입: {content_type}. text/html 또는 text/plain만 지원합니다.",
+                )
+    except HTTPException:
+        # validate_content_type이 직접 발생시킨 HTTPException은 그대로 전파
+        raise
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=504,
+            detail="URL 접근 시 타임아웃이 발생했습니다. 잠시 후 다시 시도해주세요.",
+        ) from None
+    except httpx.ConnectError:
+        raise HTTPException(
+            status_code=422,
+            detail="URL에 연결할 수 없습니다. 주소를 확인해주세요.",
+        ) from None
+    except Exception:
+        # HEAD를 지원하지 않는 서버 등 기타 오류는 무시하고 GET으로 진행
+        pass
+
+
 async def fetch_url_content(url: str) -> tuple[str, str]:
     """URL에서 HTML을 가져와 클린 텍스트 추출. (title, content) 튜플 반환."""
+    url = validate_url(url)
+    await validate_content_type(url)
+
     async with httpx.AsyncClient(timeout=WEB_FETCH_TIMEOUT) as client:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         response = await client.get(url, headers=headers, follow_redirects=True)
