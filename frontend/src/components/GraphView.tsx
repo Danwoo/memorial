@@ -1,16 +1,17 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import ForceGraph2D from 'react-force-graph-2d'
-import { Lightbulb, Maximize, ZoomIn, ZoomOut } from 'lucide-react'
+import { Lightbulb, Maximize, ZoomIn, ZoomOut, Expand } from 'lucide-react'
 import type { GraphNode, GraphLink, GraphData, SearchResult, GraphInsights, ClusterInfo } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
-import { fetchGraph, fetchGraphInsights, searchMemories } from '../api'
+import { fetchGraph, fetchGraphInsights, searchMemories, fetchEgoGraph, fetchEgoDefault } from '../api'
 import MemoryDetailModal from './MemoryDetailModal'
 import GraphInsightPanel, { CLUSTER_COLORS } from './GraphInsightPanel'
 import NodeInfoPanel from './graph/NodeInfoPanel'
 import GraphLegend from './graph/GraphLegend'
 import { NODE_COLORS, NODE_TYPE_KO, toKo } from './graph/graphConstants'
+import { smartSearch, type SearchCandidate } from '../utils/searchUtils'
 import './GraphView.css'
 
 type AnyNode = GraphNode & { x?: number; y?: number; vx?: number; vy?: number; fx?: number; fy?: number }
@@ -36,6 +37,11 @@ export default function GraphView() {
   const [searchQuery, setSearchQuery] = useState('')
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
 
+  // Ego 그래프 모드
+  const [viewMode, setViewMode] = useState<'ego' | 'full'>('ego')
+  const [egoCenter, setEgoCenter] = useState<string | null>(null)
+  const [egoDepth, setEgoDepth] = useState(1)
+
   // 관련 메모리 조회
   const [relatedMemories, setRelatedMemories] = useState<SearchResult[]>([])
   const [isLoadingMemories, setIsLoadingMemories] = useState(false)
@@ -44,7 +50,8 @@ export default function GraphView() {
   // 검색 결과 하이라이트
   const [searchMatches, setSearchMatches] = useState<GraphNode[]>([])
   const [searchMatchIdx, setSearchMatchIdx] = useState(0)
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [searchCandidates, setSearchCandidates] = useState<SearchCandidate[]>([])
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false)
 
   // 온보딩 코치마크
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem(ONBOARDING_KEY))
@@ -73,27 +80,33 @@ export default function GraphView() {
   const textColor = resolvedTheme === 'dark' ? '#f0f0f0' : '#1a1a1a'
   const labelBg = resolvedTheme === 'dark' ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.92)'
 
-  // 그래프 데이터 조회 및 노드 가공
+  // 노드 가공 헬퍼
+  const processNodes = useCallback((json: { nodes: { id: string; label: string; properties: Record<string, unknown>; name?: string; group?: string; val?: number }[]; links: GraphLink[] }) => {
+    const processedNodes: GraphNode[] = json.nodes.map(n => ({
+      ...n,
+      val: n.val || 1,
+      color: NODE_COLORS[n.label] || NODE_COLORS['default'],
+      name: n.name || (n.properties?.name as string) || (n.properties?.title as string) || n.id,
+    }))
+    const mv = processedNodes.reduce((max, n) => Math.max(max, n.val || 1), 1)
+    return { nodes: processedNodes, links: json.links, mv }
+  }, [])
+
+  // 전체 그래프 조회 (인사이트 패널 등에서 사용)
   const fetchGraphData = useCallback(async () => {
     try {
       setLoading(true)
       const json = await fetchGraph(300)
-      const processedNodes: GraphNode[] = json.nodes.map(n => ({
-        ...n,
-        val: n.val || 1,
-        color: NODE_COLORS[n.label] || NODE_COLORS['default'],
-        name: n.name || (n.properties?.name as string) || (n.properties?.title as string) || n.id,
-      }))
-      const mv = processedNodes.reduce((max, n) => Math.max(max, n.val || 1), 1)
+      const { nodes, links, mv } = processNodes(json)
       setMaxVal(mv)
-      setData({ nodes: processedNodes, links: json.links })
+      setData({ nodes, links })
     } catch (err) {
       console.error('그래프 데이터 로딩 실패:', err)
       toast.error('지식 그래프를 불러오지 못했습니다')
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [toast, processNodes])
 
   const loadInsights = useCallback(async () => {
     setInsightsLoading(true)
@@ -107,9 +120,47 @@ export default function GraphView() {
     }
   }, [])
 
+  // Ego/Full 모드에 따른 데이터 로딩
   useEffect(() => {
-    fetchGraphData()
-  }, [fetchGraphData])
+    let cancelled = false
+    setLoading(true)
+    setSelectedNode(null)
+    setHighlightNodes(null)
+    setHighlightLinks(new Set())
+
+    const loadData = async () => {
+      try {
+        let result: { nodes: { id: string; label: string; properties: Record<string, unknown>; name?: string; group?: string; val?: number }[]; links: GraphLink[]; center_node?: string | null }
+
+        if (viewMode === 'ego') {
+          if (egoCenter) {
+            result = await fetchEgoGraph(egoCenter, egoDepth)
+          } else {
+            result = await fetchEgoDefault()
+            if (!cancelled && result.center_node) {
+              setEgoCenter(result.center_node)
+            }
+          }
+        } else {
+          result = await fetchGraph(300)
+        }
+
+        if (!cancelled) {
+          const { nodes, links, mv } = processNodes(result)
+          setMaxVal(mv)
+          setData({ nodes, links })
+          cameraRestoredRef.current = false
+        }
+      } catch {
+        if (!cancelled) toast.error('그래프를 불러올 수 없습니다')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadData()
+    return () => { cancelled = true }
+  }, [viewMode, egoCenter, egoDepth, toast, processNodes])
 
   // 마우스 좌표 트래킹 (호버 툴팁용)
   useEffect(() => {
@@ -390,12 +441,17 @@ export default function GraphView() {
 
     setSelectedNode(node)
     if (showInsights) setShowInsights(false)
+    // Ego 모드에서 다른 노드 클릭 시 중심 전환
+    if (viewMode === 'ego' && node.name !== egoCenter) {
+      setEgoCenter(node.name || node.id)
+      setEgoDepth(1)
+    }
     // 2D 카메라 이동
     if (fgRef.current) {
       fgRef.current.centerAt(node.x || 0, node.y || 0, 600)
       fgRef.current.zoom(4, 600)
     }
-  }, [showInsights, dismissOnboarding])
+  }, [showInsights, dismissOnboarding, viewMode, egoCenter])
 
   // 배경 클릭 시 선택 해제
   const handleBackgroundClick = useCallback(() => {
@@ -405,39 +461,52 @@ export default function GraphView() {
     setSearchMatches([])
   }, [])
 
-  // 검색 하이라이트 — 모든 매치를 찾아 하이라이트
-  const handleSearch = useCallback(
-    (query: string) => {
-      if (!query.trim()) {
-        setSearchMatches([])
-        setSearchMatchIdx(0)
-        setHighlightNodes(null)
-        return
-      }
-      const q = query.toLowerCase()
-      const matches = filteredData.nodes.filter(n =>
-        (n.name || n.id).toLowerCase().includes(q),
-      )
-      setSearchMatches(matches)
-      setSearchMatchIdx(0)
+  // 스마트 검색 디바운스 타이머
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-      // 매치 노드만 밝게, 나머지 흐리게
-      if (matches.length > 0) {
-        const matchIds = new Set(matches.map(n => n.id))
+  // 스마트 검색 onChange 핸들러
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const q = e.target.value
+    setSearchQuery(q)
+
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+
+    if (!q.trim()) {
+      setSearchCandidates([])
+      setShowSearchDropdown(false)
+      setHighlightNodes(null)
+      setSearchMatches([])
+      return
+    }
+
+    searchTimerRef.current = setTimeout(() => {
+      const results = smartSearch(q, data.nodes)
+      setSearchCandidates(results)
+      setShowSearchDropdown(results.length > 0)
+
+      if (results.length > 0) {
+        const matchIds = new Set(results.map(r => r.id))
         setHighlightNodes(matchIds)
-        // 첫 매치로 카메라 이동
-        const first = matches[0] as AnyNode
-        if (fgRef.current) {
-          fgRef.current.centerAt(first.x || 0, first.y || 0, 600)
-          fgRef.current.zoom(3, 600)
-        }
-        setSelectedNode(matches[0])
+        const matchNodes = data.nodes.filter(n => matchIds.has(n.id))
+        setSearchMatches(matchNodes)
+        setSearchMatchIdx(0)
       } else {
         setHighlightNodes(null)
+        setSearchMatches([])
       }
-    },
-    [filteredData.nodes],
-  )
+    }, 300)
+  }, [data.nodes])
+
+  // 후보 클릭 핸들러
+  const handleCandidateClick = useCallback((candidate: SearchCandidate) => {
+    setShowSearchDropdown(false)
+    setHighlightNodes(new Set([candidate.id]))
+    const node = data.nodes.find(n => n.id === candidate.id) as AnyNode | undefined
+    if (node && fgRef.current) {
+      fgRef.current.centerAt(node.x || 0, node.y || 0, 400)
+      fgRef.current.zoom(3, 400)
+    }
+  }, [data.nodes])
 
   // 검색 매치 간 이동 (위/아래 화살표)
   const navigateSearchMatch = useCallback(
@@ -558,6 +627,37 @@ export default function GraphView() {
 
   return (
     <div className="graph-view-container">
+      {/* Ego/전체 모드 토글 */}
+      {!loading && !isEmptyGraph && (
+        <div className="graph-mode-toggle">
+          <button
+            className={`graph-mode-btn ${viewMode === 'ego' ? 'active' : ''}`}
+            onClick={() => { setViewMode('ego'); setEgoCenter(null); setEgoDepth(1) }}
+          >
+            로컬
+          </button>
+          <button
+            className={`graph-mode-btn ${viewMode === 'full' ? 'active' : ''}`}
+            onClick={() => setViewMode('full')}
+          >
+            전체
+          </button>
+        </div>
+      )}
+
+      {/* Ego 중심 노드 정보 바 */}
+      {viewMode === 'ego' && egoCenter && !loading && (
+        <div className="ego-info-bar">
+          <span className="ego-center-name">{egoCenter}</span>
+          <span>중심 · {egoDepth === 1 ? '1단계' : '2단계'}</span>
+          {egoDepth < 2 && (
+            <button className="ego-expand-btn" onClick={() => setEgoDepth(2)}>
+              <Expand size={12} /> 더 보기
+            </button>
+          )}
+        </div>
+      )}
+
       {/* 검색 바 */}
       {!loading && !isEmptyGraph && (
         <div className="graph-search">
@@ -570,23 +670,11 @@ export default function GraphView() {
               type="text"
               placeholder="노드 검색..."
               value={searchQuery}
-              onChange={e => {
-                const value = e.target.value
-                setSearchQuery(value)
-                if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
-                if (!value.trim()) {
-                  handleSearch('')
-                } else {
-                  searchTimerRef.current = setTimeout(() => handleSearch(value), 300)
-                }
-              }}
+              onChange={handleSearchChange}
               onKeyDown={e => {
                 if (e.key === 'Enter') {
-                  if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
-                  if (searchMatches.length > 0) {
+                  if (searchMatches.length > 0 && searchQuery.trim()) {
                     navigateSearchMatch(1)
-                  } else {
-                    handleSearch(searchQuery)
                   }
                 }
                 if (e.key === 'ArrowDown' && searchMatches.length > 0) {
@@ -599,8 +687,15 @@ export default function GraphView() {
                 }
                 if (e.key === 'Escape') {
                   setSearchQuery('')
-                  handleSearch('')
+                  setSearchCandidates([])
+                  setShowSearchDropdown(false)
+                  setHighlightNodes(null)
+                  setSearchMatches([])
                 }
+              }}
+              onBlur={() => {
+                // 드롭다운 클릭이 먼저 처리되도록 약간의 딜레이
+                setTimeout(() => setShowSearchDropdown(false), 200)
               }}
             />
             {searchMatches.length > 0 && (
@@ -609,6 +704,23 @@ export default function GraphView() {
               </span>
             )}
           </div>
+          {showSearchDropdown && searchCandidates.length > 0 && (
+            <div className="search-dropdown">
+              {searchCandidates.map(c => (
+                <button
+                  key={c.id}
+                  className="search-dropdown-item"
+                  onClick={() => handleCandidateClick(c)}
+                >
+                  <span className="search-item-name">{c.name}</span>
+                  <span className="search-item-meta">
+                    <span className="search-item-type">{NODE_TYPE_KO[c.label] || c.label}</span>
+                    <span className="search-item-val">연결 {c.val}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

@@ -13,4 +13,5 @@ kuzu>=0.8.0
 kiwipiepy>=0.18.0
 python-dotenv>=1.0.0
 apscheduler>=3.10.0
+pywebpush>=2.0.0
 PyJWT>=2.8.0

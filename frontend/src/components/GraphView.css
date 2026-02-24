@@ -59,10 +59,10 @@
   color: var(--text-muted);
 }
 
-/* Stats - top left */
+/* Stats - top left (모드 토글 아래) */
 .graph-stats {
   position: absolute;
-  top: 16px;
+  top: 52px;
   left: 20px;
   z-index: 10;
   font-size: 0.8rem;
@@ -390,6 +390,71 @@
   flex-shrink: 0;
 }
 
+/* 검색 드롭다운 */
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 20;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.search-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast);
+  font-family: inherit;
+}
+
+.search-dropdown-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.search-item-name {
+  font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.search-item-type {
+  padding: 2px 6px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.search-item-val {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
 /* 연결 노드 클릭 */
 .conn-clickable {
   cursor: pointer;
@@ -579,36 +644,6 @@
   white-space: nowrap;
 }
 
-/* 줌 컨트롤 패널 */
-.graph-zoom-controls {
-  position: absolute;
-  bottom: 60px;
-  right: 20px;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.graph-zoom-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-secondary);
-  border-radius: 10px;
-  cursor: pointer;
-  color: var(--text-muted);
-  transition: all var(--transition-fast);
-}
-
-.graph-zoom-btn:hover {
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
-}
-
 /* 온보딩 코치마크 */
 .graph-controls--onboarding {
   background: var(--accent-primary);
@@ -665,6 +700,36 @@
   color: var(--text-muted);
 }
 
+/* 줌 컨트롤 패널 */
+.graph-zoom-controls {
+  position: absolute;
+  bottom: 60px;
+  right: 20px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.graph-zoom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.graph-zoom-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .graph-legend {
@@ -700,4 +765,96 @@
   .graph-controls span {
     font-size: 0.65rem;
   }
+
+  .graph-mode-toggle {
+    top: 52px;
+    left: 16px;
+  }
+
+  .ego-info-bar {
+    top: 52px;
+  }
+
+  .graph-stats {
+    top: 92px;
+    left: 16px;
+  }
+}
+
+/* ── Ego/전체 토글 ── */
+.graph-mode-toggle {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  gap: 2px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: 2px;
+  z-index: 5;
+}
+
+.graph-mode-btn {
+  padding: 6px 14px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+
+.graph-mode-btn:hover {
+  color: var(--text-primary);
+}
+
+.graph-mode-btn.active {
+  background: var(--accent-primary);
+  color: white;
+}
+
+/* ── Ego 중심 노드 표시 + 확장 ── */
+.ego-info-bar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-full);
+  padding: 6px 16px;
+  z-index: 5;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.ego-center-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ego-expand-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--accent-primary);
+  background: var(--accent-bg);
+  color: var(--accent-primary);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+
+.ego-expand-btn:hover {
+  background: var(--accent-primary);
+  color: white;
 }

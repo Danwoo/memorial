@@ -4,6 +4,7 @@ import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useToast } from '../../contexts/ToastContext'
 import type { MemoryCreatePayload, SourceType } from '../../types'
 import { createMemory, uploadPdfMemory } from '../../api'
+import { ApiResponseError } from '../../api/client'
 
 interface AddMemoryModalProps {
   onClose: () => void
@@ -18,6 +19,21 @@ export default function AddMemoryModal({ onClose, onAdded }: AddMemoryModalProps
   const [newNote, setNewNote] = useState('')
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [urlError, setUrlError] = useState('')
+
+  const validateUrl = (value: string) => {
+    if (!value.trim()) { setUrlError(''); return }
+    try {
+      const parsed = new URL(value)
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        setUrlError('http:// 또는 https:// URL만 지원합니다')
+        return
+      }
+      setUrlError('')
+    } catch {
+      setUrlError('올바른 URL 형식이 아닙니다 (예: https://example.com)')
+    }
+  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -45,7 +61,19 @@ export default function AddMemoryModal({ onClose, onAdded }: AddMemoryModalProps
       toast.success('메모리가 추가되었습니다!')
     } catch (error) {
       console.error('메모리 추가 실패:', error)
-      toast.error('메모리 추가에 실패했습니다.')
+      if (error instanceof ApiResponseError) {
+        if (error.status === 415) {
+          toast.error('이 URL은 웹 페이지가 아닙니다')
+        } else if (error.status === 422) {
+          toast.error(error.detail || 'URL 형식이 올바르지 않습니다')
+        } else if (error.status === 504) {
+          toast.error('페이지 응답이 너무 느립니다')
+        } else {
+          toast.error('메모리 추가에 실패했습니다.')
+        }
+      } else {
+        toast.error('메모리 추가에 실패했습니다.')
+      }
       setIsSubmitting(false)
     }
   }
@@ -77,13 +105,16 @@ export default function AddMemoryModal({ onClose, onAdded }: AddMemoryModalProps
         </div>
 
         {addType === 'WEB' ? (
-          <input
-            type="url"
-            className="input"
-            placeholder="https://example.com/article"
-            value={newUrl}
-            onChange={e => setNewUrl(e.target.value)}
-          />
+          <div className="url-input-group">
+            <input
+              type="url"
+              className={`input${urlError ? ' input-error' : ''}`}
+              placeholder="https://example.com/article"
+              value={newUrl}
+              onChange={e => { setNewUrl(e.target.value); validateUrl(e.target.value) }}
+            />
+            {urlError && <p className="input-error-message">{urlError}</p>}
+          </div>
         ) : addType === 'NOTE' ? (
           <textarea
             className="input"
@@ -110,7 +141,7 @@ export default function AddMemoryModal({ onClose, onAdded }: AddMemoryModalProps
           <button className="btn btn-secondary" onClick={onClose}>
             취소
           </button>
-          <button className="btn btn-primary" onClick={addMemory} disabled={isSubmitting}>
+          <button className="btn btn-primary" onClick={addMemory} disabled={isSubmitting || (addType === 'WEB' && (!!urlError || !newUrl.trim()))}>
             {isSubmitting ? '저장 중...' : '저장'}
           </button>
         </div>
