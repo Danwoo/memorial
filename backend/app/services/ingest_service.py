@@ -1,7 +1,7 @@
 import ipaddress
 import re
 import socket
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
@@ -109,6 +109,32 @@ async def validate_content_type(url: str) -> None:
         pass
 
 
+_REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
+_MAX_REDIRECTS = 5
+
+
+async def _fetch_with_redirect_validation(
+    client: httpx.AsyncClient,
+    url: str,
+    headers: dict,
+) -> httpx.Response:
+    """리다이렉트를 수동으로 추적하며 각 홉마다 SSRF 검증을 수행."""
+    for _ in range(_MAX_REDIRECTS):
+        response = await client.get(url, headers=headers, follow_redirects=False)
+        if response.status_code not in _REDIRECT_STATUSES:
+            return response
+
+        location = response.headers.get("location", "")
+        if not location:
+            raise HTTPException(status_code=502, detail="리다이렉트 응답에 Location 헤더가 없습니다.")
+
+        redirect_url = urljoin(url, location)
+        validate_url(redirect_url)
+        url = redirect_url
+
+    raise HTTPException(status_code=502, detail="리다이렉트가 너무 많습니다 (최대 5회).")
+
+
 async def fetch_url_content(url: str) -> tuple[str, str]:
     """URL에서 HTML을 가져와 클린 텍스트 추출. (title, content) 튜플 반환."""
     url = validate_url(url)
@@ -116,7 +142,7 @@ async def fetch_url_content(url: str) -> tuple[str, str]:
 
     async with httpx.AsyncClient(timeout=WEB_FETCH_TIMEOUT) as client:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        response = await client.get(url, headers=headers, follow_redirects=True)
+        response = await _fetch_with_redirect_validation(client, url, headers)
         response.raise_for_status()
         html = response.text
 

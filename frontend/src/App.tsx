@@ -51,12 +51,12 @@ function AppRoutes() {
       {/* 데모 모드 — 인증 불필요, API 목 데이터 사용 */}
       <Route path="demo" element={<DemoLayout />}>
         <Route index element={<Navigate to="/demo/dashboard" replace />} />
-        <Route path="chat" key={`demo-chat-${location.key}`} element={<ChatView />} />
-        <Route path="chat/:sessionId" key={`demo-chat-${location.key}`} element={<ChatView />} />
-        <Route path="memories" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><MemoryView /></Suspense>} />
-        <Route path="journal" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><JournalView /></Suspense>} />
-        <Route path="graph" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><GraphView /></Suspense>} />
-        <Route path="dashboard" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><DashboardView /></Suspense>} />
+        <Route path="chat" element={<ChatView key={`demo-chat-${location.key}`} />} />
+        <Route path="chat/:sessionId" element={<ChatView key={`demo-chat-${location.key}`} />} />
+        <Route path="memories" element={<Suspense fallback={<div className="page-loading" />}><MemoryView key={location.key} /></Suspense>} />
+        <Route path="journal" element={<Suspense fallback={<div className="page-loading" />}><JournalView key={location.key} /></Suspense>} />
+        <Route path="graph" element={<Suspense fallback={<div className="page-loading" />}><GraphView key={location.key} /></Suspense>} />
+        <Route path="dashboard" element={<Suspense fallback={<div className="page-loading" />}><DashboardView key={location.key} /></Suspense>} />
       </Route>
 
       {/* 인증 필요 라우트 - Sidebar 레이아웃 공유 */}
@@ -71,16 +71,16 @@ function AppRoutes() {
           </DemoProvider>
         }
       >
-        <Route path="chat" key={`chat-${location.key}`} element={<ChatView />} />
-        <Route path="chat/:sessionId" key={`chat-${location.key}`} element={<ChatView />} />
-        <Route path="memories" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><MemoryView /></Suspense>} />
-        <Route path="journal" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><JournalView /></Suspense>} />
-        <Route path="graph" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><GraphView /></Suspense>} />
-        <Route path="settings" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><SettingsView /></Suspense>} />
+        <Route path="chat" element={<ChatView key={`chat-${location.key}`} />} />
+        <Route path="chat/:sessionId" element={<ChatView key={`chat-${location.key}`} />} />
+        <Route path="memories" element={<Suspense fallback={<div className="page-loading" />}><MemoryView key={location.key} /></Suspense>} />
+        <Route path="journal" element={<Suspense fallback={<div className="page-loading" />}><JournalView key={location.key} /></Suspense>} />
+        <Route path="graph" element={<Suspense fallback={<div className="page-loading" />}><GraphView key={location.key} /></Suspense>} />
+        <Route path="settings" element={<Suspense fallback={<div className="page-loading" />}><SettingsView key={location.key} /></Suspense>} />
         {/* 삭제된 라우트 리다이렉트 */}
         <Route path="search" element={<Navigate to="/memories?tab=search" replace />} />
         <Route path="timeline" element={<Navigate to="/memories?tab=timeline" replace />} />
-        <Route path="dashboard" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><DashboardView /></Suspense>} />
+        <Route path="dashboard" element={<Suspense fallback={<div className="page-loading" />}><DashboardView key={location.key} /></Suspense>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 
