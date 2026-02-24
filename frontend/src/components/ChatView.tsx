@@ -8,7 +8,7 @@ import {
   Paperclip, ChevronDown, ChevronUp,
   ThumbsUp, ThumbsDown,
 } from 'lucide-react'
-import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import { useChatSession } from '../contexts/ChatSessionContext'
 import { useToast } from '../contexts/ToastContext'
 import { useDemoMode } from '../contexts/DemoContext'
@@ -27,7 +27,7 @@ export default function ChatView() {
   const toast = useToast()
   const { isDemoMode: isDemo } = useDemoMode()
   const pathPrefix = isDemo ? '/demo' : ''
-  const isMobile = useMediaQuery('(max-width: 767px)')
+  const isMobile = useIsMobile()
 
   const [sessionId, setSessionId] = useState<string | null>(urlSessionId ?? null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
