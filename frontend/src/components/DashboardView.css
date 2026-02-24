@@ -724,4 +724,10 @@
   .tag-item {
     grid-template-columns: 1fr auto 80px;
   }
+
+  /* 모바일 터치 타겟 최소 44px 보장 */
+  .dashboard-tab {
+    min-height: 44px;
+    padding: var(--space-sm) var(--space-md);
+  }
 }
