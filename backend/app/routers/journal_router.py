@@ -1,10 +1,12 @@
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
+from app.agents.librarian.graph import librarian_graph
+from app.agents.state import build_librarian_initial_state
 from app.config.auth import get_user_id
-from app.config.dependencies import get_journal_service
+from app.config.dependencies import get_journal_service, get_memory_service
 from app.schemas.journal_schema import (
     GenerateDraftRequest,
     GenerateDraftResponse,
@@ -18,19 +20,53 @@ from app.schemas.journal_schema import (
     ReviewRequest,
 )
 from app.services.journal_service import JournalService
+from app.services.memory_service import MemoryService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/journals", tags=["journals"])
 
 
+async def _process_journal_with_librarian(
+    journal_id: str,
+    content: str,
+    user_id: str,
+    memory_service: MemoryService,
+) -> None:
+    """백그라운드: 저널 내용을 메모리로 저장 후 Librarian 엔티티 추출."""
+    try:
+        memory = await memory_service.create_memory(
+            user_id=UUID(user_id),
+            title=f"저널 {journal_id[:8]}",
+            content=content[:6000],
+            source_type="JOURNAL",
+        )
+        if not memory:
+            logger.warning("Failed to create memory for journal %s", journal_id)
+            return
+
+        memory_id = str(memory.id)
+
+        initial_state = build_librarian_initial_state(memory_id, content[:6000], user_id)
+        result = await librarian_graph.ainvoke(initial_state)
+        logger.info(
+            "Librarian processed journal %s: classification=%s",
+            journal_id,
+            result.get("classification"),
+        )
+    except Exception:
+        logger.exception("Librarian error for journal %s", journal_id)
+
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_journal(
     journal: JournalCreate,
+    background_tasks: BackgroundTasks,
     user_id: UUID = Depends(get_user_id),
     service: JournalService = Depends(get_journal_service),
+    memory_service: MemoryService = Depends(get_memory_service),
 ):
-    """새 저널 항목 생성 (감정 분석 포함)."""
+    """새 저널 항목 생성 (감정 분석 + 엔티티 추출)."""
     try:
         result = await service.create_entry(user_id, journal.content, journal.memory_ids)
         if not result:
@@ -38,6 +74,18 @@ async def create_journal(
                 status_code=500,
                 detail="Failed to create journal entry - no result returned",
             )
+
+        # 충분한 길이의 저널은 Librarian으로 엔티티 추출
+        if len(journal.content.strip()) >= 50:
+            journal_id = result.get("id") or result.get("journal_id", "")
+            background_tasks.add_task(
+                _process_journal_with_librarian,
+                str(journal_id),
+                journal.content,
+                str(user_id),
+                memory_service,
+            )
+
         return result
     except HTTPException:
         raise

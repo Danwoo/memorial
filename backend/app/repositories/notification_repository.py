@@ -74,6 +74,10 @@ class NotificationRepository:
         )
         return result.data or []
 
+    def delete_push_subscriptions(self, user_id: UUID) -> None:
+        """사용자의 모든 푸시 구독 삭제."""
+        self.db.table("push_subscriptions").delete().eq("user_id", str(user_id)).execute()
+
     def log_notification(
         self,
         user_id: str,
