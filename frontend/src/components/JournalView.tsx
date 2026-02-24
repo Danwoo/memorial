@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useLocation, useBlocker } from 'react-router-dom'
 import { Save, Loader2, Check, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import TurndownService from 'turndown'
 import type { EditorMode, RelatedMemory, DigestMemory, DigestData, ChatSessionResponse, JournalDateInfo } from '../types'
 import {
@@ -134,6 +135,10 @@ export default function JournalView() {
   const [starterQuestions, setStarterQuestions] = useState<string[]>([])
   const [isLoadingStarter, setIsLoadingStarter] = useState(false)
   const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null)
+
+  // 모바일 탭 전환
+  const isMobile = useMediaQuery('(max-width: 767px)')
+  const [mobileTab, setMobileTab] = useState<'editor' | 'memories' | 'ai'>('editor')
 
   // 좌/우 패널 collapse 상태
   const [leftCollapsed, setLeftCollapsed] = useState(() => {
@@ -516,29 +521,41 @@ export default function JournalView() {
 
   const journalViewClass = [
     'journal-view',
-    leftCollapsed && isToday ? 'journal-view--left-collapsed' : '',
-    rightCollapsed && isToday ? 'journal-view--right-collapsed' : '',
+    isMobile ? 'journal-view--mobile' : '',
+    !isMobile && leftCollapsed && isToday ? 'journal-view--left-collapsed' : '',
+    !isMobile && rightCollapsed && isToday ? 'journal-view--right-collapsed' : '',
   ].filter(Boolean).join(' ')
 
   return (
     <div className={journalViewClass}>
-      {/* 메모리 사이드바 (좌측 패널, 오늘일 때만) */}
-      {isToday && (
-        <MemorySidebar
-          todayMemories={digest?.memories ?? []}
-          relatedMemories={relatedMemories}
-          isLoadingRelated={isLoadingRelated}
-          onInsertMemory={handleInsertMemory}
-          onCardClick={handleMemoryCardClick}
-          onDailySummary={handleDailySummary}
-          onSessionDraft={handleSessionDraft}
-          isGenerating={isGenerating}
-          collapsed={leftCollapsed}
-          onToggleCollapse={() => setLeftCollapsed(!leftCollapsed)}
-        />
+      {/* 모바일 탭 바 */}
+      {isMobile && (
+        <div className="journal-mobile-tabs">
+          <button className={`journal-mobile-tab ${mobileTab === 'editor' ? 'active' : ''}`} onClick={() => setMobileTab('editor')}>에디터</button>
+          <button className={`journal-mobile-tab ${mobileTab === 'memories' ? 'active' : ''}`} onClick={() => setMobileTab('memories')}>오늘의 메모리</button>
+          <button className={`journal-mobile-tab ${mobileTab === 'ai' ? 'active' : ''}`} onClick={() => setMobileTab('ai')}>AI 분석</button>
+        </div>
       )}
 
-      <div className="journal-editor-section">
+      {/* 메모리 사이드바 (좌측 패널, 오늘일 때만) */}
+      {isToday && (
+        <div className={isMobile && mobileTab !== 'memories' ? 'journal-panel--hidden' : ''}>
+          <MemorySidebar
+            todayMemories={digest?.memories ?? []}
+            relatedMemories={relatedMemories}
+            isLoadingRelated={isLoadingRelated}
+            onInsertMemory={handleInsertMemory}
+            onCardClick={handleMemoryCardClick}
+            onDailySummary={handleDailySummary}
+            onSessionDraft={handleSessionDraft}
+            isGenerating={isGenerating}
+            collapsed={isMobile ? false : leftCollapsed}
+            onToggleCollapse={() => setLeftCollapsed(!leftCollapsed)}
+          />
+        </div>
+      )}
+
+      <div className={`journal-editor-section ${isMobile && mobileTab !== 'editor' ? 'journal-panel--hidden' : ''}`}>
         {/* 에디터 헤더 */}
         <div className="journal-editor-header">
           {isToday && (
@@ -678,11 +695,13 @@ export default function JournalView() {
 
       {/* AI 사이드바 (우측 패널, 오늘일 때만) */}
       {isToday && (
-        <AIPanel
-          content={markdownContent}
-          onInsertQuestion={handleInsertQuestion}
-          collapsed={rightCollapsed}
-        />
+        <div className={isMobile && mobileTab !== 'ai' ? 'journal-panel--hidden' : ''}>
+          <AIPanel
+            content={markdownContent}
+            onInsertQuestion={handleInsertQuestion}
+            collapsed={isMobile ? false : rightCollapsed}
+          />
+        </div>
       )}
 
       {/* 세션 선택 모달 */}
