@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ChatSessionProvider } from './contexts/ChatSessionContext'
 import { DemoProvider } from './contexts/DemoContext'
@@ -39,6 +39,57 @@ function RootRoute() {
   return user ? <Navigate to="/chat" replace /> : <LandingPage />
 }
 
+function AppRoutes() {
+  const location = useLocation()
+  return (
+    <Routes>
+      {/* 공개 라우트 */}
+      <Route path="/" element={<RootRoute />} />
+      <Route path="/login" element={<AuthView />} />
+      <Route path="/kakao-link" element={<KakaoLinkPage />} />
+
+      {/* 데모 모드 — 인증 불필요, API 목 데이터 사용 */}
+      <Route path="demo" element={<DemoLayout />}>
+        <Route index element={<Navigate to="/demo/dashboard" replace />} />
+        <Route path="chat" key={`demo-chat-${location.key}`} element={<ChatView />} />
+        <Route path="chat/:sessionId" key={`demo-chat-${location.key}`} element={<ChatView />} />
+        <Route path="memories" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><MemoryView /></Suspense>} />
+        <Route path="journal" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><JournalView /></Suspense>} />
+        <Route path="graph" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><GraphView /></Suspense>} />
+        <Route path="dashboard" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><DashboardView /></Suspense>} />
+      </Route>
+
+      {/* 인증 필요 라우트 - Sidebar 레이아웃 공유 */}
+      <Route
+        element={
+          <DemoProvider>
+            <ProtectedRoute>
+              <ChatSessionProvider>
+                <AppLayout />
+              </ChatSessionProvider>
+            </ProtectedRoute>
+          </DemoProvider>
+        }
+      >
+        <Route path="chat" key={`chat-${location.key}`} element={<ChatView />} />
+        <Route path="chat/:sessionId" key={`chat-${location.key}`} element={<ChatView />} />
+        <Route path="memories" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><MemoryView /></Suspense>} />
+        <Route path="journal" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><JournalView /></Suspense>} />
+        <Route path="graph" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><GraphView /></Suspense>} />
+        <Route path="settings" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><SettingsView /></Suspense>} />
+        {/* 삭제된 라우트 리다이렉트 */}
+        <Route path="search" element={<Navigate to="/memories?tab=search" replace />} />
+        <Route path="timeline" element={<Navigate to="/memories?tab=timeline" replace />} />
+        <Route path="dashboard" key={location.key} element={<Suspense fallback={<div className="page-loading" />}><DashboardView /></Suspense>} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+
+      {/* 매칭되지 않는 모든 경로 → 404 */}
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  )
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -46,51 +97,7 @@ function App() {
       <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
-          <Routes>
-            {/* 공개 라우트 */}
-            <Route path="/" element={<RootRoute />} />
-            <Route path="/login" element={<AuthView />} />
-            <Route path="/kakao-link" element={<KakaoLinkPage />} />
-
-            {/* 데모 모드 — 인증 불필요, API 목 데이터 사용 */}
-            <Route path="demo" element={<DemoLayout />}>
-              <Route index element={<Navigate to="/demo/dashboard" replace />} />
-              <Route path="chat" element={<ChatView />} />
-              <Route path="chat/:sessionId" element={<ChatView />} />
-              <Route path="memories" element={<Suspense fallback={<div className="page-loading" />}><MemoryView /></Suspense>} />
-              <Route path="journal" element={<Suspense fallback={<div className="page-loading" />}><JournalView /></Suspense>} />
-              <Route path="graph" element={<Suspense fallback={<div className="page-loading" />}><GraphView /></Suspense>} />
-              <Route path="dashboard" element={<Suspense fallback={<div className="page-loading" />}><DashboardView /></Suspense>} />
-            </Route>
-
-            {/* 인증 필요 라우트 - Sidebar 레이아웃 공유 */}
-            <Route
-              element={
-                <DemoProvider>
-                  <ProtectedRoute>
-                    <ChatSessionProvider>
-                      <AppLayout />
-                    </ChatSessionProvider>
-                  </ProtectedRoute>
-                </DemoProvider>
-              }
-            >
-              <Route path="chat" element={<ChatView />} />
-              <Route path="chat/:sessionId" element={<ChatView />} />
-              <Route path="memories" element={<Suspense fallback={<div className="page-loading" />}><MemoryView /></Suspense>} />
-              <Route path="journal" element={<Suspense fallback={<div className="page-loading" />}><JournalView /></Suspense>} />
-              <Route path="graph" element={<Suspense fallback={<div className="page-loading" />}><GraphView /></Suspense>} />
-              <Route path="settings" element={<Suspense fallback={<div className="page-loading" />}><SettingsView /></Suspense>} />
-              {/* 삭제된 라우트 리다이렉트 */}
-              <Route path="search" element={<Navigate to="/memories?tab=search" replace />} />
-              <Route path="timeline" element={<Navigate to="/memories?tab=timeline" replace />} />
-              <Route path="dashboard" element={<Suspense fallback={<div className="page-loading" />}><DashboardView /></Suspense>} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Route>
-
-            {/* 매칭되지 않는 모든 경로 → 404 */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
+          <AppRoutes />
         </ToastProvider>
       </AuthProvider>
       </ThemeProvider>
