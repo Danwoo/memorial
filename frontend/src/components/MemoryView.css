@@ -797,7 +797,7 @@ button.result-card {
 /* 모바일 반응형 */
 @media (max-width: 767px) {
   .memory-header {
-    padding: var(--space-md) var(--space-md) var(--space-md) 52px;
+    padding: var(--space-md);
   }
 
   .memory-header h1 {

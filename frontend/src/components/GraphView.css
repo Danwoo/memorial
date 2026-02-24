@@ -737,7 +737,7 @@
   }
 
   .graph-search {
-    top: 52px;
+    top: var(--space-md);
     left: 16px;
     transform: none;
     right: 16px;
@@ -767,16 +767,16 @@
   }
 
   .graph-mode-toggle {
-    top: 52px;
+    top: var(--space-md);
     left: 16px;
   }
 
   .ego-info-bar {
-    top: 52px;
+    top: var(--space-md);
   }
 
   .graph-stats {
-    top: 92px;
+    top: calc(var(--space-md) + 40px);
     left: 16px;
   }
 }

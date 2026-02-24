@@ -510,7 +510,7 @@
 /* 모바일 반응형 */
 @media (max-width: 767px) {
   .chat-header {
-    padding: var(--space-md) var(--space-md) var(--space-md) 52px;
+    padding: var(--space-md);
   }
 
   .chat-header h1 {
