@@ -356,7 +356,7 @@
 }
 
 /* 반응형 */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .insight-panel {
     width: calc(100% - 40px);
     left: 20px;

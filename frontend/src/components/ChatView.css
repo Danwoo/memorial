@@ -510,7 +510,7 @@
 /* 모바일 반응형 */
 @media (max-width: 767px) {
   .chat-header {
-    padding: var(--space-md) var(--space-md) var(--space-md) 52px;
+    padding: var(--space-md);
   }
 
   .chat-header h1 {
@@ -527,6 +527,7 @@
 
   .chat-input-container {
     padding: var(--space-sm) var(--space-md);
+    padding-bottom: calc(var(--space-sm) + env(safe-area-inset-bottom, 0px));
   }
 
   .welcome-banner {
@@ -535,6 +536,31 @@
 
   .suggested-questions {
     max-width: 100%;
+  }
+
+  /* 모바일 새 대화 버튼 */
+  .chat-new-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .chat-new-btn:hover {
+    background: var(--bg-tertiary);
+  }
+
+  /* 스크롤 버튼 위치 조정 */
+  .chat-scroll-bottom-btn {
+    right: 16px;
+    bottom: 12px;
   }
 }
 

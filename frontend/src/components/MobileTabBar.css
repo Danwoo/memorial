@@ -1,0 +1,136 @@
+/* ─── 모바일 하단 탭 바 ─────────────────────────────────────────────── */
+
+.mobile-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  height: 56px;
+  padding-bottom: env(safe-area-inset-bottom);
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.mobile-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.625rem;
+  font-family: inherit;
+  text-decoration: none;
+  padding: 6px 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--transition-fast);
+}
+
+.mobile-tab--active {
+  color: var(--accent-primary);
+}
+
+.mobile-tab__label {
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ─── 더보기 바텀시트 ─────────────────────────────────────────────── */
+
+.mobile-more-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  background: rgba(0, 0, 0, 0.4);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-more-sheet {
+  position: fixed;
+  bottom: calc(56px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  z-index: 951;
+  background-color: var(--bg-secondary);
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  padding: var(--space-md);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.mobile-more-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.mobile-more-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.mobile-more-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-more-close:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.mobile-more-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mobile-more-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  min-height: 44px;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--transition-fast);
+}
+
+.mobile-more-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.mobile-more-item--danger {
+  color: var(--color-error);
+}
+
+.mobile-more-item--danger:hover {
+  background-color: var(--color-error-bg, rgba(239, 68, 68, 0.08));
+}

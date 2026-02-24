@@ -731,13 +731,13 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .graph-legend {
     display: none;
   }
 
   .graph-search {
-    top: 52px;
+    top: var(--space-md);
     left: 16px;
     transform: none;
     right: 16px;
@@ -753,13 +753,14 @@
     left: 20px;
     right: 20px;
     top: auto;
-    bottom: 60px;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
     max-height: 50%;
   }
 
   .graph-controls {
     gap: 10px;
     padding: 6px 14px;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
 
   .graph-controls span {
@@ -767,17 +768,28 @@
   }
 
   .graph-mode-toggle {
-    top: 52px;
+    top: var(--space-md);
     left: 16px;
   }
 
   .ego-info-bar {
-    top: 52px;
+    top: var(--space-md);
   }
 
   .graph-stats {
-    top: 92px;
+    top: calc(var(--space-md) + 40px);
     left: 16px;
+  }
+
+  /* 줌 컨트롤: 하단 탭 바 위로 배치 */
+  .graph-zoom-controls {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* 줌 버튼 모바일 터치 타겟 44px */
+  .graph-zoom-btn {
+    width: 44px;
+    height: 44px;
   }
 }
 
