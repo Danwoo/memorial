@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { rehypeSanitize, sanitizeSchema } from '../utils/markdownSanitize'
 import {
   User, Bot, ArrowUp,
   Paperclip, ChevronDown, ChevronUp,
@@ -310,7 +311,10 @@ export default function ChatView() {
                 {msg.role === 'assistant' ? (
                   msg.content ? (
                     <>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
+                      >
                         {msg.content}
                       </ReactMarkdown>
                       {msg.references && msg.references.length > 0 && (
