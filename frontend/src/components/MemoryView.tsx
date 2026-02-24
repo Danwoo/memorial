@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus, X, Check, Copy } from 'lucide-react'
+import { Plus, X, Check, Copy, MoreVertical } from 'lucide-react'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useToast } from '../contexts/ToastContext'
 import { bulkMemoryAction } from '../api'
 import { useMemoryList } from '../hooks/useMemoryList'
@@ -32,6 +33,10 @@ export default function MemoryView() {
   const search = useMemorySearch()
   const bulk = useBulkSelection(memoryList.memories)
 
+  // ── 모바일 감지 ──
+  const isMobile = useMediaQuery('(max-width: 767px)')
+  const [showOverflow, setShowOverflow] = useState(false)
+
   // ── 모달 상태 ──
   const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -43,6 +48,14 @@ export default function MemoryView() {
   useEffect(() => {
     loadMemories()
   }, [loadMemories])
+
+  // ── 오버플로우 메뉴 외부 클릭 닫기 ──
+  useEffect(() => {
+    if (!showOverflow) return
+    const handleClick = () => setShowOverflow(false)
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [showOverflow])
 
   const handleTabChange = (tab: MemoryTab) => {
     setActiveTab(tab)
@@ -84,23 +97,54 @@ export default function MemoryView() {
           <p className="memory-subtitle">저장된 지식을 탐색하세요</p>
         </div>
         <div className="memory-header-actions">
-          {activeTab === 'all' && memoryList.memories.length >= 10 && !bulk.selectMode && (
-            <button className="btn btn-secondary" onClick={() => setShowDuplicateModal(true)}>
-              <Copy size={16} /> 중복 정리
-            </button>
-          )}
-          {activeTab === 'all' && memoryList.memories.length > 0 && (
-            <button
-              className={`btn ${bulk.selectMode ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={bulk.toggleSelectMode}
-            >
-              {bulk.selectMode ? <><X size={16} /> 취소</> : <><Check size={16} /> 선택</>}
-            </button>
-          )}
-          {!bulk.selectMode && (
-            <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-              <Plus size={16} /> 추가
-            </button>
+          {isMobile ? (
+            <>
+              {!bulk.selectMode && (
+                <button className="btn btn-primary btn--icon-only" onClick={() => setShowAddModal(true)} aria-label="추가">
+                  <Plus size={18} />
+                </button>
+              )}
+              {activeTab === 'all' && memoryList.memories.length > 0 && (
+                <div className="memory-overflow-wrapper">
+                  <button className="btn btn-secondary btn--icon-only" onClick={() => setShowOverflow(!showOverflow)} aria-label="더보기">
+                    <MoreVertical size={18} />
+                  </button>
+                  {showOverflow && (
+                    <div className="memory-overflow-menu">
+                      {memoryList.memories.length >= 10 && (
+                        <button onClick={() => { setShowDuplicateModal(true); setShowOverflow(false) }}>
+                          <Copy size={16} /> 중복 정리
+                        </button>
+                      )}
+                      <button onClick={() => { bulk.toggleSelectMode(); setShowOverflow(false) }}>
+                        {bulk.selectMode ? <><X size={16} /> 취소</> : <><Check size={16} /> 선택</>}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {activeTab === 'all' && memoryList.memories.length >= 10 && !bulk.selectMode && (
+                <button className="btn btn-secondary" onClick={() => setShowDuplicateModal(true)}>
+                  <Copy size={16} /> 중복 정리
+                </button>
+              )}
+              {activeTab === 'all' && memoryList.memories.length > 0 && (
+                <button
+                  className={`btn ${bulk.selectMode ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={bulk.toggleSelectMode}
+                >
+                  {bulk.selectMode ? <><X size={16} /> 취소</> : <><Check size={16} /> 선택</>}
+                </button>
+              )}
+              {!bulk.selectMode && (
+                <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+                  <Plus size={16} /> 추가
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
