@@ -70,6 +70,16 @@ async def subscribe_push(
     return {"status": "subscribed"}
 
 
+@router.delete("/push/unsubscribe")
+async def unsubscribe_push(
+    user_id: UUID = Depends(get_user_id),
+    repo: NotificationRepository = Depends(get_notification_repository),
+):
+    """웹 푸시 구독 해제."""
+    repo.delete_push_subscriptions(user_id)
+    return {"status": "unsubscribed"}
+
+
 @router.get("/push/vapid-key")
 async def get_vapid_public_key():
     """VAPID 공개키 반환 (Service Worker 등록에 필요)."""
