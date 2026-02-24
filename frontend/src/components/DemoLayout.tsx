@@ -4,7 +4,7 @@ import { Sparkles } from 'lucide-react'
 import { DemoProvider, DEMO_USER } from '../contexts/DemoContext'
 import { AuthContext } from '../contexts/AuthContext'
 import { ChatSessionProvider } from '../contexts/ChatSessionContext'
-import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import Sidebar from './Sidebar'
 import MobileTabBar from './MobileTabBar'
 import CommandPalette from './CommandPalette'
@@ -16,7 +16,7 @@ const noop = async (..._args: any[]) => {}
 
 export default function DemoLayout() {
   const navigate = useNavigate()
-  const isMobile = useMediaQuery('(max-width: 767px)')
+  const isMobile = useIsMobile()
   const [showCmdPalette, setShowCmdPalette] = useState(false)
 
   const demoAuthValue = useMemo(() => ({

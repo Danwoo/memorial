@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Plus, X, Check, Copy, MoreVertical } from 'lucide-react'
-import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import { useToast } from '../contexts/ToastContext'
 import { bulkMemoryAction } from '../api'
 import { useMemoryList } from '../hooks/useMemoryList'
@@ -34,7 +34,7 @@ export default function MemoryView() {
   const bulk = useBulkSelection(memoryList.memories)
 
   // ── 모바일 감지 ──
-  const isMobile = useMediaQuery('(max-width: 767px)')
+  const isMobile = useIsMobile()
   const [showOverflow, setShowOverflow] = useState(false)
 
   // ── 모달 상태 ──

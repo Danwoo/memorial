@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useLocation, useBlocker } from 'react-router-dom'
 import { Save, Loader2, Check, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
-import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import TurndownService from 'turndown'
 import type { EditorMode, RelatedMemory, DigestMemory, DigestData, ChatSessionResponse, JournalDateInfo } from '../types'
 import {
@@ -137,7 +137,7 @@ export default function JournalView() {
   const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null)
 
   // 모바일 탭 전환
-  const isMobile = useMediaQuery('(max-width: 767px)')
+  const isMobile = useIsMobile()
   const [mobileTab, setMobileTab] = useState<'editor' | 'memories' | 'ai'>('editor')
 
   // 좌/우 패널 collapse 상태

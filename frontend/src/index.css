@@ -1,4 +1,7 @@
-/* Memoir - Design System */
+/* Memoir - Design System
+ * Z-index scale: graph-controls 5, node-panel 10, insight-panel 10,
+ * sidebar 100, modal-backdrop 500, modal 501, tab-bar 1000, toast 1200, cmd-palette 2000
+ */
 
 :root {
   /* Surfaces */

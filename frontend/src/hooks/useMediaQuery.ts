@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 
+const MOBILE_QUERY = '(max-width: 767px)'
+
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(
     () => window.matchMedia(query).matches,
@@ -13,4 +15,8 @@ export function useMediaQuery(query: string): boolean {
   }, [query])
 
   return matches
+}
+
+export function useIsMobile(): boolean {
+  return useMediaQuery(MOBILE_QUERY)
 }
