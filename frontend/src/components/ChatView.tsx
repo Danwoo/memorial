@@ -4,10 +4,11 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { rehypeSanitize, sanitizeSchema } from '../utils/markdownSanitize'
 import {
-  User, Bot, ArrowUp,
+  User, Bot, ArrowUp, Plus,
   Paperclip, ChevronDown, ChevronUp,
   ThumbsUp, ThumbsDown,
 } from 'lucide-react'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useChatSession } from '../contexts/ChatSessionContext'
 import { useToast } from '../contexts/ToastContext'
 import { useDemoMode } from '../contexts/DemoContext'
@@ -26,6 +27,7 @@ export default function ChatView() {
   const toast = useToast()
   const { isDemoMode: isDemo } = useDemoMode()
   const pathPrefix = isDemo ? '/demo' : ''
+  const isMobile = useMediaQuery('(max-width: 767px)')
 
   const [sessionId, setSessionId] = useState<string | null>(urlSessionId ?? null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -258,6 +260,16 @@ export default function ChatView() {
           <h1>Socrates</h1>
           <p className="chat-subtitle">당신의 지적 동반자</p>
         </div>
+        {isMobile && (
+          <button
+            className="chat-new-btn"
+            onClick={() => navigate(`${pathPrefix}/chat`, { state: { newSession: true } })}
+            type="button"
+            aria-label="새 대화"
+          >
+            <Plus size={20} />
+          </button>
+        )}
       </div>
 
       <div className="chat-messages-wrapper">

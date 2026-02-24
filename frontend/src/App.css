@@ -41,32 +41,11 @@
   top: 0;
 }
 
-/* ─── 모바일 햄버거 버튼 ──────────────────────────────────────────────── */
-
-.mobile-nav-toggle {
-  display: none;
-  position: fixed;
-  top: var(--space-md);
-  left: var(--space-md);
-  z-index: 1001;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-secondary);
-  border-radius: var(--radius-md);
-  padding: 10px;
-  color: var(--text-primary);
-  cursor: pointer;
-  line-height: 0;
+/* ─── 모바일 레이아웃 ──────────────────────────────────────────── */
+.app-container--mobile {
+  flex-direction: column;
 }
 
-@media (max-width: 767px) {
-  .mobile-nav-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* 데모 모드: 배너 아래로 햄버거 위치 조정 */
-  .demo-app-container .mobile-nav-toggle {
-    top: calc(36px + var(--space-sm));
-  }
+.app-container--mobile .main-content {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
 }
