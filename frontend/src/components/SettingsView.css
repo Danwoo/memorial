@@ -1,7 +1,5 @@
 .settings-view {
   padding: var(--space-2xl);
-  max-width: 680px;
-  margin: 0 auto;
   animation: fadeIn var(--transition-normal) ease-out;
 }
 

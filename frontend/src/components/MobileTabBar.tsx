@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  MessageSquare, BookOpen, PenLine, Network, MoreHorizontal,
-  BarChart3, Settings as SettingsIcon, LogOut, X,
+  Calendar, BookOpen, PenLine, Network, MoreHorizontal,
+  Settings as SettingsIcon, LogOut, X,
 } from 'lucide-react'
 import type { User } from '../types'
 import './MobileTabBar.css'
@@ -50,10 +50,10 @@ export default function MobileTabBar({ user, onLogout, prefix = '' }: MobileTabB
   }, [moreOpen, closeMore])
 
   const tabs = [
-    { to: `${prefix}/chat`,     icon: MessageSquare, label: '대화' },
-    { to: `${prefix}/memories`, icon: BookOpen,      label: '기억' },
-    { to: `${prefix}/journal`,  icon: PenLine,       label: '저널' },
-    { to: `${prefix}/graph`,    icon: Network,       label: '그래프' },
+    { to: `${prefix}/dashboard`, icon: Calendar, label: '캘린더' },
+    { to: `${prefix}/journal`,   icon: PenLine,  label: '다이어리' },
+    { to: `${prefix}/memories`,  icon: BookOpen,  label: '스크랩' },
+    { to: `${prefix}/graph`,     icon: Network,   label: '마인드맵' },
   ] as const
 
   return (
@@ -102,15 +102,6 @@ export default function MobileTabBar({ user, onLogout, prefix = '' }: MobileTabB
             </div>
 
             <div className="mobile-more-nav">
-              <button
-                type="button"
-                className="mobile-more-item"
-                onClick={() => handleMoreNav(`${prefix}/dashboard`)}
-              >
-                <BarChart3 size={20} />
-                <span>대시보드</span>
-              </button>
-
               {!prefix && (
                 <button
                   type="button"

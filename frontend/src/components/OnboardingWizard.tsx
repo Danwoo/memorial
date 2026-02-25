@@ -52,7 +52,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
 
   const handleQuestionClick = useCallback((question: string) => {
     onComplete()
-    navigate('/chat', { state: { initialMessage: question } })
+    navigate('/journal', { state: { openChat: true, initialMessage: question } })
   }, [onComplete, navigate])
 
   return (
