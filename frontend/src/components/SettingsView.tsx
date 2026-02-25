@@ -5,7 +5,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
 import { getNotificationSettings, updateNotificationSetting } from '../api/notifications'
 import type { NudgeSetting } from '../api/notifications'
-import { fetchExportCounts, exportMemories, exportJournals, exportAll } from '../api/export'
+import { fetchExportCounts, exportScraps, exportDiaries, exportAll } from '../api/export'
 import type { ExportCounts } from '../api/export'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 import { usePWAInstall } from '../hooks/usePWAInstall'
@@ -92,12 +92,12 @@ export default function SettingsView() {
   }
 
   // ─── 데이터 내보내기 핸들러 ────────────────────────────────────────────────
-  const handleExport = async (type: 'memories' | 'journals' | 'all') => {
+  const handleExport = async (type: 'scraps' | 'diaries' | 'all') => {
     setExportLoading(type)
     toast.info('내보내기를 준비하고 있습니다...')
     try {
-      if (type === 'memories') await exportMemories()
-      else if (type === 'journals') await exportJournals()
+      if (type === 'scraps') await exportScraps()
+      else if (type === 'diaries') await exportDiaries()
       else await exportAll()
       toast.success('다운로드가 시작됩니다')
     } catch {
@@ -110,7 +110,7 @@ export default function SettingsView() {
   const handleOnboardingReset = () => {
     localStorage.removeItem('onboarding_completed')
     toast.info('온보딩 가이드를 다시 시작합니다')
-    navigate('/dashboard')
+    navigate('/calendar')
     window.location.reload()
   }
 

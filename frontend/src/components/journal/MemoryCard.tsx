@@ -1,7 +1,7 @@
 import { Plus, Eye } from 'lucide-react'
-import type { DigestMemory, RelatedMemory } from '../../types'
+import type { DigestScrap, RelatedScrap } from '../../types'
 
-type MemoryItem = DigestMemory | RelatedMemory
+type MemoryItem = DigestScrap | RelatedScrap
 
 interface MemoryCardProps {
   memory: MemoryItem

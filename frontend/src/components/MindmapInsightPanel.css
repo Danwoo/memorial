@@ -1,0 +1,368 @@
+/* 인사이트 패널 - 우측 오버레이 */
+.insight-panel {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  width: 300px;
+  max-height: calc(100% - 80px);
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: 16px;
+  padding: 16px;
+  z-index: 10;
+  overflow-y: auto;
+  animation: slideIn 0.2s ease;
+}
+
+.insight-panel-title {
+  margin: 0 0 14px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.insight-panel-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  padding: 16px 0;
+}
+
+.insight-panel-empty {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* 섹션 */
+.insight-section {
+  margin-bottom: 16px;
+}
+
+.insight-section:last-child {
+  margin-bottom: 0;
+}
+
+.insight-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 8px 0;
+}
+
+/* 섹션 헤더 (타이틀 + 링크) */
+.insight-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.insight-section-header .insight-section-title {
+  margin-bottom: 0;
+}
+
+.section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  color: var(--accent-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 2px 0;
+}
+
+.section-link:hover {
+  text-decoration: underline;
+}
+
+/* 클러스터 카드 */
+.insight-cluster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.insight-cluster-card-wrapper {
+  display: flex;
+  gap: 4px;
+}
+
+.insight-cluster-card-wrapper .insight-cluster-card {
+  flex: 1;
+  min-width: 0;
+}
+
+.cluster-socrates-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.cluster-socrates-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--accent-bg);
+}
+
+.insight-cluster-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-left: 3px solid var(--accent-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: all var(--transition-fast);
+}
+
+.insight-cluster-card:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-tertiary);
+}
+
+.cluster-summary {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cluster-meta {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+/* 트렌드 */
+.insight-trend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.insight-trend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.trend-tag {
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  min-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trend-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 24px;
+  flex: 1;
+}
+
+.trend-bar {
+  width: 100%;
+  min-height: 4px;
+  background: var(--accent-primary);
+  border-radius: 2px;
+  opacity: 0.6;
+}
+
+.trend-direction {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.trend-up {
+  color: var(--color-success);
+}
+
+.trend-down {
+  color: var(--color-error);
+}
+
+.trend-stable {
+  color: var(--text-muted);
+}
+
+/* 고립 노드 */
+.insight-isolated-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.insight-isolated-item {
+  position: relative;
+}
+
+.isolated-name {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background var(--transition-fast);
+  font-family: inherit;
+}
+
+.isolated-name:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.isolated-connect-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 2px 8px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--accent-primary);
+  background: var(--accent-bg);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.isolated-connect-btn:hover,
+.isolated-connect-btn.active {
+  border-color: var(--accent-primary);
+  background: var(--accent-bg-hover);
+}
+
+.connect-dropdown {
+  margin-top: 4px;
+  padding: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+}
+
+.connect-loading,
+.connect-empty {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 4px 8px;
+}
+
+.connect-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background var(--transition-fast);
+}
+
+.connect-option:hover {
+  background: var(--accent-bg);
+  color: var(--text-primary);
+}
+
+/* 허브 노드 */
+.insight-hub-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.insight-hub-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  transition: background var(--transition-fast);
+}
+
+.insight-hub-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.hub-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hub-degree {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+}
+
+/* 반응형 */
+@media (max-width: 767px) {
+  .insight-panel {
+    width: calc(100% - 40px);
+    left: 20px;
+    right: 20px;
+    top: auto;
+    bottom: 60px;
+    max-height: 40%;
+  }
+}

@@ -5,9 +5,9 @@ from uuid import UUID
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config.database import get_supabase_client
-from app.repositories.chat_repository import ChatRepository
-from app.repositories.journal_repository import JournalRepository
-from app.repositories.memory_repository import MemoryRepository
+from app.repositories.diary_repository import DiaryRepository
+from app.repositories.scrap_repository import ScrapRepository
+from app.repositories.socrates_repository import SocratesRepository
 from app.services.digest_service import DigestService
 from app.services.nudge_service import (
     connection_discovery_job,
@@ -24,9 +24,9 @@ def _build_digest_service() -> DigestService:
     """스케줄러 컨텍스트용 DigestService 인스턴스 생성."""
     db = get_supabase_client()
     return DigestService(
-        memory_repo=MemoryRepository(db),
-        journal_repo=JournalRepository(db),
-        chat_repo=ChatRepository(db),
+        scrap_repo=ScrapRepository(db),
+        diary_repo=DiaryRepository(db),
+        socrates_repo=SocratesRepository(db),
     )
 
 
@@ -83,7 +83,7 @@ async def digest_delivery_job() -> None:
             user_id = UUID(user_id_str)
             digest = await digest_service.get_today_digest(user_id)
 
-            total_items = digest["summary"]["memory_count"] + digest["summary"]["journal_count"]
+            total_items = digest["summary"]["scrap_count"] + digest["summary"]["diary_count"]
             if total_items == 0:
                 logger.info("사용자 %s: 오늘 활동 없음, 건너뜀", user_id_str[:8])
                 await _record_delivery(user_id_str, "skipped_empty")
@@ -91,10 +91,10 @@ async def digest_delivery_job() -> None:
 
             # TODO: 카카오 메시지 API로 실제 전송 (비즈니스 채널 인증 후)
             logger.info(
-                "사용자 %s: 다이제스트 생성 완료 (메모리 %d, 저널 %d)",
+                "사용자 %s: 다이제스트 생성 완료 (스크랩 %d, 다이어리 %d)",
                 user_id_str[:8],
-                digest["summary"]["memory_count"],
-                digest["summary"]["journal_count"],
+                digest["summary"]["scrap_count"],
+                digest["summary"]["diary_count"],
             )
             await _record_delivery(user_id_str, "generated")
 

@@ -16,15 +16,15 @@ async def save_node(state: AgentState) -> dict:
     Returns:
         next_step = "end"를 포함한 dict
     """
-    memory_id = state.get("target_memory_id")
+    scrap_id = state.get("target_scrap_id")
 
-    if not memory_id:
-        return {"next_step": "end", "error": "No memory_id provided"}
+    if not scrap_id:
+        return {"next_step": "end", "error": "No scrap_id provided"}
 
     try:
         container = get_agent_container()
-        memory_service = container.memory_service
-        graph_repo = container.graph_repo
+        scrap_service = container.scrap_service
+        mindmap_repo = container.mindmap_repo
 
         classification = state.get("classification", "FACT")
         summary = state.get("summary", "")
@@ -34,7 +34,7 @@ async def save_node(state: AgentState) -> dict:
         relations = state.get("extracted_relations", [])
 
         logger.info(
-            "Save node: %d entities, %d relations, graph=%s", len(entities), len(relations), graph_repo.is_connected
+            "Save node: %d entities, %d relations, mindmap=%s", len(entities), len(relations), mindmap_repo.is_connected
         )
 
         source_url = state.get("source_url")
@@ -43,8 +43,8 @@ async def save_node(state: AgentState) -> dict:
 
         if classification == "SPAM":
             tags.append("SPAM")
-            await memory_service.update_memory_after_processing(
-                memory_id=UUID(memory_id),
+            await scrap_service.update_scrap_after_processing(
+                scrap_id=UUID(scrap_id),
                 summary="Spam detected",
                 tags=tags,
                 source_url=source_url,
@@ -52,8 +52,8 @@ async def save_node(state: AgentState) -> dict:
                 user_id=str(user_id) if user_id else None,
             )
         else:
-            await memory_service.update_memory_after_processing(
-                memory_id=UUID(memory_id),
+            await scrap_service.update_scrap_after_processing(
+                scrap_id=UUID(scrap_id),
                 summary=summary,
                 tags=tags,
                 entities=entities,

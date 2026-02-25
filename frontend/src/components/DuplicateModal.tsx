@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Loader2, Merge, SkipForward } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
-import { fetchDuplicates, mergeMemories } from '../api/duplicates'
+import { fetchDuplicates, mergeScraps } from '../api/duplicates'
 import type { DuplicatePair } from '../api/duplicates'
 import './DuplicateModal.css'
 
@@ -35,8 +35,8 @@ export default function DuplicateModal({ onClose, onMerged }: DuplicateModalProp
   const handleMerge = async (keepId: string, mergeId: string, pairKey: string) => {
     setMerging(pairKey)
     try {
-      await mergeMemories(keepId, mergeId)
-      toast.success('메모리가 병합되었습니다')
+      await mergeScraps(keepId, mergeId)
+      toast.success('스크랩이 병합되었습니다')
       setDismissed(prev => new Set(prev).add(pairKey))
       onMerged()
     } catch {
@@ -51,15 +51,15 @@ export default function DuplicateModal({ onClose, onMerged }: DuplicateModalProp
   }
 
   const visiblePairs = pairs.filter(p => {
-    const key = `${p.memory_a.id}-${p.memory_b.id}`
+    const key = `${p.scrap_a.id}-${p.scrap_b.id}`
     return !dismissed.has(key)
   })
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content duplicate-modal card" role="dialog" aria-modal="true" aria-label="중복 메모리 정리" onClick={e => e.stopPropagation()}>
+      <div className="modal-content duplicate-modal card" role="dialog" aria-modal="true" aria-label="중복 스크랩 정리" onClick={e => e.stopPropagation()}>
         <div className="duplicate-modal-header">
-          <h2>중복 메모리 정리</h2>
+          <h2>중복 스크랩 정리</h2>
           <button className="btn btn-ghost" onClick={onClose}><X size={18} /></button>
         </div>
 
@@ -70,20 +70,20 @@ export default function DuplicateModal({ onClose, onMerged }: DuplicateModalProp
           </div>
         ) : visiblePairs.length === 0 ? (
           <div className="duplicate-empty">
-            <p>중복 메모리가 없습니다.</p>
+            <p>중복 스크랩가 없습니다.</p>
           </div>
         ) : (
           <div className="duplicate-list">
             <p className="duplicate-count">{visiblePairs.length}개 중복 발견</p>
             {visiblePairs.map(pair => {
-              const pairKey = `${pair.memory_a.id}-${pair.memory_b.id}`
+              const pairKey = `${pair.scrap_a.id}-${pair.scrap_b.id}`
               const isMerging = merging === pairKey
               return (
                 <div key={pairKey} className="duplicate-pair">
                   <div className="duplicate-card">
-                    <h4>{pair.memory_a.title}</h4>
-                    {pair.memory_a.summary && <p>{pair.memory_a.summary}</p>}
-                    <span className="duplicate-source">{pair.memory_a.source_type}</span>
+                    <h4>{pair.scrap_a.title}</h4>
+                    {pair.scrap_a.summary && <p>{pair.scrap_a.summary}</p>}
+                    <span className="duplicate-source">{pair.scrap_a.source_type}</span>
                   </div>
                   <div className="duplicate-similarity">
                     <span className="similarity-pct">{Math.round(pair.similarity * 100)}%</span>
@@ -91,7 +91,7 @@ export default function DuplicateModal({ onClose, onMerged }: DuplicateModalProp
                     <div className="duplicate-actions">
                       <button
                         className="btn btn-primary btn-sm"
-                        onClick={() => handleMerge(pair.memory_a.id, pair.memory_b.id, pairKey)}
+                        onClick={() => handleMerge(pair.scrap_a.id, pair.scrap_b.id, pairKey)}
                         disabled={isMerging}
                       >
                         <Merge size={14} /> {isMerging ? '병합 중...' : '병합'}
@@ -106,9 +106,9 @@ export default function DuplicateModal({ onClose, onMerged }: DuplicateModalProp
                     </div>
                   </div>
                   <div className="duplicate-card">
-                    <h4>{pair.memory_b.title}</h4>
-                    {pair.memory_b.summary && <p>{pair.memory_b.summary}</p>}
-                    <span className="duplicate-source">{pair.memory_b.source_type}</span>
+                    <h4>{pair.scrap_b.title}</h4>
+                    {pair.scrap_b.summary && <p>{pair.scrap_b.summary}</p>}
+                    <span className="duplicate-source">{pair.scrap_b.source_type}</span>
                   </div>
                 </div>
               )

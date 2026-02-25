@@ -62,7 +62,7 @@ export function useViewCache<T>(options: UseViewCacheOptions<T>): UseViewCacheRe
       })
 
     return () => { isMounted.current = false }
-    // key가 바뀌면 (예: GraphView의 viewMode 변경) 재실행
+    // key가 바뀌면 (예: MindmapView의 viewMode 변경) 재실행
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, userId, ttl])
 

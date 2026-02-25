@@ -11,7 +11,7 @@ from supabase import Client
 from app.config.auth import get_user_id
 from app.config.dependencies import get_db, get_kakao_channel_service
 from app.config.settings import get_settings
-from app.routers.memory_router import _process_with_librarian
+from app.routers.scrap_router import _process_with_librarian
 from app.schemas.integration_schema import (
     BotSettingsResponse,
     BotSettingsUpdateRequest,
@@ -330,7 +330,7 @@ async def _run_librarian_for_kakao(bot_user_key: str) -> None:
         user_id = result.data[0]["user_id"]
 
         latest = (
-            db.table("memories")
+            db.table("scraps")
             .select("id, content")
             .eq("user_id", user_id)
             .eq("source_type", "KAKAO")

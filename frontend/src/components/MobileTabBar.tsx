@@ -50,10 +50,10 @@ export default function MobileTabBar({ user, onLogout, prefix = '' }: MobileTabB
   }, [moreOpen, closeMore])
 
   const tabs = [
-    { to: `${prefix}/dashboard`, icon: Calendar, label: '캘린더' },
-    { to: `${prefix}/journal`,   icon: PenLine,  label: '다이어리' },
-    { to: `${prefix}/memories`,  icon: BookOpen,  label: '스크랩' },
-    { to: `${prefix}/graph`,     icon: Network,   label: '마인드맵' },
+    { to: `${prefix}/calendar`,  icon: Calendar, label: '캘린더' },
+    { to: `${prefix}/diary`,     icon: PenLine,  label: '다이어리' },
+    { to: `${prefix}/scraps`,    icon: BookOpen,  label: '스크랩' },
+    { to: `${prefix}/mindmap`,   icon: Network,   label: '마인드맵' },
   ] as const
 
   return (

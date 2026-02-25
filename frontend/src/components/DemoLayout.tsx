@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react'
 import { Sparkles } from 'lucide-react'
 import { DemoProvider, DEMO_USER } from '../contexts/DemoContext'
 import { AuthContext } from '../contexts/AuthContext'
-import { ChatSessionProvider } from '../contexts/ChatSessionContext'
+import { SocratesSessionProvider } from '../contexts/SocratesSessionContext'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import Sidebar from './Sidebar'
 import MobileTabBar from './MobileTabBar'
@@ -33,7 +33,7 @@ export default function DemoLayout() {
   return (
     <DemoProvider demo>
       <AuthContext.Provider value={demoAuthValue}>
-        <ChatSessionProvider>
+        <SocratesSessionProvider>
           <div className="demo-banner">
             <Sparkles size={14} />
             <span>데모 모드 — 샘플 데이터로 체험 중</span>
@@ -49,7 +49,7 @@ export default function DemoLayout() {
             {isMobile && <MobileTabBar user={DEMO_USER} prefix="/demo" />}
             <CommandPalette isOpen={showCmdPalette} onClose={() => setShowCmdPalette(false)} />
           </div>
-        </ChatSessionProvider>
+        </SocratesSessionProvider>
       </AuthContext.Provider>
     </DemoProvider>
   )
