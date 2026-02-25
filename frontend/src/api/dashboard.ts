@@ -38,3 +38,9 @@ export function fetchDailyInsights(): Promise<DailyInsightsResponse> {
   if (isDemoMode()) return Promise.resolve({ insights: DEMO_INSIGHTS })
   return get<DailyInsightsResponse>('/insights/daily')
 }
+
+// 특정 날짜의 다이제스트 조회
+export function fetchDigestByDate(date: string): Promise<DigestData> {
+  if (isDemoMode()) return Promise.resolve(DEMO_DIGEST)
+  return get<DigestData>(`/digest/date/${date}`)
+}
