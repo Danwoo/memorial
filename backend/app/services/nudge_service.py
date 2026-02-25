@@ -3,12 +3,12 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from app.config.database import get_supabase_client
-from app.repositories.memory_repository import MemoryRepository
+from app.repositories.calendar_repository import CalendarRepository
 from app.repositories.notification_repository import NotificationRepository
-from app.repositories.stats_repository import StatsRepository
+from app.repositories.scrap_repository import ScrapRepository
 from app.repositories.vector_repository import VectorRepository
+from app.services.calendar_service import CalendarService
 from app.services.push_service import send_push_notification
-from app.services.stats_service import StatsService
 from app.utils import parse_iso_datetime
 
 logger = logging.getLogger(__name__)
@@ -22,12 +22,12 @@ WEEKLY_SUMMARY_TITLE = "주간 요약"
 CONNECTION_FOUND_TITLE = "기억 연결 발견"
 
 
-def _get_repos() -> tuple[NotificationRepository, MemoryRepository, VectorRepository]:
+def _get_repos() -> tuple[NotificationRepository, ScrapRepository, VectorRepository]:
     """스케줄러 컨텍스트용 리포지토리 인스턴스 생성."""
     db = get_supabase_client()
     return (
         NotificationRepository(db),
-        MemoryRepository(db),
+        ScrapRepository(db),
         VectorRepository(db),
     )
 
@@ -89,7 +89,7 @@ async def evening_review_job() -> None:
     current_hour = now_kst.hour
     logger.info("저녁 회고 넛지 시작: KST %02d시", current_hour)
 
-    notif_repo, memory_repo, _ = _get_repos()
+    notif_repo, scrap_repo, _ = _get_repos()
     users = await _get_nudge_eligible_users(notif_repo, "evening_review", current_hour)
 
     if not users:
@@ -102,20 +102,20 @@ async def evening_review_job() -> None:
 
     for user_id in users:
         try:
-            today_memories = await memory_repo.get_by_date_range(
+            today_scraps = await scrap_repo.get_by_date_range(
                 user_id=UUID(user_id),
                 start=today_start.isoformat(),
                 end=today_end.isoformat(),
             )
 
-            count = len(today_memories)
+            count = len(today_scraps)
             if count == 0:
                 logger.info("사용자 %s: 오늘 활동 없음, 건너뜀", user_id[:8])
                 continue
 
             # 주요 토픽 추출
             tag_counts: dict[str, int] = {}
-            for mem in today_memories:
+            for mem in today_scraps:
                 for tag in mem.get("tags") or []:
                     tag_counts[tag] = tag_counts.get(tag, 0) + 1
             top_tags = sorted(tag_counts, key=tag_counts.get, reverse=True)[:3]
@@ -129,7 +129,7 @@ async def evening_review_job() -> None:
                 "evening_review",
                 EVENING_REVIEW_TITLE,
                 body,
-                url="/journal",
+                url="/diary",
             )
             logger.info("사용자 %s: 저녁 회고 넛지 전송 (메모리 %d개)", user_id[:8], count)
 
@@ -149,12 +149,12 @@ async def weekly_summary_job() -> None:
         return
 
     db = get_supabase_client()
-    stats_service = StatsService(StatsRepository(db))
+    calendar_service = CalendarService(CalendarRepository(db))
 
     for user_id in users:
         try:
-            overview = await stats_service.get_overview(UUID(user_id))
-            streak = await stats_service.get_streak(UUID(user_id))
+            overview = await calendar_service.get_overview(UUID(user_id))
+            streak = await calendar_service.get_streak(UUID(user_id))
 
             weekly_count = overview.overview.total_this_week
             current_streak = streak.current_streak
@@ -180,7 +180,7 @@ async def weekly_summary_job() -> None:
                 "weekly_summary",
                 WEEKLY_SUMMARY_TITLE,
                 body,
-                url="/dashboard",
+                url="/calendar",
             )
             logger.info("사용자 %s: 주간 요약 넛지 전송", user_id[:8])
 
@@ -192,7 +192,7 @@ async def connection_discovery_job() -> None:
     """연결 발견 넛지: 최근 메모리와 기존 메모리 사이 유사도 검사."""
     logger.info("연결 발견 넛지 시작")
 
-    notif_repo, memory_repo, vector_repo = _get_repos()
+    notif_repo, scrap_repo, vector_repo = _get_repos()
     users = await _get_nudge_eligible_users(notif_repo, "connection_found")
 
     if not users:
@@ -205,17 +205,17 @@ async def connection_discovery_job() -> None:
 
     for user_id in users:
         try:
-            recent_memories = await memory_repo.get_by_date_range(
+            recent_scraps = await scrap_repo.get_by_date_range(
                 user_id=UUID(user_id),
                 start=yesterday_start.isoformat(),
                 end=yesterday_end.isoformat(),
             )
 
-            if not recent_memories:
+            if not recent_scraps:
                 continue
 
             nudges_sent = 0
-            for mem in recent_memories:
+            for mem in recent_scraps:
                 if nudges_sent >= MAX_DAILY_CONNECTION_NUDGES:
                     break
 
@@ -256,7 +256,7 @@ async def connection_discovery_job() -> None:
                         "connection_found",
                         CONNECTION_FOUND_TITLE,
                         body,
-                        url="/graph",
+                        url="/mindmap",
                     )
                     nudges_sent += 1
                     logger.info("사용자 %s: 연결 발견 넛지 전송", user_id[:8])

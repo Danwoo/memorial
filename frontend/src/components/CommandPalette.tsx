@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, X, MessageSquare, BookOpen, FileText } from 'lucide-react'
-import { searchMemories, fetchChatSessions } from '../api'
-import type { SearchResult, ChatSessionResponse } from '../types'
+import { searchScraps, fetchSocratesSessions } from '../api'
+import type { SearchResult, SocratesSessionResponse } from '../types'
 import './CommandPalette.css'
 
 interface CommandPaletteProps {
@@ -11,8 +11,8 @@ interface CommandPaletteProps {
 }
 
 type ResultItem =
-  | { kind: 'memory'; data: SearchResult }
-  | { kind: 'session'; data: ChatSessionResponse }
+  | { kind: 'scrap'; data: SearchResult }
+  | { kind: 'session'; data: SocratesSessionResponse }
 
 export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const navigate = useNavigate()
@@ -59,23 +59,23 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
           return ''
         }).trim()
 
-        const memSearchParams: { q: string; limit?: number; source_type?: string; tags?: string } = {
+        const scrapSearchParams: { q: string; limit?: number; source_type?: string; tags?: string } = {
           q: cleanQuery || query,
           limit: 8,
         }
-        if (searchParams.source) memSearchParams.source_type = searchParams.source.toUpperCase()
-        if (searchParams.tag) memSearchParams.tags = searchParams.tag
+        if (searchParams.source) scrapSearchParams.source_type = searchParams.source.toUpperCase()
+        if (searchParams.tag) scrapSearchParams.tags = searchParams.tag
 
-        const [memoryRes, sessionRes] = await Promise.allSettled([
-          searchMemories(memSearchParams),
-          fetchChatSessions(),
+        const [scrapRes, sessionRes] = await Promise.allSettled([
+          searchScraps(scrapSearchParams),
+          fetchSocratesSessions(),
         ])
 
         const items: ResultItem[] = []
 
-        if (memoryRes.status === 'fulfilled') {
-          memoryRes.value.results.forEach((r) =>
-            items.push({ kind: 'memory', data: r }),
+        if (scrapRes.status === 'fulfilled') {
+          scrapRes.value.results.forEach((r) =>
+            items.push({ kind: 'scrap', data: r }),
           )
         }
 
@@ -102,10 +102,10 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
   const handleSelect = useCallback(
     (item: ResultItem) => {
       onClose()
-      if (item.kind === 'memory') {
-        navigate('/memories')
+      if (item.kind === 'scrap') {
+        navigate('/scraps')
       } else if (item.kind === 'session') {
-        navigate('/journal', { state: { openChat: true, sessionId: item.data.id } })
+        navigate('/diary', { state: { openSocrates: true, sessionId: item.data.id } })
       }
     },
     [navigate, onClose],
@@ -144,7 +144,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
           <input
             ref={inputRef}
             type="text"
-            placeholder="메모리, 대화 검색..."
+            placeholder="스크랩, 대화 검색..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -161,14 +161,14 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
           <div className="cmd-palette__results">
             {results.map((item, idx) => (
               <button
-                key={item.kind === 'memory' ? `m-${item.data.id}` : `s-${item.data.id}`}
+                key={item.kind === 'scrap' ? `sc-${item.data.id}` : `s-${item.data.id}`}
                 className={`cmd-palette__item ${idx === activeIdx ? 'active' : ''}`}
                 onClick={() => handleSelect(item)}
                 onMouseEnter={() => setActiveIdx(idx)}
                 type="button"
               >
                 <span className="cmd-palette__item-icon">
-                  {item.kind === 'memory' ? (
+                  {item.kind === 'scrap' ? (
                     item.data.source_type === 'NOTE' ? <FileText size={16} /> : <BookOpen size={16} />
                   ) : (
                     <MessageSquare size={16} />
@@ -176,16 +176,16 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
                 </span>
                 <div className="cmd-palette__item-content">
                   <span className="cmd-palette__item-title">
-                    {item.kind === 'memory' ? item.data.title : item.data.title}
+                    {item.kind === 'scrap' ? item.data.title : item.data.title}
                   </span>
                   <span className="cmd-palette__item-meta">
-                    {item.kind === 'memory'
+                    {item.kind === 'scrap'
                       ? (item.data.summary || '').slice(0, 60)
                       : new Date(item.data.created_at).toLocaleDateString('ko-KR')}
                   </span>
                 </div>
                 <span className="cmd-palette__item-badge">
-                  {item.kind === 'memory' ? item.data.source_type : '대화'}
+                  {item.kind === 'scrap' ? item.data.source_type : '대화'}
                 </span>
               </button>
             ))}
@@ -209,7 +209,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         {/* 안내 */}
         {!query && (
           <div className="cmd-palette__hint">
-            메모리, 대화 세션을 검색하세요
+            스크랩, 대화 세션을 검색하세요
           </div>
         )}
       </div>

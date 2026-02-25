@@ -13,8 +13,8 @@ export interface SearchResponse<T> {
   filters_applied: Record<string, string | number | string[]>
 }
 
-export interface RelatedMemoriesResponse {
-  memories: {
+export interface RelatedScrapsResponse {
+  scraps: {
     id: string
     title: string
     summary: string

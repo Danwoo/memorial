@@ -18,10 +18,10 @@ interface NavItem {
 
 function getNavItems(prefix: string): NavItem[] {
   const items: NavItem[] = [
-    { to: `${prefix}/dashboard`, icon: <Calendar size={20} />,  label: '캘린더' },
-    { to: `${prefix}/journal`,   icon: <PenLine size={20} />,   label: '다이어리' },
-    { to: `${prefix}/memories`,  icon: <BookOpen size={20} />,  label: '스크랩' },
-    { to: `${prefix}/graph`,     icon: <Network size={20} />,   label: '마인드맵' },
+    { to: `${prefix}/calendar`,  icon: <Calendar size={20} />,  label: '캘린더' },
+    { to: `${prefix}/diary`,     icon: <PenLine size={20} />,   label: '다이어리' },
+    { to: `${prefix}/scraps`,    icon: <BookOpen size={20} />,  label: '스크랩' },
+    { to: `${prefix}/mindmap`,   icon: <Network size={20} />,   label: '마인드맵' },
   ]
   if (!prefix) {
     items.push({ to: '/settings', icon: <SettingsIcon size={20} />, label: '설정' })
@@ -69,7 +69,7 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
     {mobileOpen && <div className="sidebar-backdrop" onClick={onMobileClose} />}
     <aside className={`sidebar ${mobileOpen ? 'sidebar--mobile-open' : ''}`}>
       <div className="sidebar-header">
-        <NavLink to={`${prefix}/dashboard`} className="logo" onClick={handleNavClick}>
+        <NavLink to={`${prefix}/calendar`} className="logo" onClick={handleNavClick}>
           <img src="/favicon.png" alt="" width={24} height={24} className="logo-icon" />
           <span className="logo-text">Memoir</span>
         </NavLink>

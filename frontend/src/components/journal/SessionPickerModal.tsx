@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
-import type { ChatSessionResponse } from '../../types'
+import type { SocratesSessionResponse } from '../../types'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 interface SessionPickerModalProps {
-  sessions: ChatSessionResponse[]
+  sessions: SocratesSessionResponse[]
   onSelect: (sessionId: string) => void
   onClose: () => void
 }
@@ -23,7 +23,7 @@ export function SessionPickerModal({ sessions, onSelect, onClose }: SessionPicke
     <div className="session-picker-overlay" onClick={onClose} ref={trapRef}>
       <div className="session-picker" role="dialog" aria-modal="true" aria-label="세션 선택" onClick={(e) => e.stopPropagation()}>
         <h3>대화 세션 선택</h3>
-        <p className="session-picker-desc">저널로 정리할 대화를 선택하세요</p>
+        <p className="session-picker-desc">다이어리로 정리할 대화를 선택하세요</p>
         <div className="session-list">
           {sessions.map((session) => (
             <button

@@ -3,9 +3,9 @@ from collections import Counter
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from app.repositories.graph_repository import GraphRepository
-from app.repositories.journal_repository import JournalRepository
-from app.repositories.stats_repository import StatsRepository
+from app.repositories.calendar_repository import CalendarRepository
+from app.repositories.diary_repository import DiaryRepository
+from app.repositories.mindmap_repository import MindmapRepository
 from app.schemas.insight_schema import DailyInsight, DailyInsightsResponse
 from app.utils.cache import insights_cache
 
@@ -17,13 +17,13 @@ class InsightService:
 
     def __init__(
         self,
-        stats_repo: StatsRepository,
-        graph_repo: GraphRepository,
-        journal_repo: JournalRepository,
+        calendar_repo: CalendarRepository,
+        mindmap_repo: MindmapRepository,
+        diary_repo: DiaryRepository,
     ):
-        self.stats_repo = stats_repo
-        self.graph_repo = graph_repo
-        self.journal_repo = journal_repo
+        self.calendar_repo = calendar_repo
+        self.mindmap_repo = mindmap_repo
+        self.diary_repo = diary_repo
 
     async def get_daily_insights(self, user_id: str) -> DailyInsightsResponse:
         """규칙 기반 일일 인사이트 최대 3개 생성."""
@@ -39,7 +39,7 @@ class InsightService:
         # 1. 패턴 감지: 이번 주 집중 주제
         try:
             week_start = now - timedelta(days=7)
-            week_memories = await self.stats_repo.get_memories_in_range(uid, week_start, now)
+            week_memories = await self.calendar_repo.get_memories_in_range(uid, week_start, now)
             if week_memories:
                 tag_counter: Counter[str] = Counter()
                 for mem in week_memories:
@@ -55,7 +55,7 @@ class InsightService:
                                 title=f"이번 주 '{top_tag}' 집중",
                                 description=f"최근 7일간 '{top_tag}' 관련 기억이 {top_count}개 기록되었어요.",
                                 cta_label="관련 기억 보기",
-                                cta_path="/memories",
+                                cta_path="/scraps",
                             )
                         )
         except Exception:
@@ -63,8 +63,8 @@ class InsightService:
 
         # 2. 연결 발견: 고립 노드 발견
         try:
-            if self.graph_repo.is_connected:
-                orphans = await self.graph_repo.get_orphan_entities(user_id)
+            if self.mindmap_repo.is_connected:
+                orphans = await self.mindmap_repo.get_orphan_entities(user_id)
                 if len(orphans) >= 3:
                     sample = orphans[0]
                     insights.append(
@@ -74,7 +74,7 @@ class InsightService:
                             title=f"'{sample['name']}' 외 {len(orphans) - 1}개 연결 가능",
                             description="아직 다른 개념과 연결되지 않은 엔티티가 있어요. 지식 그래프에서 연결해보세요.",
                             cta_label="그래프에서 보기",
-                            cta_path="/graph",
+                            cta_path="/mindmap",
                         )
                     )
         except Exception:
@@ -83,7 +83,7 @@ class InsightService:
         # 3. 행동 제안: 저널 미작성 알림
         try:
             three_days_ago = now - timedelta(days=3)
-            recent_journals = await self.journal_repo.get_journals_in_range(
+            recent_journals = await self.diary_repo.get_journals_in_range(
                 uid,
                 three_days_ago,
                 now,
@@ -96,7 +96,7 @@ class InsightService:
                         title="저널 작성 3일 이상 미작성",
                         description="최근 3일간 저널을 작성하지 않았어요. 오늘의 생각을 기록해보세요.",
                         cta_label="저널 쓰러 가기",
-                        cta_path="/journal",
+                        cta_path="/diary",
                     )
                 )
         except Exception:

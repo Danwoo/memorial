@@ -1,7 +1,7 @@
 import logging
 from uuid import UUID
 
-from app.repositories.memory_repository import MemoryRepository
+from app.repositories.scrap_repository import ScrapRepository
 from app.repositories.vector_repository import VectorRepository
 from app.schemas.duplicate_schema import DuplicatePair, DuplicatePairItem
 
@@ -11,15 +11,15 @@ VECTOR_SIMILARITY_THRESHOLD = 0.90
 
 
 class DuplicateService:
-    """메모리 중복 감지 및 병합 서비스."""
+    """스크랩 중복 감지 및 병합 서비스."""
 
-    def __init__(self, memory_repo: MemoryRepository, vector_repo: VectorRepository):
-        self.memory_repo = memory_repo
+    def __init__(self, scrap_repo: ScrapRepository, vector_repo: VectorRepository):
+        self.scrap_repo = scrap_repo
         self.vector_repo = vector_repo
 
     async def find_duplicates(self, user_id: UUID) -> list[DuplicatePair]:
         """URL 정확 매칭 + 벡터 유사도 기반 중복 쌍 탐지."""
-        items, _ = await self.memory_repo.get_by_user(user_id=user_id, page=1, limit=200)
+        items, _ = await self.scrap_repo.get_by_user(user_id=user_id, page=1, limit=200)
         if len(items) < 2:
             return []
 
@@ -86,35 +86,35 @@ class DuplicateService:
                         )
                     )
             except Exception:
-                logger.warning("중복 검색 실패: memory_id=%s", item.id, exc_info=True)
+                logger.warning("중복 검색 실패: scrap_id=%s", item.id, exc_info=True)
 
         pairs.sort(key=lambda p: p.similarity, reverse=True)
         return pairs[:20]
 
-    async def merge_memories(self, user_id: UUID, keep_id: UUID, merge_id: UUID) -> list[str]:
-        """두 메모리 병합: 태그 합집합 → keep에 반영, merge 삭제."""
-        keep = await self.memory_repo.get_by_id(keep_id, user_id)
-        merge = await self.memory_repo.get_by_id(merge_id, user_id)
+    async def merge_scraps(self, user_id: UUID, keep_id: UUID, merge_id: UUID) -> list[str]:
+        """두 스크랩 병합: 태그 합집합 → keep에 반영, merge 삭제."""
+        keep = await self.scrap_repo.get_by_id(keep_id, user_id)
+        merge = await self.scrap_repo.get_by_id(merge_id, user_id)
 
         if not keep or not merge:
-            raise ValueError("메모리를 찾을 수 없습니다")
+            raise ValueError("스크랩을 찾을 수 없습니다")
 
         keep_tags = keep.tags or []
         merge_tags = merge.tags or []
         merged_tags = list(dict.fromkeys(keep_tags + merge_tags))
 
-        await self.memory_repo.update_tags(keep_id, user_id, merged_tags)
-        await self.memory_repo.delete(merge_id, user_id)
+        await self.scrap_repo.update_tags(keep_id, user_id, merged_tags)
+        await self.scrap_repo.delete(merge_id, user_id)
 
         return merged_tags
 
     @staticmethod
-    def _to_pair_item(memory) -> DuplicatePairItem:
+    def _to_pair_item(scrap) -> DuplicatePairItem:
         return DuplicatePairItem(
-            id=memory.id,
-            title=memory.title,
-            summary=memory.summary,
-            source_type=memory.source_type,
-            source_url=memory.source_url,
-            tags=memory.tags,
+            id=scrap.id,
+            title=scrap.title,
+            summary=scrap.summary,
+            source_type=scrap.source_type,
+            source_url=scrap.source_url,
+            tags=scrap.tags,
         )

@@ -1,15 +1,15 @@
 from pydantic import BaseModel
 
 
-class BriefingTodayMemories(BaseModel):
-    """오늘 수집된 메모리 요약."""
+class BriefingTodayScraps(BaseModel):
+    """오늘 수집된 스크랩 요약."""
 
     count: int
     topics: list[str]
 
 
 class BriefingStreak(BaseModel):
-    """저널 스트릭 간략 정보."""
+    """일기 스트릭 간략 정보."""
 
     current: int
     longest: int
@@ -18,7 +18,7 @@ class BriefingStreak(BaseModel):
 class BriefingResponse(BaseModel):
     """오늘의 브리핑 통합 응답."""
 
-    today_memories: BriefingTodayMemories
+    today_scraps: BriefingTodayScraps
     unreviewed_count: int
     streak: BriefingStreak
     suggested_question: str

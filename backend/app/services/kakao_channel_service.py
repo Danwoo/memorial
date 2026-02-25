@@ -7,7 +7,7 @@ from supabase import Client
 
 from app.schemas.integration_schema import KakaoSkillResponse
 from app.services.ingest_service import process_note_content, process_web_content
-from app.services.memory_service import MemoryService
+from app.services.scrap_service import ScrapService
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +44,9 @@ KAKAO_TITLE_MAX_LENGTH = 30
 class KakaoChannelService:
     """카카오 OpenBuilder 웹훅 처리, 채널 계정 연동, 스킬 응답 생성."""
 
-    def __init__(self, db: Client, memory_service: MemoryService) -> None:
+    def __init__(self, db: Client, scrap_service: ScrapService) -> None:
         self.db = db
-        self.memory_service = memory_service
+        self.scrap_service = scrap_service
 
     # --- 공개 API ---
 
@@ -88,9 +88,9 @@ class KakaoChannelService:
             return self._handle_disconnect(bot_user_key)
 
         if URL_PATTERN.match(utterance):
-            return await self._save_url_memory(utterance, user_id)
+            return await self._save_url_scrap(utterance, user_id)
 
-        return await self._save_text_memory(utterance, user_id)
+        return await self._save_text_scrap(utterance, user_id)
 
     def generate_link_code(self, user_id: str) -> dict:
         """6자리 연결 코드 생성 후 pending_channel_links에 저장."""
@@ -206,11 +206,11 @@ class KakaoChannelService:
             "채널 연결이 해제되었습니다. 다시 연결하려면 Settings에서 새 연결 코드를 생성해주세요."
         )
 
-    async def _save_url_memory(self, url: str, user_id: str) -> KakaoSkillResponse:
-        """URL 크롤링 후 Memory로 저장."""
+    async def _save_url_scrap(self, url: str, user_id: str) -> KakaoSkillResponse:
+        """URL 크롤링 후 Scrap으로 저장."""
         try:
             processed = await process_web_content(url)
-            await self.memory_service.create_memory(
+            await self.scrap_service.create_scrap(
                 user_id=user_id,
                 title=processed["title"],
                 content=processed["content"],
@@ -222,7 +222,7 @@ class KakaoChannelService:
                 f"웹 페이지 저장 완료!\n\n제목: {title}\nmemoir-knowledge.vercel.app 에서 확인하세요."
             )
         except Exception:
-            logger.exception("Failed to save URL memory from Kakao: %s", url)
+            logger.exception("Failed to save URL scrap from Kakao: %s", url)
             return KakaoSkillResponse.simple_text(
                 "URL 저장에 실패했습니다.\n\n"
                 "가능한 원인:\n"
@@ -231,11 +231,11 @@ class KakaoChannelService:
                 "잠시 후 다시 시도해주세요."
             )
 
-    async def _save_text_memory(self, text: str, user_id: str) -> KakaoSkillResponse:
-        """일반 텍스트를 노트 Memory로 저장."""
+    async def _save_text_scrap(self, text: str, user_id: str) -> KakaoSkillResponse:
+        """일반 텍스트를 노트 Scrap으로 저장."""
         try:
             processed = await process_note_content(text)
-            await self.memory_service.create_memory(
+            await self.scrap_service.create_scrap(
                 user_id=user_id,
                 title=processed["title"],
                 content=processed["content"],
@@ -247,7 +247,7 @@ class KakaoChannelService:
                 f"메모 저장 완료!\n\n내용: {preview}\nmemoir-knowledge.vercel.app 에서 확인하세요."
             )
         except Exception:
-            logger.exception("Failed to save text memory from Kakao")
+            logger.exception("Failed to save text scrap from Kakao")
             return KakaoSkillResponse.simple_text("메모 저장에 실패했습니다.\n잠시 후 다시 시도해주세요.")
 
     def _build_link_required_response(

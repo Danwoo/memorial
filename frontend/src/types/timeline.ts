@@ -1,8 +1,8 @@
-import type { Memory } from './memory'
+import type { Scrap } from './scrap'
 
 export interface TimelineGroup {
   date: string
-  memories: Memory[]
+  scraps: Scrap[]
 }
 
 export interface TimelineData {

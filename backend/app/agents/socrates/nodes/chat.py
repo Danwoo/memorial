@@ -11,7 +11,7 @@ from app.agents.prompts import (
 )
 from app.agents.state import AgentState
 from app.config.llm import get_streaming_llm
-from app.repositories.journal_repository import JournalRepository
+from app.repositories.diary_repository import DiaryRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.hybrid_search_service import HybridSearchService
 from app.services.user_profile_service import get_user_profile
@@ -160,9 +160,9 @@ async def _search_connection_suggestions(
 async def _fetch_graph_context(query: str, limit: int = GRAPH_CONTEXT_LIMIT) -> str:
     """지식 그래프에서 관련 엔티티 조회. 포맷된 텍스트 반환."""
     try:
-        from app.config.dependencies import get_graph_repository
+        from app.config.dependencies import get_mindmap_repository
 
-        graph_repo = get_graph_repository()
+        graph_repo = get_mindmap_repository()
 
         keywords = [word for word in query.split() if len(word) > GRAPH_KEYWORD_MIN_LENGTH][:GRAPH_MAX_KEYWORDS]
         graph_results = []
@@ -195,23 +195,23 @@ async def _fetch_graph_context(query: str, limit: int = GRAPH_CONTEXT_LIMIT) -> 
         return ""
 
 
-async def _fetch_journal_context(
+async def _fetch_diary_context(
     user_id: str | UUID,
-    journal_repo: JournalRepository,
+    diary_repo: DiaryRepository,
     limit: int = JOURNAL_CONTEXT_LIMIT,
 ) -> str:
-    """최근 저널 항목 조회. 포맷된 텍스트 반환."""
+    """최근 다이어리 항목 조회. 포맷된 텍스트 반환."""
     try:
-        recent_journals = await journal_repo.get_journals(user_id, limit=limit)
-        if recent_journals:
+        recent_diaries = await diary_repo.get_journals(user_id, limit=limit)
+        if recent_diaries:
             return "\n".join(
-                f"- [Journal {journal.get('created_at', '')[:10]}] "
-                f"Mood: {journal.get('mood', 'N/A')} - "
-                f"{journal.get('content', '')[:JOURNAL_PREVIEW_LENGTH]}..."
-                for journal in recent_journals
+                f"- [Diary {diary.get('created_at', '')[:10]}] "
+                f"Mood: {diary.get('mood', 'N/A')} - "
+                f"{diary.get('content', '')[:JOURNAL_PREVIEW_LENGTH]}..."
+                for diary in recent_diaries
             )
     except Exception:
-        logger.exception("Journal context fetch failed")
+        logger.exception("Diary context fetch failed")
     return ""
 
 
@@ -251,7 +251,7 @@ async def prepare_socrates_context(
         graph_context = await _fetch_graph_context(query)
 
         if user_id:
-            journal_context = await _fetch_journal_context(user_id, container.journal_repo)
+            journal_context = await _fetch_diary_context(user_id, container.diary_repo)
 
         if mode == "counter" and current_memories:
             contradicting_memories = await _build_contradiction_context(
