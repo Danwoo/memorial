@@ -1,52 +1,14 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useEffect, useCallback, useMemo } from 'react'
 import type { ReactNode } from 'react'
-import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { useChatSession } from '../contexts/ChatSessionContext'
+import { NavLink } from 'react-router-dom'
 import { useDemoMode } from '../contexts/DemoContext'
 import {
-  MessageSquare, BookOpen, PenLine, Network, BarChart3,
+  Calendar, BookOpen, PenLine, Network,
   Settings as SettingsIcon,
-  LogOut, ChevronDown, ChevronRight, Plus,
+  LogOut,
 } from 'lucide-react'
-import type { User, ChatSessionResponse } from '../types'
-import { fetchChatSessions } from '../api'
-import { timeAgo } from '../utils'
+import type { User } from '../types'
 import './Sidebar.css'
-
-interface SessionGroup {
-  label: string
-  sessions: ChatSessionResponse[]
-}
-
-function groupSessions(sessions: ChatSessionResponse[]): SessionGroup[] {
-  const now = new Date()
-  const todayStr = now.toISOString().slice(0, 10)
-
-  const weekAgo = new Date(now)
-  weekAgo.setDate(weekAgo.getDate() - 7)
-  const weekAgoStr = weekAgo.toISOString().slice(0, 10)
-
-  const today: ChatSessionResponse[] = []
-  const thisWeek: ChatSessionResponse[] = []
-  const older: ChatSessionResponse[] = []
-
-  for (const s of sessions) {
-    const dateStr = s.created_at.slice(0, 10)
-    if (dateStr === todayStr) {
-      today.push(s)
-    } else if (dateStr >= weekAgoStr) {
-      thisWeek.push(s)
-    } else {
-      older.push(s)
-    }
-  }
-
-  const groups: SessionGroup[] = []
-  if (today.length > 0) groups.push({ label: '오늘', sessions: today })
-  if (thisWeek.length > 0) groups.push({ label: '이번 주', sessions: thisWeek })
-  if (older.length > 0) groups.push({ label: '이전', sessions: older })
-  return groups
-}
 
 interface NavItem {
   to: string
@@ -56,20 +18,16 @@ interface NavItem {
 
 function getNavItems(prefix: string): NavItem[] {
   const items: NavItem[] = [
-    { to: `${prefix}/chat`,      icon: <MessageSquare size={20} />, label: '대화' },
-    { to: `${prefix}/memories`,  icon: <BookOpen size={20} />,      label: '기억' },
-    { to: `${prefix}/journal`,   icon: <PenLine size={20} />,       label: '저널' },
-    { to: `${prefix}/graph`,     icon: <Network size={20} />,       label: '그래프' },
-    { to: `${prefix}/dashboard`, icon: <BarChart3 size={20} />,     label: '대시보드' },
+    { to: `${prefix}/dashboard`, icon: <Calendar size={20} />,  label: '캘린더' },
+    { to: `${prefix}/journal`,   icon: <PenLine size={20} />,   label: '다이어리' },
+    { to: `${prefix}/memories`,  icon: <BookOpen size={20} />,  label: '스크랩' },
+    { to: `${prefix}/graph`,     icon: <Network size={20} />,   label: '마인드맵' },
   ]
   if (!prefix) {
     items.push({ to: '/settings', icon: <SettingsIcon size={20} />, label: '설정' })
   }
   return items
 }
-
-// 사이드바에 표시할 최대 세션 수
-const MAX_SIDEBAR_SESSIONS = 8
 
 interface SidebarProps {
   onLogout?: () => void
@@ -79,40 +37,8 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: SidebarProps) {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { refreshFlag } = useChatSession()
   const { isDemoMode: isDemo } = useDemoMode()
   const prefix = isDemo ? '/demo' : ''
-  const [sessions, setSessions] = useState<ChatSessionResponse[]>([])
-  const [showSessions, setShowSessions] = useState(true)
-
-  const loadSessions = useCallback(async () => {
-    try {
-      const data = await fetchChatSessions()
-      setSessions(data)
-    } catch {
-      // 세션 목록은 비필수 UI 요소이므로 실패 시 무시
-    }
-  }, [])
-
-  useEffect(() => {
-    loadSessions()
-  }, [loadSessions])
-
-  const chatPathPrefix = `${prefix}/chat`
-
-  // 채팅 페이지 진입 시 세션 목록 새로고침
-  useEffect(() => {
-    if (location.pathname.startsWith(chatPathPrefix)) {
-      loadSessions()
-    }
-  }, [location.pathname, loadSessions, chatPathPrefix])
-
-  // 세션 제목 자동 생성 시 목록 새로고침 (ChatSessionContext 연동)
-  useEffect(() => {
-    if (refreshFlag > 0) loadSessions()
-  }, [refreshFlag, loadSessions])
 
   // 모바일: Escape 키로 사이드바 닫기
   useEffect(() => {
@@ -125,8 +51,6 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
   }, [mobileOpen, onMobileClose])
 
   const navItems = useMemo(() => getNavItems(prefix), [prefix])
-  const isOnChatPage = location.pathname.startsWith(chatPathPrefix)
-  const sessionGroups = useMemo(() => groupSessions(sessions.slice(0, MAX_SIDEBAR_SESSIONS)), [sessions])
 
   /** 아바타 표시 문자: 이름 첫 글자 또는 이메일 첫 글자 */
   const avatarInitial = user?.full_name
@@ -145,27 +69,17 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
     {mobileOpen && <div className="sidebar-backdrop" onClick={onMobileClose} />}
     <aside className={`sidebar ${mobileOpen ? 'sidebar--mobile-open' : ''}`}>
       <div className="sidebar-header">
-        <div className="logo">
+        <NavLink to={`${prefix}/dashboard`} className="logo" onClick={handleNavClick}>
           <img src="/favicon.png" alt="" width={24} height={24} className="logo-icon" />
           <span className="logo-text">Memoir</span>
-        </div>
+        </NavLink>
       </div>
 
       <nav className="sidebar-nav">
-        <button
-          className="new-chat-btn"
-          onClick={() => navigate(`${prefix}/chat`, { state: { newSession: true } })}
-          type="button"
-        >
-          <Plus size={18} />
-          <span>새 대화</span>
-        </button>
-
         {navItems.map(({ to, icon, label }) => (
           <NavLink
             key={to}
             to={to}
-            end={to === `${prefix}/chat`}
             className={({ isActive }) =>
               `nav-item ${isActive ? 'active' : ''}`
             }
@@ -175,48 +89,6 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
             <span className="nav-label">{label}</span>
           </NavLink>
         ))}
-
-        {/* 채팅 세션 목록 */}
-        {isOnChatPage && sessions.length > 0 && (
-          <div className="session-section">
-            <button
-              className="session-section-toggle"
-              onClick={() => setShowSessions(!showSessions)}
-              aria-expanded={showSessions}
-            >
-              <span>최근 대화</span>
-              <span className="session-toggle-arrow">
-                {showSessions ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </span>
-            </button>
-
-            {showSessions && (
-              <div className="session-list">
-                {sessionGroups.map(group => (
-                  <div key={group.label} className="session-group">
-                    <div className="session-group-label">{group.label}</div>
-                    {group.sessions.map(session => {
-                      const isActive = location.pathname === `${prefix}/chat/${session.id}`
-                      return (
-                        <button
-                          key={session.id}
-                          className={`session-item ${isActive ? 'active' : ''}`}
-                          onClick={() => navigate(`${prefix}/chat/${session.id}`)}
-                          title={session.title}
-                        >
-                          <div className="session-item-content">
-                            <span className="session-title">{session.title}</span>
-                            <span className="session-time">{timeAgo(session.created_at)}</span>
-                          </div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </nav>
 
       <div className="sidebar-footer">

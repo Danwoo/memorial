@@ -77,7 +77,7 @@ export default function BriefingTab({ displayName, briefing, streak, stats, acti
             <Pencil size={22} />
           </div>
           <div className="quick-action-body">
-            <span className="quick-action-title">저널 쓰기</span>
+            <span className="quick-action-title">다이어리 쓰기</span>
             <span className="quick-action-sub">
               {briefing && briefing.unreviewed_count > 0
                 ? `미회고 ${briefing.unreviewed_count}개`
@@ -91,14 +91,14 @@ export default function BriefingTab({ displayName, briefing, streak, stats, acti
             <BookOpen size={22} />
           </div>
           <div className="quick-action-body">
-            <span className="quick-action-title">기억 탐색</span>
+            <span className="quick-action-title">스크랩 탐색</span>
             <span className="quick-action-sub">
-              {stats ? `총 ${stats.overview.total_memories}개` : '기억 둘러보기'}
+              {stats ? `총 ${stats.overview.total_memories}개` : '스크랩 둘러보기'}
             </span>
           </div>
         </button>
 
-        <button className="quick-action-card" onClick={() => navigate('/chat')}>
+        <button className="quick-action-card" onClick={() => navigate('/journal', { state: { openChat: true } })}>
           <div className="quick-action-icon" style={{ background: 'rgba(251, 146, 60, 0.1)', color: '#fb923c' }}>
             <MessageSquare size={22} />
           </div>
@@ -113,7 +113,7 @@ export default function BriefingTab({ displayName, briefing, streak, stats, acti
             <Network size={22} />
           </div>
           <div className="quick-action-body">
-            <span className="quick-action-title">지식 그래프</span>
+            <span className="quick-action-title">마인드맵</span>
             <span className="quick-action-sub">연결 시각화</span>
           </div>
         </button>

@@ -183,7 +183,7 @@ export default function KakaoLinkPage() {
             </p>
             <button
               className="btn btn-primary"
-              onClick={() => navigate('/chat')}
+              onClick={() => navigate('/dashboard')}
               style={{ width: '100%' }}
             >
               Memoir 시작하기

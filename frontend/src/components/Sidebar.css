@@ -5,6 +5,9 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
 }
 
 .sidebar-header {
@@ -19,6 +22,7 @@
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--text-primary);
+  text-decoration: none;
 }
 
 .logo-icon {

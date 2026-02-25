@@ -408,7 +408,7 @@ export default function MemoryDetailModal({ memoryId, onClose, onDeleted, onUpda
                   className="btn-cross-nav"
                   onClick={() => {
                     onClose()
-                    navigate('/chat', { state: { topic: detail.title } })
+                    navigate('/journal', { state: { openChat: true, topic: detail.title } })
                   }}
                   type="button"
                 >

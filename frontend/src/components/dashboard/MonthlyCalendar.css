@@ -1,0 +1,225 @@
+.monthly-calendar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+/* 월 네비게이션 */
+.monthly-calendar__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.monthly-calendar__title-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.monthly-calendar__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.monthly-calendar__arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border-secondary);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.monthly-calendar__arrow:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--accent-bg);
+}
+
+/* 요일 헤더 */
+.monthly-calendar__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.monthly-calendar__weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 6px 0;
+}
+
+.monthly-calendar__weekday--sun {
+  color: var(--color-error);
+}
+
+.monthly-calendar__weekday--sat {
+  color: var(--accent-primary);
+}
+
+/* 날짜 그리드 */
+.monthly-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.monthly-calendar__cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 72px;
+  padding: 8px 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.monthly-calendar__cell:hover {
+  background: var(--bg-secondary);
+  border-color: var(--border-secondary);
+}
+
+.monthly-calendar__cell--empty {
+  cursor: default;
+  pointer-events: none;
+}
+
+.monthly-calendar__cell--today {
+  border-color: var(--accent-primary);
+  background: var(--accent-bg);
+}
+
+.monthly-calendar__cell--today:hover {
+  background: var(--accent-bg-hover);
+}
+
+.monthly-calendar__cell--has-journal {
+  background: var(--accent-bg);
+}
+
+.monthly-calendar__cell--selected {
+  border-color: var(--accent-primary);
+  background: var(--accent-bg);
+  box-shadow: 0 0 0 2px var(--accent-primary);
+}
+
+/* 날짜 숫자 */
+.monthly-calendar__day {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.monthly-calendar__cell--today .monthly-calendar__day {
+  color: var(--accent-primary);
+  font-weight: 700;
+}
+
+/* 인디케이터 (도트) */
+.monthly-calendar__indicators {
+  display: flex;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.monthly-calendar__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.monthly-calendar__dot--activity {
+  background-color: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* 활동 배지 */
+.monthly-calendar__badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+/* 범례 */
+.monthly-calendar__legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-secondary);
+}
+
+.monthly-calendar__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.monthly-calendar__legend-item .monthly-calendar__dot {
+  width: 8px;
+  height: 8px;
+}
+
+/* 반응형 */
+@media (max-width: 767px) {
+  .monthly-calendar {
+    padding: 16px 12px;
+  }
+
+  .monthly-calendar__cell {
+    min-height: 44px;
+    padding: 4px 1px 2px;
+    border-radius: 8px;
+  }
+
+  .monthly-calendar__day {
+    font-size: 0.8rem;
+  }
+
+  .monthly-calendar__arrow {
+    width: 44px;
+    height: 44px;
+  }
+
+  .monthly-calendar__badge {
+    display: none;
+  }
+
+  .monthly-calendar__indicators {
+    margin-top: 2px;
+  }
+
+  .monthly-calendar__dot {
+    width: 5px;
+    height: 5px;
+  }
+}

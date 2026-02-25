@@ -1,0 +1,110 @@
+import { useNavigate } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { rehypeSanitize, sanitizeSchema } from '../../utils/markdownSanitize'
+import {
+  User, Bot, Paperclip, ChevronDown, ChevronUp,
+  ThumbsUp, ThumbsDown,
+} from 'lucide-react'
+import type { ChatMessage } from '../../types'
+import SourceIcon from '../shared/SourceIcon'
+
+interface ChatMessageListProps {
+  messages: ChatMessage[]
+  expandedRefs: Set<number>
+  feedbacks: Map<number, 'good' | 'bad'>
+  onToggleRefExpand: (idx: number) => void
+  onFeedback: (msgIndex: number, rating: 'good' | 'bad') => void
+}
+
+export default function ChatMessageList({
+  messages, expandedRefs, feedbacks,
+  onToggleRefExpand, onFeedback,
+}: ChatMessageListProps) {
+  const navigate = useNavigate()
+
+  return (
+    <>
+      {messages.map((msg, idx) => (
+        <div key={idx} className={`message ${msg.role}`}>
+          <div className="message-avatar">
+            {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
+          </div>
+          <div className="message-content">
+            {msg.role === 'assistant' ? (
+              msg.content ? (
+                <>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                  {msg.references && msg.references.length > 0 && (
+                    <div className="chat-references">
+                      <button
+                        className="chat-references-toggle"
+                        onClick={() => onToggleRefExpand(idx)}
+                        type="button"
+                      >
+                        <Paperclip size={14} />
+                        <span className="chat-references-label">{msg.references.length}개 기억 참조</span>
+                        <span className="chat-references-badge">{msg.references.length}</span>
+                        {expandedRefs.has(idx) ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      </button>
+                      {expandedRefs.has(idx) && (
+                        <div className="chat-references-list">
+                          {msg.references.map(ref => (
+                            <button
+                              key={ref.id}
+                              className="chat-reference-chip"
+                              onClick={() => navigate('/memories')}
+                              type="button"
+                            >
+                              <SourceIcon type={ref.source_type} size={14} />
+                              <span className="chat-reference-title">{ref.title}</span>
+                              <span className="chat-reference-date">{ref.created_at}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="chat-feedback-buttons">
+                    <button
+                      type="button"
+                      className={`chat-feedback-btn${feedbacks.get(idx) === 'good' ? ' active' : ''}`}
+                      onClick={() => onFeedback(idx, 'good')}
+                      title="도움이 됐어요"
+                    >
+                      <ThumbsUp size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className={`chat-feedback-btn${feedbacks.get(idx) === 'bad' ? ' active bad' : ''}`}
+                      onClick={() => onFeedback(idx, 'bad')}
+                      title="아쉬워요"
+                    >
+                      <ThumbsDown size={14} />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="typing-indicator-container">
+                  <div className="typing-dots">
+                    <span className="typing-dot" />
+                    <span className="typing-dot" />
+                    <span className="typing-dot" />
+                  </div>
+                  <span className="typing-text">Socrates가 생각하고 있습니다...</span>
+                </div>
+              )
+            ) : (
+              msg.content || <span className="typing-indicator">...</span>
+            )}
+          </div>
+        </div>
+      ))}
+    </>
+  )
+}

@@ -1,24 +1,24 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus, X, Check, Copy, MoreVertical } from 'lucide-react'
-import { useMediaQuery } from '../hooks/useMediaQuery'
+import { Plus, X, Check, Copy, MoreVertical, Bot } from 'lucide-react'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import { useToast } from '../contexts/ToastContext'
+import { useSocratesChat } from '../hooks/useSocratesChat'
 import { bulkMemoryAction } from '../api'
 import { useMemoryList } from '../hooks/useMemoryList'
 import { useMemoryTimeline } from '../hooks/useMemoryTimeline'
-import { useMemorySearch } from '../hooks/useMemorySearch'
 import { useBulkSelection } from '../hooks/useBulkSelection'
 import MemoryAllTab from './memory/MemoryAllTab'
 import MemoryTimelineTab from './memory/MemoryTimelineTab'
-import MemorySearchTab from './memory/MemorySearchTab'
 import AddMemoryModal from './memory/AddMemoryModal'
 import BulkActionBar from './memory/BulkActionBar'
 import BulkTagModal from './memory/BulkTagModal'
 import MemoryDetailModal from './MemoryDetailModal'
 import DuplicateModal from './DuplicateModal'
+import SocratesChatPanel from './chat/SocratesChatPanel'
 import './MemoryView.css'
 
-type MemoryTab = 'all' | 'timeline' | 'search'
+type MemoryTab = 'all' | 'timeline'
 
 export default function MemoryView() {
   const toast = useToast()
@@ -30,12 +30,13 @@ export default function MemoryView() {
   const memoryList = useMemoryList()
   const { loadMemories } = memoryList
   const timeline = useMemoryTimeline(activeTab === 'timeline')
-  const search = useMemorySearch()
   const bulk = useBulkSelection(memoryList.memories)
 
   // ── 모바일 감지 ──
-  const isMobile = useMediaQuery('(max-width: 767px)')
+  const isMobile = useIsMobile()
   const [showOverflow, setShowOverflow] = useState(false)
+  const [showChat, setShowChat] = useState(false)
+  const socratesChat = useSocratesChat({ mode: 'panel', context: { type: 'memory' } })
 
   // ── 모달 상태 ──
   const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null)
@@ -90,10 +91,11 @@ export default function MemoryView() {
   }
 
   return (
-    <div className="memory-view">
+    <div className={`memory-view${showChat && !isMobile ? ' memory-view--with-chat' : ''}`}>
+      <div className="memory-main">
       <div className="memory-header">
         <div>
-          <h1>기억</h1>
+          <h1>스크랩</h1>
           <p className="memory-subtitle">저장된 지식을 탐색하세요</p>
         </div>
         <div className="memory-header-actions">
@@ -144,6 +146,15 @@ export default function MemoryView() {
                   <Plus size={16} /> 추가
                 </button>
               )}
+              {!bulk.selectMode && (
+                <button
+                  className={`btn ${showChat ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setShowChat(!showChat)}
+                  title="Socrates 대화"
+                >
+                  <Bot size={16} /> Socrates
+                </button>
+              )}
             </>
           )}
         </div>
@@ -155,9 +166,6 @@ export default function MemoryView() {
         </button>
         <button className={`memory-tab ${activeTab === 'timeline' ? 'active' : ''}`} onClick={() => handleTabChange('timeline')}>
           타임라인
-        </button>
-        <button className={`memory-tab ${activeTab === 'search' ? 'active' : ''}`} onClick={() => handleTabChange('search')}>
-          검색
         </button>
       </div>
 
@@ -176,6 +184,14 @@ export default function MemoryView() {
             onToggleSelect={bulk.toggleSelect}
             onToggleSelectAll={bulk.toggleSelectAll}
             onSelectMemory={setSelectedMemoryId}
+            page={memoryList.page}
+            totalPages={memoryList.totalPages}
+            total={memoryList.total}
+            searchQuery={memoryList.searchQuery}
+            onSearchChange={memoryList.setSearchQuery}
+            onSearchCommit={memoryList.commitSearch}
+            onSearchClear={memoryList.clearSearch}
+            onPageChange={memoryList.goToPage}
           />
         )}
         {activeTab === 'timeline' && (
@@ -186,25 +202,6 @@ export default function MemoryView() {
             error={timeline.error}
             loadMoreRef={timeline.loadMoreRef}
             onRetry={() => timeline.loadTimeline(1)}
-            onSelectMemory={setSelectedMemoryId}
-          />
-        )}
-        {activeTab === 'search' && (
-          <MemorySearchTab
-            query={search.query}
-            onQueryChange={search.setQuery}
-            results={search.results}
-            isSearching={search.isSearching}
-            hasSearched={search.hasSearched}
-            showFilters={search.showFilters}
-            onToggleFilters={() => search.setShowFilters(!search.showFilters)}
-            sourceFilter={search.sourceFilter}
-            onSourceFilterChange={search.setSourceFilter}
-            daysFilter={search.daysFilter}
-            onDaysFilterChange={search.setDaysFilter}
-            hasFilters={search.hasFilters}
-            onClearFilters={search.clearFilters}
-            onSearch={search.handleSearch}
             onSelectMemory={setSelectedMemoryId}
           />
         )}
@@ -250,6 +247,49 @@ export default function MemoryView() {
           onClose={() => setShowAddModal(false)}
           onAdded={loadMemories}
         />
+      )}
+      </div>{/* .memory-main */}
+
+      {/* Socrates 채팅 패널 (데스크톱: 사이드 패널, 모바일: 풀스크린 오버레이) */}
+      {showChat && (
+        isMobile ? (
+          <div className="memory-chat-overlay">
+            <div className="memory-chat-overlay__header">
+              <h3>Socrates</h3>
+              <button
+                className="memory-chat-overlay__close"
+                onClick={() => setShowChat(false)}
+                type="button"
+                aria-label="닫기"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <SocratesChatPanel
+              chat={socratesChat}
+              className="socrates-chat-panel--panel"
+            />
+          </div>
+        ) : (
+          <div className="memory-chat-side">
+            <div className="memory-chat-side__header">
+              <Bot size={16} />
+              <span>Socrates</span>
+              <button
+                className="memory-chat-side__close"
+                onClick={() => setShowChat(false)}
+                type="button"
+                aria-label="패널 닫기"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <SocratesChatPanel
+              chat={socratesChat}
+              className="socrates-chat-panel--panel"
+            />
+          </div>
+        )
       )}
     </div>
   )

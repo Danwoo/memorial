@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type { Session, UserIdentity } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { storeProviderToken } from '../api'
+import { clearAllViewCache } from '../utils/viewCache'
 import type { User } from '../types'
 
 // ─── 인증 플로우 설명 ──────────────────────────────────────────────────────
@@ -152,6 +153,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (supabase) {
       await supabase.auth.signOut()
     }
+    // 로그아웃 시 뷰 캐시 동기 초기화 (계정 전환 시 이전 데이터 노출 방지)
+    clearAllViewCache()
     syncTokenToStorage(null)
     setUser(null)
     setSession(null)
