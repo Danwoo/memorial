@@ -10,7 +10,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import AppLayout from './components/AppLayout'
 import DemoLayout from './components/DemoLayout'
 import AuthView from './components/AuthView'
-import ChatView from './components/ChatView'
+// ChatView는 더 이상 독립 라우트로 사용하지 않음 (저널/스크랩에 통합)
 import KakaoLinkPage from './components/KakaoLinkPage'
 import LandingPage from './components/LandingPage'
 import NotFoundPage from './components/NotFoundPage'
@@ -36,7 +36,7 @@ function RootRoute() {
     )
   }
 
-  return user ? <Navigate to="/chat" replace /> : <LandingPage />
+  return user ? <Navigate to="/dashboard" replace /> : <LandingPage />
 }
 
 function AppRoutes() {
@@ -51,12 +51,12 @@ function AppRoutes() {
       {/* 데모 모드 — 인증 불필요, API 목 데이터 사용 */}
       <Route path="demo" element={<DemoLayout />}>
         <Route index element={<Navigate to="/demo/dashboard" replace />} />
-        <Route path="chat" element={<ChatView key={`demo-chat-${location.key}`} />} />
-        <Route path="chat/:sessionId" element={<ChatView key={`demo-chat-${location.key}`} />} />
-        <Route path="memories" element={<Suspense fallback={<div className="page-loading" />}><MemoryView key={location.key} /></Suspense>} />
-        <Route path="journal" element={<Suspense fallback={<div className="page-loading" />}><JournalView key={location.key} /></Suspense>} />
-        <Route path="graph" element={<Suspense fallback={<div className="page-loading" />}><GraphView key={location.key} /></Suspense>} />
         <Route path="dashboard" element={<Suspense fallback={<div className="page-loading" />}><DashboardView key={location.key} /></Suspense>} />
+        <Route path="journal" element={<Suspense fallback={<div className="page-loading" />}><JournalView key={location.key} /></Suspense>} />
+        <Route path="memories" element={<Suspense fallback={<div className="page-loading" />}><MemoryView key={location.key} /></Suspense>} />
+        <Route path="graph" element={<Suspense fallback={<div className="page-loading" />}><GraphView key={location.key} /></Suspense>} />
+        <Route path="chat" element={<Navigate to="/demo/journal" replace />} />
+        <Route path="chat/:sessionId" element={<Navigate to="/demo/journal" replace />} />
       </Route>
 
       {/* 인증 필요 라우트 - Sidebar 레이아웃 공유 */}
@@ -71,16 +71,16 @@ function AppRoutes() {
           </DemoProvider>
         }
       >
-        <Route path="chat" element={<ChatView key={`chat-${location.key}`} />} />
-        <Route path="chat/:sessionId" element={<ChatView key={`chat-${location.key}`} />} />
-        <Route path="memories" element={<Suspense fallback={<div className="page-loading" />}><MemoryView key={location.key} /></Suspense>} />
+        <Route path="dashboard" element={<Suspense fallback={<div className="page-loading" />}><DashboardView key={location.key} /></Suspense>} />
         <Route path="journal" element={<Suspense fallback={<div className="page-loading" />}><JournalView key={location.key} /></Suspense>} />
+        <Route path="memories" element={<Suspense fallback={<div className="page-loading" />}><MemoryView key={location.key} /></Suspense>} />
         <Route path="graph" element={<Suspense fallback={<div className="page-loading" />}><GraphView key={location.key} /></Suspense>} />
         <Route path="settings" element={<Suspense fallback={<div className="page-loading" />}><SettingsView key={location.key} /></Suspense>} />
-        {/* 삭제된 라우트 리다이렉트 */}
+        {/* 삭제/이동된 라우트 리다이렉트 */}
+        <Route path="chat" element={<Navigate to="/journal" replace />} />
+        <Route path="chat/:sessionId" element={<Navigate to="/journal" replace />} />
         <Route path="search" element={<Navigate to="/memories?tab=search" replace />} />
         <Route path="timeline" element={<Navigate to="/memories?tab=timeline" replace />} />
-        <Route path="dashboard" element={<Suspense fallback={<div className="page-loading" />}><DashboardView key={location.key} /></Suspense>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 

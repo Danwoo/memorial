@@ -5,7 +5,9 @@ import { Lightbulb, Maximize, ZoomIn, ZoomOut, Expand } from 'lucide-react'
 import type { GraphNode, GraphLink, GraphData, SearchResult, GraphInsights, ClusterInfo } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
+import { useAuth } from '../contexts/AuthContext'
 import { fetchGraph, fetchGraphInsights, searchMemories, fetchEgoGraph, fetchEgoDefault } from '../api'
+import { getViewCache, setViewCache, CACHE_KEYS } from '../utils/viewCache'
 import MemoryDetailModal from './MemoryDetailModal'
 import GraphInsightPanel, { CLUSTER_COLORS } from './GraphInsightPanel'
 import NodeInfoPanel from './graph/NodeInfoPanel'
@@ -24,6 +26,8 @@ export default function GraphView() {
   const location = useLocation()
   const { resolvedTheme } = useTheme()
   const toast = useToast()
+  const { user } = useAuth()
+  const userId = user?.id ?? ''
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null)
   const cameraRestoredRef = useRef(false)
@@ -120,9 +124,25 @@ export default function GraphView() {
     }
   }, [])
 
-  // Ego/Full 모드에 따른 데이터 로딩
+  // Ego/Full 모드에 따른 데이터 로딩 (userId 스코핑 캐시)
   useEffect(() => {
     let cancelled = false
+
+    if (!userId) return
+
+    const cacheKey = `${CACHE_KEYS.GRAPH_PREFIX}${viewMode}:${egoCenter ?? 'default'}:${egoDepth}`
+    const cached = getViewCache<{ data: GraphData; maxVal: number; egoCenter?: string | null }>(userId, cacheKey)
+
+    // 캐시가 유효하면 즉시 표시
+    if (cached) {
+      setData(cached.data)
+      setMaxVal(cached.maxVal)
+      if (cached.egoCenter && !egoCenter) setEgoCenter(cached.egoCenter)
+      setLoading(false)
+      cameraRestoredRef.current = false
+      return
+    }
+
     setLoading(true)
     setSelectedNode(null)
     setHighlightNodes(null)
@@ -150,6 +170,10 @@ export default function GraphView() {
           setMaxVal(mv)
           setData({ nodes, links })
           cameraRestoredRef.current = false
+
+          // 캐시 저장 (userId 스코핑)
+          const finalCacheKey = `${CACHE_KEYS.GRAPH_PREFIX}${viewMode}:${result.center_node ?? egoCenter ?? 'default'}:${egoDepth}`
+          setViewCache(userId, finalCacheKey, { data: { nodes, links }, maxVal: mv, egoCenter: result.center_node ?? egoCenter })
         }
       } catch {
         if (!cancelled) toast.error('그래프를 불러올 수 없습니다')
@@ -160,7 +184,7 @@ export default function GraphView() {
 
     loadData()
     return () => { cancelled = true }
-  }, [viewMode, egoCenter, egoDepth, toast, processNodes])
+  }, [viewMode, egoCenter, egoDepth, userId, toast, processNodes])
 
   // 마우스 좌표 트래킹 (호버 툴팁용)
   useEffect(() => {
@@ -549,7 +573,7 @@ export default function GraphView() {
   // 선택된 노드 주제로 채팅 시작
   const handleStartChat = useCallback(
     (node: GraphNode) => {
-      navigate('/chat', { state: { topic: node.name || node.id } })
+      navigate('/journal', { state: { openChat: true, topic: node.name || node.id } })
     },
     [navigate],
   )

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { useLocation, useBlocker } from 'react-router-dom'
-import { Save, Loader2, Check, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
+import { Save, Loader2, Check, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, Bot, Brain } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import { useIsMobile } from '../hooks/useMediaQuery'
+import { useSocratesChat } from '../hooks/useSocratesChat'
 import TurndownService from 'turndown'
 import type { EditorMode, RelatedMemory, DigestMemory, DigestData, ChatSessionResponse, JournalDateInfo } from '../types'
 import {
@@ -23,6 +24,7 @@ import { ReadOnlyViewer } from './journal/ReadOnlyViewer'
 import { MemorySidebar } from './journal/MemorySidebar'
 import { AIBubbleMenu } from './journal/AIBubbleMenu'
 import { AIPanel } from './journal/AIPanel'
+import SocratesChatPanel from './chat/SocratesChatPanel'
 import { SessionPickerModal } from './journal/SessionPickerModal'
 import { JournalDateNav } from './journal/JournalDateNav'
 import { JournalStarter } from './journal/JournalStarter'
@@ -136,6 +138,15 @@ export default function JournalView() {
   const [isLoadingStarter, setIsLoadingStarter] = useState(false)
   const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null)
 
+  // 우측 패널 탭 (AI 분석 / Socrates)
+  const [rightTab, setRightTab] = useState<'analysis' | 'socrates'>('analysis')
+
+  // Socrates 채팅 훅
+  const socratesChat = useSocratesChat({
+    mode: 'panel',
+    context: { type: 'journal', content: markdownContent },
+  })
+
   // 모바일 탭 전환
   const isMobile = useIsMobile()
   const [mobileTab, setMobileTab] = useState<'editor' | 'memories' | 'ai'>('editor')
@@ -217,20 +228,42 @@ export default function JournalView() {
     serverSave,
   )
 
-  // 라우트 이탈 시 미저장 내용 경고
-  useBlocker(({ currentLocation, nextLocation }) =>
-    isDirty && currentLocation.pathname !== nextLocation.pathname
-      ? !window.confirm('저장하지 않은 내용이 있습니다. 페이지를 떠나시겠습니까?')
-      : false
-  )
-
-  // 다른 뷰에서 특정 날짜로 이동 요청 시 처리
+  // 브라우저 탭 닫기/새로고침 시 미저장 내용 경고
   useEffect(() => {
-    const state = location.state as { date?: string } | null
-    if (state?.date) {
-      setSelectedDate(state.date)
-      window.history.replaceState({}, '')
+    if (!isDirty) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
     }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isDirty])
+
+  // 다른 뷰에서 특정 날짜로 이동 / Socrates 열기 요청 시 처리
+  useEffect(() => {
+    const state = location.state as {
+      date?: string
+      openChat?: boolean
+      topic?: string
+      initialMessage?: string
+    } | null
+    if (!state) return
+    if (state.date) {
+      setSelectedDate(state.date)
+    }
+    if (state.openChat) {
+      setRightTab('socrates')
+      setRightCollapsed(false)
+      if (isMobile) setMobileTab('ai')
+      if (state.topic) {
+        socratesChat.sendMessageDirect(
+          `${state.topic}에 대해 이야기하고 싶어. 내가 저장한 관련 지식을 바탕으로 대화해줘.`,
+        )
+      } else if (state.initialMessage) {
+        socratesChat.sendMessageDirect(state.initialMessage)
+      }
+    }
+    window.history.replaceState({}, '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state])
 
   // 마운트 시 저널 날짜 목록 로드
@@ -532,8 +565,8 @@ export default function JournalView() {
       {isMobile && (
         <div className="journal-mobile-tabs">
           <button className={`journal-mobile-tab ${mobileTab === 'editor' ? 'active' : ''}`} onClick={() => setMobileTab('editor')}>에디터</button>
-          <button className={`journal-mobile-tab ${mobileTab === 'memories' ? 'active' : ''}`} onClick={() => setMobileTab('memories')}>오늘의 메모리</button>
-          <button className={`journal-mobile-tab ${mobileTab === 'ai' ? 'active' : ''}`} onClick={() => setMobileTab('ai')}>AI 분석</button>
+          <button className={`journal-mobile-tab ${mobileTab === 'memories' ? 'active' : ''}`} onClick={() => setMobileTab('memories')}>메모리</button>
+          <button className={`journal-mobile-tab ${mobileTab === 'ai' ? 'active' : ''}`} onClick={() => setMobileTab('ai')}>AI 도우미</button>
         </div>
       )}
 
@@ -693,14 +726,40 @@ export default function JournalView() {
 
         </div>
 
-      {/* AI 사이드바 (우측 패널, 오늘일 때만) */}
+      {/* 우측 패널: AI 분석 + Socrates (오늘일 때만) */}
       {isToday && (
-        <div className={isMobile && mobileTab !== 'ai' ? 'journal-panel--hidden' : ''}>
-          <AIPanel
-            content={markdownContent}
-            onInsertQuestion={handleInsertQuestion}
-            collapsed={isMobile ? false : rightCollapsed}
-          />
+        <div className={`journal-right-panel ${isMobile && mobileTab !== 'ai' ? 'journal-panel--hidden' : ''} ${!isMobile && rightCollapsed ? 'journal-right-panel--collapsed' : ''}`}>
+          <div className="journal-right-panel__tabs">
+            <button
+              className={`journal-right-panel__tab ${rightTab === 'analysis' ? 'active' : ''}`}
+              onClick={() => setRightTab('analysis')}
+              type="button"
+            >
+              <Brain size={14} />
+              AI 분석
+            </button>
+            <button
+              className={`journal-right-panel__tab ${rightTab === 'socrates' ? 'active' : ''}`}
+              onClick={() => setRightTab('socrates')}
+              type="button"
+            >
+              <Bot size={14} />
+              Socrates
+            </button>
+          </div>
+          <div className="journal-right-panel__content">
+            {rightTab === 'analysis' ? (
+              <AIPanel
+                content={markdownContent}
+                onInsertQuestion={handleInsertQuestion}
+              />
+            ) : (
+              <SocratesChatPanel
+                chat={socratesChat}
+                className="socrates-chat-panel--panel"
+              />
+            )}
+          </div>
         </div>
       )}
 

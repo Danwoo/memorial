@@ -124,7 +124,7 @@ export default function GraphInsightPanel({
                 </button>
                 <button
                   className="cluster-chat-btn"
-                  onClick={() => navigate('/chat', { state: { topic: cluster.summary || cluster.entities[0] } })}
+                  onClick={() => navigate('/journal', { state: { openChat: true, topic: cluster.summary || cluster.entities[0] } })}
                   title="이 주제에 대해 대화하기"
                 >
                   <MessageSquare size={12} />
