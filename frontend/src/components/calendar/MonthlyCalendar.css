@@ -142,58 +142,43 @@
   font-weight: 700;
 }
 
-/* 인디케이터 (도트) */
-.monthly-calendar__indicators {
+.monthly-calendar__chips {
   display: flex;
-  gap: 3px;
-  margin-top: 4px;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  margin-top: 3px;
+  min-width: 0;
 }
 
-.monthly-calendar__dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.monthly-calendar__dot--activity {
-  background-color: var(--text-muted);
-  opacity: 0.5;
-}
-
-/* 활동 배지 */
-.monthly-calendar__badge {
-  position: absolute;
-  top: 2px;
-  right: 2px;
+.monthly-calendar__diary-chip {
   font-size: 0.6rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  line-height: 1;
+  line-height: 1.3;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  color: var(--text-primary);
 }
 
-/* 범례 */
-.monthly-calendar__legend {
+.monthly-calendar__tag-chips {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 16px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-secondary);
+  gap: 2px;
+  flex-wrap: wrap;
 }
 
-.monthly-calendar__legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.75rem;
+.monthly-calendar__tag-chip {
+  font-size: 0.55rem;
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
   color: var(--text-muted);
-}
-
-.monthly-calendar__legend-item .monthly-calendar__dot {
-  width: 8px;
-  height: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /* 반응형 */
@@ -219,16 +204,8 @@
     height: 44px;
   }
 
-  .monthly-calendar__badge {
+  .monthly-calendar__diary-chip,
+  .monthly-calendar__tag-chip {
     display: none;
-  }
-
-  .monthly-calendar__indicators {
-    margin-top: 2px;
-  }
-
-  .monthly-calendar__dot {
-    width: 5px;
-    height: 5px;
   }
 }
