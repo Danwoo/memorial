@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { rehypeSanitize, sanitizeSchema } from '../../utils/markdownSanitize'
@@ -15,13 +14,13 @@ interface SocratesMessageListProps {
   feedbacks: Map<number, 'good' | 'bad'>
   onToggleRefExpand: (idx: number) => void
   onFeedback: (msgIndex: number, rating: 'good' | 'bad') => void
+  onScrapClick?: (scrapId: string) => void
 }
 
 export default function SocratesMessageList({
   messages, expandedRefs, feedbacks,
-  onToggleRefExpand, onFeedback,
+  onToggleRefExpand, onFeedback, onScrapClick,
 }: SocratesMessageListProps) {
-  const navigate = useNavigate()
 
   return (
     <>
@@ -58,7 +57,7 @@ export default function SocratesMessageList({
                             <button
                               key={ref.id}
                               className="socrates-reference-chip"
-                              onClick={() => navigate('/scraps')}
+                              onClick={() => onScrapClick?.(ref.id)}
                               type="button"
                             >
                               <SourceIcon type={ref.source_type} size={14} />

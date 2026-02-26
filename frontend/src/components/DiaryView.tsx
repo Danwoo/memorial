@@ -144,7 +144,7 @@ export default function DiaryView() {
   // Socrates 채팅 훅
   const socratesChat = useSocratesChat({
     mode: 'panel',
-    context: { type: 'diary', content: markdownContent },
+    context: { type: 'diary', content: markdownContent, title: `${selectedDate} 일기` },
   })
 
   // 모바일 탭 전환
@@ -757,6 +757,7 @@ export default function DiaryView() {
               <SocratesPanel
                 chat={socratesChat}
                 className="socrates-panel--panel"
+                onScrapClick={setSelectedScrapId}
               />
             )}
           </div>

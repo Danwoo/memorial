@@ -220,6 +220,7 @@ async def prepare_socrates_context(
     mode: str | None = None,
     user_id: str | None = None,
     turn_count: int = 0,
+    source_context: dict | None = None,
 ) -> tuple[list[BaseMessage], list[dict]]:
     """Socrates용 RAG 컨텍스트가 포함된 LangChain 메시지 리스트 준비.
 
@@ -282,6 +283,7 @@ async def prepare_socrates_context(
         journal_context,
         user_profile,
         connection_context,
+        source_context,
     )
 
     return [SystemMessage(content=system_content), *messages], current_memories
@@ -311,9 +313,31 @@ def _assemble_system_prompt(
     journal_context: str,
     user_profile: dict | None = None,
     connection_context: str = "",
+    source_context: dict | None = None,
 ) -> str:
     """시스템 프롬프트에 RAG 컨텍스트 + 사용자 프로필 섹션을 조합."""
     parts = [SOCRATES_BASE_PROMPT, build_profile_section(user_profile), get_mode_prompt(mode)]
+
+    # 소스 컨텍스트 (현재 작업 화면 정보)
+    if source_context:
+        ctx_type = source_context.get("type", "")
+        ctx_title = source_context.get("title", "")
+        ctx_preview = source_context.get("content_preview", "")
+        ctx_tags = source_context.get("tags", [])
+        ctx_neighbors = source_context.get("graph_neighbors", [])
+
+        section = f"\n\n**현재 사용자 컨텍스트 ({ctx_type}):**"
+        if ctx_title:
+            section += f"\n제목: {ctx_title}"
+        if ctx_preview:
+            section += f"\n내용 미리보기: {ctx_preview[:500]}"
+        if ctx_tags:
+            section += f"\n태그: {', '.join(ctx_tags)}"
+        if ctx_neighbors:
+            neighbor_lines = [f"- {n['name']} ({n['label']}) -- {n['relation_type']}" for n in ctx_neighbors[:10]]
+            section += "\n연결된 노드:\n" + "\n".join(neighbor_lines)
+        section += "\n\n이 맥락을 활용하여 사용자의 현재 작업과 연결된 대화를 진행하세요."
+        parts.append(section)
 
     context_sections = [
         ("검색된 기억", context_memories),

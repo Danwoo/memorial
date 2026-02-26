@@ -60,6 +60,7 @@ class SocratesService:
         user_id: UUID,
         content: str,
         mode: str | None = None,
+        source_context: dict | None = None,
     ) -> AsyncGenerator[str, None]:
         """메시지 전송 후 실시간 SSE 스트리밍으로 AI 응답 반환.
 
@@ -92,6 +93,7 @@ class SocratesService:
                 mode,
                 user_id=str(user_id),
                 turn_count=turn_count,
+                source_context=source_context,
             )
 
             # 이전 세션 컨텍스트가 있으면 시스템 프롬프트에 추가
