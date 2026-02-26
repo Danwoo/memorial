@@ -6,7 +6,7 @@ import { useDemoMode } from '../contexts/DemoContext'
 import type { SocratesMessage, SocratesLocationState, BriefingData, SocratesFeedback, SocratesMessagePayload, SourceContext } from '../types'
 import {
   createSocratesSession, fetchSocratesHistory, sendSocratesMessage, readSSEStream,
-  fetchBriefing, sendFeedback, fetchFeedbacks,
+  fetchBriefing, sendFeedback, fetchFeedbacks, createScrap,
 } from '../api'
 
 const ERROR_MESSAGE = '죄송합니다, 오류가 발생했습니다. 다시 시도해주세요.'
@@ -46,6 +46,8 @@ export interface UseSocratesChatReturn {
   adjustTextareaHeight: () => void
   handleKeyDown: (e: React.KeyboardEvent) => void
   toggleRefExpand: (idx: number) => void
+  setSourceContextOverride: (ctx: SocratesChatContext | null) => void
+  saveMessageAsScrap: (content: string) => void
   hasBriefingContent: boolean
   sendMessageDirect: (text: string) => void
 }
@@ -81,6 +83,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
   const pendingMessageRef = useRef<string | null>(null)
   const handleSendRef = useRef<() => void>(() => {})
   const contextRef = useRef(options.context)
+  const sourceContextOverrideRef = useRef<SocratesChatContext | null>(null)
 
   // URL 파라미터로 진입 시 채팅 히스토리 로드 (standalone 모드만)
   useEffect(() => {
@@ -237,7 +240,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
       }
 
       const payload: SocratesMessagePayload = { content: userMessage }
-      const ctx = contextRef.current
+      const ctx = sourceContextOverrideRef.current || contextRef.current
       if (ctx) {
         const sourceCtx: SourceContext = { type: ctx.type }
         if (ctx.title) sourceCtx.title = ctx.title
@@ -245,6 +248,10 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
         if (ctx.tags) sourceCtx.tags = ctx.tags
         if (ctx.graph_neighbors) sourceCtx.graph_neighbors = ctx.graph_neighbors
         payload.source_context = sourceCtx
+      }
+      // 오버라이드는 첫 메시지에만 적용 후 초기화
+      if (sourceContextOverrideRef.current) {
+        sourceContextOverrideRef.current = null
       }
 
       const response = await sendSocratesMessage(
@@ -317,6 +324,22 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     })
   }, [])
 
+  const setSourceContextOverride = useCallback((ctx: SocratesChatContext | null) => {
+    sourceContextOverrideRef.current = ctx
+  }, [])
+
+  const saveMessageAsScrap = useCallback(async (content: string) => {
+    try {
+      await createScrap({
+        sourceType: 'NOTE',
+        content,
+      })
+      toast.success('스크랩으로 저장했습니다')
+    } catch {
+      toast.error('저장에 실패했습니다')
+    }
+  }, [toast])
+
   const hasBriefingContent = !!(briefing && briefing.today_scraps.count > 0)
 
   return {
@@ -342,5 +365,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     toggleRefExpand,
     hasBriefingContent,
     sendMessageDirect,
+    setSourceContextOverride,
+    saveMessageAsScrap,
   }
 }

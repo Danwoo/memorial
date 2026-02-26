@@ -573,9 +573,38 @@ export default function MindmapView() {
   // 선택된 노드 주제로 채팅 시작
   const handleStartChat = useCallback(
     (node: MindmapNode) => {
-      navigate('/diary', { state: { openSocrates: true, topic: node.name || node.id } })
+      const neighbors = filteredData.links
+        .filter(l => {
+          const sid = typeof l.source === 'object' ? l.source.id : l.source
+          const tid = typeof l.target === 'object' ? l.target.id : l.target
+          return sid === node.id || tid === node.id
+        })
+        .slice(0, 10)
+        .map(l => {
+          const sid = typeof l.source === 'object' ? l.source.id : l.source
+          const tid = typeof l.target === 'object' ? l.target.id : l.target
+          const otherId = sid === node.id ? tid : sid
+          const other = filteredData.nodes.find(n => n.id === otherId)
+          return {
+            name: other?.name || String(otherId),
+            label: other?.label || '',
+            relation_type: l.type || 'RELATED_TO',
+          }
+        })
+
+      navigate('/diary', {
+        state: {
+          openSocrates: true,
+          topic: node.name || node.id,
+          sourceContext: {
+            type: 'mindmap' as const,
+            title: node.name,
+            graph_neighbors: neighbors,
+          },
+        },
+      })
     },
-    [navigate],
+    [navigate, filteredData],
   )
 
   // 선택된 노드의 연결 관계 목록

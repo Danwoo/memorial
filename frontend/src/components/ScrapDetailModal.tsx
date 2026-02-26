@@ -408,7 +408,18 @@ export default function ScrapDetailModal({ scrapId, onClose, onDeleted, onUpdate
                   className="btn-cross-nav"
                   onClick={() => {
                     onClose()
-                    navigate('/diary', { state: { openSocrates: true, topic: detail.title } })
+                    navigate('/diary', {
+                      state: {
+                        openSocrates: true,
+                        topic: detail.title,
+                        sourceContext: {
+                          type: 'scrap' as const,
+                          title: detail.title,
+                          content_preview: (detail.summary || detail.content || '').slice(0, 500),
+                          tags: detail.tags || [],
+                        },
+                      },
+                    })
                   }}
                   type="button"
                 >

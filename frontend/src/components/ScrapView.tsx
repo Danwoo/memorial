@@ -269,6 +269,7 @@ export default function ScrapView() {
               chat={socratesChat}
               className="socrates-panel--panel"
               onScrapClick={setSelectedScrapId}
+              isPanelMode
             />
           </div>
         ) : (
@@ -289,6 +290,7 @@ export default function ScrapView() {
               chat={socratesChat}
               className="socrates-panel--panel"
               onScrapClick={setSelectedScrapId}
+              isPanelMode
             />
           </div>
         )
