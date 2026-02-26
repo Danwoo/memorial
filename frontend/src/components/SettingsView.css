@@ -1,7 +1,5 @@
 .settings-view {
-  padding: var(--space-2xl);
-  max-width: 960px;
-  margin: 0 auto;
+  padding: 24px;
   width: 100%;
   animation: fadeIn var(--transition-normal) ease-out;
 }
@@ -376,7 +374,7 @@
 
 @media (max-width: 640px) {
   .settings-view {
-    padding: var(--space-lg);
+    padding: 16px;
   }
 
   .settings-profile {
