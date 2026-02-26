@@ -193,13 +193,13 @@
 
 /* ── Step 2: 메모리 옵션 ── */
 
-.memory-options {
+.scrap-options {
   display: flex;
   gap: var(--space-sm);
   width: 100%;
 }
 
-.memory-option-card {
+.scrap-option-card {
   flex: 1;
   padding: var(--space-lg) var(--space-md);
   background: var(--bg-tertiary);
@@ -215,18 +215,18 @@
   color: var(--accent-primary);
 }
 
-.memory-option-card:hover {
+.scrap-option-card:hover {
   border-color: var(--accent-primary);
   background: var(--accent-bg);
 }
 
-.memory-option-card h3 {
+.scrap-option-card h3 {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.memory-option-card p {
+.scrap-option-card p {
   font-size: 0.75rem;
   color: var(--text-secondary);
   line-height: 1.4;
@@ -401,7 +401,7 @@
     flex-direction: column;
   }
 
-  .memory-options {
+  .scrap-options {
     flex-direction: column;
   }
 

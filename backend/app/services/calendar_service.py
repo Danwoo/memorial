@@ -64,7 +64,7 @@ class CalendarService:
         if cached is not None:
             return cached
 
-        memories = await self.calendar_repo.get_all_memories(user_id)
+        memories = await self.calendar_repo.get_all_scraps(user_id)
 
         now = datetime.now(UTC)
         week_ago = now - timedelta(days=7)
@@ -130,7 +130,7 @@ class CalendarService:
         now = datetime.now(UTC)
         start_date = now - timedelta(days=days)
 
-        memories = await self.calendar_repo.get_memories_in_range(user_id, start_date, now)
+        memories = await self.calendar_repo.get_scraps_in_range(user_id, start_date, now)
         day_counts = _count_by_day(memories)
         return _build_activity_series(day_counts, now, days)
 
@@ -141,7 +141,7 @@ class CalendarService:
         limit: int = 20,
     ) -> dict[str, Any]:
         """타임라인 뷰용 날짜별 Memory 그룹 조회."""
-        memories = await self.calendar_repo.get_memories_by_date(user_id, page, limit)
+        memories = await self.calendar_repo.get_scraps_by_date(user_id, page, limit)
 
         grouped: dict[str, list] = defaultdict(list)
         for memory in memories:

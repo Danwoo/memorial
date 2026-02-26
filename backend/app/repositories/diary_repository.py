@@ -16,14 +16,14 @@ class DiaryRepository:
     # 공개 비동기 인터페이스
     # ------------------------------------------------------------------
 
-    async def create_journal(
+    async def create_diary(
         self,
         user_id: UUID | None = None,
         content: str = "",
         mood: str | None = None,
         tags: list[str] | None = None,
     ) -> dict[str, Any] | None:
-        """새 저널 항목 생성."""
+        """새 다이어리 항목 생성."""
         data: dict[str, Any] = {
             "content": content,
             "mood": mood,
@@ -38,23 +38,23 @@ class DiaryRepository:
         response = await asyncio.to_thread(self._insert, data)
         return response.data[0] if response.data else None
 
-    async def get_journals(
+    async def get_diaries(
         self,
         user_id: UUID,
         limit: int = 10,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
-        """사용자의 저널 목록 조회."""
+        """사용자의 다이어리 목록 조회."""
         response = await asyncio.to_thread(self._select_by_user, str(user_id), limit, offset)
         return response.data
 
-    async def update_journal(
+    async def update_diary(
         self,
-        journal_id: UUID,
+        diary_id: UUID,
         content: str,
         mood: str | None = None,
     ) -> dict[str, Any] | None:
-        """저널 항목 수정."""
+        """다이어리 항목 수정."""
         data: dict[str, Any] = {
             "content": content,
             "updated_at": datetime.now(UTC).isoformat(),
@@ -62,24 +62,24 @@ class DiaryRepository:
         if mood:
             data["mood"] = mood
 
-        response = await asyncio.to_thread(self._update, str(journal_id), data)
+        response = await asyncio.to_thread(self._update, str(diary_id), data)
         return response.data[0] if response.data else None
 
-    async def get_journal_dates(
+    async def get_diary_dates(
         self,
         user_id: UUID,
         limit: int = 90,
     ) -> list[dict[str, Any]]:
-        """저널이 존재하는 날짜 목록 조회 (최근 limit일 기준)."""
+        """다이어리가 존재하는 날짜 목록 조회 (최근 limit일 기준)."""
         response = await asyncio.to_thread(self._select_dates, str(user_id), limit)
         return response.data
 
-    async def get_journals_by_date(
+    async def get_diaries_by_date(
         self,
         user_id: UUID,
         date_str: str,
     ) -> list[dict[str, Any]]:
-        """특정 날짜의 저널 목록 조회 (YYYY-MM-DD 형식)."""
+        """특정 날짜의 다이어리 목록 조회 (YYYY-MM-DD 형식)."""
         response = await asyncio.to_thread(self._select_by_date, str(user_id), date_str)
         return response.data
 
@@ -88,13 +88,13 @@ class DiaryRepository:
         result = await asyncio.to_thread(self._select_all_for_export, str(user_id), limit)
         return result.data or []
 
-    async def get_journals_in_range(
+    async def get_diaries_in_range(
         self,
         user_id: UUID,
         start: datetime,
         end: datetime,
     ) -> list[dict[str, Any]]:
-        """날짜 범위 내 저널 목록 조회."""
+        """날짜 범위 내 다이어리 목록 조회."""
         response = await asyncio.to_thread(
             self._select_range,
             str(user_id),
@@ -161,5 +161,5 @@ class DiaryRepository:
             .execute()
         )
 
-    def _update(self, journal_id: str, data: dict):
-        return self.db.table("diaries").update(data).eq("id", journal_id).execute()
+    def _update(self, diary_id: str, data: dict):
+        return self.db.table("diaries").update(data).eq("id", diary_id).execute()

@@ -20,10 +20,10 @@ class TestDiaryService:
     def mock_journal_repo(self):
         """JournalRepository 목 생성"""
         repo = MagicMock()
-        repo.create_journal = AsyncMock()
-        repo.get_journals = AsyncMock()
-        repo.get_journal_dates = AsyncMock()
-        repo.get_journals_by_date = AsyncMock()
+        repo.create_diary = AsyncMock()
+        repo.get_diaries = AsyncMock()
+        repo.get_diary_dates = AsyncMock()
+        repo.get_diaries_by_date = AsyncMock()
         return repo
 
     @pytest.fixture
@@ -68,19 +68,19 @@ class TestDiaryService:
             "mood": "NEUTRAL",
             "created_at": NOW.isoformat(),
         }
-        mock_journal_repo.create_journal.return_value = expected
+        mock_journal_repo.create_diary.return_value = expected
 
         result = await journal_service.create_entry(USER_ID, "오늘 좋은 하루")
 
         assert result is not None
         assert result["id"] == str(JOURNAL_ID)
-        mock_journal_repo.create_journal.assert_called_once()
+        mock_journal_repo.create_diary.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_create_entry_with_memory_links(self, journal_service, mock_journal_repo, mock_link_repo):
         """저널 생성 시 memory_ids가 있으면 링크 동기화가 호출되는지 확인"""
         expected = {"id": str(JOURNAL_ID), "content": "학습 기록", "mood": "NEUTRAL", "created_at": NOW.isoformat()}
-        mock_journal_repo.create_journal.return_value = expected
+        mock_journal_repo.create_diary.return_value = expected
 
         await journal_service.create_entry(USER_ID, "학습 기록", scrap_ids=[MEM_ID_1, MEM_ID_2])
 
@@ -90,7 +90,7 @@ class TestDiaryService:
     async def test_create_entry_without_memory_links(self, journal_service, mock_journal_repo, mock_link_repo):
         """memory_ids가 없으면 링크 동기화가 호출되지 않는지 확인"""
         expected = {"id": str(JOURNAL_ID), "content": "일반 일기", "mood": "NEUTRAL", "created_at": NOW.isoformat()}
-        mock_journal_repo.create_journal.return_value = expected
+        mock_journal_repo.create_diary.return_value = expected
 
         await journal_service.create_entry(USER_ID, "일반 일기")
 
@@ -104,19 +104,19 @@ class TestDiaryService:
         expected = [
             {"id": str(JOURNAL_ID), "content": "첫 번째 저널", "created_at": NOW.isoformat()},
         ]
-        mock_journal_repo.get_journals.return_value = expected
+        mock_journal_repo.get_diaries.return_value = expected
 
         result = await journal_service.get_entries(USER_ID, limit=10)
 
         assert len(result) == 1
-        mock_journal_repo.get_journals.assert_called_once_with(USER_ID, 10)
+        mock_journal_repo.get_diaries.assert_called_once_with(USER_ID, 10)
 
     # --- 날짜별 조회 테스트 ---
 
     @pytest.mark.asyncio
     async def test_get_journal_dates_aggregation(self, journal_service, mock_journal_repo):
         """같은 날짜의 저널이 count 기준으로 집계되는지 확인"""
-        mock_journal_repo.get_journal_dates.return_value = [
+        mock_journal_repo.get_diary_dates.return_value = [
             {"created_at": "2026-02-20T10:00:00", "mood": "POSITIVE"},
             {"created_at": "2026-02-20T18:00:00", "mood": "NEUTRAL"},
             {"created_at": "2026-02-19T12:00:00", "mood": "NEGATIVE"},
@@ -136,12 +136,12 @@ class TestDiaryService:
         expected = [
             {"id": str(JOURNAL_ID), "content": "오전 저널", "created_at": "2026-02-20T10:00:00"},
         ]
-        mock_journal_repo.get_journals_by_date.return_value = expected
+        mock_journal_repo.get_diaries_by_date.return_value = expected
 
         result = await journal_service.get_diaries_by_date(USER_ID, "2026-02-20")
 
         assert len(result) == 1
-        mock_journal_repo.get_journals_by_date.assert_called_once_with(USER_ID, "2026-02-20")
+        mock_journal_repo.get_diaries_by_date.assert_called_once_with(USER_ID, "2026-02-20")
 
     # --- 인지 왜곡 탐지 테스트 ---
 
