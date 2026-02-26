@@ -25,6 +25,7 @@ from app.repositories.scrap_repository import ScrapRepository
 from app.repositories.socrates_repository import SocratesRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.calendar_service import CalendarService
+from app.services.diary_analysis_service import DiaryAnalysisService
 from app.services.diary_service import DiaryService
 from app.services.digest_service import DigestService
 from app.services.duplicate_service import DuplicateService
@@ -147,12 +148,18 @@ def get_mindmap_insight_service(
 def get_diary_service(
     diary_repo: DiaryRepository = Depends(get_diary_repository),
     mindmap_repo: MindmapRepository = Depends(get_mindmap_repository),
-    vector_repo: VectorRepository = Depends(get_vector_repository),
-    socrates_repo: SocratesRepository = Depends(get_socrates_repository),
     link_repo: DiaryScrapLinkRepository = Depends(get_diary_scrap_link_repository),
 ) -> DiaryService:
     """DiaryService 인스턴스 생성."""
-    return DiaryService(diary_repo, mindmap_repo, vector_repo, socrates_repo, link_repo)
+    return DiaryService(diary_repo, mindmap_repo, link_repo)
+
+
+def get_diary_analysis_service(
+    socrates_repo: SocratesRepository = Depends(get_socrates_repository),
+    vector_repo: VectorRepository = Depends(get_vector_repository),
+) -> DiaryAnalysisService:
+    """DiaryAnalysisService 인스턴스 생성."""
+    return DiaryAnalysisService(socrates_repo, vector_repo)
 
 
 def get_digest_service(

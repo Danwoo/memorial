@@ -6,7 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from app.agents.librarian.graph import librarian_graph
 from app.agents.state import build_librarian_initial_state
 from app.config.auth import get_user_id
-from app.config.dependencies import get_diary_service, get_scrap_service
+from app.config.dependencies import get_diary_analysis_service, get_diary_service, get_scrap_service
 from app.schemas.diary_schema import (
     DiaryCreate,
     DiaryDateInfo,
@@ -19,6 +19,7 @@ from app.schemas.diary_schema import (
     ReviewQuestionsResponse,
     ReviewRequest,
 )
+from app.services.diary_analysis_service import DiaryAnalysisService
 from app.services.diary_service import DiaryService
 from app.services.scrap_service import ScrapService
 
@@ -132,11 +133,11 @@ async def get_diaries_by_date(
 async def get_review_questions(
     request: ReviewRequest,
     user_id: UUID = Depends(get_user_id),
-    diary_service: DiaryService = Depends(get_diary_service),
+    analysis_service: DiaryAnalysisService = Depends(get_diary_analysis_service),
 ):
     """다이어리 내용 기반 소크라테스식 성찰 질문 생성."""
     try:
-        questions = await diary_service.generate_review_questions(request.content)
+        questions = await analysis_service.generate_review_questions(request.content)
         return ReviewQuestionsResponse(questions=questions)
     except Exception:
         logger.exception("Failed to generate review questions")
@@ -147,11 +148,11 @@ async def get_review_questions(
 async def analyze_insights(
     request: ReviewRequest,
     user_id: UUID = Depends(get_user_id),
-    diary_service: DiaryService = Depends(get_diary_service),
+    analysis_service: DiaryAnalysisService = Depends(get_diary_analysis_service),
 ):
     """다이어리 내용의 인지 왜곡 분석 및 피드백 제공."""
     try:
-        insights = diary_service.detect_cognitive_distortions(request.content)
+        insights = analysis_service.detect_cognitive_distortions(request.content)
         return InsightsResponse(**insights)
     except Exception:
         logger.exception("Failed to analyze cognitive distortions")
@@ -162,11 +163,11 @@ async def analyze_insights(
 async def generate_draft(
     request: GenerateDraftRequest,
     user_id: UUID = Depends(get_user_id),
-    diary_service: DiaryService = Depends(get_diary_service),
+    analysis_service: DiaryAnalysisService = Depends(get_diary_analysis_service),
 ):
     """저녁 대화 세션에서 다이어리 초안 생성."""
     try:
-        draft = await diary_service.generate_draft_from_conversation(request.session_id)
+        draft = await analysis_service.generate_draft_from_conversation(request.session_id)
         return GenerateDraftResponse(draft=draft, session_id=request.session_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -182,11 +183,11 @@ async def generate_draft(
 async def get_related_scraps(
     request: ReviewRequest,
     user_id: UUID = Depends(get_user_id),
-    diary_service: DiaryService = Depends(get_diary_service),
+    analysis_service: DiaryAnalysisService = Depends(get_diary_analysis_service),
 ):
     """다이어리 내용과 관련된 스크랩을 벡터 검색으로 조회."""
     try:
-        results = await diary_service.get_related_scraps(user_id, request.content)
+        results = await analysis_service.get_related_scraps(user_id, request.content)
         scraps = [RelatedScrapItem(**m) for m in results]
         return RelatedScrapsResponse(scraps=scraps)
     except Exception:
