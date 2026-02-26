@@ -53,10 +53,10 @@ export default function SocratesEmptyState({ briefing, hasBriefingContent, onSug
       </div>
       {!ctxConfig && hasBriefingContent && briefing && (
         <div className="socrates-empty-briefing">
-          <p>오늘 {briefing.today_scraps.count}개의 스크랩이 쌓였습니다</p>
-          {briefing.today_scraps.topics.length > 0 && (
+          <p>오늘 {briefing.today_scraps?.count}개의 스크랩이 쌓였습니다</p>
+          {(briefing.today_scraps?.topics?.length ?? 0) > 0 && (
             <div className="welcome-stats">
-              {briefing.today_scraps.topics.map((t, i) => (
+              {(briefing.today_scraps?.topics ?? []).map((t, i) => (
                 <span key={i} className="welcome-topic-tag">#{t}</span>
               ))}
             </div>
