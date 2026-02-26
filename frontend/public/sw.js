@@ -1,4 +1,4 @@
-const CACHE_NAME = 'memoir-v1';
+const CACHE_NAME = 'memoir-v2';
 const OFFLINE_URL = '/offline.html';
 
 // 앱 셸 캐시 대상

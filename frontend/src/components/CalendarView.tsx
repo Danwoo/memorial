@@ -91,9 +91,9 @@ export default function CalendarView() {
       try {
         const [briefingData, streakData, statsData, activityData, insightsData, journalDatesData] = await Promise.all([
           fetchBriefing().catch(() => null),
-          fetchStreak(),
-          fetchStats(),
-          fetchActivity(90),
+          fetchStreak().catch(() => null),
+          fetchStats().catch(() => null),
+          fetchActivity(90).catch(() => ({ activity: [] })),
           fetchDailyInsights().catch(() => ({ insights: [] })),
           fetchDiaryDates(90).catch(() => ({ dates: [] })),
         ])
