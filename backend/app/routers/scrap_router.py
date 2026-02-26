@@ -288,7 +288,7 @@ async def get_scrap_diaries(
         rows = await link_repo.get_diaries_by_scrap(scrap_id)
         items = []
         for row in rows:
-            diary_data = row.get("journals")
+            diary_data = row.get("diaries")
             if not diary_data:
                 continue
             content = diary_data.get("content", "")
