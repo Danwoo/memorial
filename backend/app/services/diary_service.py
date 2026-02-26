@@ -4,7 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import before_sleep_log, retry, stop_after_attempt, wait_exponential
 
 from app.config.llm import get_analytical_llm, get_creative_llm, get_tagger_llm
 from app.repositories.diary_repository import DiaryRepository
@@ -117,9 +117,10 @@ class DiaryService:
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=8),
         reraise=True,
+        before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     async def _extract_tags_ai_with_retry(self, content: str) -> list[str]:
-        """내부 재시도 헬퍼 — 예외 전파. rate-limit 등 일시적 오류 시 tenacity가 재시도."""
+        """내부 재시도 헬퍼 — 예외 전파. 일시적 API 오류 시 tenacity가 자동 재시도."""
         llm = get_tagger_llm()
         messages = [
             SystemMessage(content=TAG_EXTRACTION_PROMPT),
