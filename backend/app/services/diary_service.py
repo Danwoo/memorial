@@ -4,6 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config.llm import get_analytical_llm, get_creative_llm, get_tagger_llm
 from app.repositories.diary_repository import DiaryRepository
@@ -112,19 +113,28 @@ class DiaryService:
         self.socrates_repo = socrates_repo
         self.link_repo = link_repo
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=8),
+        reraise=True,
+    )
+    async def _extract_tags_ai_with_retry(self, content: str) -> list[str]:
+        """내부 재시도 헬퍼 — 예외 전파. rate-limit 등 일시적 오류 시 tenacity가 재시도."""
+        llm = get_tagger_llm()
+        messages = [
+            SystemMessage(content=TAG_EXTRACTION_PROMPT),
+            HumanMessage(content=content[:1500]),
+        ]
+        response = await llm.ainvoke(messages)
+        tags = [t.strip() for t in response.content.split(",") if t.strip()]
+        return tags[:3]
+
     async def _extract_tags_ai(self, content: str) -> list[str]:
-        """AI로 다이어리 핵심 키워드 2~3개 추출."""
+        """AI로 다이어리 핵심 키워드 2~3개 추출. rate-limit 대비 최대 3회 재시도."""
         if not content or len(content.strip()) < MIN_CONTENT_LENGTH:
             return []
         try:
-            llm = get_tagger_llm()
-            messages = [
-                SystemMessage(content=TAG_EXTRACTION_PROMPT),
-                HumanMessage(content=content[:1500]),
-            ]
-            response = await llm.ainvoke(messages)
-            tags = [t.strip() for t in response.content.split(",") if t.strip()]
-            return tags[:3]
+            return await self._extract_tags_ai_with_retry(content)
         except Exception:
             logger.exception("AI 태그 추출 실패")
             return []
