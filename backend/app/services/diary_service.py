@@ -1,11 +1,11 @@
+import asyncio
 import logging
-import re
 from typing import Any
 from uuid import UUID
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from app.config.llm import get_analytical_llm, get_creative_llm
+from app.config.llm import get_analytical_llm, get_creative_llm, get_tagger_llm
 from app.repositories.diary_repository import DiaryRepository
 from app.repositories.diary_scrap_link_repository import DiaryScrapLinkRepository
 from app.repositories.mindmap_repository import MindmapRepository
@@ -62,6 +62,10 @@ SENTIMENT_PROMPT = """Classify the overall mood of the following journal entry.
 Respond with exactly one word: POSITIVE, NEGATIVE, or NEUTRAL.
 No explanation needed."""
 
+TAG_EXTRACTION_PROMPT = """다이어리 내용에서 핵심 키워드 2~3개를 추출하세요.
+키워드만 쉼표로 구분해서 반환하세요. (예: 운동, 독서, 프로젝트)
+불필요한 설명 없이 키워드만 반환합니다."""
+
 COGNITIVE_DISTORTION_PATTERNS = {
     "all_or_nothing": {
         "name": "흑백논리 (All-or-Nothing)",
@@ -91,18 +95,6 @@ COGNITIVE_DISTORTION_PATTERNS = {
 }
 
 
-def _extract_preview(content: str | None) -> str | None:
-    """content 첫 줄에서 마크다운 기호 제거 후 20자 반환."""
-    if not content:
-        return None
-    line = content.strip().split("\n")[0]
-    line = re.sub(r"^#+\s*", "", line)
-    line = re.sub(r"\*+", "", line)
-    line = re.sub(r"^[-*]\s*", "", line)
-    line = line.strip()
-    return line[:20] if line else None
-
-
 class DiaryService:
     """다이어리 작성, 감정 분석, 소크라테스 질문, 인지 왜곡 탐지 비즈니스 로직."""
 
@@ -119,6 +111,23 @@ class DiaryService:
         self.vector_repo = vector_repo
         self.socrates_repo = socrates_repo
         self.link_repo = link_repo
+
+    async def _extract_tags_ai(self, content: str) -> list[str]:
+        """AI로 다이어리 핵심 키워드 2~3개 추출."""
+        if not content or len(content.strip()) < MIN_CONTENT_LENGTH:
+            return []
+        try:
+            llm = get_tagger_llm()
+            messages = [
+                SystemMessage(content=TAG_EXTRACTION_PROMPT),
+                HumanMessage(content=content[:1500]),
+            ]
+            response = await llm.ainvoke(messages)
+            tags = [t.strip() for t in response.content.split(",") if t.strip()]
+            return tags[:3]
+        except Exception:
+            logger.exception("AI 태그 추출 실패")
+            return []
 
     async def _analyze_sentiment(self, content: str) -> str:
         """LLM 기반 감정 분석. POSITIVE / NEGATIVE / NEUTRAL 반환."""
@@ -145,9 +154,12 @@ class DiaryService:
         content: str,
         scrap_ids: list[str] | None = None,
     ) -> dict[str, Any] | None:
-        """다이어리 항목 생성 (감정 분석 + 스크랩 링크 동기화 포함)."""
-        mood = await self._analyze_sentiment(content)
-        diary = await self.diary_repo.create_diary(user_id, content, mood=mood)
+        """다이어리 항목 생성 (감정 분석 + AI 태그 추출 + 스크랩 링크 동기화 포함)."""
+        mood, tags = await asyncio.gather(
+            self._analyze_sentiment(content),
+            self._extract_tags_ai(content),
+        )
+        diary = await self.diary_repo.create_diary(user_id, content, mood=mood, tags=tags)
 
         # 스크랩 링크 동기화
         if diary and scrap_ids and self.link_repo:
@@ -174,8 +186,14 @@ class DiaryService:
                     "date": date_str,
                     "count": 0,
                     "mood": e.get("mood"),
-                    "preview": _extract_preview(e.get("content")),
+                    "tags": e.get("tags") or [],
                 }
+            else:
+                # 같은 날 여러 항목: 태그 합산 후 상위 3개 유지
+                existing = date_map[date_str]["tags"]
+                new_tags = e.get("tags") or []
+                merged = list(dict.fromkeys(existing + new_tags))
+                date_map[date_str]["tags"] = merged[:3]
             date_map[date_str]["count"] += 1
         return list(date_map.values())
 

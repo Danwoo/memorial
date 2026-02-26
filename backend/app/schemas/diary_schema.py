@@ -77,7 +77,7 @@ class DiaryDateInfo(BaseModel):
     date: str
     count: int
     mood: str | None = None
-    preview: str | None = None
+    tags: list[str] = []
 
 
 class DiaryDatesResponse(BaseModel):
