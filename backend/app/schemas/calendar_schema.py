@@ -15,6 +15,7 @@ class ActivityData(BaseModel):
 
     date: str
     count: int
+    tags: list[str] = []
 
 
 class SourceCalendarStats(BaseModel):

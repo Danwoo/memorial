@@ -3,7 +3,7 @@
   position: absolute;
   top: 16px;
   right: 20px;
-  width: 300px;
+  width: clamp(260px, 20vw, 340px);
   max-height: calc(100% - 80px);
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
@@ -108,7 +108,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
+  width: clamp(30px, 2.2vw, 42px);
   background: var(--bg-secondary);
   border: 1px solid var(--border-secondary);
   border-radius: 8px;

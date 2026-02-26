@@ -30,7 +30,7 @@
   border-radius: 24px;
   padding: 8px 16px;
   gap: 8px;
-  min-width: 260px;
+  min-width: clamp(200px, 20vw, 300px);
   transition: border-color 0.2s;
 }
 
@@ -122,7 +122,7 @@
 
 .mindmap-empty h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: clamp(1rem, 1.4vw, 1.4rem);
   color: var(--text-primary);
 }
 
@@ -224,7 +224,7 @@
   position: absolute;
   top: 16px;
   right: 20px;
-  width: 280px;
+  width: clamp(240px, 18vw, 320px);
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
   border-radius: 16px;
@@ -267,7 +267,7 @@
   background: none;
   border: none;
   color: var(--text-muted);
-  font-size: 1.5rem;
+  font-size: clamp(1.15rem, 1.8vw, 1.75rem);
   cursor: pointer;
   padding: 0;
   line-height: 1;
@@ -575,8 +575,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: clamp(32px, 2.5vw, 46px);
+  height: clamp(32px, 2.5vw, 46px);
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
   border-radius: 10px;
@@ -600,7 +600,7 @@
   display: flex;
   align-items: center;
   padding: 0 12px;
-  height: 36px;
+  height: clamp(32px, 2.5vw, 46px);
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
   border-radius: 10px;
@@ -715,8 +715,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: clamp(32px, 2.5vw, 46px);
+  height: clamp(32px, 2.5vw, 46px);
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
   border-radius: 10px;

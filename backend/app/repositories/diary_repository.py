@@ -53,6 +53,7 @@ class DiaryRepository:
         diary_id: UUID,
         content: str,
         mood: str | None = None,
+        tags: list[str] | None = None,
     ) -> dict[str, Any] | None:
         """다이어리 항목 수정."""
         data: dict[str, Any] = {
@@ -61,6 +62,8 @@ class DiaryRepository:
         }
         if mood:
             data["mood"] = mood
+        if tags is not None:
+            data["tags"] = tags
 
         response = await asyncio.to_thread(self._update, str(diary_id), data)
         return response.data[0] if response.data else None
@@ -123,7 +126,7 @@ class DiaryRepository:
     def _select_dates(self, user_id: str, limit: int):
         return (
             self.db.table("diaries")
-            .select("id, created_at, mood")
+            .select("id, created_at, mood, tags")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
             .limit(limit)
