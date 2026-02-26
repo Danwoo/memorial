@@ -182,8 +182,8 @@ class TestDiaryAnalysisService:
     # --- 관련 메모리 검색 테스트 ---
 
     @pytest.mark.asyncio
-    async def test_get_related_memories(self, analysis_service_with_vector, mock_vector_repo):
-        """저널 내용 기반 관련 메모리 검색이 정상 동작하는지 확인"""
+    async def test_get_related_scraps(self, analysis_service_with_vector, mock_vector_repo):
+        """저널 내용 기반 관련 스크랩 검색이 정상 동작하는지 확인"""
         mock_vector_repo.similarity_search.return_value = [
             {
                 "id": MEM_ID_1,
@@ -202,7 +202,7 @@ class TestDiaryAnalysisService:
         mock_vector_repo.similarity_search.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_related_memories_short_content(self, analysis_service_with_vector, mock_vector_repo):
+    async def test_get_related_scraps_short_content(self, analysis_service_with_vector, mock_vector_repo):
         """내용이 너무 짧으면 검색을 건너뛰고 빈 리스트 반환"""
         result = await analysis_service_with_vector.get_related_scraps(USER_ID, "짧")
 
