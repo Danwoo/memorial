@@ -3,7 +3,11 @@
   border: 1px solid var(--border-secondary);
   border-radius: 16px;
   padding: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* 월 네비게이션 */
@@ -75,7 +79,10 @@
 .monthly-calendar__grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 1fr;
   gap: 2px;
+  flex: 1;
+  min-height: 0;
 }
 
 .monthly-calendar__cell {
@@ -84,7 +91,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  min-height: 72px;
+  min-height: 0;
   padding: 8px 2px 6px;
   border: 1px solid transparent;
   border-radius: 10px;
@@ -193,6 +200,8 @@
 @media (max-width: 767px) {
   .monthly-calendar {
     padding: 16px 12px;
+    flex: none;
+    display: block;
   }
 
   .monthly-calendar__cell {
