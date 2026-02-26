@@ -48,8 +48,8 @@ class BotSettingsResponse(BaseModel):
 
     enabled: bool = False
     delivery_hour: int = 21
-    include_memories: bool = True
-    include_journals: bool = True
+    include_scraps: bool = True
+    include_diaries: bool = True
     include_insights: bool = True
     last_delivery: DeliveryLogEntry | None = None
 
@@ -59,8 +59,8 @@ class BotSettingsUpdateRequest(BaseModel):
 
     enabled: bool | None = None
     delivery_hour: int | None = None
-    include_memories: bool | None = None
-    include_journals: bool | None = None
+    include_scraps: bool | None = None
+    include_diaries: bool | None = None
     include_insights: bool | None = None
 
     @field_validator("delivery_hour")

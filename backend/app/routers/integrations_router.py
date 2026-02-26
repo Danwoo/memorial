@@ -152,8 +152,8 @@ async def get_bot_settings(
             response = BotSettingsResponse(
                 enabled=data["enabled"],
                 delivery_hour=data["delivery_hour"],
-                include_memories=data["include_memories"],
-                include_journals=data["include_journals"],
+                include_scraps=data["include_scraps"],
+                include_diaries=data["include_diaries"],
                 include_insights=data["include_insights"],
             )
         else:

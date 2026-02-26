@@ -32,11 +32,11 @@ export default function ReportTab({ report, loading }: ReportTabProps) {
         <p className="report-summary">{report.llm_summary}</p>
         <div className="report-stats-row">
           <div className="report-stat">
-            <span className="report-stat-num">{report.total_memories}</span>
+            <span className="report-stat-num">{report.total_scraps}</span>
             <span className="report-stat-label">스크랩</span>
           </div>
           <div className="report-stat">
-            <span className="report-stat-num">{report.total_journals}</span>
+            <span className="report-stat-num">{report.total_diaries}</span>
             <span className="report-stat-label">다이어리</span>
           </div>
           <div className="report-stat">

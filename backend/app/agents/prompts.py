@@ -115,8 +115,8 @@ def build_profile_section(profile: dict | None) -> str:
     if profile.get("recent_topics"):
         topics = ", ".join(profile["recent_topics"])
         lines.append(f"- 최근 탐구 주제: {topics}")
-    if profile.get("memory_count"):
-        lines.append(f"- 저장된 기억: {profile['memory_count']}개")
+    if profile.get("scrap_count"):
+        lines.append(f"- 저장된 스크랩: {profile['scrap_count']}개")
     if profile.get("active_days"):
         lines.append(f"- 활동 기간: {profile['active_days']}일")
 
