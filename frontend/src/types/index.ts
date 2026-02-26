@@ -13,6 +13,7 @@ export type {
 export type {
   SocratesReference,
   SocratesMessage,
+  SourceContext,
   SocratesMessagePayload,
   SocratesStreamChunk,
   SocratesSessionResponse,

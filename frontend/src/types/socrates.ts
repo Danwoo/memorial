@@ -11,8 +11,18 @@ export interface SocratesMessage {
   references?: SocratesReference[]
 }
 
+export interface SourceContext {
+  type: 'diary' | 'scrap' | 'mindmap'
+  title?: string
+  content_preview?: string
+  tags?: string[]
+  graph_neighbors?: Array<{ name: string; label: string; relation_type: string }>
+}
+
 export interface SocratesMessagePayload {
   content: string
+  mode?: string
+  source_context?: SourceContext
 }
 
 export interface SocratesStreamChunk {

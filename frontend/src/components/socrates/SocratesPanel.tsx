@@ -9,9 +9,10 @@ interface SocratesPanelProps {
   chat: UseSocratesChatReturn
   showHeader?: boolean
   className?: string
+  onScrapClick?: (scrapId: string) => void
 }
 
-export default function SocratesPanel({ chat, showHeader = false, className = '' }: SocratesPanelProps) {
+export default function SocratesPanel({ chat, showHeader = false, className = '', onScrapClick }: SocratesPanelProps) {
   const {
     messages, input, setInput, isLoading, isLoadingHistory,
     briefing, expandedRefs, feedbacks, showScrollBtn, hasBriefingContent,
@@ -56,6 +57,7 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
               feedbacks={feedbacks}
               onToggleRefExpand={toggleRefExpand}
               onFeedback={handleFeedback}
+              onScrapClick={onScrapClick}
             />
           )}
           <div ref={messagesEndRef} />

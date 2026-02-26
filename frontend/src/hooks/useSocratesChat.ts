@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useSocratesSession } from '../contexts/SocratesSessionContext'
 import { useToast } from '../contexts/ToastContext'
 import { useDemoMode } from '../contexts/DemoContext'
-import type { SocratesMessage, SocratesLocationState, BriefingData, SocratesFeedback } from '../types'
+import type { SocratesMessage, SocratesLocationState, BriefingData, SocratesFeedback, SocratesMessagePayload, SourceContext } from '../types'
 import {
   createSocratesSession, fetchSocratesHistory, sendSocratesMessage, readSSEStream,
   fetchBriefing, sendFeedback, fetchFeedbacks,
@@ -11,9 +11,17 @@ import {
 
 const ERROR_MESSAGE = '죄송합니다, 오류가 발생했습니다. 다시 시도해주세요.'
 
+export interface SocratesChatContext {
+  type: 'diary' | 'scrap' | 'mindmap'
+  content?: string
+  title?: string
+  tags?: string[]
+  graph_neighbors?: Array<{ name: string; label: string; relation_type: string }>
+}
+
 export interface UseSocratesChatOptions {
   mode: 'standalone' | 'panel'
-  context?: { type: 'diary' | 'scrap'; content?: string }
+  context?: SocratesChatContext
   initialMessage?: string
 }
 
@@ -72,6 +80,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingMessageRef = useRef<string | null>(null)
   const handleSendRef = useRef<() => void>(() => {})
+  const contextRef = useRef(options.context)
 
   // URL 파라미터로 진입 시 채팅 히스토리 로드 (standalone 모드만)
   useEffect(() => {
@@ -124,6 +133,11 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options.initialMessage])
+
+  // context 최신 상태 동기화
+  useEffect(() => {
+    contextRef.current = options.context
+  }, [options.context])
 
   // 마운트 시 브리핑 로드
   useEffect(() => {
@@ -222,9 +236,20 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
         }
       }
 
+      const payload: SocratesMessagePayload = { content: userMessage }
+      const ctx = contextRef.current
+      if (ctx) {
+        const sourceCtx: SourceContext = { type: ctx.type }
+        if (ctx.title) sourceCtx.title = ctx.title
+        if (ctx.content) sourceCtx.content_preview = ctx.content.slice(0, 500)
+        if (ctx.tags) sourceCtx.tags = ctx.tags
+        if (ctx.graph_neighbors) sourceCtx.graph_neighbors = ctx.graph_neighbors
+        payload.source_context = sourceCtx
+      }
+
       const response = await sendSocratesMessage(
         currentSessionId,
-        { content: userMessage },
+        payload,
         abortController.signal,
       )
 
