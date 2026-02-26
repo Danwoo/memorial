@@ -8,6 +8,7 @@ export interface OverviewStats {
 export interface ActivityData {
   date: string
   count: number
+  tags?: string[]
 }
 
 export interface SourceStats {

@@ -1,8 +1,10 @@
 .calendar-view {
-  padding: 32px 32px;
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 24px;
   width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* ── 온보딩 슬라이드 위자드 ── */
@@ -88,8 +90,8 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
+  width: clamp(32px, 2.5vw, 46px);
+  height: clamp(32px, 2.5vw, 46px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -258,16 +260,21 @@
 .calendar-main-container {
   display: flex;
   position: relative;
+  flex: 1;
+  min-height: 0;
 }
 
 .calendar-main-main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   transition: margin-right 0.3s ease;
 }
 
 .calendar-main-container--panel-open .calendar-main-main {
-  margin-right: 380px;
+  margin-right: clamp(320px, 25vw, 440px);
 }
 
 .calendar-main-main .monthly-calendar {
@@ -339,7 +346,7 @@
 }
 
 .report-stat-num {
-  font-size: 1.5rem;
+  font-size: clamp(1.15rem, 1.8vw, 1.75rem);
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -605,6 +612,8 @@
 @media (max-width: 767px) {
   .calendar-view {
     padding: 20px 16px;
+    flex: none;
+    display: block;
   }
 
   .calendar-banner {
