@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react'
-import type { UseSocratesChatReturn } from '../../hooks/useSocratesChat'
+import type { UseSocratesChatReturn, SocratesChatContext } from '../../hooks/useSocratesChat'
 import SocratesEmptyState from './SocratesEmptyState'
 import SocratesMessageList from './SocratesMessageList'
 import SocratesModeSelector from './SocratesModeSelector'
@@ -13,9 +13,10 @@ interface SocratesPanelProps {
   onScrapClick?: (scrapId: string) => void
   onInsertToDiary?: (content: string) => void
   isPanelMode?: boolean
+  context?: SocratesChatContext
 }
 
-export default function SocratesPanel({ chat, showHeader = false, className = '', onScrapClick, onInsertToDiary, isPanelMode = false }: SocratesPanelProps) {
+export default function SocratesPanel({ chat, showHeader = false, className = '', onScrapClick, onInsertToDiary, isPanelMode = false, context }: SocratesPanelProps) {
   const {
     messages, input, setInput, isLoading, isLoadingHistory,
     briefing, expandedRefs, feedbacks, showScrollBtn, hasBriefingContent,
@@ -53,6 +54,7 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
               briefing={briefing}
               hasBriefingContent={hasBriefingContent}
               onSuggestedQuestion={sendMessageDirect}
+              context={context}
             />
           ) : (
             <SocratesMessageList

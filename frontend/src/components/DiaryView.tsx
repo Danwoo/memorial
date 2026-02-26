@@ -778,6 +778,7 @@ export default function DiaryView() {
                 onScrapClick={setSelectedScrapId}
                 onInsertToDiary={handleInsertFromSocrates}
                 isPanelMode
+                context={{ type: 'diary' }}
               />
             )}
           </div>
