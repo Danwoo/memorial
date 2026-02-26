@@ -160,6 +160,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setSession(null)
   }, [syncTokenToStorage])
 
+  // 401 토큰 만료 이벤트 수신 → 자동 로그아웃
+  useEffect(() => {
+    const handleTokenExpired = () => {
+      signOut()
+    }
+    window.addEventListener('auth:token-expired', handleTokenExpired)
+    return () => {
+      window.removeEventListener('auth:token-expired', handleTokenExpired)
+    }
+  }, [signOut])
+
   // ── 소셜 계정 연결/해제 ─────────────────────────────────────────────
 
   const linkProvider = useCallback(async (provider: 'google' | 'kakao') => {
