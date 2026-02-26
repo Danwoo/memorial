@@ -7,11 +7,11 @@ from uuid import UUID
 from app.repositories.calendar_repository import CalendarRepository
 from app.schemas.calendar_schema import (
     ActivityData,
+    CalendarOverview,
     CalendarOverviewResponse,
-    OverviewStats,
-    SourceStats,
-    StreakResponse,
-    TagStats,
+    CalendarStreakResponse,
+    SourceCalendarStats,
+    TagCalendarStats,
     TimelineGroup,
 )
 from app.utils import parse_iso_datetime
@@ -95,8 +95,8 @@ class CalendarService:
         day_counts = _count_by_day(memories)
         most_active_day = max(day_counts, key=day_counts.get) if day_counts else None
 
-        overview = OverviewStats(
-            total_memories=total,
+        overview = CalendarOverview(
+            total_scraps=total,
             total_this_week=weekly_count,
             total_this_month=monthly_count,
             most_active_day=most_active_day,
@@ -105,12 +105,12 @@ class CalendarService:
         recent_activity = _build_activity_series(day_counts, now, OVERVIEW_ACTIVITY_DAYS)
 
         sources = [
-            SourceStats(source_type=st, count=cnt, percentage=cnt / total * 100 if total > 0 else 0)
+            SourceCalendarStats(source_type=st, count=cnt, percentage=cnt / total * 100 if total > 0 else 0)
             for st, cnt in source_counts.items()
         ]
 
         sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)[:TOP_TAGS_LIMIT]
-        top_tags = [TagStats(tag=tag, count=cnt) for tag, cnt in sorted_tags]
+        top_tags = [TagCalendarStats(tag=tag, count=cnt) for tag, cnt in sorted_tags]
 
         result = CalendarOverviewResponse(
             overview=overview,
@@ -154,11 +154,11 @@ class CalendarService:
             except (ValueError, TypeError):
                 pass
 
-        timeline = [TimelineGroup(date=date, memories=mems) for date, mems in sorted(grouped.items(), reverse=True)]
+        timeline = [TimelineGroup(date=date, scraps=mems) for date, mems in sorted(grouped.items(), reverse=True)]
 
         return {"page": page, "limit": limit, "timeline": timeline, "has_more": len(memories) == limit}
 
-    async def get_streak(self, user_id: UUID) -> StreakResponse:
+    async def get_streak(self, user_id: UUID) -> CalendarStreakResponse:
         """활동 스트릭 계산 (메모리 + 저널 기준 연속 활동일, 5분 TTL 캐시)."""
         cache_key = f"user:{user_id}:streak"
         cached = stats_cache.get(cache_key)
@@ -167,7 +167,7 @@ class CalendarService:
 
         active_dates = await self.calendar_repo.get_all_active_dates(user_id)
         if not active_dates:
-            return StreakResponse(current_streak=0, longest_streak=0, total_active_days=0)
+            return CalendarStreakResponse(current_streak=0, longest_streak=0, total_active_days=0)
 
         sorted_dates = sorted(active_dates, reverse=True)
         today = datetime.now(UTC).strftime("%Y-%m-%d")
@@ -195,7 +195,7 @@ class CalendarService:
             longest_streak = max(longest_streak, streak)
             prev_date = d
 
-        result = StreakResponse(
+        result = CalendarStreakResponse(
             current_streak=current_streak,
             longest_streak=longest_streak,
             total_active_days=len(active_dates),
