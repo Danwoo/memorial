@@ -270,6 +270,7 @@ export default function ScrapView() {
               className="socrates-panel--panel"
               onScrapClick={setSelectedScrapId}
               isPanelMode
+              context={{ type: 'scrap' }}
             />
           </div>
         ) : (
@@ -291,6 +292,7 @@ export default function ScrapView() {
               className="socrates-panel--panel"
               onScrapClick={setSelectedScrapId}
               isPanelMode
+              context={{ type: 'scrap' }}
             />
           </div>
         )
