@@ -360,8 +360,8 @@ export const DEMO_DIGEST: DigestData = {
 export const DEMO_WEEKLY_REPORT: ReportData = {
   period: 'weekly',
   date_range: '2026-02-15 ~ 2026-02-21',
-  total_memories: 5,
-  total_journals: 4,
+  total_scraps: 5,
+  total_diaries: 4,
   topic_distribution: [
     { topic: 'AI/딥러닝', count: 3, percentage: 30 },
     { topic: '철학/심리학', count: 3, percentage: 30 },
@@ -385,8 +385,8 @@ export const DEMO_WEEKLY_REPORT: ReportData = {
 export const DEMO_MONTHLY_REPORT: ReportData = {
   period: 'monthly',
   date_range: '2026-02-01 ~ 2026-02-21',
-  total_memories: 18,
-  total_journals: 7,
+  total_scraps: 18,
+  total_diaries: 7,
   topic_distribution: [
     { topic: 'AI/딥러닝', count: 6, percentage: 33 },
     { topic: '철학/심리학', count: 4, percentage: 22 },

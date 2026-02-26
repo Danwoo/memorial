@@ -22,8 +22,8 @@ class ReportResponse(BaseModel):
 
     period: str
     date_range: str
-    total_memories: int
-    total_journals: int
+    total_scraps: int
+    total_diaries: int
     topic_distribution: list[TopicDistribution]
     source_distribution: list[SourceDistribution]
     llm_summary: str

@@ -258,9 +258,9 @@ class TestSearchService:
     async def test_get_related_memories_excludes_self(self, search_service, mock_memory_repo, mock_vector_repo):
         """관련 메모리 조회 시 자기 자신이 제외되는지 확인"""
         # Arrange
-        from app.schemas.memory_schema import MemoryInDB
+        from app.schemas.scrap_schema import ScrapInDB
 
-        source_memory = MemoryInDB(
+        source_memory = ScrapInDB(
             id=UUID(MEM_ID_1),
             user_id=USER_ID,
             title="원본",
@@ -278,7 +278,7 @@ class TestSearchService:
         ]
 
         # Act
-        related = await search_service.get_related_memories(USER_ID, MEM_ID_1, limit=5)
+        related = await search_service.get_related_scraps(USER_ID, MEM_ID_1, limit=5)
 
         # Assert — 자기 자신(MEM_ID_1)은 제외
         ids = [r["id"] for r in related]
@@ -290,6 +290,6 @@ class TestSearchService:
         """존재하지 않는 메모리의 관련 문서 조회 시 빈 리스트 반환"""
         mock_memory_repo.get_by_id.return_value = None
 
-        related = await search_service.get_related_memories(USER_ID, MEM_ID_1)
+        related = await search_service.get_related_scraps(USER_ID, MEM_ID_1)
 
         assert related == []

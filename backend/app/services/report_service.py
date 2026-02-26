@@ -48,7 +48,7 @@ class ReportService:
         start_date_str = start.strftime("%Y-%m-%d")
 
         memories = await self.calendar_repo.get_memories_in_range(user_id, start, now)
-        journal_count = await self._count_journals(user_id, start, now)
+        diary_count = await self._count_journals(user_id, start, now)
 
         # 주제 분포 (태그 기반)
         tag_counter: Counter[str] = Counter()
@@ -82,17 +82,17 @@ class ReportService:
                     titles,
                     tag_counter,
                     total,
-                    journal_count,
+                    diary_count,
                 )
             except Exception:
                 logger.warning("LLM 리포트 요약 생성 실패", exc_info=True)
-                llm_summary = f"지난 {days}일 동안 {total}개의 메모리와 {journal_count}개의 저널을 기록했습니다."
+                llm_summary = f"지난 {days}일 동안 {total}개의 스크랩과 {diary_count}개의 다이어리를 기록했습니다."
 
         return ReportResponse(
             period=period,
             date_range=f"{start_date_str} ~ {end_date_str}",
-            total_memories=total,
-            total_journals=journal_count,
+            total_scraps=total,
+            total_diaries=diary_count,
             topic_distribution=topic_dist,
             source_distribution=source_dist,
             llm_summary=llm_summary,
@@ -111,8 +111,8 @@ class ReportService:
         period: str,
         titles: list[str],
         tag_counter: Counter,
-        total_memories: int,
-        total_journals: int,
+        total_scraps: int,
+        total_diaries: int,
     ) -> tuple[str, list[str]]:
         llm = get_analytical_llm()
         period_kr = "주간" if period == "weekly" else "월간"
@@ -124,10 +124,10 @@ class ReportService:
 
 데이터:
 - 기간: {period_kr}
-- 저장된 메모리: {total_memories}개
-- 작성한 저널: {total_journals}개
+- 저장된 스크랩: {total_scraps}개
+- 작성한 다이어리: {total_diaries}개
 - 주요 주제: {top_tags}
-- 메모리 제목 예시:
+- 스크랩 제목 예시:
 {title_sample}
 
 다음 형식으로 작성하세요:
