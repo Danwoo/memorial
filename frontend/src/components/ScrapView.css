@@ -34,8 +34,8 @@
 
 /* ── Socrates 사이드 패널 (데스크톱) ── */
 .scrap-socrates-side {
-  width: 360px;
-  min-width: 360px;
+  width: clamp(300px, 24vw, 420px);
+  min-width: clamp(300px, 24vw, 420px);
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--border-secondary);
@@ -61,8 +61,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: clamp(26px, 2vw, 36px);
+  height: clamp(26px, 2vw, 36px);
   border: none;
   border-radius: var(--radius-sm);
   background: none;
@@ -128,7 +128,7 @@
 }
 
 .scrap-header h1 {
-  font-size: 1.5rem;
+  font-size: clamp(1.15rem, 1.8vw, 1.75rem);
   font-weight: 600;
 }
 
@@ -154,7 +154,7 @@
   border-bottom: 2px solid transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 0.95vw, 0.975rem);
   font-weight: 500;
   transition: all var(--transition-fast);
 }
@@ -209,8 +209,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: clamp(26px, 2vw, 36px);
+  height: clamp(26px, 2vw, 36px);
   border: none;
   border-radius: var(--radius-sm);
   background: none;

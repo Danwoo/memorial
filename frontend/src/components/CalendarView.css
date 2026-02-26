@@ -90,8 +90,8 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
+  width: clamp(32px, 2.5vw, 46px);
+  height: clamp(32px, 2.5vw, 46px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -274,7 +274,7 @@
 }
 
 .calendar-main-container--panel-open .calendar-main-main {
-  margin-right: 380px;
+  margin-right: clamp(320px, 25vw, 440px);
 }
 
 .calendar-main-main .monthly-calendar {
@@ -346,7 +346,7 @@
 }
 
 .report-stat-num {
-  font-size: 1.5rem;
+  font-size: clamp(1.15rem, 1.8vw, 1.75rem);
   font-weight: 700;
   color: var(--text-primary);
 }

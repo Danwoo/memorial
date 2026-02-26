@@ -3,7 +3,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 360px;
+  width: clamp(300px, 24vw, 420px);
   height: 100vh;
   background: var(--bg-card);
   border-left: 1px solid var(--border-secondary);
@@ -77,8 +77,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: clamp(30px, 2.2vw, 42px);
+  height: clamp(30px, 2.2vw, 42px);
   border: 1px solid var(--border-secondary);
   border-radius: 8px;
   background: var(--bg-secondary);
