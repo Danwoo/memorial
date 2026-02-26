@@ -245,6 +245,7 @@ export default function DiaryView() {
       openSocrates?: boolean
       topic?: string
       initialMessage?: string
+      sourceContext?: import('../types').SourceContext
     } | null
     if (!state) return
     if (state.date) {
@@ -254,6 +255,9 @@ export default function DiaryView() {
       setRightTab('socrates')
       setRightCollapsed(false)
       if (isMobile) setMobileTab('ai')
+      if (state.sourceContext) {
+        socratesChat.setSourceContextOverride(state.sourceContext as import('../hooks/useSocratesChat').SocratesChatContext)
+      }
       if (state.topic) {
         socratesChat.sendMessageDirect(
           `${state.topic}에 대해 이야기하고 싶어. 내가 저장한 관련 지식을 바탕으로 대화해줘.`,
@@ -447,6 +451,20 @@ export default function DiaryView() {
       setMarkdownContent((prev) => prev + `\n> Q: ${question}\n\n`)
     }
   }, [editorMode])
+
+  // 소크라테스 대화 내용 → 에디터에 인용 블록 삽입
+  const handleInsertFromSocrates = useCallback((content: string) => {
+    const escaped = content.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    if (editorMode === 'wysiwyg' && editorRef.current) {
+      editorRef.current.setContent(
+        editorRef.current.getHTML() + `<blockquote><p>${escaped}</p><p><em>— Socrates 대화에서</em></p></blockquote><p></p>`,
+      )
+    } else {
+      const quoted = content.split('\n').map(line => `> ${line}`).join('\n')
+      setMarkdownContent((prev) => prev + `\n${quoted}\n> *— Socrates 대화에서*\n\n`)
+    }
+    toast.success('일기에 삽입했습니다')
+  }, [editorMode, toast])
 
   // 드래그 앤 드롭 메모리 삽입
   const handleEditorDrop = useCallback((e: React.DragEvent) => {
@@ -758,6 +776,8 @@ export default function DiaryView() {
                 chat={socratesChat}
                 className="socrates-panel--panel"
                 onScrapClick={setSelectedScrapId}
+                onInsertToDiary={handleInsertFromSocrates}
+                isPanelMode
               />
             )}
           </div>

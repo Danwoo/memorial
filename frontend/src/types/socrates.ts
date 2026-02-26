@@ -43,6 +43,8 @@ export interface SocratesLocationState {
   newSession?: boolean
   topic?: string
   initialMessage?: string
+  openSocrates?: boolean
+  sourceContext?: SourceContext
 }
 
 export interface SocratesFeedback {

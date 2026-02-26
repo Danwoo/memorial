@@ -10,16 +10,18 @@ interface SocratesPanelProps {
   showHeader?: boolean
   className?: string
   onScrapClick?: (scrapId: string) => void
+  onInsertToDiary?: (content: string) => void
+  isPanelMode?: boolean
 }
 
-export default function SocratesPanel({ chat, showHeader = false, className = '', onScrapClick }: SocratesPanelProps) {
+export default function SocratesPanel({ chat, showHeader = false, className = '', onScrapClick, onInsertToDiary, isPanelMode = false }: SocratesPanelProps) {
   const {
     messages, input, setInput, isLoading, isLoadingHistory,
     briefing, expandedRefs, feedbacks, showScrollBtn, hasBriefingContent,
     messagesEndRef, messagesContainerRef, textareaRef,
     handleSendMessage, handleFeedback, scrollToBottom,
     handleMessagesScroll, adjustTextareaHeight, handleKeyDown,
-    toggleRefExpand, sendMessageDirect,
+    toggleRefExpand, sendMessageDirect, saveMessageAsScrap,
   } = chat
 
   return (
@@ -58,6 +60,9 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
               onToggleRefExpand={toggleRefExpand}
               onFeedback={handleFeedback}
               onScrapClick={onScrapClick}
+              onSaveAsScrap={saveMessageAsScrap}
+              onInsertToDiary={onInsertToDiary}
+              isPanelMode={isPanelMode}
             />
           )}
           <div ref={messagesEndRef} />
