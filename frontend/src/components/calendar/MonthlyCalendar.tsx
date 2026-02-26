@@ -43,12 +43,12 @@ function toDateStr(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
-/** 무드 → 칩 배경색 */
-function getMoodBg(mood: string | null): string {
+/** 무드 → 다이어리 칩 배경색 */
+function getMoodBg(mood: string | null | undefined): string {
   switch (mood) {
-    case 'POSITIVE': return 'rgba(34,197,94,0.15)'
-    case 'NEGATIVE': return 'rgba(239,68,68,0.15)'
-    case 'MIXED':    return 'rgba(234,179,8,0.15)'
+    case 'POSITIVE': return 'rgba(34,197,94,0.18)'
+    case 'NEGATIVE': return 'rgba(239,68,68,0.18)'
+    case 'MIXED':    return 'rgba(234,179,8,0.18)'
     default:         return 'var(--accent-bg)'
   }
 }
@@ -155,14 +155,15 @@ export default function MonthlyCalendar({
             >
               <span className="monthly-calendar__day">{day}</span>
               <div className="monthly-calendar__chips">
-                {journal?.preview && (
+                {journal?.tags?.slice(0, 2).map(tag => (
                   <span
+                    key={tag}
                     className="monthly-calendar__diary-chip"
                     style={{ backgroundColor: getMoodBg(journal.mood) }}
                   >
-                    {journal.preview}
+                    {tag}
                   </span>
-                )}
+                ))}
                 <div className="monthly-calendar__tag-chips">
                   {activity?.tags?.slice(0, 2).map(tag => (
                     <span key={tag} className="monthly-calendar__tag-chip">
