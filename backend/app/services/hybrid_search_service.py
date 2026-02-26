@@ -2,8 +2,8 @@ import logging
 from typing import Any
 from uuid import UUID
 
-from app.repositories.graph_repository import GraphRepository
-from app.repositories.memory_repository import MemoryRepository
+from app.repositories.mindmap_repository import MindmapRepository
+from app.repositories.scrap_repository import ScrapRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.korean_tokenizer import tokenize, tokens_to_tsvector_input
 
@@ -31,12 +31,12 @@ class HybridSearchService:
     def __init__(
         self,
         vector_repo: VectorRepository,
-        graph_repo: GraphRepository | None = None,
-        memory_repo: MemoryRepository | None = None,
+        mindmap_repo: MindmapRepository | None = None,
+        scrap_repo: ScrapRepository | None = None,
     ):
         self.vector_repo = vector_repo
-        self.graph_repo = graph_repo
-        self.memory_repo = memory_repo
+        self.mindmap_repo = mindmap_repo
+        self.scrap_repo = scrap_repo
 
     async def search(
         self,
@@ -58,7 +58,7 @@ class HybridSearchService:
             enable_graph: graph 검색 활성화 여부
 
         Returns:
-            RRF 점수 기준 정렬된 메모리 리스트
+            RRF 점수 기준 정렬된 스크랩 리스트
         """
         user_id_str = str(user_id)
 
@@ -75,7 +75,7 @@ class HybridSearchService:
 
         # 3. Graph-based search
         graph_results = []
-        if enable_graph and self.graph_repo:
+        if enable_graph and self.mindmap_repo:
             graph_results = await self._graph_search(query, user_id_str)
 
         logger.info(
@@ -127,14 +127,14 @@ class HybridSearchService:
             return []
 
     async def _graph_search(self, query: str, user_id: str) -> list[dict[str, Any]]:
-        """Graph-based search 실행. 엔티티 이름 매칭 → 메모리 역탐색."""
+        """Graph-based search 실행. 엔티티 이름 매칭 → 스크랩 역탐색."""
         try:
-            results = await self.graph_repo.search_memories_via_graph(
+            results = await self.mindmap_repo.search_scraps_via_graph(
                 query=query,
                 user_id=user_id,
                 limit=DEFAULT_GRAPH_LIMIT,
             )
-            return [{"id": r.get("memory_id", ""), "graph_score": r.get("graph_score", 0)} for r in results]
+            return [{"id": r.get("scrap_id", ""), "graph_score": r.get("graph_score", 0)} for r in results]
         except Exception:
             logger.exception("Graph search 실패")
             return []
@@ -213,8 +213,8 @@ class HybridSearchService:
         user_id: str,
         limit: int,
     ) -> list[dict[str, Any]]:
-        """RRF 결과에 메모리 상세 정보 보강. graph-only 결과는 DB 조회 필요."""
-        if not self.memory_repo:
+        """RRF 결과에 스크랩 상세 정보 보강. graph-only 결과는 DB 조회 필요."""
+        if not self.scrap_repo:
             return fused[:limit]
 
         enriched = []
@@ -226,17 +226,17 @@ class HybridSearchService:
 
             # graph-only 결과: DB에서 조회
             try:
-                memory = await self.memory_repo.get_by_id(UUID(item["id"]), UUID(user_id))
-                if memory:
+                scrap = await self.scrap_repo.get_by_id(UUID(item["id"]), UUID(user_id))
+                if scrap:
                     enriched.append(
                         {
                             **item,
-                            "title": memory.title,
-                            "content": memory.content,
-                            "summary": memory.summary,
-                            "source_type": memory.source_type,
-                            "created_at": memory.created_at.isoformat() if memory.created_at else None,
-                            "tags": memory.tags,
+                            "title": scrap.title,
+                            "content": scrap.content,
+                            "summary": scrap.summary,
+                            "source_type": scrap.source_type,
+                            "created_at": scrap.created_at.isoformat() if scrap.created_at else None,
+                            "tags": scrap.tags,
                         }
                     )
                 else:

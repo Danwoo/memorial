@@ -1,0 +1,694 @@
+.socrates-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.socrates-header {
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--border-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.socrates-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.socrates-subtitle {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-top: var(--space-xs);
+}
+
+.socrates-messages-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.socrates-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  max-width: 768px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.socrates-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.socrates-empty h2 {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-sm);
+}
+
+/* 빈 채팅 브랜딩 */
+.socrates-empty-branding {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+}
+
+.socrates-empty-icon {
+  color: var(--accent-primary);
+  opacity: 0.8;
+  margin-bottom: var(--space-sm);
+}
+
+.socrates-empty-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.socrates-empty-tagline {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.socrates-empty-briefing {
+  margin-bottom: var(--space-md);
+  text-align: center;
+}
+
+.socrates-empty-briefing p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+/* 환영 배너 */
+.welcome-banner {
+  position: relative;
+  max-width: 400px;
+  padding: var(--space-lg);
+  margin-bottom: var(--space-xl);
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.welcome-banner-close {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+}
+
+.welcome-banner-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.welcome-banner-icon {
+  color: var(--accent-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.welcome-banner h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.welcome-banner p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-md);
+}
+
+.welcome-banner-cta {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.welcome-banner-cta:hover {
+  opacity: 0.9;
+}
+
+.welcome-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.welcome-stats-dot {
+  color: var(--text-muted);
+}
+
+.welcome-topic-tag {
+  font-size: 0.8rem;
+  color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.suggested-questions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+  max-width: 600px;
+  justify-content: center;
+}
+
+.suggested-q {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+
+.suggested-q:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  background: var(--accent-bg);
+}
+
+.message {
+  display: flex;
+  gap: var(--space-md);
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message.user {
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.message.user .message-avatar {
+  background: var(--accent-bg);
+  color: var(--accent-primary);
+}
+
+.message.assistant .message-avatar {
+  background: var(--bg-surface-raised);
+  color: var(--text-secondary);
+}
+
+.message-content {
+  max-width: 70%;
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.message.user .message-content {
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  white-space: pre-wrap;
+}
+
+/* 어시스턴트 메시지 내 마크다운 스타일 */
+
+.message.assistant .message-content p {
+  margin: 0 0 0.5em 0;
+}
+
+.message.assistant .message-content p:last-child {
+  margin-bottom: 0;
+}
+
+.message.assistant .message-content ul,
+.message.assistant .message-content ol {
+  margin: 0.25em 0 0.5em 1.25em;
+  padding: 0;
+}
+
+.message.assistant .message-content li {
+  margin-bottom: 0.2em;
+}
+
+.message.assistant .message-content code {
+  background: var(--bg-surface-raised);
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+  font-size: 0.875em;
+}
+
+.message.assistant .message-content pre {
+  background: var(--bg-surface-raised);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+
+.message.assistant .message-content pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.85em;
+}
+
+.message.assistant .message-content blockquote {
+  border-left: 3px solid var(--accent-primary);
+  margin: 0.5em 0;
+  padding: 0.25em 0 0.25em 1em;
+  color: var(--text-secondary);
+}
+
+.message.assistant .message-content h1,
+.message.assistant .message-content h2,
+.message.assistant .message-content h3 {
+  margin: 0.75em 0 0.25em 0;
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.message.assistant .message-content table {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  font-size: 0.875em;
+}
+
+.message.assistant .message-content th,
+.message.assistant .message-content td {
+  border: 1px solid var(--border-secondary);
+  padding: 0.35em 0.75em;
+}
+
+.message.assistant .message-content th {
+  background: var(--bg-surface-raised);
+  font-weight: 600;
+}
+
+.message.assistant .message-content strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.typing-indicator {
+  opacity: 0.5;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* 타이핑 인디케이터 (bouncing dots) */
+.typing-indicator-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+.typing-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.socrates-input-container {
+  padding: var(--space-lg);
+  border-top: 1px solid var(--border-secondary);
+  background: var(--bg-secondary);
+}
+
+/* 입력 영역도 메시지(.socrates-messages)와 동일 폭 제한 */
+.socrates-input-container .socrates-input-wrapper {
+  max-width: 768px;
+  margin: 0 auto;
+}
+
+.socrates-input-wrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: 24px;
+  padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.socrates-input-wrapper:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.socrates-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  padding: var(--space-sm);
+  resize: none;
+  max-height: 200px;
+  overflow-y: auto;
+  line-height: 1.5;
+  font-family: inherit;
+}
+
+.socrates-input:focus {
+  outline: none;
+}
+
+.socrates-input::placeholder {
+  color: var(--text-muted);
+}
+
+.send-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  border: none;
+  color: var(--bg-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.send-button:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.send-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.send-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* 맨 아래로 스크롤 버튼 */
+.socrates-scroll-bottom-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 24px;
+  z-index: 5;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: all var(--transition-fast);
+  animation: fadeIn 0.15s ease;
+}
+
+.socrates-scroll-bottom-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateY(-2px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 모바일 반응형 */
+@media (max-width: 767px) {
+  .socrates-header {
+    padding: var(--space-md);
+  }
+
+  .socrates-header h1 {
+    font-size: 1.15rem;
+  }
+
+  .socrates-messages {
+    padding: var(--space-md);
+  }
+
+  .message-content {
+    max-width: 85%;
+  }
+
+  .socrates-input-container {
+    padding: var(--space-sm) var(--space-md);
+    padding-bottom: calc(var(--space-sm) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .welcome-banner {
+    max-width: 100%;
+  }
+
+  .suggested-questions {
+    max-width: 100%;
+  }
+
+  /* 모바일 새 대화 버튼 */
+  .socrates-new-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .socrates-new-btn:hover {
+    background: var(--bg-tertiary);
+  }
+
+  /* 스크롤 버튼 위치 조정 */
+  .socrates-scroll-bottom-btn {
+    right: 16px;
+    bottom: 12px;
+  }
+}
+
+/* 참조 메모리 섹션 */
+.socrates-references {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent-primary);
+}
+
+.socrates-references-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--accent-primary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+
+.socrates-references-toggle:hover {
+  color: var(--accent-primary-hover);
+}
+
+.socrates-references-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0 4px;
+}
+
+.socrates-references-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.socrates-reference-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  max-width: 280px;
+}
+
+.socrates-reference-chip:hover {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.socrates-reference-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.socrates-reference-date {
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.socrates-feedback-buttons {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.message.assistant:hover .socrates-feedback-buttons,
+.socrates-feedback-buttons:has(.active) {
+  opacity: 1;
+}
+
+.socrates-feedback-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.socrates-feedback-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.socrates-feedback-btn.active {
+  color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.socrates-feedback-btn.active.bad {
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.1);
+}

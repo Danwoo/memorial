@@ -23,16 +23,16 @@ class SearchResponse(BaseModel):
     filters_applied: dict
 
 
-class RelatedMemory(BaseModel):
-    """관련 메모리 추천 항목."""
+class RelatedScrap(BaseModel):
+    """관련 스크랩 추천 항목."""
 
     id: str
     title: str
     similarity: float
 
 
-class RelatedMemoriesResponse(BaseModel):
-    """관련 메모리 응답."""
+class RelatedScrapsResponse(BaseModel):
+    """관련 스크랩 응답."""
 
     source_id: str
-    related: list[RelatedMemory]
+    related: list[RelatedScrap]

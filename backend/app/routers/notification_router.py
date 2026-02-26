@@ -105,9 +105,9 @@ async def trigger_nudge(
 
     notif_repo, _, _ = _get_repos()
     messages = {
-        "evening_review": ("오늘의 회고", "테스트: 오늘의 기억을 돌아보세요.", "/journal"),
-        "weekly_summary": ("주간 요약", "테스트: 이번 주 활동을 확인하세요.", "/dashboard"),
-        "connection_found": ("기억 연결 발견", "테스트: 새로운 연결이 발견되었습니다.", "/graph"),
+        "evening_review": ("오늘의 회고", "테스트: 오늘의 기억을 돌아보세요.", "/diary"),
+        "weekly_summary": ("주간 요약", "테스트: 이번 주 활동을 확인하세요.", "/calendar"),
+        "connection_found": ("기억 연결 발견", "테스트: 새로운 연결이 발견되었습니다.", "/mindmap"),
     }
     title, body, url = messages[nudge_type]
     sent = await _send_nudge_to_user(

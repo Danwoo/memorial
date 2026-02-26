@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BookOpen, MessageCircle, PenTool, Globe, FileText, ChevronRight, Check, Sparkles, X } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
-import { createMemory } from '../api'
+import { createScrap } from '../api'
 import './OnboardingWizard.css'
 
 const TOTAL_STEPS = 3
@@ -37,9 +37,9 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
     setIsSaving(true)
     try {
       if (inputMode === 'url') {
-        await createMemory({ sourceType: 'WEB', url: inputValue.trim() })
+        await createScrap({ sourceType: 'WEB', url: inputValue.trim() })
       } else {
-        await createMemory({ sourceType: 'NOTE', content: inputValue.trim() })
+        await createScrap({ sourceType: 'NOTE', content: inputValue.trim() })
       }
       setMemoryAdded(true)
       toast.success('첫 번째 기억이 저장되었습니다!')
@@ -52,7 +52,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
 
   const handleQuestionClick = useCallback((question: string) => {
     onComplete()
-    navigate('/journal', { state: { openChat: true, initialMessage: question } })
+    navigate('/diary', { state: { openSocrates: true, initialMessage: question } })
   }, [onComplete, navigate])
 
   return (

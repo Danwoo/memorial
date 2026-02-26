@@ -15,5 +15,5 @@ export function fetchTimeline(page: number, limit = 20): Promise<TimelineData> {
       has_more: start + limit < DEMO_TIMELINE.length,
     })
   }
-  return get<TimelineData>(`/stats/timeline?page=${page}&limit=${limit}`)
+  return get<TimelineData>(`/calendar/timeline?page=${page}&limit=${limit}`)
 }

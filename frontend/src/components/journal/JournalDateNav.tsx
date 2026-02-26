@@ -28,9 +28,9 @@ export function JournalDateNav({
   onToggleDatePicker,
 }: JournalDateNavProps) {
   return (
-    <div className="journal-date-nav">
+    <div className="diary-date-nav">
       <button
-        className="journal-date-nav__btn"
+        className="diary-date-nav__btn"
         onClick={() => onDateChange(shiftDate(currentDate, -1))}
         type="button"
         aria-label="이전 날짜"
@@ -38,15 +38,15 @@ export function JournalDateNav({
         <ChevronLeft size={18} />
       </button>
       <button
-        className="journal-date-nav__current"
+        className="diary-date-nav__current"
         onClick={onToggleDatePicker}
         type="button"
       >
         <Calendar size={14} />
-        <span>{isToday ? '오늘의 저널' : formatDateKo(currentDate)}</span>
+        <span>{isToday ? '오늘의 다이어리' : formatDateKo(currentDate)}</span>
       </button>
       <button
-        className="journal-date-nav__btn"
+        className="diary-date-nav__btn"
         onClick={() => onDateChange(shiftDate(currentDate, 1))}
         disabled={currentDate >= todayStr}
         type="button"
@@ -56,7 +56,7 @@ export function JournalDateNav({
       </button>
       {!isToday && (
         <button
-          className="journal-date-nav__today"
+          className="diary-date-nav__today"
           onClick={() => onDateChange(todayStr)}
           type="button"
         >

@@ -4,8 +4,8 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from app.config.llm import get_analytical_llm
-from app.repositories.memory_repository import MemoryRepository
-from app.repositories.stats_repository import StatsRepository
+from app.repositories.calendar_repository import CalendarRepository
+from app.repositories.scrap_repository import ScrapRepository
 from app.schemas.report_schema import ReportResponse, SourceDistribution, TopicDistribution
 from app.utils.cache import report_cache
 
@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 class ReportService:
     """주간/월간 AI 리포트 생성 서비스."""
 
-    def __init__(self, stats_repo: StatsRepository, memory_repo: MemoryRepository):
-        self.stats_repo = stats_repo
-        self.memory_repo = memory_repo
+    def __init__(self, calendar_repo: CalendarRepository, scrap_repo: ScrapRepository):
+        self.calendar_repo = calendar_repo
+        self.scrap_repo = scrap_repo
 
     async def get_weekly_report(self, user_id: UUID) -> ReportResponse:
         """최근 7일 AI 리포트."""
@@ -47,7 +47,7 @@ class ReportService:
         end_date_str = now.strftime("%Y-%m-%d")
         start_date_str = start.strftime("%Y-%m-%d")
 
-        memories = await self.stats_repo.get_memories_in_range(user_id, start, now)
+        memories = await self.calendar_repo.get_memories_in_range(user_id, start, now)
         journal_count = await self._count_journals(user_id, start, now)
 
         # 주제 분포 (태그 기반)
@@ -102,7 +102,7 @@ class ReportService:
     async def _count_journals(self, user_id: UUID, start: datetime, end: datetime) -> int:
         """기간 내 저널 수 조회."""
         try:
-            return await self.stats_repo.count_journals_in_range(user_id, start, end)
+            return await self.calendar_repo.count_journals_in_range(user_id, start, end)
         except Exception:
             return 0
 

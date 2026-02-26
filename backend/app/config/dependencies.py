@@ -4,6 +4,12 @@ from fastapi import Depends
 from supabase import Client
 
 from app.config.database import get_supabase_client
+from app.repositories.calendar_repository import CalendarRepository
+from app.repositories.diary_repository import DiaryRepository
+from app.repositories.diary_scrap_link_repository import DiaryScrapLinkRepository
+from app.repositories.mindmap_repository import MindmapRepository
+from app.repositories.notification_repository import NotificationRepository
+from app.repositories.scrap_repository import ScrapRepository
 
 # ─── DI 구조 설명 ──────────────────────────────────────────────────────────
 # FastAPI의 Depends 시스템을 활용한 의존성 주입 컨테이너.
@@ -13,33 +19,27 @@ from app.config.database import get_supabase_client
 #
 # 각 팩토리 함수는 FastAPI 라우터에서 Depends()로 주입됨.
 # Repository는 DB 클라이언트를 받고, Service는 Repository를 받는 구조.
-# GraphRepository만 @lru_cache로 싱글톤 관리 (KuzuDB 초기화 비용 절감).
+# MindmapRepository만 @lru_cache로 싱글톤 관리 (KuzuDB 초기화 비용 절감).
 # ────────────────────────────────────────────────────────────────────────────
 # --- Repositories ---
-from app.repositories.chat_repository import ChatRepository
-from app.repositories.graph_repository import GraphRepository
-from app.repositories.journal_memory_link_repository import JournalMemoryLinkRepository
-from app.repositories.journal_repository import JournalRepository
-from app.repositories.memory_repository import MemoryRepository
-from app.repositories.notification_repository import NotificationRepository
-from app.repositories.stats_repository import StatsRepository
+from app.repositories.socrates_repository import SocratesRepository
 from app.repositories.vector_repository import VectorRepository
-
-# --- Services ---
-from app.services.chat_service import ChatService
+from app.services.calendar_service import CalendarService
+from app.services.diary_service import DiaryService
 from app.services.digest_service import DigestService
 from app.services.duplicate_service import DuplicateService
 from app.services.export_service import ExportService
-from app.services.graph_insight_service import GraphInsightService
-from app.services.graph_service import GraphService
 from app.services.hybrid_search_service import HybridSearchService
 from app.services.insight_service import InsightService
-from app.services.journal_service import JournalService
 from app.services.kakao_channel_service import KakaoChannelService
-from app.services.memory_service import MemoryService
+from app.services.mindmap_insight_service import MindmapInsightService
+from app.services.mindmap_service import MindmapService
 from app.services.report_service import ReportService
+from app.services.scrap_service import ScrapService
 from app.services.search_service import SearchService
-from app.services.stats_service import StatsService
+
+# --- Services ---
+from app.services.socrates_service import SocratesService
 
 
 # --- DB Client ---
@@ -49,9 +49,9 @@ def get_db() -> Client:
 
 
 # --- Repository Factories ---
-def get_memory_repository(db: Client = Depends(get_db)) -> MemoryRepository:
-    """MemoryRepository 인스턴스 생성."""
-    return MemoryRepository(db)
+def get_scrap_repository(db: Client = Depends(get_db)) -> ScrapRepository:
+    """ScrapRepository 인스턴스 생성."""
+    return ScrapRepository(db)
 
 
 def get_vector_repository(db: Client = Depends(get_db)) -> VectorRepository:
@@ -60,150 +60,150 @@ def get_vector_repository(db: Client = Depends(get_db)) -> VectorRepository:
 
 
 @lru_cache
-def get_graph_repository() -> GraphRepository:
-    """GraphRepository 싱글톤 반환 (KuzuDB 초기화 비용 절감)."""
-    return GraphRepository()
+def get_mindmap_repository() -> MindmapRepository:
+    """MindmapRepository 싱글톤 반환 (KuzuDB 초기화 비용 절감)."""
+    return MindmapRepository()
 
 
-def get_chat_repository(db: Client = Depends(get_db)) -> ChatRepository:
-    """ChatRepository 인스턴스 생성."""
-    return ChatRepository(db)
+def get_socrates_repository(db: Client = Depends(get_db)) -> SocratesRepository:
+    """SocratesRepository 인스턴스 생성."""
+    return SocratesRepository(db)
 
 
-def get_stats_repository(db: Client = Depends(get_db)) -> StatsRepository:
-    """StatsRepository 인스턴스 생성."""
-    return StatsRepository(db)
+def get_calendar_repository(db: Client = Depends(get_db)) -> CalendarRepository:
+    """CalendarRepository 인스턴스 생성."""
+    return CalendarRepository(db)
 
 
-def get_journal_repository(db: Client = Depends(get_db)) -> JournalRepository:
-    """JournalRepository 인스턴스 생성."""
-    return JournalRepository(db)
+def get_diary_repository(db: Client = Depends(get_db)) -> DiaryRepository:
+    """DiaryRepository 인스턴스 생성."""
+    return DiaryRepository(db)
 
 
-def get_journal_memory_link_repository(db: Client = Depends(get_db)) -> JournalMemoryLinkRepository:
-    """JournalMemoryLinkRepository 인스턴스 생성."""
-    return JournalMemoryLinkRepository(db)
+def get_diary_scrap_link_repository(db: Client = Depends(get_db)) -> DiaryScrapLinkRepository:
+    """DiaryScrapLinkRepository 인스턴스 생성."""
+    return DiaryScrapLinkRepository(db)
 
 
 # --- Service Factories ---
-def get_memory_service(
-    memory_repo: MemoryRepository = Depends(get_memory_repository),
+def get_scrap_service(
+    scrap_repo: ScrapRepository = Depends(get_scrap_repository),
     vector_repo: VectorRepository = Depends(get_vector_repository),
-    graph_repo: GraphRepository = Depends(get_graph_repository),
-) -> MemoryService:
-    """MemoryService 인스턴스 생성."""
-    return MemoryService(memory_repo, vector_repo, graph_repo)
+    mindmap_repo: MindmapRepository = Depends(get_mindmap_repository),
+) -> ScrapService:
+    """ScrapService 인스턴스 생성."""
+    return ScrapService(scrap_repo, vector_repo, mindmap_repo)
 
 
-def get_chat_service(
-    chat_repo: ChatRepository = Depends(get_chat_repository),
-) -> ChatService:
-    """ChatService 인스턴스 생성."""
-    return ChatService(chat_repo)
+def get_socrates_service(
+    socrates_repo: SocratesRepository = Depends(get_socrates_repository),
+) -> SocratesService:
+    """SocratesService 인스턴스 생성."""
+    return SocratesService(socrates_repo)
 
 
 def get_hybrid_search_service(
     vector_repo: VectorRepository = Depends(get_vector_repository),
-    graph_repo: GraphRepository = Depends(get_graph_repository),
-    memory_repo: MemoryRepository = Depends(get_memory_repository),
+    mindmap_repo: MindmapRepository = Depends(get_mindmap_repository),
+    scrap_repo: ScrapRepository = Depends(get_scrap_repository),
 ) -> HybridSearchService:
     """HybridSearchService 인스턴스 생성."""
-    return HybridSearchService(vector_repo, graph_repo, memory_repo)
+    return HybridSearchService(vector_repo, mindmap_repo, scrap_repo)
 
 
 def get_search_service(
     vector_repo: VectorRepository = Depends(get_vector_repository),
-    memory_repo: MemoryRepository = Depends(get_memory_repository),
-    graph_repo: GraphRepository = Depends(get_graph_repository),
+    scrap_repo: ScrapRepository = Depends(get_scrap_repository),
+    mindmap_repo: MindmapRepository = Depends(get_mindmap_repository),
     hybrid_search: HybridSearchService = Depends(get_hybrid_search_service),
 ) -> SearchService:
     """SearchService 인스턴스 생성."""
-    return SearchService(vector_repo, memory_repo, graph_repo, hybrid_search=hybrid_search)
+    return SearchService(vector_repo, scrap_repo, mindmap_repo, hybrid_search=hybrid_search)
 
 
-def get_stats_service(
-    stats_repo: StatsRepository = Depends(get_stats_repository),
-) -> StatsService:
-    """StatsService 인스턴스 생성."""
-    return StatsService(stats_repo)
+def get_calendar_service(
+    calendar_repo: CalendarRepository = Depends(get_calendar_repository),
+) -> CalendarService:
+    """CalendarService 인스턴스 생성."""
+    return CalendarService(calendar_repo)
 
 
-def get_graph_service(
-    graph_repo: GraphRepository = Depends(get_graph_repository),
-    memory_repo: MemoryRepository = Depends(get_memory_repository),
-) -> GraphService:
-    """GraphService 인스턴스 생성."""
-    return GraphService(graph_repo, memory_repo)
+def get_mindmap_service(
+    mindmap_repo: MindmapRepository = Depends(get_mindmap_repository),
+    scrap_repo: ScrapRepository = Depends(get_scrap_repository),
+) -> MindmapService:
+    """MindmapService 인스턴스 생성."""
+    return MindmapService(mindmap_repo, scrap_repo)
 
 
-def get_graph_insight_service(
-    graph_repo: GraphRepository = Depends(get_graph_repository),
-    stats_repo: StatsRepository = Depends(get_stats_repository),
-) -> GraphInsightService:
-    """GraphInsightService 인스턴스 생성."""
-    return GraphInsightService(graph_repo, stats_repo)
+def get_mindmap_insight_service(
+    mindmap_repo: MindmapRepository = Depends(get_mindmap_repository),
+    calendar_repo: CalendarRepository = Depends(get_calendar_repository),
+) -> MindmapInsightService:
+    """MindmapInsightService 인스턴스 생성."""
+    return MindmapInsightService(mindmap_repo, calendar_repo)
 
 
-def get_journal_service(
-    journal_repo: JournalRepository = Depends(get_journal_repository),
-    graph_repo: GraphRepository = Depends(get_graph_repository),
+def get_diary_service(
+    diary_repo: DiaryRepository = Depends(get_diary_repository),
+    mindmap_repo: MindmapRepository = Depends(get_mindmap_repository),
     vector_repo: VectorRepository = Depends(get_vector_repository),
-    chat_repo: ChatRepository = Depends(get_chat_repository),
-    link_repo: JournalMemoryLinkRepository = Depends(get_journal_memory_link_repository),
-) -> JournalService:
-    """JournalService 인스턴스 생성."""
-    return JournalService(journal_repo, graph_repo, vector_repo, chat_repo, link_repo)
+    socrates_repo: SocratesRepository = Depends(get_socrates_repository),
+    link_repo: DiaryScrapLinkRepository = Depends(get_diary_scrap_link_repository),
+) -> DiaryService:
+    """DiaryService 인스턴스 생성."""
+    return DiaryService(diary_repo, mindmap_repo, vector_repo, socrates_repo, link_repo)
 
 
 def get_digest_service(
-    memory_repo: MemoryRepository = Depends(get_memory_repository),
-    journal_repo: JournalRepository = Depends(get_journal_repository),
-    chat_repo: ChatRepository = Depends(get_chat_repository),
+    scrap_repo: ScrapRepository = Depends(get_scrap_repository),
+    diary_repo: DiaryRepository = Depends(get_diary_repository),
+    socrates_repo: SocratesRepository = Depends(get_socrates_repository),
 ) -> DigestService:
     """DigestService 인스턴스 생성."""
-    return DigestService(memory_repo, journal_repo, chat_repo)
+    return DigestService(scrap_repo, diary_repo, socrates_repo)
 
 
 def get_kakao_channel_service(
     db: Client = Depends(get_db),
-    memory_service: MemoryService = Depends(get_memory_service),
+    scrap_service: ScrapService = Depends(get_scrap_service),
 ) -> KakaoChannelService:
     """KakaoChannelService 인스턴스 생성."""
-    return KakaoChannelService(db, memory_service)
+    return KakaoChannelService(db, scrap_service)
 
 
 def get_export_service(
-    memory_repo: MemoryRepository = Depends(get_memory_repository),
-    journal_repo: JournalRepository = Depends(get_journal_repository),
-    chat_repo: ChatRepository = Depends(get_chat_repository),
+    scrap_repo: ScrapRepository = Depends(get_scrap_repository),
+    diary_repo: DiaryRepository = Depends(get_diary_repository),
+    socrates_repo: SocratesRepository = Depends(get_socrates_repository),
 ) -> ExportService:
     """ExportService 인스턴스 생성."""
-    return ExportService(memory_repo, journal_repo, chat_repo)
+    return ExportService(scrap_repo, diary_repo, socrates_repo)
 
 
 def get_insight_service(
-    stats_repo: StatsRepository = Depends(get_stats_repository),
-    graph_repo: GraphRepository = Depends(get_graph_repository),
-    journal_repo: JournalRepository = Depends(get_journal_repository),
+    calendar_repo: CalendarRepository = Depends(get_calendar_repository),
+    mindmap_repo: MindmapRepository = Depends(get_mindmap_repository),
+    diary_repo: DiaryRepository = Depends(get_diary_repository),
 ) -> InsightService:
     """InsightService 인스턴스 생성."""
-    return InsightService(stats_repo, graph_repo, journal_repo)
+    return InsightService(calendar_repo, mindmap_repo, diary_repo)
 
 
 def get_report_service(
-    stats_repo: StatsRepository = Depends(get_stats_repository),
-    memory_repo: MemoryRepository = Depends(get_memory_repository),
+    calendar_repo: CalendarRepository = Depends(get_calendar_repository),
+    scrap_repo: ScrapRepository = Depends(get_scrap_repository),
 ) -> ReportService:
     """ReportService 인스턴스 생성."""
-    return ReportService(stats_repo, memory_repo)
+    return ReportService(calendar_repo, scrap_repo)
 
 
 def get_duplicate_service(
-    memory_repo: MemoryRepository = Depends(get_memory_repository),
+    scrap_repo: ScrapRepository = Depends(get_scrap_repository),
     vector_repo: VectorRepository = Depends(get_vector_repository),
 ) -> DuplicateService:
     """DuplicateService 인스턴스 생성."""
-    return DuplicateService(memory_repo, vector_repo)
+    return DuplicateService(scrap_repo, vector_repo)
 
 
 def get_notification_repository(

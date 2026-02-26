@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.config.auth import get_user_id
 from app.config.dependencies import get_search_service
-from app.schemas.search_schema import RelatedMemory, SearchResponse, SearchResult
+from app.schemas.search_schema import RelatedScrap, SearchResponse, SearchResult
 from app.services.search_service import SearchService
 
 router = APIRouter(prefix="/search", tags=["search"])
@@ -42,13 +42,13 @@ async def advanced_search(
     )
 
 
-@router.get("/related/{memory_id}", response_model=list[RelatedMemory])
-async def get_related_memories(
-    memory_id: str,
+@router.get("/related/{scrap_id}", response_model=list[RelatedScrap])
+async def get_related_scraps(
+    scrap_id: str,
     limit: int = Query(5, ge=1, le=20),
     user_id: UUID = Depends(get_user_id),
     search_service: SearchService = Depends(get_search_service),
 ):
-    """특정 메모리와 관련된 메모리 목록 조회."""
-    related = await search_service.get_related_memories(user_id, memory_id, limit)
-    return [RelatedMemory(**r) for r in related]
+    """특정 스크랩과 관련된 스크랩 목록 조회."""
+    related = await search_service.get_related_scraps(user_id, scrap_id, limit)
+    return [RelatedScrap(**r) for r in related]

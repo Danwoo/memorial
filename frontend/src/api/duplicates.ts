@@ -11,8 +11,8 @@ export interface DuplicatePairItem {
 }
 
 export interface DuplicatePair {
-  memory_a: DuplicatePairItem
-  memory_b: DuplicatePairItem
+  scrap_a: DuplicatePairItem
+  scrap_b: DuplicatePairItem
   similarity: number
   reason: string
 }
@@ -29,12 +29,12 @@ export interface MergeResponse {
 
 export function fetchDuplicates(): Promise<DuplicatesResponse> {
   if (isDemoMode()) return Promise.resolve({ pairs: [], total: 0 })
-  return get<DuplicatesResponse>('/memories/duplicates')
+  return get<DuplicatesResponse>('/scraps/duplicates')
 }
 
-export function mergeMemories(keepId: string, mergeId: string): Promise<MergeResponse> {
+export function mergeScraps(keepId: string, mergeId: string): Promise<MergeResponse> {
   if (isDemoMode()) return Promise.reject(new Error('데모 모드에서는 병합할 수 없습니다.'))
-  return post<MergeResponse>('/memories/duplicates/merge', {
+  return post<MergeResponse>('/scraps/duplicates/merge', {
     keep_id: keepId,
     merge_id: mergeId,
   })

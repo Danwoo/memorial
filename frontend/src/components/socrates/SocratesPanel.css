@@ -1,0 +1,51 @@
+/* SocratesPanel — 재사용 채팅 UI (standalone + panel 모드) */
+
+.socrates-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.socrates-panel__header {
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.socrates-panel__header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.socrates-panel__header p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+}
+
+.socrates-panel__messages-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 패널 모드에서의 조정 */
+.socrates-panel--panel .socrates-messages {
+  max-width: 100%;
+}
+
+.socrates-panel--panel .socrates-input-container {
+  padding: var(--space-sm) var(--space-md);
+}
+
+.socrates-panel--panel .socrates-input-wrapper {
+  border-radius: 16px;
+}
+
+.socrates-panel--panel .message-content {
+  max-width: 90%;
+}

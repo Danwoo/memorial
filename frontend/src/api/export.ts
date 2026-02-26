@@ -13,14 +13,14 @@ async function downloadFile(path: string, filename: string): Promise<void> {
   URL.revokeObjectURL(url)
 }
 
-export async function exportMemories(): Promise<void> {
+export async function exportScraps(): Promise<void> {
   if (isDemoMode()) return
-  await downloadFile('/export/memories', 'memoir_memories.json')
+  await downloadFile('/export/scraps', 'memoir_scraps.json')
 }
 
-export async function exportJournals(): Promise<void> {
+export async function exportDiaries(): Promise<void> {
   if (isDemoMode()) return
-  await downloadFile('/export/journals', 'memoir_journals.zip')
+  await downloadFile('/export/diaries', 'memoir_diaries.zip')
 }
 
 export async function exportAll(): Promise<void> {
@@ -29,11 +29,11 @@ export async function exportAll(): Promise<void> {
 }
 
 export interface ExportCounts {
-  memories: number
-  journals: number
+  scraps: number
+  diaries: number
 }
 
 export async function fetchExportCounts(): Promise<ExportCounts> {
-  if (isDemoMode()) return { memories: 10, journals: 7 }
+  if (isDemoMode()) return { scraps: 10, diaries: 7 }
   return get<ExportCounts>('/export/counts')
 }

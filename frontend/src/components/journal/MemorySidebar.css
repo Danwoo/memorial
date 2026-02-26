@@ -248,7 +248,7 @@
 
 /* ─── 데스크톱 collapsed 상태 ────────────────────────────── */
 
-.journal-view--left-collapsed .memory-sidebar {
+.diary-view--left-collapsed .memory-sidebar {
   width: 0;
   min-width: 0;
   overflow: hidden;

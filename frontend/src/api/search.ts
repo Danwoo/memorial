@@ -1,7 +1,7 @@
 import { get } from './client'
-import type { SearchResult, SearchResponse, RelatedMemory } from '../types'
+import type { SearchResult, SearchResponse, RelatedScrap } from '../types'
 import { isDemoMode } from '../contexts/DemoContext'
-import { DEMO_MEMORIES } from '../data/demo-data'
+import { DEMO_SCRAPS } from '../data/demo-data'
 
 interface SearchParams {
   q: string
@@ -10,11 +10,11 @@ interface SearchParams {
   days?: string
 }
 
-// 저장된 메모리에 대한 시맨틱 검색 수행
-export function searchMemories(params: SearchParams): Promise<SearchResponse<SearchResult>> {
+// 저장된 스크랩에 대한 시맨틱 검색 수행
+export function searchScraps(params: SearchParams): Promise<SearchResponse<SearchResult>> {
   if (isDemoMode()) {
     const q = params.q.toLowerCase()
-    const results: SearchResult[] = DEMO_MEMORIES
+    const results: SearchResult[] = DEMO_SCRAPS
       .filter(m => m.title.toLowerCase().includes(q) || (m.summary ?? '').toLowerCase().includes(q))
       .map(m => ({
         id: m.id,
@@ -42,11 +42,11 @@ export function searchMemories(params: SearchParams): Promise<SearchResponse<Sea
   return get<SearchResponse<SearchResult>>(`/search?${query}`)
 }
 
-// 특정 메모리와 관련된 메모리 목록 조회
-export function fetchRelatedMemoriesById(memoryId: string, limit = 5): Promise<RelatedMemory[]> {
+// 특정 스크랩과 관련된 스크랩 목록 조회
+export function fetchRelatedScrapsById(scrapId: string, limit = 5): Promise<RelatedScrap[]> {
   if (isDemoMode()) {
-    const related: RelatedMemory[] = DEMO_MEMORIES
-      .filter(m => m.id !== memoryId)
+    const related: RelatedScrap[] = DEMO_SCRAPS
+      .filter(m => m.id !== scrapId)
       .slice(0, limit)
       .map(m => ({
         id: m.id,
@@ -58,5 +58,5 @@ export function fetchRelatedMemoriesById(memoryId: string, limit = 5): Promise<R
       }))
     return Promise.resolve(related)
   }
-  return get<RelatedMemory[]>(`/search/related/${memoryId}?limit=${limit}`)
+  return get<RelatedScrap[]>(`/search/related/${scrapId}?limit=${limit}`)
 }

@@ -3,8 +3,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from app.repositories.graph_repository import GraphRepository
-from app.repositories.memory_repository import MemoryRepository
+from app.repositories.mindmap_repository import MindmapRepository
+from app.repositories.scrap_repository import ScrapRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.hybrid_search_service import HybridSearchService
 from app.utils import parse_iso_datetime
@@ -22,14 +22,14 @@ class SearchService:
     def __init__(
         self,
         vector_repo: VectorRepository,
-        memory_repo: MemoryRepository | None = None,
-        graph_repo: GraphRepository | None = None,
+        scrap_repo: ScrapRepository | None = None,
+        mindmap_repo: MindmapRepository | None = None,
         *,
         hybrid_search: HybridSearchService | None = None,
     ):
         self.vector_repo = vector_repo
-        self.memory_repo = memory_repo
-        self.hybrid = hybrid_search or HybridSearchService(vector_repo, graph_repo, memory_repo)
+        self.scrap_repo = scrap_repo
+        self.hybrid = hybrid_search or HybridSearchService(vector_repo, mindmap_repo, scrap_repo)
 
     async def search(
         self,
@@ -83,8 +83,8 @@ class SearchService:
 
             # 태그 필터
             if tags:
-                memory_tags = r.get("tags") or []
-                if not any(t in memory_tags for t in tags):
+                scrap_tags = r.get("tags") or []
+                if not any(t in scrap_tags for t in tags):
                     continue
 
             filtered_results.append(
@@ -114,17 +114,17 @@ class SearchService:
             "filters_applied": filters_applied,
         }
 
-    async def get_related_memories(
+    async def get_related_scraps(
         self,
         user_id: UUID,
-        memory_id: str,
+        scrap_id: str,
         limit: int = 5,
     ) -> list[dict[str, Any]]:
-        """특정 Memory와 유사한 Memory 목록 조회."""
-        if not self.memory_repo:
+        """특정 Scrap과 유사한 Scrap 목록 조회."""
+        if not self.scrap_repo:
             return []
 
-        source = await self.memory_repo.get_by_id(UUID(memory_id), user_id)
+        source = await self.scrap_repo.get_by_id(UUID(scrap_id), user_id)
         if not source:
             return []
 
@@ -139,7 +139,7 @@ class SearchService:
 
         related = []
         for item in similar:
-            if str(item.get("id")) != memory_id:
+            if str(item.get("id")) != scrap_id:
                 related.append(
                     {
                         "id": str(item.get("id", "")),
