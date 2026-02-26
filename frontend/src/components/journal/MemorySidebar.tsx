@@ -6,7 +6,7 @@ import './MemorySidebar.css'
 
 type SidebarTab = 'today' | 'related'
 
-interface MemorySidebarProps {
+interface ScrapSidebarProps {
   todayScraps: DigestScrap[]
   relatedScraps: RelatedScrap[]
   isLoadingRelatedScraps: boolean
@@ -30,7 +30,7 @@ export function MemorySidebar({
   isGenerating,
   collapsed,
   onToggleCollapse,
-}: MemorySidebarProps) {
+}: ScrapSidebarProps) {
   const [activeTab, setActiveTab] = useState<SidebarTab>('today')
   const [compact, setCompact] = useState(() => localStorage.getItem('memoir-sidebar-compact') === '1')
 
@@ -54,18 +54,18 @@ export function MemorySidebar({
   }
 
   return (
-    <div className={`memory-sidebar ${collapsed ? 'memory-sidebar--collapsed' : ''} ${compact ? 'memory-sidebar--compact' : ''}`}>
+    <div className={`scrap-sidebar ${collapsed ? 'scrap-sidebar--collapsed' : ''} ${compact ? 'scrap-sidebar--compact' : ''}`}>
       {/* 모바일 접기/펼치기 토글 */}
       {onToggleCollapse && (
-        <button className="memory-sidebar__collapse-toggle" onClick={onToggleCollapse} type="button">
+        <button className="scrap-sidebar__collapse-toggle" onClick={onToggleCollapse} type="button">
           <BookOpen size={16} />
           <span>스크랩 사이드바</span>
           {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
       )}
-      <div className="memory-sidebar__tabs">
+      <div className="scrap-sidebar__tabs">
         <button
-          className="memory-sidebar__compact-toggle"
+          className="scrap-sidebar__compact-toggle"
           onClick={toggleCompact}
           title={compact ? '상세 보기' : '컴팩트 보기'}
           type="button"
@@ -92,7 +92,7 @@ export function MemorySidebar({
       </div>
 
       {activeTab === 'today' && Object.keys(topicCounts).length > 0 && (
-        <div className="memory-sidebar__topics">
+        <div className="scrap-sidebar__topics">
           {Object.entries(topicCounts).map(([type, count]) => (
             <span key={type} className="topic-tag">
               {type} {count}
@@ -101,12 +101,12 @@ export function MemorySidebar({
         </div>
       )}
 
-      <div className="memory-sidebar__list">
+      <div className="scrap-sidebar__list">
         {isLoading ? (
           <div className="sidebar-empty">관련 스크랩 검색 중...</div>
         ) : scraps.length > 0 ? (
           scraps.map((m) => (
-            <MemoryCard key={m.id} memory={m} onInsert={onInsertScrap} onCardClick={onCardClick} />
+            <MemoryCard key={m.id} scrap={m} onInsert={onInsertScrap} onCardClick={onCardClick} />
           ))
         ) : (
           <div className="sidebar-empty">
@@ -117,7 +117,7 @@ export function MemorySidebar({
         )}
       </div>
 
-      <div className="memory-sidebar__actions">
+      <div className="scrap-sidebar__actions">
         <div className="sidebar-actions-label">AI 액션</div>
         <button
           className="sidebar-action-btn"

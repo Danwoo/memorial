@@ -133,9 +133,9 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                 </button>
               </div>
             ) : inputMode === null ? (
-              <div className="memory-options">
+              <div className="scrap-options">
                 <button
-                  className="memory-option-card"
+                  className="scrap-option-card"
                   onClick={() => setInputMode('url')}
                   type="button"
                 >
@@ -144,7 +144,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                   <p>읽었던 글이나 관심 있는 웹 페이지의 URL을 입력하세요</p>
                 </button>
                 <button
-                  className="memory-option-card"
+                  className="scrap-option-card"
                   onClick={() => setInputMode('note')}
                   type="button"
                 >

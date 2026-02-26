@@ -1,13 +1,13 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 
-export interface MemoryBlockAttrs {
+export interface ScrapBlockAttrs {
   memoryId: string
   title: string
   summary: string
   type: string
 }
 
-export const MemoryBlockNode = Node.create({
+export const ScrapBlockNode = Node.create({
   name: 'memoryBlock',
   group: 'block',
   atom: true,

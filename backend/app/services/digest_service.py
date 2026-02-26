@@ -13,16 +13,16 @@ from app.utils import parse_iso_datetime
 
 logger = logging.getLogger(__name__)
 
-MAX_MEMORIES_IN_DIGEST = 10
-MAX_JOURNALS_IN_DIGEST = 5
+MAX_SCRAPS_IN_DIGEST = 10
+MAX_DIARIES_IN_DIGEST = 5
 MAX_DIGEST_TOPICS = 5
 # 다이제스트 미리보기 길이
-MEMORY_SUMMARY_PREVIEW_LENGTH = 150
-JOURNAL_PREVIEW_LENGTH = 100
+SCRAP_SUMMARY_PREVIEW_LENGTH = 150
+DIARY_PREVIEW_LENGTH = 100
 QUESTION_CONTEXT_PREVIEW_LENGTH = 100
 # 질문 생성에 참조할 최대 항목 수
-MAX_MEMORY_CONTEXT_ITEMS = 5
-MAX_JOURNAL_CONTEXT_ITEMS = 2
+MAX_SCRAP_CONTEXT_ITEMS = 5
+MAX_DIARY_CONTEXT_ITEMS = 2
 MAX_GENERATED_QUESTIONS = 2
 # 저널 조회 제한
 MAX_JOURNAL_FETCH_LIMIT = 20
@@ -80,20 +80,20 @@ class DigestService:
                     "id": str(scrap.get("id", "")),
                     "title": scrap.get("title", "Untitled"),
                     "type": scrap.get("source_type", "UNKNOWN"),
-                    "summary": scrap.get("summary") or scrap.get("content", "")[:MEMORY_SUMMARY_PREVIEW_LENGTH],
+                    "summary": scrap.get("summary") or scrap.get("content", "")[:SCRAP_SUMMARY_PREVIEW_LENGTH],
                     "tags": scrap.get("tags") or [],
                     "created_at": scrap.get("created_at", ""),
                 }
-                for scrap in scraps[:MAX_MEMORIES_IN_DIGEST]
+                for scrap in scraps[:MAX_SCRAPS_IN_DIGEST]
             ],
             "diaries": [
                 {
                     "id": str(diary.get("id", "")),
                     "mood": diary.get("mood", "NEUTRAL"),
-                    "preview": diary.get("content", "")[:JOURNAL_PREVIEW_LENGTH],
+                    "preview": diary.get("content", "")[:DIARY_PREVIEW_LENGTH],
                     "created_at": diary.get("created_at", ""),
                 }
-                for diary in diaries[:MAX_JOURNALS_IN_DIGEST]
+                for diary in diaries[:MAX_DIARIES_IN_DIGEST]
             ],
             "chats": chats,
             "insights": {"main_topics": main_topics[:MAX_DIGEST_TOPICS], "suggested_questions": suggested_questions},
@@ -116,7 +116,7 @@ class DigestService:
     async def _get_today_diaries(self, user_id: UUID, today: datetime) -> list[dict]:
         """오늘 생성된 다이어리 조회."""
         try:
-            journals = await self.diary_repo.get_journals(
+            journals = await self.diary_repo.get_diaries(
                 user_id,
                 limit=MAX_JOURNAL_FETCH_LIMIT,
             )
@@ -154,12 +154,12 @@ class DigestService:
 
         context_parts = []
 
-        for scrap in scraps[:MAX_MEMORY_CONTEXT_ITEMS]:
+        for scrap in scraps[:MAX_SCRAP_CONTEXT_ITEMS]:
             title = scrap.get("title", "Untitled")
             summary = scrap.get("summary") or scrap.get("content", "")[:QUESTION_CONTEXT_PREVIEW_LENGTH]
             context_parts.append(f"- {title}: {summary}")
 
-        for diary in diaries[:MAX_JOURNAL_CONTEXT_ITEMS]:
+        for diary in diaries[:MAX_DIARY_CONTEXT_ITEMS]:
             mood = diary.get("mood", "NEUTRAL")
             preview = diary.get("content", "")[:QUESTION_CONTEXT_PREVIEW_LENGTH]
             context_parts.append(f"- [Diary, Mood: {mood}] {preview}")

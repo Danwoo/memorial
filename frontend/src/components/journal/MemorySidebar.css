@@ -1,4 +1,4 @@
-.memory-sidebar {
+.scrap-sidebar {
   width: 280px;
   min-width: 280px;
   display: flex;
@@ -9,7 +9,7 @@
   overflow: hidden;
 }
 
-.memory-sidebar__tabs {
+.scrap-sidebar__tabs {
   display: flex;
   border-bottom: 1px solid var(--border-secondary);
   flex-shrink: 0;
@@ -57,7 +57,7 @@
 }
 
 /* 토픽 태그 */
-.memory-sidebar__topics {
+.scrap-sidebar__topics {
   display: flex;
   gap: var(--space-xs);
   flex-wrap: wrap;
@@ -74,7 +74,7 @@
   font-weight: 500;
 }
 
-.memory-sidebar__list {
+.scrap-sidebar__list {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-sm);
@@ -92,7 +92,7 @@
 }
 
 /* 메모리 카드 */
-.journal-memory-card {
+.journal-scrap-card {
   position: relative;
   background-color: var(--bg-tertiary);
   border: 1px solid var(--border-secondary);
@@ -101,12 +101,12 @@
   transition: border-color var(--transition-fast), transform var(--transition-fast);
 }
 
-.journal-memory-card:hover {
+.journal-scrap-card:hover {
   border-color: var(--accent-primary);
   transform: translateY(-1px);
 }
 
-.journal-memory-card__actions {
+.journal-scrap-card__actions {
   display: flex;
   gap: var(--space-xs);
   margin-top: var(--space-xs);
@@ -114,11 +114,11 @@
   transition: opacity var(--transition-fast);
 }
 
-.journal-memory-card:hover .journal-memory-card__actions {
+.journal-scrap-card:hover .journal-scrap-card__actions {
   opacity: 1;
 }
 
-.journal-memory-card__action-btn {
+.journal-scrap-card__action-btn {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -132,19 +132,19 @@
   transition: all var(--transition-fast);
 }
 
-.journal-memory-card__action-btn--insert:hover {
+.journal-scrap-card__action-btn--insert:hover {
   border-color: var(--accent-primary);
   color: var(--accent-primary);
   background: var(--accent-bg);
 }
 
-.journal-memory-card__action-btn--detail:hover {
+.journal-scrap-card__action-btn--detail:hover {
   border-color: var(--text-secondary);
   color: var(--text-primary);
   background: var(--bg-tertiary);
 }
 
-.journal-memory-card__type {
+.journal-scrap-card__type {
   font-size: var(--fs-caption);
   text-transform: uppercase;
   color: var(--accent-primary);
@@ -152,14 +152,14 @@
   margin-bottom: var(--space-xs);
 }
 
-.journal-memory-card__title {
+.journal-scrap-card__title {
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: var(--space-xs);
   font-size: var(--fs-body-sm);
 }
 
-.journal-memory-card__summary {
+.journal-scrap-card__summary {
   font-size: var(--fs-caption);
   color: var(--text-secondary);
   line-height: 1.4;
@@ -170,7 +170,7 @@
 }
 
 /* 컴팩트 모드 토글 */
-.memory-sidebar__compact-toggle {
+.scrap-sidebar__compact-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -185,26 +185,26 @@
   flex-shrink: 0;
 }
 
-.memory-sidebar__compact-toggle:hover {
+.scrap-sidebar__compact-toggle:hover {
   background: var(--bg-tertiary);
   color: var(--text-primary);
 }
 
 /* 컴팩트 모드: 요약과 액션 숨기기 */
-.memory-sidebar--compact .journal-memory-card__summary {
+.scrap-sidebar--compact .journal-scrap-card__summary {
   display: none;
 }
 
-.memory-sidebar--compact .journal-memory-card__actions {
+.scrap-sidebar--compact .journal-scrap-card__actions {
   display: none;
 }
 
-.memory-sidebar--compact .journal-memory-card {
+.scrap-sidebar--compact .journal-scrap-card {
   padding: 6px var(--space-sm);
 }
 
 /* AI 액션 영역 */
-.memory-sidebar__actions {
+.scrap-sidebar__actions {
   flex-shrink: 0;
   border-top: 1px solid var(--border-secondary);
   padding: var(--space-sm);
@@ -248,7 +248,7 @@
 
 /* ─── 데스크톱 collapsed 상태 ────────────────────────────── */
 
-.diary-view--left-collapsed .memory-sidebar {
+.diary-view--left-collapsed .scrap-sidebar {
   width: 0;
   min-width: 0;
   overflow: hidden;
@@ -258,12 +258,12 @@
 
 /* ─── 접기/펼치기 토글 (≤1024px에서만 표시) ────────────────────────────── */
 
-.memory-sidebar__collapse-toggle {
+.scrap-sidebar__collapse-toggle {
   display: none;
 }
 
 @media (max-width: 1024px) {
-  .memory-sidebar {
+  .scrap-sidebar {
     width: 100%;
     min-width: 0;
     border-left: none;
@@ -273,12 +273,12 @@
     transition: max-height 0.25s ease;
   }
 
-  .memory-sidebar--collapsed {
+  .scrap-sidebar--collapsed {
     max-height: 40px;
     overflow: hidden;
   }
 
-  .memory-sidebar__collapse-toggle {
+  .scrap-sidebar__collapse-toggle {
     display: flex;
     align-items: center;
     gap: var(--space-xs);
@@ -293,21 +293,21 @@
     cursor: pointer;
   }
 
-  .memory-sidebar__collapse-toggle span {
+  .scrap-sidebar__collapse-toggle span {
     flex: 1;
     text-align: left;
   }
 
-  .memory-sidebar__collapse-toggle:hover {
+  .scrap-sidebar__collapse-toggle:hover {
     background: var(--bg-secondary);
     color: var(--text-primary);
   }
 
-  .memory-sidebar__list {
+  .scrap-sidebar__list {
     max-height: 150px;
   }
 
-  .memory-sidebar__actions {
+  .scrap-sidebar__actions {
     flex-direction: row;
     flex-wrap: wrap;
   }
