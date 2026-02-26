@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useSocratesSession } from '../contexts/SocratesSessionContext'
 import { useToast } from '../contexts/ToastContext'
 import { useDemoMode } from '../contexts/DemoContext'
-import type { SocratesMessage, SocratesLocationState, BriefingData, SocratesFeedback, SocratesMessagePayload, SourceContext } from '../types'
+import type { SocratesMessage, SocratesLocationState, BriefingData, SocratesFeedback, SocratesMessagePayload, SourceContext, SocratesMode } from '../types'
 import {
   createSocratesSession, fetchSocratesHistory, sendSocratesMessage, readSSEStream,
   fetchBriefing, sendFeedback, fetchFeedbacks, createScrap,
@@ -48,6 +48,8 @@ export interface UseSocratesChatReturn {
   toggleRefExpand: (idx: number) => void
   setSourceContextOverride: (ctx: SocratesChatContext | null) => void
   saveMessageAsScrap: (content: string) => void
+  selectedMode: SocratesMode
+  setSelectedMode: (mode: SocratesMode) => void
   hasBriefingContent: boolean
   sendMessageDirect: (text: string) => void
 }
@@ -75,6 +77,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
   const [expandedRefs, setExpandedRefs] = useState<Set<number>>(new Set())
   const [feedbacks, setFeedbacks] = useState<Map<number, 'good' | 'bad'>>(new Map())
   const [showScrollBtn, setShowScrollBtn] = useState(false)
+  const [selectedMode, setSelectedMode] = useState<SocratesMode>('default')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -239,7 +242,10 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
         }
       }
 
-      const payload: SocratesMessagePayload = { content: userMessage }
+      const payload: SocratesMessagePayload = {
+        content: userMessage,
+        mode: selectedMode === 'default' ? undefined : selectedMode,
+      }
       const ctx = sourceContextOverrideRef.current || contextRef.current
       if (ctx) {
         const sourceCtx: SourceContext = { type: ctx.type }
@@ -291,7 +297,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
       abortControllerRef.current = null
       setIsLoading(false)
     }
-  }, [input, isLoading, sessionId, navigate, toast, triggerRefresh, pathPrefix, isStandalone])
+  }, [input, isLoading, sessionId, selectedMode, navigate, toast, triggerRefresh, pathPrefix, isStandalone])
 
   handleSendRef.current = handleSendMessage
 
@@ -367,5 +373,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     sendMessageDirect,
     setSourceContextOverride,
     saveMessageAsScrap,
+    selectedMode,
+    setSelectedMode,
   }
 }

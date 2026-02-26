@@ -2,6 +2,7 @@ import { ChevronDown } from 'lucide-react'
 import type { UseSocratesChatReturn } from '../../hooks/useSocratesChat'
 import SocratesEmptyState from './SocratesEmptyState'
 import SocratesMessageList from './SocratesMessageList'
+import SocratesModeSelector from './SocratesModeSelector'
 import SocratesInputBar from './SocratesInputBar'
 import './SocratesPanel.css'
 
@@ -22,6 +23,7 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
     handleSendMessage, handleFeedback, scrollToBottom,
     handleMessagesScroll, adjustTextareaHeight, handleKeyDown,
     toggleRefExpand, sendMessageDirect, saveMessageAsScrap,
+    selectedMode, setSelectedMode,
   } = chat
 
   return (
@@ -80,15 +82,21 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
         )}
       </div>
 
-      <SocratesInputBar
-        input={input}
-        isLoading={isLoading}
-        textareaRef={textareaRef}
-        onInputChange={setInput}
-        onSend={handleSendMessage}
-        onKeyDown={handleKeyDown}
-        onAdjustHeight={adjustTextareaHeight}
-      />
+      <div className="socrates-input-area">
+        <SocratesModeSelector
+          selectedMode={selectedMode}
+          onModeChange={setSelectedMode}
+        />
+        <SocratesInputBar
+          input={input}
+          isLoading={isLoading}
+          textareaRef={textareaRef}
+          onInputChange={setInput}
+          onSend={handleSendMessage}
+          onKeyDown={handleKeyDown}
+          onAdjustHeight={adjustTextareaHeight}
+        />
+      </div>
     </div>
   )
 }
