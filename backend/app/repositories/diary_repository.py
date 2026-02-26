@@ -123,7 +123,7 @@ class DiaryRepository:
     def _select_dates(self, user_id: str, limit: int):
         return (
             self.db.table("diaries")
-            .select("id, created_at, mood")
+            .select("id, created_at, mood, content")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
             .limit(limit)
