@@ -4,7 +4,7 @@ from uuid import UUID
 
 import pytest
 
-from app.services.journal_service import JournalService
+from app.services.diary_service import DiaryService
 
 NOW = datetime.now(UTC)
 USER_ID = UUID("00000000-0000-0000-0000-000000000001")
@@ -13,8 +13,8 @@ MEM_ID_1 = "00000000-0000-0000-0000-000000000020"
 MEM_ID_2 = "00000000-0000-0000-0000-000000000030"
 
 
-class TestJournalService:
-    """JournalService 단위 테스트 — 저널 생성/업데이트, 날짜별 조회, 메모리 링크"""
+class TestDiaryService:
+    """DiaryService 단위 테스트 — 다이어리 생성/업데이트, 날짜별 조회, 스크랩 링크"""
 
     @pytest.fixture
     def mock_journal_repo(self):
@@ -50,7 +50,7 @@ class TestJournalService:
     @pytest.fixture
     def journal_service(self, mock_journal_repo, mock_graph_repo, mock_vector_repo, mock_link_repo):
         """목 의존성 주입된 JournalService 생성"""
-        return JournalService(
+        return DiaryService(
             mock_journal_repo,
             mock_graph_repo,
             vector_repo=mock_vector_repo,
@@ -82,7 +82,7 @@ class TestJournalService:
         expected = {"id": str(JOURNAL_ID), "content": "학습 기록", "mood": "NEUTRAL", "created_at": NOW.isoformat()}
         mock_journal_repo.create_journal.return_value = expected
 
-        await journal_service.create_entry(USER_ID, "학습 기록", memory_ids=[MEM_ID_1, MEM_ID_2])
+        await journal_service.create_entry(USER_ID, "학습 기록", scrap_ids=[MEM_ID_1, MEM_ID_2])
 
         mock_link_repo.sync_links.assert_called_once_with(JOURNAL_ID, [MEM_ID_1, MEM_ID_2], link_type="manual")
 
@@ -122,7 +122,7 @@ class TestJournalService:
             {"created_at": "2026-02-19T12:00:00", "mood": "NEGATIVE"},
         ]
 
-        result = await journal_service.get_journal_dates(USER_ID)
+        result = await journal_service.get_diary_dates(USER_ID)
 
         # Assert — 2/20은 count=2, 2/19는 count=1, 최신순 정렬
         assert result[0]["date"] == "2026-02-20"
@@ -138,7 +138,7 @@ class TestJournalService:
         ]
         mock_journal_repo.get_journals_by_date.return_value = expected
 
-        result = await journal_service.get_journals_by_date(USER_ID, "2026-02-20")
+        result = await journal_service.get_diaries_by_date(USER_ID, "2026-02-20")
 
         assert len(result) == 1
         mock_journal_repo.get_journals_by_date.assert_called_once_with(USER_ID, "2026-02-20")
@@ -186,7 +186,7 @@ class TestJournalService:
             },
         ]
 
-        result = await journal_service.get_related_memories(USER_ID, "파이썬 공부를 시작했다")
+        result = await journal_service.get_related_scraps(USER_ID, "파이썬 공부를 시작했다")
 
         assert len(result) == 1
         assert result[0]["title"] == "파이썬 학습"
@@ -195,7 +195,7 @@ class TestJournalService:
     @pytest.mark.asyncio
     async def test_get_related_memories_short_content(self, journal_service, mock_vector_repo):
         """내용이 너무 짧으면 검색을 건너뛰고 빈 리스트 반환"""
-        result = await journal_service.get_related_memories(USER_ID, "짧")
+        result = await journal_service.get_related_scraps(USER_ID, "짧")
 
         assert result == []
         mock_vector_repo.similarity_search.assert_not_called()

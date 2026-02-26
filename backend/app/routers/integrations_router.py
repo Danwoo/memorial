@@ -152,8 +152,8 @@ async def get_bot_settings(
             response = BotSettingsResponse(
                 enabled=data["enabled"],
                 delivery_hour=data["delivery_hour"],
-                include_memories=data["include_memories"],
-                include_journals=data["include_journals"],
+                include_scraps=data["include_scraps"],
+                include_diaries=data["include_diaries"],
                 include_insights=data["include_insights"],
             )
         else:
@@ -292,8 +292,8 @@ async def _save_text_in_background(
 ) -> None:
     """백그라운드: 텍스트 메모 저장 + Librarian 처리."""
     try:
-        await channel_service._save_text_memory(text, user_id)
-        logger.info("카카오 텍스트 메모 백그라운드 저장 완료: user=%s", user_id)
+        await channel_service._save_text_scrap(text, user_id)
+        logger.info("카카오 텍스트 스크랩 백그라운드 저장 완료: user=%s", user_id)
     except Exception:
         logger.exception("카카오 텍스트 메모 백그라운드 저장 실패")
     await _run_librarian_for_kakao(bot_user_key)
@@ -304,10 +304,10 @@ async def _save_url_in_background(
 ) -> None:
     """백그라운드: URL 크롤링 + 메모리 저장 + Librarian 처리."""
     try:
-        await channel_service._save_url_memory(url, user_id)
-        logger.info("카카오 URL 메모리 백그라운드 저장 완료: user=%s", user_id)
+        await channel_service._save_url_scrap(url, user_id)
+        logger.info("카카오 URL 스크랩 백그라운드 저장 완료: user=%s", user_id)
     except Exception:
-        logger.exception("카카오 URL 메모리 백그라운드 저장 실패")
+        logger.exception("카카오 URL 스크랩 백그라운드 저장 실패")
     await _run_librarian_for_kakao(bot_user_key)
 
 

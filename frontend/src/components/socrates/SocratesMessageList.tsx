@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { rehypeSanitize, sanitizeSchema } from '../../utils/markdownSanitize'
@@ -8,6 +7,25 @@ import {
 } from 'lucide-react'
 import type { SocratesMessage } from '../../types'
 import SourceIcon from '../shared/SourceIcon'
+import SocratesActionButtons from './SocratesActionButtons'
+
+const INSIGHT_PATTERNS = [
+  '인사이트', '정리하면', '핵심은', '결론적으로', '요약하면',
+  '중요한 점', '깨달은', '발견한', '연결해보면', '통찰',
+]
+
+function shouldShowActions(
+  content: string,
+  messageIndex: number,
+  totalMessages: number,
+): boolean {
+  if (content.length < 100) return false
+  if (messageIndex < 2) return false
+  const isRecentEnough = totalMessages - messageIndex <= 4
+  if (!isRecentEnough) return false
+  const hasInsightPattern = INSIGHT_PATTERNS.some(p => content.includes(p))
+  return hasInsightPattern || (messageIndex >= 4 && messageIndex % 2 === 1)
+}
 
 interface SocratesMessageListProps {
   messages: SocratesMessage[]
@@ -15,13 +33,17 @@ interface SocratesMessageListProps {
   feedbacks: Map<number, 'good' | 'bad'>
   onToggleRefExpand: (idx: number) => void
   onFeedback: (msgIndex: number, rating: 'good' | 'bad') => void
+  onScrapClick?: (scrapId: string) => void
+  onSaveAsScrap?: (content: string) => void
+  onInsertToDiary?: (content: string) => void
+  isPanelMode?: boolean
 }
 
 export default function SocratesMessageList({
   messages, expandedRefs, feedbacks,
-  onToggleRefExpand, onFeedback,
+  onToggleRefExpand, onFeedback, onScrapClick,
+  onSaveAsScrap, onInsertToDiary, isPanelMode = false,
 }: SocratesMessageListProps) {
-  const navigate = useNavigate()
 
   return (
     <>
@@ -58,7 +80,7 @@ export default function SocratesMessageList({
                             <button
                               key={ref.id}
                               className="socrates-reference-chip"
-                              onClick={() => navigate('/scraps')}
+                              onClick={() => onScrapClick?.(ref.id)}
                               type="button"
                             >
                               <SourceIcon type={ref.source_type} size={14} />
@@ -88,6 +110,14 @@ export default function SocratesMessageList({
                       <ThumbsDown size={14} />
                     </button>
                   </div>
+                  {shouldShowActions(msg.content, idx, messages.length) && (
+                    <SocratesActionButtons
+                      content={msg.content}
+                      onSaveAsScrap={onSaveAsScrap}
+                      onInsertToDiary={onInsertToDiary}
+                      isPanelMode={isPanelMode}
+                    />
+                  )}
                 </>
               ) : (
                 <div className="typing-indicator-container">

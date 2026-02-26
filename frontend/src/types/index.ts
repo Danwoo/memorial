@@ -11,14 +11,17 @@ export type {
 } from './scrap'
 
 export type {
+  SocratesMode,
   SocratesReference,
   SocratesMessage,
+  SourceContext,
   SocratesMessagePayload,
   SocratesStreamChunk,
   SocratesSessionResponse,
   SocratesLocationState,
   SocratesFeedback,
 } from './socrates'
+export { SOCRATES_MODE_LABELS } from './socrates'
 
 export type {
   DiarySavePayload,

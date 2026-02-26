@@ -41,13 +41,16 @@ CONNECTION_TURN_INTERVAL = 3
 _COUNTER_KEYWORDS = ["반론", "반대", "비판", "다른 관점", "약점", "문제점", "단점", "criticism"]
 _SUMMARY_KEYWORDS = ["요약", "정리", "핵심", "줄여", "summarize"]
 _EVENING_KEYWORDS = ["하루 정리", "하루 돌아", "오늘 회고", "저녁 회고", "하루를 마무리"]
-_INSIGHT_KEYWORDS = ["깊이 생각", "분석해", "왜 그런", "근본 원인", "본질", "통찰"]
+_INSIGHT_KEYWORDS = ["깊이 생각", "분석해", "본질", "통찰"]
+_ASSUMPTION_KEYWORDS = ["전제", "가정", "전제 분석", "assumption", "숨겨진 가정"]
+_FIVE_WHYS_KEYWORDS = ["왜 그런", "근본 원인", "왜?", "5 whys", "파고들"]
+_DIALECTIC_KEYWORDS = ["비교", "뭐가 나을", "장단점", "vs", "선택지", "어떤 게 좋"]
 
 
 def detect_intent(message: str) -> str | None:
     """사용자 메시지에서 대화 의도를 키워드 기반으로 자동 분류.
 
-    반환값은 mode 문자열(insight/counter/summary/evening) 또는 None(기본).
+    반환값은 mode 문자열(insight/counter/summary/evening/assumption/five_whys/dialectic) 또는 None(기본).
     """
     msg = message.lower()
     for keywords, mode_value in [
@@ -55,6 +58,9 @@ def detect_intent(message: str) -> str | None:
         (_SUMMARY_KEYWORDS, "summary"),
         (_EVENING_KEYWORDS, "evening"),
         (_INSIGHT_KEYWORDS, "insight"),
+        (_ASSUMPTION_KEYWORDS, "assumption"),
+        (_FIVE_WHYS_KEYWORDS, "five_whys"),
+        (_DIALECTIC_KEYWORDS, "dialectic"),
     ]:
         if any(kw in msg for kw in keywords):
             return mode_value
@@ -220,6 +226,7 @@ async def prepare_socrates_context(
     mode: str | None = None,
     user_id: str | None = None,
     turn_count: int = 0,
+    source_context: dict | None = None,
 ) -> tuple[list[BaseMessage], list[dict]]:
     """Socrates용 RAG 컨텍스트가 포함된 LangChain 메시지 리스트 준비.
 
@@ -282,6 +289,7 @@ async def prepare_socrates_context(
         journal_context,
         user_profile,
         connection_context,
+        source_context,
     )
 
     return [SystemMessage(content=system_content), *messages], current_memories
@@ -311,9 +319,31 @@ def _assemble_system_prompt(
     journal_context: str,
     user_profile: dict | None = None,
     connection_context: str = "",
+    source_context: dict | None = None,
 ) -> str:
     """시스템 프롬프트에 RAG 컨텍스트 + 사용자 프로필 섹션을 조합."""
     parts = [SOCRATES_BASE_PROMPT, build_profile_section(user_profile), get_mode_prompt(mode)]
+
+    # 소스 컨텍스트 (현재 작업 화면 정보)
+    if source_context:
+        ctx_type = source_context.get("type", "")
+        ctx_title = source_context.get("title", "")
+        ctx_preview = source_context.get("content_preview", "")
+        ctx_tags = source_context.get("tags", [])
+        ctx_neighbors = source_context.get("graph_neighbors", [])
+
+        section = f"\n\n**현재 사용자 컨텍스트 ({ctx_type}):**"
+        if ctx_title:
+            section += f"\n제목: {ctx_title}"
+        if ctx_preview:
+            section += f"\n내용 미리보기: {ctx_preview[:500]}"
+        if ctx_tags:
+            section += f"\n태그: {', '.join(ctx_tags)}"
+        if ctx_neighbors:
+            neighbor_lines = [f"- {n['name']} ({n['label']}) -- {n['relation_type']}" for n in ctx_neighbors[:10]]
+            section += "\n연결된 노드:\n" + "\n".join(neighbor_lines)
+        section += "\n\n이 맥락을 활용하여 사용자의 현재 작업과 연결된 대화를 진행하세요."
+        parts.append(section)
 
     context_sections = [
         ("검색된 기억", context_memories),

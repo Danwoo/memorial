@@ -12,15 +12,15 @@ logger = logging.getLogger(__name__)
 
 # LLM 호출 경로 (10req/min)
 LLM_PATHS = {
-    "/api/v1/chat/sessions/",
-    "/api/v1/journal/review-questions",
-    "/api/v1/journal/generate-draft",
-    "/api/v1/journal/insights",
+    "/api/v1/socrates/sessions/",
+    "/api/v1/diaries/review-questions",
+    "/api/v1/diaries/generate-draft",
+    "/api/v1/diaries/insights",
     "/api/v1/reports/weekly",
     "/api/v1/reports/monthly",
 }
-# 메모리 생성 (30req/min)
-WRITE_PATHS = {"/api/v1/memories"}
+# 스크랩 생성 (30req/min)
+WRITE_PATHS = {"/api/v1/scraps"}
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):

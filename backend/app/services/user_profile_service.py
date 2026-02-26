@@ -86,12 +86,12 @@ async def _build_profile(user_id: str) -> dict:
         if len(recent_topics) >= 3:
             break
 
-    memory_count = stats_result.count if stats_result.count else 0
+    scrap_count = stats_result.count if stats_result.count else 0
 
     return {
         "top_interests": top_interests,
         "recent_topics": recent_topics,
-        "memory_count": memory_count,
+        "scrap_count": scrap_count,
     }
 
 
