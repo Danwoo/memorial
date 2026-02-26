@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
 
-class DigestMemoryItem(BaseModel):
-    """다이제스트 내 메모리 항목."""
+class DigestScrapItem(BaseModel):
+    """다이제스트 내 스크랩 항목."""
 
     id: str
     title: str
@@ -12,8 +12,8 @@ class DigestMemoryItem(BaseModel):
     created_at: str
 
 
-class DigestJournalItem(BaseModel):
-    """다이제스트 내 저널 항목."""
+class DigestDiaryItem(BaseModel):
+    """다이제스트 내 다이어리 항목."""
 
     id: str
     mood: str
@@ -24,8 +24,8 @@ class DigestJournalItem(BaseModel):
 class DigestSummary(BaseModel):
     """하루 활동 집계."""
 
-    memory_count: int
-    journal_count: int
+    scrap_count: int
+    diary_count: int
     chat_count: int
 
 
@@ -41,7 +41,7 @@ class DigestResponse(BaseModel):
 
     date: str
     summary: DigestSummary
-    memories: list[DigestMemoryItem]
-    journals: list[DigestJournalItem]
+    scraps: list[DigestScrapItem]
+    diaries: list[DigestDiaryItem]
     chats: list[dict]
     insights: DigestInsights

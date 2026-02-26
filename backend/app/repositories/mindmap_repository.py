@@ -606,25 +606,25 @@ class MindmapRepository:
         if not entity_names:
             return []
 
-        all_memory_ids: list[dict] = []
+        all_scrap_ids: list[dict] = []
         for name in entity_names[:10]:  # 최대 10개 엔티티
             q = f"""
             MATCH (mem:Memory {{user_id: $user_id}})-[:MENTIONS]->(e:Entity {{name: $name}})
-            RETURN DISTINCT mem.id AS memory_id
+            RETURN DISTINCT mem.id AS scrap_id
             LIMIT {max(1, min(limit, 20))}
             """
             results = self._result_to_dicts(conn.execute(q, {"user_id": user_id, "name": name}))
-            all_memory_ids.extend(results)
+            all_scrap_ids.extend(results)
 
-        # 중복 제거 및 빈도순 정렬 (많이 등장하는 메모리가 더 관련성 높음)
+        # 중복 제거 및 빈도순 정렬 (많이 등장하는 스크랩이 더 관련성 높음)
         id_counts: dict[str, int] = {}
-        for r in all_memory_ids:
-            mid = r.get("memory_id", "")
+        for r in all_scrap_ids:
+            mid = r.get("scrap_id", "")
             if mid:
                 id_counts[mid] = id_counts.get(mid, 0) + 1
 
         sorted_ids = sorted(id_counts.items(), key=lambda x: x[1], reverse=True)
-        return [{"memory_id": mid, "graph_score": count} for mid, count in sorted_ids[:limit]]
+        return [{"scrap_id": mid, "graph_score": count} for mid, count in sorted_ids[:limit]]
 
     async def search_memories_by_entities(self, entity_names: list[str], user_id: str, limit: int = 10) -> list[dict]:
         """엔티티 이름으로 연결된 메모리 ID 검색. graph_score는 매칭된 엔티티 수."""

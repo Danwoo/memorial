@@ -17,8 +17,8 @@ export interface SourceDistribution {
 export interface ReportData {
   period: string
   date_range: string
-  total_memories: number
-  total_journals: number
+  total_scraps: number
+  total_diaries: number
   topic_distribution: TopicDistribution[]
   source_distribution: SourceDistribution[]
   llm_summary: string

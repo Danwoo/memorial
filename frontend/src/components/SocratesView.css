@@ -692,3 +692,42 @@
   color: var(--error);
   background: rgba(239, 68, 68, 0.1);
 }
+
+/* 액션 버튼 */
+.socrates-action-buttons {
+  display: flex;
+  gap: var(--space-xs, 6px);
+  margin-top: var(--space-xs, 6px);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.message.assistant:hover .socrates-action-buttons,
+.socrates-action-buttons:has(.socrates-action-btn--done) {
+  opacity: 1;
+}
+
+.socrates-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-full, 9999px);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.socrates-action-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.socrates-action-btn--done {
+  border-color: var(--color-success, #22c55e);
+  color: var(--color-success, #22c55e);
+  pointer-events: none;
+}

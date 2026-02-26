@@ -25,11 +25,30 @@ class SocratesSessionUpdate(BaseModel):
     title: str
 
 
+class GraphNeighbor(BaseModel):
+    """마인드맵 노드 이웃 정보."""
+
+    name: str
+    label: str
+    relation_type: str
+
+
+class SourceContext(BaseModel):
+    """소크라테스 대화의 소스 컨텍스트."""
+
+    type: str  # "diary", "scrap", "mindmap"
+    title: str | None = None
+    content_preview: str | None = None  # 최대 500자
+    tags: list[str] | None = None
+    graph_neighbors: list[GraphNeighbor] | None = None
+
+
 class SocratesMessageRequest(BaseModel):
     """소크라테스 메시지 전송 요청."""
 
     content: str
     mode: str | None = None  # insight, counter, summary, evening
+    source_context: SourceContext | None = None
 
 
 class SocratesMessageResponse(BaseModel):

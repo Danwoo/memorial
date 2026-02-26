@@ -60,6 +60,7 @@ class SocratesService:
         user_id: UUID,
         content: str,
         mode: str | None = None,
+        source_context: dict | None = None,
     ) -> AsyncGenerator[str, None]:
         """메시지 전송 후 실시간 SSE 스트리밍으로 AI 응답 반환.
 
@@ -78,10 +79,18 @@ class SocratesService:
             # 대화 이력 조회
             messages = await self.socrates_repo.get_messages(session_id)
 
-            # 이전 세션 요약 컨텍스트 (첫 메시지일 때만)
+            # 이전 세션 컨텍스트 (첫 메시지일 때만)
             prev_context = ""
+            topic_context = ""
             if len(messages) == 1:
                 prev_context = await self._get_previous_session_context(user_id)
+                # source_context 태그 기반 과거 세션 검색
+                if source_context and source_context.get("tags"):
+                    topic_context = await self._get_topic_session_context(
+                        user_id,
+                        source_context["tags"],
+                        session_id,
+                    )
 
             # 턴 수 계산 (HumanMessage 개수 기준)
             turn_count = sum(1 for m in messages if isinstance(m, HumanMessage))
@@ -92,12 +101,14 @@ class SocratesService:
                 mode,
                 user_id=str(user_id),
                 turn_count=turn_count,
+                source_context=source_context,
             )
 
-            # 이전 세션 컨텍스트가 있으면 시스템 프롬프트에 추가
-            if prev_context and lc_messages:
+            # 이전 세션 / 주제 컨텍스트를 시스템 프롬프트에 추가
+            extra_context = prev_context + topic_context
+            if extra_context and lc_messages:
                 original_system = lc_messages[0].content
-                lc_messages[0] = SystemMessage(content=original_system + prev_context)
+                lc_messages[0] = SystemMessage(content=original_system + extra_context)
 
             # LLM에서 토큰 단위 스트리밍
             llm = get_streaming_llm()
@@ -131,6 +142,10 @@ class SocratesService:
             done_data: dict = {"done": True}
             if title:
                 done_data["title"] = title
+
+            # source_context 태그가 있으면 세션에 저장
+            if source_context and source_context.get("tags"):
+                await self._save_topic_tags(session_id, source_context["tags"])
 
             yield f"data: {json.dumps(done_data)}\n\n"
 
@@ -198,6 +213,41 @@ class SocratesService:
             return "\n\n**이전 대화 요약:**\n" + "\n".join(lines)
         except Exception:
             logger.exception("이전 세션 컨텍스트 조회 실패")
+            return ""
+
+    async def _save_topic_tags(self, session_id: UUID, tags: list[str]) -> None:
+        """세션에 topic_tags 저장."""
+        try:
+            await self.socrates_repo.update_session_topic_tags(session_id, tags)
+        except Exception:
+            logger.exception("topic_tags 저장 실패 (session_id=%s)", session_id)
+
+    async def _get_topic_session_context(self, user_id: UUID, tags: list[str], exclude_session_id: UUID) -> str:
+        """같은 주제 태그를 가진 과거 세션 요약을 컨텍스트 문자열로 반환."""
+        try:
+            past_sessions = await self.socrates_repo.search_sessions_by_topic(
+                user_id,
+                tags,
+                exclude_session_id=exclude_session_id,
+                limit=3,
+            )
+            if not past_sessions:
+                return ""
+
+            lines = []
+            for s in past_sessions:
+                date = str(s["created_at"])[:10]
+                title = s.get("title", "")
+                summary = s.get("summary") or "(요약 없음)"
+                lines.append(f"- [{date}] {title}: {summary}")
+
+            return (
+                "\n\n**이 주제에 대한 과거 대화:**\n"
+                + "\n".join(lines)
+                + "\n과거 대화를 자연스럽게 언급하여 사용자의 사고 변화를 돌아볼 수 있게 해주세요."
+            )
+        except Exception:
+            logger.exception("주제 기반 세션 컨텍스트 조회 실패")
             return ""
 
     async def _maybe_generate_title(self, session_id: UUID, user_msg: str, ai_msg: str) -> str | None:

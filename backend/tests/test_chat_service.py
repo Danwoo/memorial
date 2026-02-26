@@ -4,7 +4,7 @@ from uuid import UUID
 
 import pytest
 
-from app.services.chat_service import ChatService
+from app.services.socrates_service import SocratesService
 
 NOW = datetime.now(UTC)
 USER_ID = UUID("00000000-0000-0000-0000-000000000001")
@@ -12,8 +12,8 @@ SESSION_ID_1 = UUID("00000000-0000-0000-0000-000000000010")
 SESSION_ID_2 = UUID("00000000-0000-0000-0000-000000000020")
 
 
-class TestChatService:
-    """ChatService 단위 테스트 — 세션 생성, 메시지 저장, 세션 목록 정렬, 피드백"""
+class TestSocratesService:
+    """SocratesService 단위 테스트 — 세션 생성, 메시지 저장, 세션 목록 정렬, 피드백"""
 
     @pytest.fixture
     def mock_chat_repo(self):
@@ -35,8 +35,8 @@ class TestChatService:
 
     @pytest.fixture
     def chat_service(self, mock_chat_repo):
-        """목 의존성 주입된 ChatService 생성"""
-        return ChatService(mock_chat_repo)
+        """목 의존성 주입된 SocratesService 생성"""
+        return SocratesService(mock_chat_repo)
 
     # --- 세션 생성 테스트 ---
 

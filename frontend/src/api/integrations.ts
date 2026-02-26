@@ -29,8 +29,8 @@ export interface DeliveryLogEntry {
 export interface BotSettings {
   enabled: boolean
   delivery_hour: number
-  include_memories: boolean
-  include_journals: boolean
+  include_scraps: boolean
+  include_diaries: boolean
   include_insights: boolean
   last_delivery: DeliveryLogEntry | null
 }
@@ -38,8 +38,8 @@ export interface BotSettings {
 export interface BotSettingsUpdate {
   enabled?: boolean
   delivery_hour?: number
-  include_memories?: boolean
-  include_journals?: boolean
+  include_scraps?: boolean
+  include_diaries?: boolean
   include_insights?: boolean
 }
 
@@ -86,8 +86,8 @@ export async function getBotSettings(): Promise<BotSettings> {
   if (isDemoMode()) return {
     enabled: false,
     delivery_hour: 21,
-    include_memories: true,
-    include_journals: true,
+    include_scraps: true,
+    include_diaries: true,
     include_insights: true,
     last_delivery: null,
   }
@@ -96,7 +96,7 @@ export async function getBotSettings(): Promise<BotSettings> {
 
 // 일일 다이제스트 봇 설정 업데이트
 export async function updateBotSettings(settings: BotSettingsUpdate): Promise<BotSettings> {
-  if (isDemoMode()) return { enabled: false, delivery_hour: 21, include_memories: true, include_journals: true, include_insights: true, last_delivery: null }
+  if (isDemoMode()) return { enabled: false, delivery_hour: 21, include_scraps: true, include_diaries: true, include_insights: true, last_delivery: null }
   return put<BotSettings>('/integrations/bot-settings', settings)
 }
 

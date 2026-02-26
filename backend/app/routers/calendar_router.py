@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.config.auth import get_user_id
 from app.config.dependencies import get_calendar_service
-from app.schemas.calendar_schema import CalendarOverviewResponse, StreakResponse, TimelineResponse
+from app.schemas.calendar_schema import CalendarOverviewResponse, CalendarStreakResponse, TimelineResponse
 from app.services.calendar_service import CalendarService
 
 router = APIRouter(prefix="/calendar", tags=["calendar"])
@@ -19,7 +19,7 @@ async def get_overview_stats(
     return await calendar_service.get_overview(user_id)
 
 
-@router.get("/streak", response_model=StreakResponse)
+@router.get("/streak", response_model=CalendarStreakResponse)
 async def get_streak(
     user_id: UUID = Depends(get_user_id),
     calendar_service: CalendarService = Depends(get_calendar_service),

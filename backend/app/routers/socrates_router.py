@@ -87,8 +87,9 @@ async def send_message(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    source_ctx = data.source_context.model_dump() if data.source_context else None
     return StreamingResponse(
-        socrates_service.send_message(session_id, user_id, data.content, data.mode),
+        socrates_service.send_message(session_id, user_id, data.content, data.mode, source_ctx),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

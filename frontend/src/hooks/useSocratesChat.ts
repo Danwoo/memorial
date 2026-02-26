@@ -3,17 +3,25 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useSocratesSession } from '../contexts/SocratesSessionContext'
 import { useToast } from '../contexts/ToastContext'
 import { useDemoMode } from '../contexts/DemoContext'
-import type { SocratesMessage, SocratesLocationState, BriefingData, SocratesFeedback } from '../types'
+import type { SocratesMessage, SocratesLocationState, BriefingData, SocratesFeedback, SocratesMessagePayload, SourceContext, SocratesMode } from '../types'
 import {
   createSocratesSession, fetchSocratesHistory, sendSocratesMessage, readSSEStream,
-  fetchBriefing, sendFeedback, fetchFeedbacks,
+  fetchBriefing, sendFeedback, fetchFeedbacks, createScrap,
 } from '../api'
 
 const ERROR_MESSAGE = '죄송합니다, 오류가 발생했습니다. 다시 시도해주세요.'
 
+export interface SocratesChatContext {
+  type: 'diary' | 'scrap' | 'mindmap'
+  content?: string
+  title?: string
+  tags?: string[]
+  graph_neighbors?: Array<{ name: string; label: string; relation_type: string }>
+}
+
 export interface UseSocratesChatOptions {
   mode: 'standalone' | 'panel'
-  context?: { type: 'diary' | 'scrap'; content?: string }
+  context?: SocratesChatContext
   initialMessage?: string
 }
 
@@ -38,6 +46,10 @@ export interface UseSocratesChatReturn {
   adjustTextareaHeight: () => void
   handleKeyDown: (e: React.KeyboardEvent) => void
   toggleRefExpand: (idx: number) => void
+  setSourceContextOverride: (ctx: SocratesChatContext | null) => void
+  saveMessageAsScrap: (content: string) => void
+  selectedMode: SocratesMode
+  setSelectedMode: (mode: SocratesMode) => void
   hasBriefingContent: boolean
   sendMessageDirect: (text: string) => void
 }
@@ -65,6 +77,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
   const [expandedRefs, setExpandedRefs] = useState<Set<number>>(new Set())
   const [feedbacks, setFeedbacks] = useState<Map<number, 'good' | 'bad'>>(new Map())
   const [showScrollBtn, setShowScrollBtn] = useState(false)
+  const [selectedMode, setSelectedMode] = useState<SocratesMode>('default')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -72,6 +85,8 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingMessageRef = useRef<string | null>(null)
   const handleSendRef = useRef<() => void>(() => {})
+  const contextRef = useRef(options.context)
+  const sourceContextOverrideRef = useRef<SocratesChatContext | null>(null)
 
   // URL 파라미터로 진입 시 채팅 히스토리 로드 (standalone 모드만)
   useEffect(() => {
@@ -124,6 +139,11 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options.initialMessage])
+
+  // context 최신 상태 동기화
+  useEffect(() => {
+    contextRef.current = options.context
+  }, [options.context])
 
   // 마운트 시 브리핑 로드
   useEffect(() => {
@@ -222,9 +242,27 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
         }
       }
 
+      const payload: SocratesMessagePayload = {
+        content: userMessage,
+        mode: selectedMode === 'default' ? undefined : selectedMode,
+      }
+      const ctx = sourceContextOverrideRef.current || contextRef.current
+      if (ctx) {
+        const sourceCtx: SourceContext = { type: ctx.type }
+        if (ctx.title) sourceCtx.title = ctx.title
+        if (ctx.content) sourceCtx.content_preview = ctx.content.slice(0, 500)
+        if (ctx.tags) sourceCtx.tags = ctx.tags
+        if (ctx.graph_neighbors) sourceCtx.graph_neighbors = ctx.graph_neighbors
+        payload.source_context = sourceCtx
+      }
+      // 오버라이드는 첫 메시지에만 적용 후 초기화
+      if (sourceContextOverrideRef.current) {
+        sourceContextOverrideRef.current = null
+      }
+
       const response = await sendSocratesMessage(
         currentSessionId,
-        { content: userMessage },
+        payload,
         abortController.signal,
       )
 
@@ -259,7 +297,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
       abortControllerRef.current = null
       setIsLoading(false)
     }
-  }, [input, isLoading, sessionId, navigate, toast, triggerRefresh, pathPrefix, isStandalone])
+  }, [input, isLoading, sessionId, selectedMode, navigate, toast, triggerRefresh, pathPrefix, isStandalone])
 
   handleSendRef.current = handleSendMessage
 
@@ -292,6 +330,22 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     })
   }, [])
 
+  const setSourceContextOverride = useCallback((ctx: SocratesChatContext | null) => {
+    sourceContextOverrideRef.current = ctx
+  }, [])
+
+  const saveMessageAsScrap = useCallback(async (content: string) => {
+    try {
+      await createScrap({
+        sourceType: 'NOTE',
+        content,
+      })
+      toast.success('스크랩으로 저장했습니다')
+    } catch {
+      toast.error('저장에 실패했습니다')
+    }
+  }, [toast])
+
   const hasBriefingContent = !!(briefing && briefing.today_scraps.count > 0)
 
   return {
@@ -317,5 +371,9 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     toggleRefExpand,
     hasBriefingContent,
     sendMessageDirect,
+    setSourceContextOverride,
+    saveMessageAsScrap,
+    selectedMode,
+    setSelectedMode,
   }
 }

@@ -1,7 +1,8 @@
 import { ChevronDown } from 'lucide-react'
-import type { UseSocratesChatReturn } from '../../hooks/useSocratesChat'
+import type { UseSocratesChatReturn, SocratesChatContext } from '../../hooks/useSocratesChat'
 import SocratesEmptyState from './SocratesEmptyState'
 import SocratesMessageList from './SocratesMessageList'
+import SocratesModeSelector from './SocratesModeSelector'
 import SocratesInputBar from './SocratesInputBar'
 import './SocratesPanel.css'
 
@@ -9,16 +10,21 @@ interface SocratesPanelProps {
   chat: UseSocratesChatReturn
   showHeader?: boolean
   className?: string
+  onScrapClick?: (scrapId: string) => void
+  onInsertToDiary?: (content: string) => void
+  isPanelMode?: boolean
+  context?: SocratesChatContext
 }
 
-export default function SocratesPanel({ chat, showHeader = false, className = '' }: SocratesPanelProps) {
+export default function SocratesPanel({ chat, showHeader = false, className = '', onScrapClick, onInsertToDiary, isPanelMode = false, context }: SocratesPanelProps) {
   const {
     messages, input, setInput, isLoading, isLoadingHistory,
     briefing, expandedRefs, feedbacks, showScrollBtn, hasBriefingContent,
     messagesEndRef, messagesContainerRef, textareaRef,
     handleSendMessage, handleFeedback, scrollToBottom,
     handleMessagesScroll, adjustTextareaHeight, handleKeyDown,
-    toggleRefExpand, sendMessageDirect,
+    toggleRefExpand, sendMessageDirect, saveMessageAsScrap,
+    selectedMode, setSelectedMode,
   } = chat
 
   return (
@@ -48,6 +54,7 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
               briefing={briefing}
               hasBriefingContent={hasBriefingContent}
               onSuggestedQuestion={sendMessageDirect}
+              context={context}
             />
           ) : (
             <SocratesMessageList
@@ -56,6 +63,10 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
               feedbacks={feedbacks}
               onToggleRefExpand={toggleRefExpand}
               onFeedback={handleFeedback}
+              onScrapClick={onScrapClick}
+              onSaveAsScrap={saveMessageAsScrap}
+              onInsertToDiary={onInsertToDiary}
+              isPanelMode={isPanelMode}
             />
           )}
           <div ref={messagesEndRef} />
@@ -73,15 +84,21 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
         )}
       </div>
 
-      <SocratesInputBar
-        input={input}
-        isLoading={isLoading}
-        textareaRef={textareaRef}
-        onInputChange={setInput}
-        onSend={handleSendMessage}
-        onKeyDown={handleKeyDown}
-        onAdjustHeight={adjustTextareaHeight}
-      />
+      <div className="socrates-input-area">
+        <SocratesModeSelector
+          selectedMode={selectedMode}
+          onModeChange={setSelectedMode}
+        />
+        <SocratesInputBar
+          input={input}
+          isLoading={isLoading}
+          textareaRef={textareaRef}
+          onInputChange={setInput}
+          onSend={handleSendMessage}
+          onKeyDown={handleKeyDown}
+          onAdjustHeight={adjustTextareaHeight}
+        />
+      </div>
     </div>
   )
 }
