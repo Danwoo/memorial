@@ -38,7 +38,7 @@ export default function BriefingTab({ displayName, briefing, streak, stats, acti
               <>
                 <span className="hero-stat-item">
                   <BookOpen size={14} />
-                  오늘 기억 {briefing?.today_scraps.count ?? 0}개
+                  오늘 기억 {briefing?.today_scraps?.count ?? 0}개
                 </span>
                 {briefing && briefing.unreviewed_count > 0 && (
                   <span className="hero-stat-item hero-stat-action">

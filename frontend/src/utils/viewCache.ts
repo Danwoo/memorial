@@ -112,7 +112,7 @@ export function clearAllViewCache(): void {
 
 // 캐시 키 상수 — 중앙 관리로 오타 방지 및 무효화 지점 추적
 export const CACHE_KEYS = {
-  DASHBOARD: 'dashboard',
+  DASHBOARD: 'dashboard_v2',
   SCRAP_LIST: 'scrap-list',
   GRAPH_PREFIX: 'mindmap:',
 } as const

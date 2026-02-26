@@ -62,11 +62,11 @@ function getBannerMessage(briefing: BriefingData | null): string | null {
   if (!briefing) return null
   const { today_scraps, connection_hint } = briefing
   if (connection_hint) return connection_hint
-  if (today_scraps.count > 0) {
-    const topics = today_scraps.topics.slice(0, 2).join(', ')
+  if ((today_scraps?.count ?? 0) > 0) {
+    const topics = (today_scraps?.topics ?? []).slice(0, 2).join(', ')
     return topics
-      ? `오늘 ${topics} 관련 스크랩 ${today_scraps.count}개가 저장됐어요`
-      : `오늘 스크랩 ${today_scraps.count}개가 저장됐어요`
+      ? `오늘 ${topics} 관련 스크랩 ${today_scraps?.count}개가 저장됐어요`
+      : `오늘 스크랩 ${today_scraps?.count}개가 저장됐어요`
   }
   return null
 }
@@ -91,9 +91,9 @@ export default function CalendarView() {
       try {
         const [briefingData, streakData, statsData, activityData, insightsData, journalDatesData] = await Promise.all([
           fetchBriefing().catch(() => null),
-          fetchStreak(),
-          fetchStats(),
-          fetchActivity(90),
+          fetchStreak().catch(() => null),
+          fetchStats().catch(() => null),
+          fetchActivity(90).catch(() => ({ activity: [] })),
           fetchDailyInsights().catch(() => ({ insights: [] })),
           fetchDiaryDates(90).catch(() => ({ dates: [] })),
         ])

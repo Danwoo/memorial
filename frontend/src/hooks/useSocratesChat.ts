@@ -346,7 +346,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     }
   }, [toast])
 
-  const hasBriefingContent = !!(briefing && briefing.today_scraps.count > 0)
+  const hasBriefingContent = !!(briefing && (briefing.today_scraps?.count ?? 0) > 0)
 
   return {
     sessionId,
