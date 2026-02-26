@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Any
 from uuid import UUID
 
@@ -90,6 +91,18 @@ COGNITIVE_DISTORTION_PATTERNS = {
 }
 
 
+def _extract_preview(content: str | None) -> str | None:
+    """content 첫 줄에서 마크다운 기호 제거 후 20자 반환."""
+    if not content:
+        return None
+    line = content.strip().split("\n")[0]
+    line = re.sub(r"^#+\s*", "", line)
+    line = re.sub(r"\*+", "", line)
+    line = re.sub(r"^[-*]\s*", "", line)
+    line = line.strip()
+    return line[:20] if line else None
+
+
 class DiaryService:
     """다이어리 작성, 감정 분석, 소크라테스 질문, 인지 왜곡 탐지 비즈니스 로직."""
 
@@ -153,13 +166,18 @@ class DiaryService:
     async def get_diary_dates(self, user_id: UUID, limit: int = 90) -> list[dict[str, Any]]:
         """다이어리가 존재하는 날짜 목록 조회."""
         entries = await self.diary_repo.get_diary_dates(user_id, limit)
-        date_map: dict[str, dict[str, Any]] = {}
-        for entry in entries:
-            date_key = entry["created_at"][:10]
-            if date_key not in date_map:
-                date_map[date_key] = {"date": date_key, "count": 0, "mood": entry.get("mood")}
-            date_map[date_key]["count"] += 1
-        return sorted(date_map.values(), key=lambda x: x["date"], reverse=True)
+        date_map: dict[str, dict] = {}
+        for e in entries:
+            date_str = e["created_at"][:10]
+            if date_str not in date_map:
+                date_map[date_str] = {
+                    "date": date_str,
+                    "count": 0,
+                    "mood": e.get("mood"),
+                    "preview": _extract_preview(e.get("content")),
+                }
+            date_map[date_str]["count"] += 1
+        return list(date_map.values())
 
     async def get_diaries_by_date(self, user_id: UUID, date_str: str) -> list[dict[str, Any]]:
         """특정 날짜의 다이어리 목록 조회."""
