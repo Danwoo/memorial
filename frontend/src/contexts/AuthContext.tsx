@@ -163,7 +163,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // 401 토큰 만료 이벤트 수신 → 자동 로그아웃
   useEffect(() => {
     const handleTokenExpired = () => {
-      signOut()
+      signOut().catch(() => {
+        // Supabase signOut 실패해도 로컬 상태 초기화는 보장됨
+      })
     }
     window.addEventListener('auth:token-expired', handleTokenExpired)
     return () => {
