@@ -176,6 +176,39 @@ class SocratesRepository:
             for s in result.data
         ]
 
+    async def update_session_topic_tags(self, session_id: UUID, tags: list[str]) -> bool:
+        """세션의 topic_tags를 업데이트."""
+        try:
+            await asyncio.to_thread(self._update_topic_tags, str(session_id), tags)
+            return True
+        except Exception:
+            logger.exception("topic_tags 업데이트 실패 (session_id=%s)", session_id)
+            return False
+
+    async def search_sessions_by_topic(
+        self, user_id: UUID, tags: list[str], exclude_session_id: UUID | None = None, limit: int = 3
+    ) -> list[dict]:
+        """topic_tags 배열과 겹치는 과거 세션 검색."""
+        result = await asyncio.to_thread(
+            self._select_sessions_by_topic,
+            str(user_id),
+            tags,
+            str(exclude_session_id) if exclude_session_id else None,
+            limit,
+        )
+        if not result.data:
+            return []
+        return [
+            {
+                "id": s["id"],
+                "title": s["title"],
+                "topic_tags": s.get("topic_tags", []),
+                "summary": s.get("summary"),
+                "created_at": s["created_at"],
+            }
+            for s in result.data
+        ]
+
     async def get_sessions_for_export(self, user_id: UUID, limit: int = 10000) -> list[dict]:
         """내보내기용 세션 목록 조회."""
         result = await asyncio.to_thread(self._select_sessions_for_export, str(user_id), limit)
@@ -301,6 +334,27 @@ class SocratesRepository:
             .limit(limit)
             .execute()
         )
+
+    def _update_topic_tags(self, session_id: str, tags: list[str]):
+        return (
+            self.db.table("socrates_sessions")
+            .update({"topic_tags": tags, "updated_at": datetime.now(UTC).isoformat()})
+            .eq("id", session_id)
+            .execute()
+        )
+
+    def _select_sessions_by_topic(self, user_id: str, tags: list[str], exclude_session_id: str | None, limit: int):
+        query = (
+            self.db.table("socrates_sessions")
+            .select("id, title, topic_tags, summary, created_at")
+            .eq("user_id", user_id)
+            .overlaps("topic_tags", tags)
+            .order("created_at", desc=True)
+            .limit(limit)
+        )
+        if exclude_session_id:
+            query = query.neq("id", exclude_session_id)
+        return query.execute()
 
     def _select_feedbacks(self, session_id: str):
         return self.db.table("socrates_feedback").select("message_index, rating").eq("session_id", session_id).execute()

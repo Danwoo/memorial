@@ -41,13 +41,16 @@ CONNECTION_TURN_INTERVAL = 3
 _COUNTER_KEYWORDS = ["반론", "반대", "비판", "다른 관점", "약점", "문제점", "단점", "criticism"]
 _SUMMARY_KEYWORDS = ["요약", "정리", "핵심", "줄여", "summarize"]
 _EVENING_KEYWORDS = ["하루 정리", "하루 돌아", "오늘 회고", "저녁 회고", "하루를 마무리"]
-_INSIGHT_KEYWORDS = ["깊이 생각", "분석해", "왜 그런", "근본 원인", "본질", "통찰"]
+_INSIGHT_KEYWORDS = ["깊이 생각", "분석해", "본질", "통찰"]
+_ASSUMPTION_KEYWORDS = ["전제", "가정", "전제 분석", "assumption", "숨겨진 가정"]
+_FIVE_WHYS_KEYWORDS = ["왜 그런", "근본 원인", "왜?", "5 whys", "파고들"]
+_DIALECTIC_KEYWORDS = ["비교", "뭐가 나을", "장단점", "vs", "선택지", "어떤 게 좋"]
 
 
 def detect_intent(message: str) -> str | None:
     """사용자 메시지에서 대화 의도를 키워드 기반으로 자동 분류.
 
-    반환값은 mode 문자열(insight/counter/summary/evening) 또는 None(기본).
+    반환값은 mode 문자열(insight/counter/summary/evening/assumption/five_whys/dialectic) 또는 None(기본).
     """
     msg = message.lower()
     for keywords, mode_value in [
@@ -55,6 +58,9 @@ def detect_intent(message: str) -> str | None:
         (_SUMMARY_KEYWORDS, "summary"),
         (_EVENING_KEYWORDS, "evening"),
         (_INSIGHT_KEYWORDS, "insight"),
+        (_ASSUMPTION_KEYWORDS, "assumption"),
+        (_FIVE_WHYS_KEYWORDS, "five_whys"),
+        (_DIALECTIC_KEYWORDS, "dialectic"),
     ]:
         if any(kw in msg for kw in keywords):
             return mode_value
