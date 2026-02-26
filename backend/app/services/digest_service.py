@@ -67,7 +67,7 @@ class DigestService:
 
         scraps = await self._get_today_scraps(today_start, today_end, user_id=user_id)
         diaries = await self._get_today_diaries(user_id, today)
-        chats = await self._get_today_chats(user_id, today_start, today_end)
+        chats = await self._get_today_chats(today_start, today_end, user_id=user_id)
 
         main_topics = self._extract_topics(scraps)
         suggested_questions = await self._generate_questions(scraps, diaries)
@@ -113,15 +113,15 @@ class DigestService:
             logger.exception("Error fetching today's scraps")
             return []
 
-    async def _get_today_chats(self, user_id: UUID, today_start: datetime, today_end: datetime) -> list[dict]:
+    async def _get_today_chats(self, start: datetime, end: datetime, user_id: UUID) -> list[dict]:
         """오늘 생성된 소크라테스 세션 조회."""
         if not self.socrates_repo:
             return []
         try:
             return await self.socrates_repo.get_sessions_by_date_range(
                 user_id=user_id,
-                start_iso=today_start.isoformat(),
-                end_iso=today_end.isoformat(),
+                start_iso=start.isoformat(),
+                end_iso=end.isoformat(),
             )
         except Exception:
             logger.exception("오늘 소크라테스 세션 조회 실패")
