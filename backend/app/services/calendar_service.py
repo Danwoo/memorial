@@ -1,5 +1,5 @@
 import logging
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -38,15 +38,19 @@ def _count_by_day(memories: list[dict]) -> dict[str, int]:
     return dict(day_counts)
 
 
-def _build_activity_series(day_counts: dict[str, int], now: datetime, days: int) -> list[ActivityData]:
+def _build_activity_series(
+    day_counts: dict[str, int],
+    day_tags: dict[str, Any],
+    now: datetime,
+    days: int,
+) -> list[ActivityData]:
     """day_counts로부터 연속 날짜 ActivityData 시리즈 생성 (오래된 순)."""
-    result = [
-        ActivityData(
-            date=(now - timedelta(days=i)).strftime("%Y-%m-%d"),
-            count=day_counts.get((now - timedelta(days=i)).strftime("%Y-%m-%d"), 0),
-        )
-        for i in range(days)
-    ]
+    result = []
+    for i in range(days):
+        d = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+        count = day_counts.get(d, 0)
+        top_tags = [t for t, _ in day_tags.get(d, Counter()).most_common(2)] if count > 0 else []
+        result.append(ActivityData(date=d, count=count, tags=top_tags))
     result.reverse()
     return result
 
@@ -102,7 +106,7 @@ class CalendarService:
             most_active_day=most_active_day,
         )
 
-        recent_activity = _build_activity_series(day_counts, now, OVERVIEW_ACTIVITY_DAYS)
+        recent_activity = _build_activity_series(day_counts, {}, now, OVERVIEW_ACTIVITY_DAYS)
 
         sources = [
             SourceCalendarStats(source_type=st, count=cnt, percentage=cnt / total * 100 if total > 0 else 0)
@@ -132,7 +136,18 @@ class CalendarService:
 
         memories = await self.calendar_repo.get_scraps_in_range(user_id, start_date, now)
         day_counts = _count_by_day(memories)
-        return _build_activity_series(day_counts, now, days)
+
+        day_tags: dict[str, Counter] = {}
+        for m in memories:
+            day = m.get("created_at", "")[:10]
+            if not day:
+                continue
+            for tag in m.get("tags") or []:
+                if day not in day_tags:
+                    day_tags[day] = Counter()
+                day_tags[day][tag] += 1
+
+        return _build_activity_series(day_counts, day_tags, now, days)
 
     async def get_timeline(
         self,
