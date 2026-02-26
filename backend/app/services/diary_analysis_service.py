@@ -7,10 +7,9 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from app.config.llm import get_creative_llm
 from app.repositories.socrates_repository import SocratesRepository
 from app.repositories.vector_repository import VectorRepository
+from app.services.diary_service import MIN_CONTENT_LENGTH
 
 logger = logging.getLogger(__name__)
-
-MIN_CONTENT_LENGTH = 10
 MAX_REVIEW_QUESTIONS = 3
 MAX_TRANSCRIPT_CHARS = 10000
 RELATED_SCRAPS_LIMIT = 5
@@ -149,13 +148,17 @@ class DiaryAnalysisService:
         if len(transcript) > MAX_TRANSCRIPT_CHARS:
             transcript = transcript[:MAX_TRANSCRIPT_CHARS] + "\n\n[대화 내용 일부 생략...]"
 
-        llm = get_creative_llm()
-        lc_messages = [
-            SystemMessage(content=DRAFT_PROMPT),
-            HumanMessage(content=f"다음 evening 대화를 바탕으로 다이어리 초안을 작성해주세요:\n\n{transcript}"),
-        ]
-        response = await llm.ainvoke(lc_messages)
-        return response.content
+        try:
+            llm = get_creative_llm()
+            lc_messages = [
+                SystemMessage(content=DRAFT_PROMPT),
+                HumanMessage(content=f"다음 evening 대화를 바탕으로 다이어리 초안을 작성해주세요:\n\n{transcript}"),
+            ]
+            response = await llm.ainvoke(lc_messages)
+            return response.content
+        except Exception:
+            logger.exception("다이어리 초안 생성 실패 (session_id=%s)", session_id)
+            raise
 
     async def get_related_scraps(self, user_id: UUID, content: str) -> list[dict[str, Any]]:
         """다이어리 내용과 유사한 Scrap을 벡터 검색으로 조회."""

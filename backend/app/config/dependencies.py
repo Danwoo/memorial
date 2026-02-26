@@ -147,11 +147,10 @@ def get_mindmap_insight_service(
 
 def get_diary_service(
     diary_repo: DiaryRepository = Depends(get_diary_repository),
-    mindmap_repo: MindmapRepository = Depends(get_mindmap_repository),
     link_repo: DiaryScrapLinkRepository = Depends(get_diary_scrap_link_repository),
 ) -> DiaryService:
     """DiaryService 인스턴스 생성."""
-    return DiaryService(diary_repo, mindmap_repo, link_repo)
+    return DiaryService(diary_repo, link_repo)
 
 
 def get_diary_analysis_service(

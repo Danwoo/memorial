@@ -9,7 +9,6 @@ from tenacity import before_sleep_log, retry, stop_after_attempt, wait_exponenti
 from app.config.llm import get_analytical_llm, get_tagger_llm
 from app.repositories.diary_repository import DiaryRepository
 from app.repositories.diary_scrap_link_repository import DiaryScrapLinkRepository
-from app.repositories.mindmap_repository import MindmapRepository
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +30,9 @@ class DiaryService:
     def __init__(
         self,
         diary_repo: DiaryRepository,
-        mindmap_repo: MindmapRepository,
         link_repo: DiaryScrapLinkRepository | None = None,
     ):
         self.diary_repo = diary_repo
-        self.mindmap_repo = mindmap_repo
         self.link_repo = link_repo
 
     @retry(
