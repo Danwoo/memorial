@@ -11,41 +11,41 @@ from app.services.export_service import ExportService
 router = APIRouter(prefix="/export", tags=["export"])
 
 
-@router.get("/memories")
-async def export_memories(
+@router.get("/scraps")
+async def export_scraps(
     user_id: UUID = Depends(get_user_id),
     service: ExportService = Depends(get_export_service),
 ):
-    """사용자의 전체 메모리를 JSON 파일로 내보내기."""
-    data = await service.export_memories(user_id)
+    """사용자의 전체 스크랩을 JSON 파일로 내보내기."""
+    data = await service.export_scraps(user_id)
 
     if not data:
         return Response(
             content=json.dumps([], ensure_ascii=False),
             media_type="application/json",
-            headers={"Content-Disposition": "attachment; filename=memoir_memories.json"},
+            headers={"Content-Disposition": "attachment; filename=memoir_scraps.json"},
         )
 
     content = json.dumps(data, ensure_ascii=False, indent=2)
     return Response(
         content=content,
         media_type="application/json",
-        headers={"Content-Disposition": "attachment; filename=memoir_memories.json"},
+        headers={"Content-Disposition": "attachment; filename=memoir_scraps.json"},
     )
 
 
-@router.get("/journals")
-async def export_journals(
+@router.get("/diaries")
+async def export_diaries(
     user_id: UUID = Depends(get_user_id),
     service: ExportService = Depends(get_export_service),
 ):
-    """사용자의 전체 저널을 Markdown ZIP 파일로 내보내기."""
-    zip_bytes = await service.export_journals_zip(user_id)
+    """사용자의 전체 다이어리를 Markdown ZIP 파일로 내보내기."""
+    zip_bytes = await service.export_diaries_zip(user_id)
 
     return Response(
         content=zip_bytes,
         media_type="application/zip",
-        headers={"Content-Disposition": "attachment; filename=memoir_journals.zip"},
+        headers={"Content-Disposition": "attachment; filename=memoir_diaries.zip"},
     )
 
 

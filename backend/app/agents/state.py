@@ -13,7 +13,7 @@ class AgentState(TypedDict):
     context: dict | None  # 추가 컨텍스트 (mode, user preferences 등)
 
     # --- 입력 데이터 (처리 대상) ---
-    target_memory_id: str | None  # 분석 대상 메모리 ID (Librarian용)
+    target_scrap_id: str | None  # 분석 대상 스크랩 ID (Librarian용)
     target_text: str | None  # 분석 대상 본문 텍스트
     source_url: str | None  # 원본 URL
 
@@ -33,14 +33,14 @@ class AgentState(TypedDict):
 
 
 def build_librarian_initial_state(
-    memory_id: str,
+    scrap_id: str,
     content: str,
     user_id: str,
 ) -> AgentState:
     """Librarian 그래프 실행을 위한 초기 상태 생성.
 
     Args:
-        memory_id: 처리 대상 메모리 ID
+        scrap_id: 처리 대상 스크랩 ID
         content: 분석 대상 본문 텍스트
         user_id: 소유 사용자 ID
     """
@@ -48,7 +48,7 @@ def build_librarian_initial_state(
         "messages": [],
         "user_id": user_id,
         "context": {},
-        "target_memory_id": memory_id,
+        "target_scrap_id": scrap_id,
         "target_text": content,
         "classification": None,
         "summary": None,

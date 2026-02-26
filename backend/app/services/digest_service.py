@@ -6,9 +6,9 @@ from uuid import UUID
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.config.llm import get_creative_llm
-from app.repositories.chat_repository import ChatRepository
-from app.repositories.journal_repository import JournalRepository
-from app.repositories.memory_repository import MemoryRepository
+from app.repositories.diary_repository import DiaryRepository
+from app.repositories.scrap_repository import ScrapRepository
+from app.repositories.socrates_repository import SocratesRepository
 from app.utils import parse_iso_datetime
 
 logger = logging.getLogger(__name__)
@@ -41,13 +41,13 @@ class DigestService:
 
     def __init__(
         self,
-        memory_repo: MemoryRepository,
-        journal_repo: JournalRepository,
-        chat_repo: ChatRepository | None = None,
+        scrap_repo: ScrapRepository,
+        diary_repo: DiaryRepository,
+        socrates_repo: SocratesRepository | None = None,
     ):
-        self.memory_repo = memory_repo
-        self.journal_repo = journal_repo
-        self.chat_repo = chat_repo
+        self.scrap_repo = scrap_repo
+        self.diary_repo = diary_repo
+        self.socrates_repo = socrates_repo
 
     async def get_today_digest(self, user_id: UUID, target_date: datetime | None = None) -> dict[str, Any]:
         """하루 활동 종합 다이제스트 조회.
@@ -65,58 +65,58 @@ class DigestService:
         today_start = datetime.combine(today, datetime.min.time(), tzinfo=UTC)
         today_end = datetime.combine(today, datetime.max.time(), tzinfo=UTC)
 
-        memories = await self._get_today_memories(today_start, today_end, user_id=user_id)
-        journals = await self._get_today_journals(user_id, today)
+        scraps = await self._get_today_scraps(today_start, today_end, user_id=user_id)
+        diaries = await self._get_today_diaries(user_id, today)
         chats = []  # TODO: 채팅 이력 구현 시 연동
 
-        main_topics = self._extract_topics(memories)
-        suggested_questions = await self._generate_questions(memories, journals)
+        main_topics = self._extract_topics(scraps)
+        suggested_questions = await self._generate_questions(scraps, diaries)
 
         return {
             "date": today.isoformat(),
-            "summary": {"memory_count": len(memories), "journal_count": len(journals), "chat_count": len(chats)},
-            "memories": [
+            "summary": {"scrap_count": len(scraps), "diary_count": len(diaries), "chat_count": len(chats)},
+            "scraps": [
                 {
-                    "id": str(memory.get("id", "")),
-                    "title": memory.get("title", "Untitled"),
-                    "type": memory.get("source_type", "UNKNOWN"),
-                    "summary": memory.get("summary") or memory.get("content", "")[:MEMORY_SUMMARY_PREVIEW_LENGTH],
-                    "tags": memory.get("tags") or [],
-                    "created_at": memory.get("created_at", ""),
+                    "id": str(scrap.get("id", "")),
+                    "title": scrap.get("title", "Untitled"),
+                    "type": scrap.get("source_type", "UNKNOWN"),
+                    "summary": scrap.get("summary") or scrap.get("content", "")[:MEMORY_SUMMARY_PREVIEW_LENGTH],
+                    "tags": scrap.get("tags") or [],
+                    "created_at": scrap.get("created_at", ""),
                 }
-                for memory in memories[:MAX_MEMORIES_IN_DIGEST]
+                for scrap in scraps[:MAX_MEMORIES_IN_DIGEST]
             ],
-            "journals": [
+            "diaries": [
                 {
-                    "id": str(journal.get("id", "")),
-                    "mood": journal.get("mood", "NEUTRAL"),
-                    "preview": journal.get("content", "")[:JOURNAL_PREVIEW_LENGTH],
-                    "created_at": journal.get("created_at", ""),
+                    "id": str(diary.get("id", "")),
+                    "mood": diary.get("mood", "NEUTRAL"),
+                    "preview": diary.get("content", "")[:JOURNAL_PREVIEW_LENGTH],
+                    "created_at": diary.get("created_at", ""),
                 }
-                for journal in journals[:MAX_JOURNALS_IN_DIGEST]
+                for diary in diaries[:MAX_JOURNALS_IN_DIGEST]
             ],
             "chats": chats,
             "insights": {"main_topics": main_topics[:MAX_DIGEST_TOPICS], "suggested_questions": suggested_questions},
         }
 
-    async def _get_today_memories(self, start: datetime, end: datetime, user_id: UUID | None = None) -> list[dict]:
-        """오늘 생성된 Memory 조회 (DB 날짜 범위 쿼리)."""
+    async def _get_today_scraps(self, start: datetime, end: datetime, user_id: UUID | None = None) -> list[dict]:
+        """오늘 생성된 Scrap 조회 (DB 날짜 범위 쿼리)."""
         if not user_id:
             return []
         try:
-            return await self.memory_repo.get_by_date_range(
+            return await self.scrap_repo.get_by_date_range(
                 user_id=user_id,
                 start=start.isoformat(),
                 end=end.isoformat(),
             )
         except Exception:
-            logger.exception("Error fetching today's memories")
+            logger.exception("Error fetching today's scraps")
             return []
 
-    async def _get_today_journals(self, user_id: UUID, today: datetime) -> list[dict]:
-        """오늘 생성된 저널 조회."""
+    async def _get_today_diaries(self, user_id: UUID, today: datetime) -> list[dict]:
+        """오늘 생성된 다이어리 조회."""
         try:
-            journals = await self.journal_repo.get_journals(
+            journals = await self.diary_repo.get_journals(
                 user_id,
                 limit=MAX_JOURNAL_FETCH_LIMIT,
             )
@@ -134,35 +134,35 @@ class DigestService:
 
             return today_journals
         except Exception:
-            logger.exception("Error fetching today's journals")
+            logger.exception("Error fetching today's diaries")
             return []
 
-    def _extract_topics(self, memories: list[dict]) -> list[str]:
-        """Memory 태그에서 주요 토픽 추출."""
+    def _extract_topics(self, scraps: list[dict]) -> list[str]:
+        """Scrap 태그에서 주요 토픽 추출."""
         tag_counts = {}
-        for memory in memories:
-            for tag in memory.get("tags", []) or []:
+        for scrap in scraps:
+            for tag in scrap.get("tags", []) or []:
                 tag_counts[tag] = tag_counts.get(tag, 0) + 1
 
         sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
         return [tag for tag, _ in sorted_tags]
 
-    async def _generate_questions(self, memories: list[dict], journals: list[dict]) -> list[str]:
+    async def _generate_questions(self, scraps: list[dict], diaries: list[dict]) -> list[str]:
         """오늘 콘텐츠 기반 AI 성찰 질문 생성."""
-        if not memories and not journals:
+        if not scraps and not diaries:
             return ["오늘 하루는 어떠셨나요?"]
 
         context_parts = []
 
-        for memory in memories[:MAX_MEMORY_CONTEXT_ITEMS]:
-            title = memory.get("title", "Untitled")
-            summary = memory.get("summary") or memory.get("content", "")[:QUESTION_CONTEXT_PREVIEW_LENGTH]
+        for scrap in scraps[:MAX_MEMORY_CONTEXT_ITEMS]:
+            title = scrap.get("title", "Untitled")
+            summary = scrap.get("summary") or scrap.get("content", "")[:QUESTION_CONTEXT_PREVIEW_LENGTH]
             context_parts.append(f"- {title}: {summary}")
 
-        for journal in journals[:MAX_JOURNAL_CONTEXT_ITEMS]:
-            mood = journal.get("mood", "NEUTRAL")
-            preview = journal.get("content", "")[:QUESTION_CONTEXT_PREVIEW_LENGTH]
-            context_parts.append(f"- [Journal, Mood: {mood}] {preview}")
+        for diary in diaries[:MAX_JOURNAL_CONTEXT_ITEMS]:
+            mood = diary.get("mood", "NEUTRAL")
+            preview = diary.get("content", "")[:QUESTION_CONTEXT_PREVIEW_LENGTH]
+            context_parts.append(f"- [Diary, Mood: {mood}] {preview}")
 
         if not context_parts:
             return ["오늘 저장한 내용들을 돌아보면서 어떤 생각이 드시나요?"]

@@ -18,7 +18,7 @@ export default function NotFoundPage() {
         페이지를 찾을 수 없습니다
       </p>
       <Link
-        to="/dashboard"
+        to="/calendar"
         className="btn btn-primary"
         style={{ textDecoration: 'none', padding: '8px 20px', fontSize: '0.875rem' }}
       >

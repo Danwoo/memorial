@@ -24,14 +24,14 @@ export function JournalStarter({
   onAskAI,
 }: JournalStarterProps) {
   return (
-    <div className="journal-starter">
-      <div className="journal-starter__section">
-        <span className="journal-starter__label">템플릿 선택</span>
-        <div className="journal-template-chips">
+    <div className="diary-starter">
+      <div className="diary-starter__section">
+        <span className="diary-starter__label">템플릿 선택</span>
+        <div className="diary-template-chips">
           {templates.map((t) => (
             <button
               key={t.id}
-              className="journal-template-chip"
+              className="diary-template-chip"
               onClick={() => onSelectTemplate(t.content)}
               type="button"
             >
@@ -42,18 +42,18 @@ export function JournalStarter({
       </div>
 
       {isLoadingStarter ? (
-        <div className="journal-starter__loading">
+        <div className="diary-starter__loading">
           <Loader2 size={16} className="spin" />
           회고 질문 생성 중...
         </div>
       ) : starterQuestions.length > 0 ? (
-        <div className="journal-starter__section">
-          <span className="journal-starter__label">오늘의 회고 질문</span>
-          <div className="journal-starter-questions">
+        <div className="diary-starter__section">
+          <span className="diary-starter__label">오늘의 회고 질문</span>
+          <div className="diary-starter-questions">
             {starterQuestions.map((q, i) => (
               <button
                 key={i}
-                className="journal-starter-question"
+                className="diary-starter-question"
                 onClick={() => onStarterQuestion(q)}
                 type="button"
               >
@@ -64,7 +64,7 @@ export function JournalStarter({
         </div>
       ) : (
         <button
-          className="journal-starter__cta"
+          className="diary-starter__cta"
           onClick={onAskAI}
           disabled={isLoadingStarter}
           type="button"

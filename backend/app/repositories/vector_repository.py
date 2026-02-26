@@ -33,13 +33,13 @@ class VectorRepository:
         """문서 리스트의 임베딩 벡터 생성."""
         return await self.embeddings.aembed_documents(texts)
 
-    async def save_embedding(self, memory_id: str, content: str) -> None:
-        """Memory 콘텐츠의 임베딩을 생성하여 DB에 저장."""
+    async def save_embedding(self, scrap_id: str, content: str) -> None:
+        """Scrap 콘텐츠의 임베딩을 생성하여 DB에 저장."""
         if not content:
             return
 
         embedding = await self.embed_query(content)
-        await asyncio.to_thread(self._update_embedding, memory_id, embedding)
+        await asyncio.to_thread(self._update_embedding, scrap_id, embedding)
 
     async def similarity_search(
         self,
@@ -85,11 +85,11 @@ class VectorRepository:
     # 동기 헬퍼 (스레드에서 실행)
     # ------------------------------------------------------------------
 
-    def _update_embedding(self, memory_id: str, embedding: list[float]):
-        return self.db.table("memories").update({"embedding": embedding}).eq("id", memory_id).execute()
+    def _update_embedding(self, scrap_id: str, embedding: list[float]):
+        return self.db.table("scraps").update({"embedding": embedding}).eq("id", scrap_id).execute()
 
     def _rpc_match(self, rpc_params: dict):
-        return self.db.rpc("match_memories", rpc_params).execute()
+        return self.db.rpc("match_scraps", rpc_params).execute()
 
     def _rpc_sparse(self, rpc_params: dict):
         return self.db.rpc("sparse_search", rpc_params).execute()

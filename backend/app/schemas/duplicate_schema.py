@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class DuplicatePairItem(BaseModel):
-    """중복 쌍의 개별 메모리 요약."""
+    """중복 쌍의 개별 스크랩 요약."""
 
     id: UUID
     title: str
@@ -15,10 +15,10 @@ class DuplicatePairItem(BaseModel):
 
 
 class DuplicatePair(BaseModel):
-    """중복 메모리 쌍."""
+    """중복 스크랩 쌍."""
 
-    memory_a: DuplicatePairItem
-    memory_b: DuplicatePairItem
+    scrap_a: DuplicatePairItem
+    scrap_b: DuplicatePairItem
     similarity: float
     reason: str
 

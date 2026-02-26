@@ -1,9 +1,9 @@
-import type { Memory, MemoryDetail } from '../types/memory'
-import type { ChatMessage, ChatReference, ChatSessionResponse } from '../types/chat'
-import type { BriefingData, StatsData, StreakData, ActivityData, DailyInsight, DigestData } from '../types/dashboard'
-import type { GraphData, GraphInsights } from '../types/graph'
-import type { InsightsResponse, ReviewQuestionsResponse, JournalEntry } from '../types/journal'
-import type { PaginatedResponse, RelatedMemoriesResponse } from '../types/api'
+import type { Scrap, ScrapDetail } from '../types/scrap'
+import type { SocratesMessage, SocratesReference, SocratesSessionResponse } from '../types/socrates'
+import type { BriefingData, StatsData, StreakData, ActivityData, DailyInsight, DigestData } from '../types/calendar'
+import type { MindmapData, MindmapInsights } from '../types/mindmap'
+import type { InsightsResponse, ReviewQuestionsResponse, DiaryEntry } from '../types/diary'
+import type { PaginatedResponse, RelatedScrapsResponse } from '../types/api'
 import type { TimelineGroup } from '../types/timeline'
 import type { ReportData } from '../api/reports'
 
@@ -32,9 +32,9 @@ export const DEMO_TAGS: string[] = [
   '학습',
 ]
 
-// ─── 메모리 ──────────────────────────────────────────────────────────────────
+// ─── 스크랩 ──────────────────────────────────────────────────────────────────
 
-export const DEMO_MEMORIES: Memory[] = [
+export const DEMO_SCRAPS: Scrap[] = [
   { id: 'dm-1', title: '트랜스포머 아키텍처의 핵심: Self-Attention 메커니즘', summary: 'Self-Attention이 시퀀스 내 모든 위치 간 관계를 동시에 계산하는 방식과, 이를 통해 RNN의 순차적 한계를 극복하는 원리를 정리.', source_type: 'WEB', created_at: '2026-02-15T10:30:00Z', tags: ['AI', '딥러닝', 'Transformer'] },
   { id: 'dm-2', title: '스토아 철학과 현대 인지행동치료의 연결', summary: '에픽테토스의 "우리를 괴롭히는 것은 사건 자체가 아니라 그에 대한 판단이다"가 CBT의 인지 재구성과 직접 연결되는 점이 인상적.', source_type: 'WEB', created_at: '2026-02-14T08:15:00Z', tags: ['철학', '심리학', '스토아'] },
   { id: 'dm-3', title: '개인 지식 관리(PKM) 시스템 설계 원칙', summary: 'Zettelkasten 방식의 원자적 노트 + 양방향 링크가 창의적 사고를 촉진하는 이유. 두 번째 뇌 구축의 핵심 원칙들.', source_type: 'PDF', created_at: '2026-02-13T14:00:00Z', tags: ['PKM', '생산성', 'Zettelkasten'] },
@@ -47,7 +47,7 @@ export const DEMO_MEMORIES: Memory[] = [
   { id: 'dm-10', title: 'LangGraph로 멀티 에이전트 워크플로우 구축하기', summary: 'LangGraph의 StateGraph 패턴으로 여러 AI 에이전트를 조합하는 방법. 조건부 라우팅, 상태 관리, 인간-인-더-루프 패턴.', source_type: 'WEB', created_at: '2026-02-06T09:30:00Z', tags: ['AI', 'LangGraph', '에이전트'] },
 ]
 
-export const DEMO_MEMORY_DETAILS: Record<string, MemoryDetail> = {
+export const DEMO_SCRAP_DETAILS: Record<string, ScrapDetail> = {
   'dm-1': {
     id: 'dm-1',
     title: '트랜스포머 아키텍처의 핵심: Self-Attention 메커니즘',
@@ -162,16 +162,16 @@ export const DEMO_MEMORY_DETAILS: Record<string, MemoryDetail> = {
 
 // ─── 채팅 ──────────────────────────────────────────────────────────────────
 
-export const DEMO_SESSIONS: ChatSessionResponse[] = [
+export const DEMO_SOCRATES_SESSIONS: SocratesSessionResponse[] = [
   { id: 'ds-1', title: 'AI 에이전트의 미래에 대해', created_at: '2026-02-15T11:00:00Z' },
   { id: 'ds-2', title: '효과적인 학습법 토론', created_at: '2026-02-13T09:00:00Z' },
   { id: 'ds-3', title: '함수형 프로그래밍 심화 질문', created_at: '2026-02-11T14:00:00Z' },
 ]
 
-export const DEMO_CHAT_MESSAGES: Record<string, ChatMessage[]> = {
+export const DEMO_SOCRATES_MESSAGES: Record<string, SocratesMessage[]> = {
   'ds-1': [
     { role: 'user', content: 'LangGraph로 멀티 에이전트 시스템을 만들 때 가장 중요한 설계 원칙이 뭘까?' },
-    { role: 'assistant', content: '좋은 질문이에요! 저장하신 LangGraph 관련 메모리를 보면, StateGraph 패턴과 조건부 라우팅에 대해 정리하셨더라구요.\n\n멀티 에이전트 설계에서 가장 중요한 원칙은 **각 에이전트의 책임을 명확히 분리**하는 것입니다. 예를 들어:\n\n1. **단일 책임**: 각 에이전트는 하나의 역할만 수행\n2. **명시적 상태 관리**: 에이전트 간 공유 상태를 TypedDict로 정의\n3. **인간-인-더-루프**: 중요한 결정 지점에 사람이 개입할 수 있는 구조\n\n혹시 트랜스포머 아키텍처에 대해 정리하신 내용과 연결해서, 에이전트의 attention 메커니즘에 대해서도 생각해보신 적 있으신가요?', references: [{ id: 'dm-10', title: 'LangGraph로 멀티 에이전트 워크플로우 구축하기', source_type: 'WEB', created_at: '2026-02-06' }] },
+    { role: 'assistant', content: '좋은 질문이에요! 저장하신 LangGraph 관련 스크랩를 보면, StateGraph 패턴과 조건부 라우팅에 대해 정리하셨더라구요.\n\n멀티 에이전트 설계에서 가장 중요한 원칙은 **각 에이전트의 책임을 명확히 분리**하는 것입니다. 예를 들어:\n\n1. **단일 책임**: 각 에이전트는 하나의 역할만 수행\n2. **명시적 상태 관리**: 에이전트 간 공유 상태를 TypedDict로 정의\n3. **인간-인-더-루프**: 중요한 결정 지점에 사람이 개입할 수 있는 구조\n\n혹시 트랜스포머 아키텍처에 대해 정리하신 내용과 연결해서, 에이전트의 attention 메커니즘에 대해서도 생각해보신 적 있으신가요?', references: [{ id: 'dm-10', title: 'LangGraph로 멀티 에이전트 워크플로우 구축하기', source_type: 'WEB', created_at: '2026-02-06' }] },
     { role: 'user', content: '오, 트랜스포머랑 에이전트를 연결하는 관점은 생각 못 했는데 흥미롭다!' },
     { role: 'assistant', content: '맞아요! 실은 둘 다 "어디에 주의를 기울일 것인가"라는 같은 문제를 다루고 있거든요.\n\nSelf-Attention이 시퀀스 내에서 관련 정보를 찾듯이, 멀티 에이전트 시스템에서도 각 에이전트가 전체 상태에서 자신에게 관련된 정보만 "attend"하는 게 효율적이에요.\n\n이런 관점에서 보면, 저장하신 트랜스포머 아키텍처 메모리의 핵심 인사이트가 에이전트 설계에도 적용될 수 있습니다. 기억들 사이에 이런 숨겨진 연결을 발견하는 게 바로 Memoir의 가치죠!' },
   ],
@@ -186,13 +186,13 @@ export const DEMO_CHAT_MESSAGES: Record<string, ChatMessage[]> = {
 }
 
 // SSE 스트리밍 시뮬레이션용 응답 데이터
-export interface DemoChatResponse {
+export interface DemoSocratesResponse {
   keywords: string[]
   content: string
-  references: ChatReference[]
+  references: SocratesReference[]
 }
 
-export const DEMO_CHAT_RESPONSES: DemoChatResponse[] = [
+export const DEMO_SOCRATES_RESPONSES: DemoSocratesResponse[] = [
   {
     keywords: ['오늘', '하루', '기분', '어때'],
     content: '오늘 하루는 어떠셨나요? 저장하신 기억들을 보면 최근 AI와 인문학의 교차점에 대해 많이 탐구하고 계신 것 같아요.\n\n혹시 오늘 새롭게 배운 것이나 인상 깊었던 경험이 있으시다면 나눠주세요. 기존 기억들과 연결해서 흥미로운 통찰을 찾아볼 수 있을 거예요.\n\n참고로, 시간 관리에 대해 정리하신 아이젠하워 매트릭스를 오늘 일과에 적용해보신 적 있나요?',
@@ -213,7 +213,7 @@ export const DEMO_CHAT_RESPONSES: DemoChatResponse[] = [
   },
   {
     keywords: ['학습', '공부', '배우', '효율'],
-    content: '학습 효율에 대해 물어봐주셨네요! 메타인지 관련 메모리와 운동-뇌 건강 메모리에서 정리하신 내용을 결합하면 최적의 학습 전략을 세울 수 있어요.\n\n**과학적 근거 기반 학습법:**\n\n1. **운동 → 학습**: 20분 유산소 운동 후 BDNF 증가로 기억 형성 촉진\n2. **메타인지적 모니터링**: "이해했나?" 대신 "설명할 수 있나?" 자문\n3. **간격 반복**: 잊어버리기 직전에 복습 (최적 간격: 1일 → 3일 → 7일 → 21일)\n4. **인터리빙**: 한 주제만 몰아서 하지 않고 여러 주제를 섞어 학습\n\n시간 관리 매트릭스에서 정리하신 것처럼, 학습은 2사분면(중요하지만 긴급하지 않은) 활동이에요. 의도적으로 시간을 확보해야 합니다.',
+    content: '학습 효율에 대해 물어봐주셨네요! 메타인지 관련 스크랩와 운동-뇌 건강 메모리에서 정리하신 내용을 결합하면 최적의 학습 전략을 세울 수 있어요.\n\n**과학적 근거 기반 학습법:**\n\n1. **운동 → 학습**: 20분 유산소 운동 후 BDNF 증가로 기억 형성 촉진\n2. **메타인지적 모니터링**: "이해했나?" 대신 "설명할 수 있나?" 자문\n3. **간격 반복**: 잊어버리기 직전에 복습 (최적 간격: 1일 → 3일 → 7일 → 21일)\n4. **인터리빙**: 한 주제만 몰아서 하지 않고 여러 주제를 섞어 학습\n\n시간 관리 매트릭스에서 정리하신 것처럼, 학습은 2사분면(중요하지만 긴급하지 않은) 활동이에요. 의도적으로 시간을 확보해야 합니다.',
     references: [
       { id: 'dm-7', title: '메타인지와 학습 효율의 관계', source_type: 'PDF', created_at: '2026-02-09' },
       { id: 'dm-4', title: '운동이 뇌에 미치는 영향: 신경과학적 근거', source_type: 'WEB', created_at: '2026-02-12' },
@@ -221,7 +221,7 @@ export const DEMO_CHAT_RESPONSES: DemoChatResponse[] = [
   },
   {
     keywords: ['건강', '운동', '몸', '체력'],
-    content: '운동과 건강에 대해 관심이 있으시군요! 뇌과학 관련 메모리에서 정리하신 내용이 도움이 될 거예요.\n\n핵심 포인트를 상기해드리면:\n\n- **BDNF 효과**: 유산소 운동 20분 후 뇌의 성장인자 증가\n- **해마 신경 생성**: 6개월 규칙적 운동으로 해마 부피 1-2% 증가\n- **최적 타이밍**: 학습 전 20-30분 운동이 기억 형성에 가장 효과적\n\n스토아 철학에서 배운 "통제할 수 있는 것에 집중하라"는 원칙을 운동에도 적용해보세요. 날씨, 컨디션은 통제할 수 없지만, 운동화를 신고 문 밖으로 나가는 것은 통제할 수 있으니까요.\n\n오늘 운동은 하셨나요?',
+    content: '운동과 건강에 대해 관심이 있으시군요! 뇌과학 관련 스크랩에서 정리하신 내용이 도움이 될 거예요.\n\n핵심 포인트를 상기해드리면:\n\n- **BDNF 효과**: 유산소 운동 20분 후 뇌의 성장인자 증가\n- **해마 신경 생성**: 6개월 규칙적 운동으로 해마 부피 1-2% 증가\n- **최적 타이밍**: 학습 전 20-30분 운동이 기억 형성에 가장 효과적\n\n스토아 철학에서 배운 "통제할 수 있는 것에 집중하라"는 원칙을 운동에도 적용해보세요. 날씨, 컨디션은 통제할 수 없지만, 운동화를 신고 문 밖으로 나가는 것은 통제할 수 있으니까요.\n\n오늘 운동은 하셨나요?',
     references: [
       { id: 'dm-4', title: '운동이 뇌에 미치는 영향: 신경과학적 근거', source_type: 'WEB', created_at: '2026-02-12' },
       { id: 'dm-2', title: '스토아 철학과 현대 인지행동치료의 연결', source_type: 'WEB', created_at: '2026-02-14' },
@@ -231,18 +231,18 @@ export const DEMO_CHAT_RESPONSES: DemoChatResponse[] = [
 
 // ─── 저널 ──────────────────────────────────────────────────────────────────
 
-export const DEMO_JOURNAL_DATES = [
+export const DEMO_DIARY_DATES = [
   '2026-02-21', '2026-02-20', '2026-02-18', '2026-02-17', '2026-02-15', '2026-02-13', '2026-02-10',
 ]
 
-export interface DemoJournal {
+export interface DemoDiary {
   id: string
   date: string
   content: string
   mood: string
 }
 
-export const DEMO_JOURNALS: Record<string, DemoJournal> = {
+export const DEMO_DIARIES: Record<string, DemoDiary> = {
   '2026-02-21': { id: 'dj-0', date: '2026-02-21', content: '오늘 Memoir을 데모 모드로 체험해보고 있다. 기억을 체계적으로 정리하고 연결하는 이 시스템이 정말 흥미롭다.\n\n개인 지식 관리(PKM)에 대해 정리했던 Zettelkasten 원칙이 여기서 실현되는 느낌. 단순히 정보를 저장하는 것이 아니라, 정보 사이의 관계를 발견하는 것이 핵심이라는 점이 와닿는다.', mood: '💡' },
   '2026-02-20': { id: 'dj-4', date: '2026-02-20', content: '아이젠하워 매트릭스를 실제로 오늘 일과에 적용해봤다. 확실히 2사분면 활동을 의식적으로 먼저 블록하니까 긴급한 일에 휘둘리는 느낌이 줄었다.\n\n메타인지적으로도 좋은 경험이었다. 자신의 시간 사용 패턴을 관찰하는 것 자체가 행동 변화를 만든다는 것을 체감.', mood: '✅' },
   '2026-02-18': { id: 'dj-1', date: '2026-02-18', content: '오늘 트랜스포머와 멀티 에이전트 시스템의 연결고리를 발견했다. Self-Attention과 에이전트의 상태 관리가 결국 같은 문제를 다른 스케일에서 풀고 있다는 점이 흥미롭다.\n\nMemoir을 쓰면서 이런 연결을 자연스럽게 발견하게 되는 것 같다. 기억을 체계적으로 정리하면 새로운 통찰이 생기는 경험.', mood: '🧠' },
@@ -252,8 +252,8 @@ export const DEMO_JOURNALS: Record<string, DemoJournal> = {
   '2026-02-10': { id: 'dj-6', date: '2026-02-10', content: 'PostgreSQL 인덱스 최적화에 대해 깊이 있게 공부했다. pgvector의 HNSW 인덱스가 특히 인상적.\n\n기술적 깊이와 실용성 사이의 균형을 찾는 것이 중요하다는 생각이 든다. 너무 이론에만 빠지지 말고, 실제 프로젝트에 적용해보자.', mood: '💻' },
 }
 
-export const DEMO_JOURNAL_ENTRIES: Record<string, JournalEntry> = Object.fromEntries(
-  Object.entries(DEMO_JOURNALS).map(([date, j]) => [
+export const DEMO_DIARY_ENTRIES: Record<string, DiaryEntry> = Object.fromEntries(
+  Object.entries(DEMO_DIARIES).map(([date, j]) => [
     date,
     {
       id: j.id,
@@ -265,7 +265,7 @@ export const DEMO_JOURNAL_ENTRIES: Record<string, JournalEntry> = Object.fromEnt
   ])
 )
 
-export const DEMO_JOURNAL_ANALYSIS: InsightsResponse = {
+export const DEMO_DIARY_ANALYSIS: InsightsResponse = {
   has_distortions: false,
   distortions: [],
   wellness_score: 82,
@@ -279,8 +279,8 @@ export const DEMO_REVIEW_QUESTIONS: ReviewQuestionsResponse = {
   ],
 }
 
-export const DEMO_RELATED_MEMORIES: RelatedMemoriesResponse = {
-  memories: [
+export const DEMO_RELATED_SCRAPS: RelatedScrapsResponse = {
+  scraps: [
     { id: 'dm-3', title: '개인 지식 관리(PKM) 시스템 설계 원칙', summary: 'Zettelkasten 방식의 원자적 노트 + 양방향 링크가 창의적 사고를 촉진하는 이유.', type: 'semantic', created_at: '2026-02-13T14:00:00Z', similarity: 0.89 },
     { id: 'dm-7', title: '메타인지와 학습 효율의 관계', summary: '자신의 학습 과정을 모니터링하고 조절하는 메타인지 능력이 학습 효율을 크게 높인다.', type: 'semantic', created_at: '2026-02-09T13:30:00Z', similarity: 0.82 },
     { id: 'dm-9', title: '시간 관리 매트릭스: 긴급함 vs 중요함', summary: '아이젠하워 매트릭스를 실제 일과에 적용하는 방법.', type: 'keyword', created_at: '2026-02-07T10:00:00Z', similarity: 0.75 },
@@ -290,7 +290,7 @@ export const DEMO_RELATED_MEMORIES: RelatedMemoriesResponse = {
 // ─── 대시보드 ──────────────────────────────────────────────────────────────
 
 export const DEMO_BRIEFING: BriefingData = {
-  today_memories: { count: 2, topics: ['AI', '철학'] },
+  today_scraps: { count: 2, topics: ['AI', '철학'] },
   unreviewed_count: 3,
   streak: { current: 5, longest: 12 },
   suggested_question: '트랜스포머의 Self-Attention과 인간의 선택적 주의력은 어떤 점에서 비슷하고 다를까요?',
@@ -305,7 +305,7 @@ export const DEMO_STREAK: StreakData = {
 }
 
 export const DEMO_STATS: StatsData = {
-  overview: { total_memories: 42, total_this_week: 5, total_this_month: 18, most_active_day: '월요일' },
+  overview: { total_scraps: 42, total_this_week: 5, total_this_month: 18, most_active_day: '월요일' },
   recent_activity: [],
   sources: [
     { source_type: 'WEB', count: 25, percentage: 59.5 },
@@ -327,27 +327,27 @@ export const DEMO_ACTIVITY: ActivityData[] = Array.from({ length: 60 }, (_, i) =
 })
 
 export const DEMO_INSIGHTS: DailyInsight[] = [
-  { type: 'pattern', icon: '🔄', title: 'AI와 인문학의 교차', description: '최근 AI 기술과 철학/심리학을 연결하는 메모리가 증가하고 있어요. 학제적 사고가 돋보입니다!', cta_label: '관련 메모리 보기', cta_path: '/demo/memories' },
-  { type: 'connection', icon: '🔗', title: '숨겨진 연결 발견', description: '"메타인지"와 "함수형 프로그래밍"이 "자기 관찰"이라는 공통 주제로 연결될 수 있어요.', cta_label: '그래프에서 확인', cta_path: '/demo/graph' },
-  { type: 'action', icon: '✍️', title: '오늘의 회고 시간', description: '3일 연속 새로운 메모리를 저장하셨네요! 오늘의 학습을 저널로 정리해보세요.', cta_label: '저널 쓰기', cta_path: '/demo/journal' },
+  { type: 'pattern', icon: '🔄', title: 'AI와 인문학의 교차', description: '최근 AI 기술과 철학/심리학을 연결하는 스크랩이 증가하고 있어요. 학제적 사고가 돋보입니다!', cta_label: '관련 스크랩 보기', cta_path: '/demo/scraps' },
+  { type: 'connection', icon: '🔗', title: '숨겨진 연결 발견', description: '"메타인지"와 "함수형 프로그래밍"이 "자기 관찰"이라는 공통 주제로 연결될 수 있어요.', cta_label: '마인드맵에서 확인', cta_path: '/demo/mindmap' },
+  { type: 'action', icon: '✍️', title: '오늘의 회고 시간', description: '3일 연속 새로운 스크랩을 저장하셨네요! 오늘의 학습을 다이어리로 정리해보세요.', cta_label: '다이어리 쓰기', cta_path: '/demo/diary' },
 ]
 
 export const DEMO_DIGEST: DigestData = {
   date: new Date().toISOString().slice(0, 10),
   summary: {
-    memory_count: 3,
-    journal_count: 1,
-    chat_count: 2,
+    scrap_count: 3,
+    diary_count: 1,
+    socrates_count: 2,
   },
-  memories: [
+  scraps: [
     { id: 'dm-1', title: '트랜스포머 아키텍처의 핵심: Self-Attention 메커니즘', type: 'WEB', summary: 'Self-Attention 메커니즘의 원리와 RNN 대비 장점 정리', tags: ['AI', '딥러닝', 'Transformer'] },
     { id: 'dm-2', title: '스토아 철학과 현대 인지행동치료의 연결', type: 'WEB', summary: '에픽테토스의 사상과 CBT의 인지 재구성 연결', tags: ['철학', '심리학', '스토아'] },
     { id: 'dm-3', title: '개인 지식 관리(PKM) 시스템 설계 원칙', type: 'PDF', summary: 'Zettelkasten 원자적 노트 원칙과 양방향 링크', tags: ['PKM', '생산성', 'Zettelkasten'] },
   ],
-  journals: [
+  diaries: [
     { id: 'dj-1', mood: '🧠', preview: '오늘 트랜스포머와 멀티 에이전트 시스템의 연결고리를 발견했다...', created_at: '2026-02-18T09:00:00Z' },
   ],
-  chats: [],
+  socrates_sessions: [],
   insights: {
     main_topics: ['AI', '철학', 'PKM'],
     suggested_questions: [
@@ -399,11 +399,11 @@ export const DEMO_MONTHLY_REPORT: ReportData = {
     { source_type: 'NOTE', count: 4, percentage: 22 },
     { source_type: 'PDF', count: 3, percentage: 17 },
   ],
-  llm_summary: '2월에는 총 18개의 기억을 저장하고 7개의 저널을 작성하셨습니다. AI 기술과 인문학적 사고를 연결하는 학제적 탐구가 이번 달의 핵심 테마였습니다. 특히 "주의(Attention)"라는 개념이 트랜스포머 아키텍처, 스토아 철학, 메타인지를 관통하는 공통 주제로 부상했습니다. 꾸준한 저널 작성을 통해 학습 경험을 체계적으로 성찰하는 습관이 강화되고 있습니다.',
+  llm_summary: '2월에는 총 18개의 기억을 저장하고 7개의 일기를 작성하셨습니다. AI 기술과 인문학적 사고를 연결하는 학제적 탐구가 이번 달의 핵심 테마였습니다. 특히 "주의(Attention)"라는 개념이 트랜스포머 아키텍처, 스토아 철학, 메타인지를 관통하는 공통 주제로 부상했습니다. 꾸준한 저널 작성을 통해 학습 경험을 체계적으로 성찰하는 습관이 강화되고 있습니다.',
   highlights: [
     'AI와 인문학을 연결하는 독창적 관점 형성',
     '"주의(Attention)"를 관통 키워드로 한 지식 네트워크 구축',
-    '월 18개 메모리 저장 — 적극적 지식 수집 활동',
+    '월 18개 스크랩 저장 — 적극적 지식 수집 활동',
     'Zettelkasten + Memoir으로 실질적 두 번째 뇌 구축 진행 중',
     '운동-뇌 건강-학습 효율의 선순환 인식과 실천',
   ],
@@ -414,49 +414,49 @@ export const DEMO_MONTHLY_REPORT: ReportData = {
 export const DEMO_TIMELINE: TimelineGroup[] = [
   {
     date: '2026-02-15',
-    memories: [DEMO_MEMORIES[0]],
+    scraps: [DEMO_SCRAPS[0]],
   },
   {
     date: '2026-02-14',
-    memories: [DEMO_MEMORIES[1]],
+    scraps: [DEMO_SCRAPS[1]],
   },
   {
     date: '2026-02-13',
-    memories: [DEMO_MEMORIES[2]],
+    scraps: [DEMO_SCRAPS[2]],
   },
   {
     date: '2026-02-12',
-    memories: [DEMO_MEMORIES[3]],
+    scraps: [DEMO_SCRAPS[3]],
   },
   {
     date: '2026-02-11',
-    memories: [DEMO_MEMORIES[4]],
+    scraps: [DEMO_SCRAPS[4]],
   },
   {
     date: '2026-02-10',
-    memories: [DEMO_MEMORIES[5]],
+    scraps: [DEMO_SCRAPS[5]],
   },
   {
     date: '2026-02-09',
-    memories: [DEMO_MEMORIES[6]],
+    scraps: [DEMO_SCRAPS[6]],
   },
   {
     date: '2026-02-08',
-    memories: [DEMO_MEMORIES[7]],
+    scraps: [DEMO_SCRAPS[7]],
   },
   {
     date: '2026-02-07',
-    memories: [DEMO_MEMORIES[8]],
+    scraps: [DEMO_SCRAPS[8]],
   },
   {
     date: '2026-02-06',
-    memories: [DEMO_MEMORIES[9]],
+    scraps: [DEMO_SCRAPS[9]],
   },
 ]
 
 // ─── 그래프 ──────────────────────────────────────────────────────────────
 
-export const DEMO_GRAPH: GraphData = {
+export const DEMO_MINDMAP: MindmapData = {
   nodes: [
     { id: 'e-ai', label: 'AI', group: 'Topic', properties: { name: 'AI' }, val: 12 },
     { id: 'e-dl', label: '딥러닝', group: 'Topic', properties: { name: '딥러닝' }, val: 6 },
@@ -493,7 +493,7 @@ export const DEMO_GRAPH: GraphData = {
   ],
 }
 
-export const DEMO_GRAPH_INSIGHTS: GraphInsights = {
+export const DEMO_MINDMAP_INSIGHTS: MindmapInsights = {
   clusters: [
     { cluster_id: 0, entities: ['AI', '딥러닝', 'Transformer', 'LangGraph'], entity_types: ['Topic', 'Topic', 'Topic', 'Topic'], size: 4, summary: 'AI/딥러닝 기술 클러스터' },
     { cluster_id: 1, entities: ['철학', '스토아', '심리학', 'CBT', '메타인지'], entity_types: ['Topic', 'Topic', 'Topic', 'Concept', 'Concept'], size: 5, summary: '인문학/심리학 클러스터' },

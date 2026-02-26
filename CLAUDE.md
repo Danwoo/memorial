@@ -69,6 +69,18 @@ fix: 벡터 검색 user_id 필터 추가 + 글로벌 토스트 시스템 + UX �
 - **인증:** Supabase JWT (Google/Kakao OAuth)
 - **배포:** Vercel (프론트엔드) + Render (백엔드), 둘 다 무료 티어
 
+### 도메인 용어 매핑 (UI ↔ 코드)
+| UI 메뉴 | 코드 영문 | URL | DB 테이블 |
+|---------|---------|-----|----------|
+| 캘린더 | Calendar | /calendar | - |
+| 다이어리 | Diary | /diary | diaries |
+| 스크랩 | Scrap | /scraps | scraps |
+| 마인드맵 | Mindmap | /mindmap | (KuzuDB) |
+| 소크라테스 | Socrates | /socrates | socrates_sessions, socrates_messages, socrates_feedback |
+
+- KuzuDB 그래프 노드 라벨은 `Memory` 유지 (내부 그래프 엔티티 명칭)
+- DB에 하위호환 뷰 존재: memories→scraps, journals→diaries, chat_*→socrates_*, journal_memory_links→diary_scrap_links
+
 ## 배포 파이프라인
 
 ### 브랜치 전략

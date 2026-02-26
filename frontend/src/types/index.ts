@@ -1,48 +1,48 @@
 export type {
   SourceType,
-  Memory,
-  MemoryCreateWeb,
-  MemoryCreateNote,
-  MemoryCreatePayload,
-  MemoryDetail,
-  RelatedMemory,
+  Scrap,
+  ScrapCreateWeb,
+  ScrapCreateNote,
+  ScrapCreatePayload,
+  ScrapDetail,
+  RelatedScrap,
   SearchResult,
-  LinkedJournal,
-} from './memory'
+  LinkedDiary,
+} from './scrap'
 
 export type {
-  ChatReference,
-  ChatMessage,
-  ChatMessagePayload,
-  ChatStreamChunk,
-  ChatSessionResponse,
-  ChatLocationState,
-  ChatFeedback,
-} from './chat'
+  SocratesReference,
+  SocratesMessage,
+  SocratesMessagePayload,
+  SocratesStreamChunk,
+  SocratesSessionResponse,
+  SocratesLocationState,
+  SocratesFeedback,
+} from './socrates'
 
 export type {
-  JournalSavePayload,
-  RelatedMemoriesPayload,
+  DiarySavePayload,
+  RelatedScrapsPayload,
   EditorMode,
   InlineAIAction,
   ReviewQuestionsResponse,
   CognitiveDistortion,
   InsightsResponse,
-  JournalDateInfo,
-  JournalDatesResponse,
-  JournalEntry,
-} from './journal'
+  DiaryDateInfo,
+  DiaryDatesResponse,
+  DiaryEntry,
+} from './diary'
 
 export type {
-  GraphNode,
-  GraphLink,
-  GraphData,
+  MindmapNode,
+  MindmapLink,
+  MindmapData,
   ClusterInfo,
   TrendItem,
   IsolatedNode,
   HubNode,
-  GraphInsights,
-} from './graph'
+  MindmapInsights,
+} from './mindmap'
 
 export type {
   OverviewStats,
@@ -52,13 +52,13 @@ export type {
   StatsData,
   StreakData,
   ActivityResponse,
-  DigestMemory,
-  DigestJournal,
+  DigestScrap,
+  DigestDiary,
   BriefingData,
   DigestData,
   DailyInsight,
   DailyInsightsResponse,
-} from './dashboard'
+} from './calendar'
 
 export type {
   TimelineGroup,
@@ -68,7 +68,7 @@ export type {
 export type {
   PaginatedResponse,
   SearchResponse,
-  RelatedMemoriesResponse,
+  RelatedScrapsResponse,
   ApiError,
 } from './api'
 

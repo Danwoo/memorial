@@ -5,7 +5,7 @@ interface DataTabProps {
   exportLoading: string | null
   canInstall: boolean
   isInstalled: boolean
-  handleExport: (type: 'memories' | 'journals' | 'all') => Promise<void>
+  handleExport: (type: 'scraps' | 'diaries' | 'all') => Promise<void>
   handleOnboardingReset: () => void
   handleInstallPWA: () => Promise<void>
 }
@@ -25,15 +25,15 @@ export default function DataTab({
         <h3 className="card-title">데이터 내보내기</h3>
         {exportCounts && (
           <p className="setting-desc" style={{ marginBottom: 'var(--space-md)' }}>
-            기억 {exportCounts.memories}개, 저널 {exportCounts.journals}개
+            스크랩 {exportCounts.scraps}개, 다이어리 {exportCounts.diaries}개
           </p>
         )}
         <div className="export-buttons">
-          <button className="btn btn-sm btn-secondary" onClick={() => handleExport('memories')} disabled={exportLoading !== null}>
-            {exportLoading === 'memories' ? '준비 중...' : '기억 (JSON)'}
+          <button className="btn btn-sm btn-secondary" onClick={() => handleExport('scraps')} disabled={exportLoading !== null}>
+            {exportLoading === 'scraps' ? '준비 중...' : '스크랩 (JSON)'}
           </button>
-          <button className="btn btn-sm btn-secondary" onClick={() => handleExport('journals')} disabled={exportLoading !== null}>
-            {exportLoading === 'journals' ? '준비 중...' : '저널 (Markdown)'}
+          <button className="btn btn-sm btn-secondary" onClick={() => handleExport('diaries')} disabled={exportLoading !== null}>
+            {exportLoading === 'diaries' ? '준비 중...' : '다이어리 (Markdown)'}
           </button>
           <button className="btn btn-sm btn-secondary" onClick={() => handleExport('all')} disabled={exportLoading !== null}>
             {exportLoading === 'all' ? '준비 중...' : '전체 백업 (JSON)'}

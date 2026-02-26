@@ -1,17 +1,17 @@
 import { useState, useMemo } from 'react'
 import { BookOpen, Sparkles, FileText, Zap, ChevronUp, ChevronDown, List, LayoutList } from 'lucide-react'
-import type { DigestMemory, RelatedMemory } from '../../types'
+import type { DigestScrap, RelatedScrap } from '../../types'
 import { MemoryCard } from './MemoryCard'
 import './MemorySidebar.css'
 
 type SidebarTab = 'today' | 'related'
 
 interface MemorySidebarProps {
-  todayMemories: DigestMemory[]
-  relatedMemories: RelatedMemory[]
-  isLoadingRelated: boolean
-  onInsertMemory: (memory: DigestMemory | RelatedMemory) => void
-  onCardClick?: (memoryId: string) => void
+  todayScraps: DigestScrap[]
+  relatedScraps: RelatedScrap[]
+  isLoadingRelatedScraps: boolean
+  onInsertScrap: (scrap: DigestScrap | RelatedScrap) => void
+  onCardClick?: (scrapId: string) => void
   onDailySummary: () => void
   onSessionDraft: () => void
   isGenerating: boolean
@@ -20,10 +20,10 @@ interface MemorySidebarProps {
 }
 
 export function MemorySidebar({
-  todayMemories,
-  relatedMemories,
-  isLoadingRelated,
-  onInsertMemory,
+  todayScraps,
+  relatedScraps,
+  isLoadingRelatedScraps,
+  onInsertScrap,
   onCardClick,
   onDailySummary,
   onSessionDraft,
@@ -37,15 +37,15 @@ export function MemorySidebar({
   // 다이제스트 메모리 유형별 집계
   const topicCounts = useMemo(() => {
     const counts: Record<string, number> = {}
-    todayMemories.forEach((m) => {
+    todayScraps.forEach((m) => {
       const type = m.type || 'etc'
       counts[type] = (counts[type] || 0) + 1
     })
     return counts
-  }, [todayMemories])
+  }, [todayScraps])
 
-  const memories = activeTab === 'today' ? todayMemories : relatedMemories
-  const isLoading = activeTab === 'related' && isLoadingRelated
+  const scraps = activeTab === 'today' ? todayScraps : relatedScraps
+  const isLoading = activeTab === 'related' && isLoadingRelatedScraps
 
   const toggleCompact = () => {
     const next = !compact
@@ -59,7 +59,7 @@ export function MemorySidebar({
       {onToggleCollapse && (
         <button className="memory-sidebar__collapse-toggle" onClick={onToggleCollapse} type="button">
           <BookOpen size={16} />
-          <span>메모리 사이드바</span>
+          <span>스크랩 사이드바</span>
           {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
       )}
@@ -78,7 +78,7 @@ export function MemorySidebar({
           type="button"
         >
           <BookOpen size={14} />
-          오늘의 메모리
+          오늘의 스크랩
         </button>
         <button
           className={`sidebar-tab ${activeTab === 'related' ? 'sidebar-tab--active' : ''}`}
@@ -87,7 +87,7 @@ export function MemorySidebar({
         >
           <Sparkles size={14} />
           관련
-          {isLoadingRelated && <span className="sidebar-loading-dot" />}
+          {isLoadingRelatedScraps && <span className="sidebar-loading-dot" />}
         </button>
       </div>
 
@@ -103,15 +103,15 @@ export function MemorySidebar({
 
       <div className="memory-sidebar__list">
         {isLoading ? (
-          <div className="sidebar-empty">관련 메모리 검색 중...</div>
-        ) : memories.length > 0 ? (
-          memories.map((m) => (
-            <MemoryCard key={m.id} memory={m} onInsert={onInsertMemory} onCardClick={onCardClick} />
+          <div className="sidebar-empty">관련 스크랩 검색 중...</div>
+        ) : scraps.length > 0 ? (
+          scraps.map((m) => (
+            <MemoryCard key={m.id} memory={m} onInsert={onInsertScrap} onCardClick={onCardClick} />
           ))
         ) : (
           <div className="sidebar-empty">
             {activeTab === 'today'
-              ? '오늘 수집된 메모리가 없습니다.'
+              ? '오늘 수집된 스크랩이 없습니다.'
               : '글을 작성하시면 연관된 메모가 여기에 표시됩니다.'}
           </div>
         )}

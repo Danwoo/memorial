@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { useChatSession } from '../contexts/ChatSessionContext'
+import { useSocratesSession } from '../contexts/SocratesSessionContext'
 import { useToast } from '../contexts/ToastContext'
 import { useDemoMode } from '../contexts/DemoContext'
-import type { ChatMessage, ChatLocationState, BriefingData, ChatFeedback } from '../types'
+import type { SocratesMessage, SocratesLocationState, BriefingData, SocratesFeedback } from '../types'
 import {
-  createChatSession, fetchChatHistory, sendChatMessage, readSSEStream,
+  createSocratesSession, fetchSocratesHistory, sendSocratesMessage, readSSEStream,
   fetchBriefing, sendFeedback, fetchFeedbacks,
 } from '../api'
 
@@ -13,13 +13,13 @@ const ERROR_MESSAGE = '죄송합니다, 오류가 발생했습니다. 다시 시
 
 export interface UseSocratesChatOptions {
   mode: 'standalone' | 'panel'
-  context?: { type: 'journal' | 'memory'; content?: string }
+  context?: { type: 'diary' | 'scrap'; content?: string }
   initialMessage?: string
 }
 
 export interface UseSocratesChatReturn {
   sessionId: string | null
-  messages: ChatMessage[]
+  messages: SocratesMessage[]
   input: string
   setInput: (v: string) => void
   isLoading: boolean
@@ -49,7 +49,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
   const location = useLocation()
   const navigate = useNavigate()
   const { sessionId: urlSessionId } = useParams<{ sessionId: string }>()
-  const { triggerRefresh } = useChatSession()
+  const { triggerRefresh } = useSocratesSession()
   const toast = useToast()
   const { isDemoMode: isDemo } = useDemoMode()
   const pathPrefix = isDemo ? '/demo' : ''
@@ -57,7 +57,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
   const [sessionId, setSessionId] = useState<string | null>(
     isStandalone ? (urlSessionId ?? null) : null,
   )
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [messages, setMessages] = useState<SocratesMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
@@ -86,7 +86,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
   // location state 처리 (standalone 모드만)
   useEffect(() => {
     if (!isStandalone) return
-    const state = location.state as ChatLocationState | null
+    const state = location.state as SocratesLocationState | null
     if (state?.newSession) {
       setSessionId(null)
       setMessages([])
@@ -167,8 +167,8 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     setIsLoadingHistory(true)
     try {
       const [history, fbList] = await Promise.all([
-        fetchChatHistory(sid),
-        fetchFeedbacks(sid).catch(() => [] as ChatFeedback[]),
+        fetchSocratesHistory(sid),
+        fetchFeedbacks(sid).catch(() => [] as SocratesFeedback[]),
       ])
       setMessages(history)
       const fbMap = new Map<number, 'good' | 'bad'>()
@@ -214,15 +214,15 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     try {
       let currentSessionId = sessionId
       if (!currentSessionId) {
-        const session = await createChatSession()
+        const session = await createSocratesSession()
         currentSessionId = session.id
         setSessionId(currentSessionId)
         if (isStandalone) {
-          navigate(`${pathPrefix}/journal`, { replace: true, state: { openChat: true, sessionId: currentSessionId } })
+          navigate(`${pathPrefix}/diary`, { replace: true, state: { openSocrates: true, sessionId: currentSessionId } })
         }
       }
 
-      const response = await sendChatMessage(
+      const response = await sendSocratesMessage(
         currentSessionId,
         { content: userMessage },
         abortController.signal,
@@ -292,7 +292,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     })
   }, [])
 
-  const hasBriefingContent = !!(briefing && briefing.today_memories.count > 0)
+  const hasBriefingContent = !!(briefing && briefing.today_scraps.count > 0)
 
   return {
     sessionId,

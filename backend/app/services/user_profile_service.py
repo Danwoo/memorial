@@ -48,17 +48,17 @@ async def _build_profile(user_id: str) -> dict:
 
     tags_result, recent_result, stats_result = await asyncio.gather(
         asyncio.to_thread(
-            lambda: db.table("memories").select("tags").eq("user_id", user_id).not_.is_("tags", "null").execute()
+            lambda: db.table("scraps").select("tags").eq("user_id", user_id).not_.is_("tags", "null").execute()
         ),
         asyncio.to_thread(
-            lambda: db.table("memories")
+            lambda: db.table("scraps")
             .select("title, tags, created_at")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
             .limit(20)
             .execute()
         ),
-        asyncio.to_thread(lambda: db.table("memories").select("id", count="exact").eq("user_id", user_id).execute()),
+        asyncio.to_thread(lambda: db.table("scraps").select("id", count="exact").eq("user_id", user_id).execute()),
     )
 
     # 태그 빈도 집계

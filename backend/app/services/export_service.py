@@ -7,9 +7,9 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from app.repositories.chat_repository import ChatRepository
-from app.repositories.journal_repository import JournalRepository
-from app.repositories.memory_repository import MemoryRepository
+from app.repositories.diary_repository import DiaryRepository
+from app.repositories.scrap_repository import ScrapRepository
+from app.repositories.socrates_repository import SocratesRepository
 
 logger = logging.getLogger(__name__)
 
@@ -21,25 +21,25 @@ class ExportService:
 
     def __init__(
         self,
-        memory_repo: MemoryRepository,
-        journal_repo: JournalRepository,
-        chat_repo: ChatRepository,
+        scrap_repo: ScrapRepository,
+        diary_repo: DiaryRepository,
+        socrates_repo: SocratesRepository,
     ):
-        self.memory_repo = memory_repo
-        self.journal_repo = journal_repo
-        self.chat_repo = chat_repo
+        self.scrap_repo = scrap_repo
+        self.diary_repo = diary_repo
+        self.socrates_repo = socrates_repo
 
-    async def export_memories(self, user_id: UUID) -> list[dict[str, Any]]:
-        """사용자의 전체 메모리를 JSON 직렬화 가능한 리스트로 반환."""
-        return await self.memory_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT)
+    async def export_scraps(self, user_id: UUID) -> list[dict[str, Any]]:
+        """사용자의 전체 스크랩을 JSON 직렬화 가능한 리스트로 반환."""
+        return await self.scrap_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT)
 
-    async def export_journals_zip(self, user_id: UUID) -> bytes:
-        """사용자의 전체 저널을 Markdown ZIP으로 반환."""
-        journals = await self.journal_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT)
+    async def export_diaries_zip(self, user_id: UUID) -> bytes:
+        """사용자의 전체 다이어리를 Markdown ZIP으로 반환."""
+        diaries = await self.diary_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT)
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-            for entry in journals:
+            for entry in diaries:
                 date_str = (entry.get("created_at") or "unknown")[:10]
                 entry_id = (entry.get("id") or "unknown")[:8]
                 filename = f"{date_str}_{entry_id}.md"
@@ -58,28 +58,28 @@ class ExportService:
         return buf.getvalue()
 
     async def export_all(self, user_id: UUID) -> dict[str, Any]:
-        """전체 데이터 통합 내보내기 (memories + journals + chat_sessions)."""
-        memories, journals, sessions = await asyncio.gather(
-            self.memory_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT),
-            self.journal_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT),
-            self.chat_repo.get_sessions_for_export(user_id, MAX_EXPORT_LIMIT),
+        """전체 데이터 통합 내보내기 (scraps + diaries + socrates_sessions)."""
+        scraps, diaries, sessions = await asyncio.gather(
+            self.scrap_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT),
+            self.diary_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT),
+            self.socrates_repo.get_sessions_for_export(user_id, MAX_EXPORT_LIMIT),
         )
 
         return {
             "exported_at": datetime.now(UTC).isoformat(),
-            "memories": memories,
-            "journals": journals,
-            "chat_sessions": sessions,
+            "scraps": scraps,
+            "diaries": diaries,
+            "socrates_sessions": sessions,
         }
 
     async def get_export_counts(self, user_id: UUID) -> dict[str, int]:
         """내보내기 미리보기용 데이터 건수 조회."""
-        memories, journals = await asyncio.gather(
-            self.memory_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT),
-            self.journal_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT),
+        scraps, diaries = await asyncio.gather(
+            self.scrap_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT),
+            self.diary_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT),
         )
 
         return {
-            "memories": len(memories),
-            "journals": len(journals),
+            "scraps": len(scraps),
+            "diaries": len(diaries),
         }
