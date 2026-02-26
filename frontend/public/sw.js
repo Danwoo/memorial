@@ -1,20 +1,15 @@
 const CACHE_NAME = 'memoir-v2';
 const OFFLINE_URL = '/offline.html';
 
-// 앱 셸 캐시 대상
-const PRECACHE_URLS = [
-  OFFLINE_URL,
-];
-
-// ─── Install: 앱 셸 프리캐시 ─────────────────────────────
+// ─── Install: offline.html만 프리캐시 ─────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
+    caches.open(CACHE_NAME).then((cache) => cache.add(OFFLINE_URL))
   );
   self.skipWaiting();
 });
 
-// ─── Activate: 이전 캐시 정리 ────────────────────────────
+// ─── Activate: 이전 버전 캐시 전체 삭제 ──────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -24,39 +19,14 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// ─── Fetch: 네트워크 우선 + 오프라인 폴백 ────────────────
+// ─── Fetch: navigation만 인터셉트 (오프라인 폴백) ─────────
+// JS/CSS는 Vite가 content-hash 파일명을 사용하므로 브라우저 HTTP 캐시로 충분.
+// SW가 script/style을 캐싱하면 새 배포 후 구 번들이 반환되는 문제 발생.
 self.addEventListener('fetch', (event) => {
-  // API 요청은 캐시하지 않음
-  if (event.request.url.includes('/api/')) return;
-
-  // navigation 요청: 네트워크 우선, 실패 시 오프라인 페이지
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(OFFLINE_URL))
     );
-    return;
-  }
-
-  // 정적 에셋: stale-while-revalidate
-  if (
-    event.request.destination === 'script' ||
-    event.request.destination === 'style' ||
-    event.request.destination === 'image' ||
-    event.request.destination === 'font'
-  ) {
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        const fetchPromise = fetch(event.request).then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        });
-        return cached || fetchPromise;
-      })
-    );
-    return;
   }
 });
 
