@@ -208,7 +208,7 @@ async def _fetch_diary_context(
 ) -> str:
     """최근 다이어리 항목 조회. 포맷된 텍스트 반환."""
     try:
-        recent_diaries = await diary_repo.get_journals(user_id, limit=limit)
+        recent_diaries = await diary_repo.get_diaries(user_id, limit=limit)
         if recent_diaries:
             return "\n".join(
                 f"- [Diary {diary.get('created_at', '')[:10]}] "
