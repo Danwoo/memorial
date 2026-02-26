@@ -1,35 +1,35 @@
 import { Plus, Eye } from 'lucide-react'
 import type { DigestScrap, RelatedScrap } from '../../types'
 
-type MemoryItem = DigestScrap | RelatedScrap
+type ScrapItem = DigestScrap | RelatedScrap
 
-interface MemoryCardProps {
-  memory: MemoryItem
-  onInsert: (memory: MemoryItem) => void
-  onCardClick?: (memoryId: string) => void
+interface ScrapCardProps {
+  scrap: ScrapItem
+  onInsert: (scrap: ScrapItem) => void
+  onCardClick?: (scrapId: string) => void
 }
 
-export function MemoryCard({ memory, onInsert, onCardClick }: MemoryCardProps) {
+export function MemoryCard({ scrap, onInsert, onCardClick }: ScrapCardProps) {
   const handleDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.setData('application/json', JSON.stringify(memory))
+    e.dataTransfer.setData('application/json', JSON.stringify(scrap))
     e.dataTransfer.effectAllowed = 'copy'
   }
 
   return (
     <div
-      className="journal-memory-card"
+      className="journal-scrap-card"
       draggable
       onDragStart={handleDragStart}
     >
-      <div className="journal-memory-card__type">{memory.type}</div>
-      <div className="journal-memory-card__title">{memory.title}</div>
-      <div className="journal-memory-card__summary">{memory.summary}</div>
-      <div className="journal-memory-card__actions">
+      <div className="journal-scrap-card__type">{scrap.type}</div>
+      <div className="journal-scrap-card__title">{scrap.title}</div>
+      <div className="journal-scrap-card__summary">{scrap.summary}</div>
+      <div className="journal-scrap-card__actions">
         <button
-          className="journal-memory-card__action-btn journal-memory-card__action-btn--insert"
+          className="journal-scrap-card__action-btn journal-scrap-card__action-btn--insert"
           onClick={(e) => {
             e.stopPropagation()
-            onInsert(memory)
+            onInsert(scrap)
           }}
           title="에디터에 인용"
           type="button"
@@ -38,10 +38,10 @@ export function MemoryCard({ memory, onInsert, onCardClick }: MemoryCardProps) {
           <span>인용하기</span>
         </button>
         <button
-          className="journal-memory-card__action-btn journal-memory-card__action-btn--detail"
+          className="journal-scrap-card__action-btn journal-scrap-card__action-btn--detail"
           onClick={(e) => {
             e.stopPropagation()
-            onCardClick?.(memory.id)
+            onCardClick?.(scrap.id)
           }}
           title="상세 보기"
           type="button"

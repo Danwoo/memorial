@@ -4,8 +4,8 @@ import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
 import { useEffect, useCallback, useImperativeHandle, forwardRef } from 'react'
-import { MemoryBlockNode } from './MemoryBlockNode'
-import type { MemoryBlockAttrs } from './MemoryBlockNode'
+import { ScrapBlockNode } from './ScrapBlockNode'
+import type { ScrapBlockAttrs } from './ScrapBlockNode'
 import './TiptapEditor.css'
 
 interface TiptapEditorProps {
@@ -18,7 +18,7 @@ interface TiptapEditorProps {
 export interface TiptapEditorHandle {
   getHTML: () => string
   setContent: (html: string) => void
-  insertMemoryBlock: (attrs: MemoryBlockAttrs) => void
+  insertMemoryBlock: (attrs: ScrapBlockAttrs) => void
   getSelectedText: () => string
   replaceSelection: (text: string) => void
 }
@@ -33,7 +33,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         Link.configure({ openOnClick: false }),
         Placeholder.configure({ placeholder: '오늘 하루는 어떠셨나요? 자유롭게 기록해보세요...' }),
         Underline,
-        MemoryBlockNode,
+        ScrapBlockNode,
       ],
       content: initialContent,
       editable,
@@ -55,7 +55,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     }, [editor, onEditorReady])
 
     const insertMemoryBlock = useCallback(
-      (attrs: MemoryBlockAttrs) => {
+      (attrs: ScrapBlockAttrs) => {
         if (!editor) return
         editor
           .chain()

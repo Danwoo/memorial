@@ -112,7 +112,7 @@ class MindmapInsightService:
         for week_offset in range(3, -1, -1):
             start = now - timedelta(weeks=week_offset + 1)
             end = now - timedelta(weeks=week_offset)
-            memories = await self.calendar_repo.get_memories_in_range(
+            memories = await self.calendar_repo.get_scraps_in_range(
                 UUID(user_id),
                 start,
                 end,

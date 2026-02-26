@@ -604,7 +604,7 @@
   min-height: 0;
 }
 
-.diary-view--mobile .memory-sidebar,
+.diary-view--mobile .scrap-sidebar,
 .diary-view--mobile .ai-sidebar,
 .diary-view--mobile .diary-right-panel {
   width: 100%;

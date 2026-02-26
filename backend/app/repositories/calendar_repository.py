@@ -16,12 +16,12 @@ class CalendarRepository:
     # 공개 비동기 인터페이스
     # ------------------------------------------------------------------
 
-    async def get_all_memories(self, user_id: UUID) -> list[dict[str, Any]]:
+    async def get_all_scraps(self, user_id: UUID) -> list[dict[str, Any]]:
         """통계 집계용 전체 Scrap 조회."""
         result = await asyncio.to_thread(self._select_all, str(user_id))
         return result.data or []
 
-    async def get_memories_in_range(
+    async def get_scraps_in_range(
         self,
         user_id: UUID,
         start_date: datetime,
@@ -31,7 +31,7 @@ class CalendarRepository:
         result = await asyncio.to_thread(self._select_range, str(user_id), start_date.isoformat(), end_date.isoformat())
         return result.data or []
 
-    async def get_memories_by_date(
+    async def get_scraps_by_date(
         self,
         user_id: UUID,
         page: int = 1,
@@ -66,9 +66,9 @@ class CalendarRepository:
         sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
         return dict(sorted_tags[:limit])
 
-    async def count_journals_in_range(self, user_id: UUID, start: datetime, end: datetime) -> int:
+    async def count_diaries_in_range(self, user_id: UUID, start: datetime, end: datetime) -> int:
         """기간 내 일기 수 조회."""
-        result = await asyncio.to_thread(self._count_journals_range, str(user_id), start.isoformat(), end.isoformat())
+        result = await asyncio.to_thread(self._count_diaries_range, str(user_id), start.isoformat(), end.isoformat())
         return result.count or 0
 
     # ------------------------------------------------------------------
@@ -98,7 +98,7 @@ class CalendarRepository:
             .execute()
         )
 
-    def _count_journals_range(self, user_id: str, start_iso: str, end_iso: str):
+    def _count_diaries_range(self, user_id: str, start_iso: str, end_iso: str):
         return (
             self.db.table("diaries")
             .select("id", count="exact")
