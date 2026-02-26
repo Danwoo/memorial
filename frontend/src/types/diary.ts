@@ -30,6 +30,7 @@ export interface DiaryDateInfo {
   date: string
   count: number
   mood: string | null
+  preview?: string
 }
 
 export interface DiaryDatesResponse {
