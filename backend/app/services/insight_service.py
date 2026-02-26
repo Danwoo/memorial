@@ -39,7 +39,7 @@ class InsightService:
         # 1. 패턴 감지: 이번 주 집중 주제
         try:
             week_start = now - timedelta(days=7)
-            week_memories = await self.calendar_repo.get_memories_in_range(uid, week_start, now)
+            week_memories = await self.calendar_repo.get_scraps_in_range(uid, week_start, now)
             if week_memories:
                 tag_counter: Counter[str] = Counter()
                 for mem in week_memories:
@@ -83,7 +83,7 @@ class InsightService:
         # 3. 행동 제안: 저널 미작성 알림
         try:
             three_days_ago = now - timedelta(days=3)
-            recent_journals = await self.diary_repo.get_journals_in_range(
+            recent_journals = await self.diary_repo.get_diaries_in_range(
                 uid,
                 three_days_ago,
                 now,

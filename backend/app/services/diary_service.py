@@ -134,7 +134,7 @@ class DiaryService:
     ) -> dict[str, Any] | None:
         """다이어리 항목 생성 (감정 분석 + 스크랩 링크 동기화 포함)."""
         mood = await self._analyze_sentiment(content)
-        diary = await self.diary_repo.create_journal(user_id, content, mood=mood)
+        diary = await self.diary_repo.create_diary(user_id, content, mood=mood)
 
         # 스크랩 링크 동기화
         if diary and scrap_ids and self.link_repo:
@@ -148,11 +148,11 @@ class DiaryService:
 
     async def get_entries(self, user_id: UUID, limit: int = 10) -> list[dict[str, Any]]:
         """사용자의 다이어리 항목 목록 조회."""
-        return await self.diary_repo.get_journals(user_id, limit)
+        return await self.diary_repo.get_diaries(user_id, limit)
 
     async def get_diary_dates(self, user_id: UUID, limit: int = 90) -> list[dict[str, Any]]:
         """다이어리가 존재하는 날짜 목록 조회."""
-        entries = await self.diary_repo.get_journal_dates(user_id, limit)
+        entries = await self.diary_repo.get_diary_dates(user_id, limit)
         date_map: dict[str, dict[str, Any]] = {}
         for entry in entries:
             date_key = entry["created_at"][:10]
@@ -163,7 +163,7 @@ class DiaryService:
 
     async def get_diaries_by_date(self, user_id: UUID, date_str: str) -> list[dict[str, Any]]:
         """특정 날짜의 다이어리 목록 조회."""
-        return await self.diary_repo.get_journals_by_date(user_id, date_str)
+        return await self.diary_repo.get_diaries_by_date(user_id, date_str)
 
     async def generate_review_questions(self, content: str) -> list[str]:
         """저널 내용 기반 소크라테스식 성찰 질문 생성 (LLM 활용)."""
@@ -262,7 +262,7 @@ class DiaryService:
                     "id": m.get("id"),
                     "title": m.get("title", "Untitled"),
                     "summary": m.get("summary") or m.get("content", "")[:RELATED_SCRAP_SUMMARY_LENGTH],
-                    "type": m.get("type", "memory"),
+                    "type": m.get("type", "scrap"),
                     "created_at": m.get("created_at"),
                     "similarity": m.get("similarity", 0),
                 }

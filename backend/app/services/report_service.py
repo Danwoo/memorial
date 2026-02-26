@@ -47,7 +47,7 @@ class ReportService:
         end_date_str = now.strftime("%Y-%m-%d")
         start_date_str = start.strftime("%Y-%m-%d")
 
-        memories = await self.calendar_repo.get_memories_in_range(user_id, start, now)
+        memories = await self.calendar_repo.get_scraps_in_range(user_id, start, now)
         diary_count = await self._count_journals(user_id, start, now)
 
         # 주제 분포 (태그 기반)
@@ -102,7 +102,7 @@ class ReportService:
     async def _count_journals(self, user_id: UUID, start: datetime, end: datetime) -> int:
         """기간 내 저널 수 조회."""
         try:
-            return await self.calendar_repo.count_journals_in_range(user_id, start, end)
+            return await self.calendar_repo.count_diaries_in_range(user_id, start, end)
         except Exception:
             return 0
 
