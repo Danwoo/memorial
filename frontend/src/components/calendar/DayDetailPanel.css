@@ -3,7 +3,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: clamp(18.75rem, 24vw, 26.25rem);
+  width: clamp(18.75rem, 24vw, 26.25rem); /* 기본값; panelWidth prop으로 override */
   height: 100vh;
   background: var(--bg-card);
   border-left: 1px solid var(--border-secondary);

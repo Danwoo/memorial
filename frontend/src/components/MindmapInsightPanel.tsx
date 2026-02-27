@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { demoPath } from '../utils/demoPath'
 import {
@@ -23,6 +24,8 @@ interface Props {
   onIsolatedNodeClick: (name: string) => void
   onHubNodeClick: (name: string) => void
   onConnectionCreated: () => void
+  panelWidth?: number
+  onPanelResize?: (e: MouseEvent) => void
 }
 
 export default function MindmapInsightPanel({
@@ -32,6 +35,8 @@ export default function MindmapInsightPanel({
   onIsolatedNodeClick,
   onHubNodeClick,
   onConnectionCreated,
+  panelWidth,
+  onPanelResize,
 }: Props) {
   const navigate = useNavigate()
   const toast = useToast()
@@ -70,9 +75,12 @@ export default function MindmapInsightPanel({
     }
   }
 
+  const panelStyle = panelWidth ? { width: panelWidth } : undefined
+
   if (loading) {
     return (
-      <div className="insight-panel">
+      <div className="insight-panel" style={panelStyle}>
+        {onPanelResize && <div className="resize-handle resize-handle--left" onMouseDown={onPanelResize} />}
         <h3 className="insight-panel-title">인사이트</h3>
         <div className="insight-panel-loading">
           <div className="loading-spinner small" />
@@ -92,7 +100,8 @@ export default function MindmapInsightPanel({
 
   if (!hasContent) {
     return (
-      <div className="insight-panel">
+      <div className="insight-panel" style={panelStyle}>
+        {onPanelResize && <div className="resize-handle resize-handle--left" onMouseDown={onPanelResize} />}
         <h3 className="insight-panel-title">인사이트</h3>
         <p className="insight-panel-empty">아직 분석할 데이터가 부족합니다. 더 많은 스크랩을 추가해보세요.</p>
       </div>
@@ -100,7 +109,8 @@ export default function MindmapInsightPanel({
   }
 
   return (
-    <div className="insight-panel">
+    <div className="insight-panel" style={panelStyle}>
+      {onPanelResize && <div className="resize-handle resize-handle--left" onMouseDown={onPanelResize} />}
       <h3 className="insight-panel-title">인사이트</h3>
 
       {/* 클러스터 */}

@@ -8,17 +8,13 @@
   overflow: hidden;
 }
 
-/* 패널 collapse 상태 */
-.diary-view--left-collapsed {
-  grid-template-columns: 0 1fr 28%;
-}
-
-.diary-view--right-collapsed {
-  grid-template-columns: 20% 1fr 0;
-}
-
-.diary-view--left-collapsed.diary-view--right-collapsed {
-  grid-template-columns: 0 1fr 0;
+/* 좌측 패널 래퍼 */
+.diary-left-panel-outer {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 /* 패널 토글 버튼 */
@@ -610,6 +606,7 @@
 
 /* ─── 우측 패널 (AI 분석 + Socrates 탭) ──────────────────── */
 .diary-right-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   background-color: var(--bg-secondary);

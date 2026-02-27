@@ -34,6 +34,7 @@
 
 /* ── Socrates 사이드 패널 (데스크톱) ── */
 .scrap-socrates-side {
+  position: relative;
   width: clamp(18.75rem, 24vw, 26.25rem);
   min-width: clamp(18.75rem, 24vw, 26.25rem);
   display: flex;
