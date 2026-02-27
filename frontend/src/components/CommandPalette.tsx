@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { demoPath } from '../utils/demoPath'
 import { Search, X, MessageSquare, BookOpen, FileText } from 'lucide-react'
 import { searchScraps, fetchSocratesSessions } from '../api'
 import type { SearchResult, SocratesSessionResponse } from '../types'
@@ -103,9 +104,9 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
     (item: ResultItem) => {
       onClose()
       if (item.kind === 'scrap') {
-        navigate('/scraps')
+        navigate(demoPath('/scraps'))
       } else if (item.kind === 'session') {
-        navigate('/diary', { state: { openSocrates: true, sessionId: item.data.id } })
+        navigate(demoPath('/diary'), { state: { openSocrates: true, sessionId: item.data.id } })
       }
     },
     [navigate, onClose],

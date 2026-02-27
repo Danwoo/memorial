@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { demoPath } from '../../utils/demoPath'
 import {
   Flame, Tag, BookOpen, Lightbulb, MessageSquare,
   Network, Pencil, Link2, Sparkles, TrendingUp,
@@ -59,7 +60,7 @@ export default function BriefingTab({ displayName, briefing, streak, stats, acti
         {briefing?.suggested_question && (
           <button
             className="hero-question"
-            onClick={() => navigate('/diary', { state: { prefillQuestion: briefing.suggested_question } })}
+            onClick={() => navigate(demoPath('/diary'), { state: { prefillQuestion: briefing.suggested_question } })}
           >
             <Lightbulb size={18} className="hero-question-icon" />
             <div className="hero-question-body">
@@ -72,7 +73,7 @@ export default function BriefingTab({ displayName, briefing, streak, stats, acti
 
       {/* 퀵 액션 그리드 */}
       <div className="quick-actions-grid">
-        <button className="quick-action-card" onClick={() => navigate('/diary')}>
+        <button className="quick-action-card" onClick={() => navigate(demoPath('/diary'))}>
           <div className="quick-action-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
             <Pencil size={22} />
           </div>
@@ -86,7 +87,7 @@ export default function BriefingTab({ displayName, briefing, streak, stats, acti
           </div>
         </button>
 
-        <button className="quick-action-card" onClick={() => navigate('/scraps')}>
+        <button className="quick-action-card" onClick={() => navigate(demoPath('/scraps'))}>
           <div className="quick-action-icon" style={{ background: 'rgba(52, 211, 153, 0.1)', color: '#34d399' }}>
             <BookOpen size={22} />
           </div>
@@ -98,7 +99,7 @@ export default function BriefingTab({ displayName, briefing, streak, stats, acti
           </div>
         </button>
 
-        <button className="quick-action-card" onClick={() => navigate('/diary', { state: { openSocrates: true } })}>
+        <button className="quick-action-card" onClick={() => navigate(demoPath('/diary'), { state: { openSocrates: true } })}>
           <div className="quick-action-icon" style={{ background: 'rgba(251, 146, 60, 0.1)', color: '#fb923c' }}>
             <MessageSquare size={22} />
           </div>
@@ -108,7 +109,7 @@ export default function BriefingTab({ displayName, briefing, streak, stats, acti
           </div>
         </button>
 
-        <button className="quick-action-card" onClick={() => navigate('/mindmap')}>
+        <button className="quick-action-card" onClick={() => navigate(demoPath('/mindmap'))}>
           <div className="quick-action-icon" style={{ background: 'rgba(96, 165, 250, 0.1)', color: '#60a5fa' }}>
             <Network size={22} />
           </div>
@@ -137,7 +138,7 @@ export default function BriefingTab({ displayName, briefing, streak, stats, acti
                 <button
                   key={i}
                   className="insight-card"
-                  onClick={() => navigate(insight.cta_path)}
+                  onClick={() => navigate(demoPath(insight.cta_path))}
                 >
                   <span className="insight-card-icon">
                     {IconMap[insight.icon] || <Lightbulb size={18} />}

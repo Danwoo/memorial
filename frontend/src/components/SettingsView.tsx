@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { demoPath } from '../utils/demoPath'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
@@ -110,7 +111,7 @@ export default function SettingsView() {
   const handleOnboardingReset = () => {
     localStorage.removeItem('onboarding_completed')
     toast.info('온보딩 가이드를 다시 시작합니다')
-    navigate('/calendar')
+    navigate(demoPath('/calendar'))
     window.location.reload()
   }
 
