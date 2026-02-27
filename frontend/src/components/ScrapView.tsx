@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useResizePanel } from '../hooks/useResizePanel'
 import { useSearchParams } from 'react-router-dom'
 import { Plus, X, Check, Copy, MoreVertical, Bot } from 'lucide-react'
 import { useIsMobile } from '../hooks/useMediaQuery'
@@ -34,6 +35,7 @@ export default function ScrapView() {
 
   // ── 모바일 감지 ──
   const isMobile = useIsMobile()
+  const { width: socratesW, onMouseDown: onSocratesResize } = useResizePanel(320, 240, 560, 'left', 'scrap-socrates-width')
   const [showOverflow, setShowOverflow] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const socratesChat = useSocratesChat({ mode: 'panel', context: { type: 'scrap' } })
@@ -274,7 +276,8 @@ export default function ScrapView() {
             />
           </div>
         ) : (
-          <div className="scrap-socrates-side">
+          <div className="scrap-socrates-side" style={{ width: socratesW, minWidth: socratesW }}>
+            <div className="resize-handle resize-handle--left" onMouseDown={onSocratesResize} />
             <div className="scrap-socrates-side__header">
               <Bot size={16} />
               <span>Socrates</span>

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { useResizePanel } from '../hooks/useResizePanel'
 import { useNavigate } from 'react-router-dom'
 import { demoPath } from '../utils/demoPath'
 import type { StreakData, StatsData, ActivityData, BriefingData, DailyInsight } from '../types'
@@ -127,6 +128,7 @@ export default function CalendarView() {
 
   // 선택된 날짜 (DayDetailPanel 토글)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const { width: calPanelW, onMouseDown: onCalPanelResize } = useResizePanel(320, 240, 560, 'left', 'calendar-panel-width')
 
   const handleMonthChange = useCallback((year: number, month: number) => {
     setCalYear(year)
@@ -270,7 +272,10 @@ export default function CalendarView() {
 
       {/* 캘린더 + DayDetailPanel */}
       <div className={`calendar-main-container${selectedDate ? ' calendar-main-container--panel-open' : ''}`}>
-        <div className="calendar-main-main">
+        <div
+          className="calendar-main-main"
+          style={selectedDate ? { marginRight: calPanelW } : undefined}
+        >
           <MonthlyCalendar
             year={calYear}
             month={calMonth}
@@ -288,6 +293,8 @@ export default function CalendarView() {
             onClose={handlePanelClose}
             onNavigateJournal={handleNavigateJournal}
             onNavigateMemory={handleNavigateMemory}
+            panelWidth={calPanelW}
+            onPanelResize={onCalPanelResize}
             dailyInsights={dailyInsights}
             onInsightClick={handleInsightClick}
           />

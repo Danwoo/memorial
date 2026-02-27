@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useResizePanel } from '../hooks/useResizePanel'
 import { useLocation } from 'react-router-dom'
 import { Save, Loader2, Check, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, Bot, Brain } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
@@ -150,6 +151,10 @@ export default function DiaryView() {
   // 모바일 탭 전환
   const isMobile = useIsMobile()
   const [mobileTab, setMobileTab] = useState<'editor' | 'memories' | 'ai'>('editor')
+
+  // 패널 너비 (기본: 우측 = 좌측 2배)
+  const { width: leftPanelW, onMouseDown: onLeftResize } = useResizePanel(220, 120, 480, 'right', 'diary-left-panel-width')
+  const { width: rightPanelW, onMouseDown: onRightResize } = useResizePanel(440, 240, 680, 'left', 'diary-right-panel-width')
 
   // 좌/우 패널 collapse 상태
   const [leftCollapsed, setLeftCollapsed] = useState(() => {
@@ -573,12 +578,19 @@ export default function DiaryView() {
   const journalViewClass = [
     'diary-view',
     isMobile ? 'diary-view--mobile' : '',
-    !isMobile && leftCollapsed && isToday ? 'diary-view--left-collapsed' : '',
-    !isMobile && rightCollapsed && isToday ? 'diary-view--right-collapsed' : '',
   ].filter(Boolean).join(' ')
 
+  // 인라인 그리드 컬럼 (collapsed / today 상태 반영)
+  const gridStyle = !isMobile ? {
+    gridTemplateColumns: (() => {
+      const lw = (!isToday || leftCollapsed) ? '0' : `${leftPanelW}px`
+      const rw = (!isToday || rightCollapsed) ? '0' : `${rightPanelW}px`
+      return `${lw} 1fr ${rw}`
+    })(),
+  } : undefined
+
   return (
-    <div className={journalViewClass}>
+    <div className={journalViewClass} style={gridStyle}>
       {/* 모바일 탭 바 */}
       {isMobile && (
         <div className="diary-mobile-tabs">
@@ -590,7 +602,10 @@ export default function DiaryView() {
 
       {/* 메모리 사이드바 (좌측 패널, 오늘일 때만) */}
       {isToday && (
-        <div className={isMobile && mobileTab !== 'memories' ? 'diary-panel--hidden' : ''}>
+        <div className={`diary-left-panel-outer${isMobile && mobileTab !== 'memories' ? ' diary-panel--hidden' : ''}`}>
+          {!isMobile && !leftCollapsed && (
+            <div className="resize-handle resize-handle--right" onMouseDown={onLeftResize} />
+          )}
           <MemorySidebar
             todayScraps={digest?.scraps ?? []}
             relatedScraps={relatedScraps}
@@ -747,6 +762,9 @@ export default function DiaryView() {
       {/* 우측 패널: AI 분석 + Socrates (오늘일 때만) */}
       {isToday && (
         <div className={`diary-right-panel ${isMobile && mobileTab !== 'ai' ? 'diary-panel--hidden' : ''} ${!isMobile && rightCollapsed ? 'diary-right-panel--collapsed' : ''}`}>
+          {!isMobile && !rightCollapsed && (
+            <div className="resize-handle resize-handle--left" onMouseDown={onRightResize} />
+          )}
           <div className="diary-right-panel__tabs">
             <button
               className={`diary-right-panel__tab ${rightTab === 'analysis' ? 'active' : ''}`}

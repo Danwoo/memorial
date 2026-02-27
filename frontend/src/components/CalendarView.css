@@ -274,7 +274,7 @@
 }
 
 .calendar-main-container--panel-open .calendar-main-main {
-  margin-right: clamp(20rem, 25vw, 27.5rem);
+  /* margin-right: JS 인라인 스타일로 제어 (DayDetailPanel 너비에 맞춤) */
 }
 
 .calendar-main-main .monthly-calendar {
