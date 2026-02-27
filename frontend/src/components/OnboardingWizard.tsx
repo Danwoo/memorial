@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { demoPath } from '../utils/demoPath'
 import { BookOpen, MessageCircle, PenTool, Globe, FileText, ChevronRight, Check, Sparkles, X } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import { createScrap } from '../api'
@@ -52,7 +53,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
 
   const handleQuestionClick = useCallback((question: string) => {
     onComplete()
-    navigate('/diary', { state: { openSocrates: true, initialMessage: question } })
+    navigate(demoPath('/diary'), { state: { openSocrates: true, initialMessage: question } })
   }, [onComplete, navigate])
 
   return (
