@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { isDemoMode } from '../contexts/DemoContext'
 import {
   TrendingUp, TrendingDown, Minus,
   Link2, Zap, CircleDot, MessageSquare, BookOpen,
@@ -124,7 +125,7 @@ export default function MindmapInsightPanel({
                 </button>
                 <button
                   className="cluster-socrates-btn"
-                  onClick={() => navigate('/diary', { state: { openSocrates: true, topic: cluster.summary || cluster.entities[0] } })}
+                  onClick={() => navigate(isDemoMode() ? '/demo/diary' : '/diary', { state: { openSocrates: true, topic: cluster.summary || cluster.entities[0] } })}
                   title="이 주제에 대해 대화하기"
                 >
                   <MessageSquare size={12} />
@@ -174,7 +175,7 @@ export default function MindmapInsightPanel({
               <Link2 size={14} />
               고립 엔티티
             </h4>
-            <button className="section-link" onClick={() => navigate('/scraps')}>
+            <button className="section-link" onClick={() => navigate(isDemoMode() ? '/demo/scraps' : '/scraps')}>
               <BookOpen size={12} />
               스크랩 뷰에서 보기
             </button>

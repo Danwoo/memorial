@@ -6,6 +6,7 @@ import type { MindmapNode, MindmapLink, MindmapData, SearchResult, MindmapInsigh
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
+import { isDemoMode } from '../contexts/DemoContext'
 import { fetchMindmap, fetchMindmapInsights, searchScraps, fetchEgoMindmap, fetchEgoDefault } from '../api'
 import { getViewCache, setViewCache, CACHE_KEYS } from '../utils/viewCache'
 import ScrapDetailModal from './ScrapDetailModal'
@@ -592,7 +593,8 @@ export default function MindmapView() {
           }
         })
 
-      navigate('/diary', {
+      const diaryPath = isDemoMode() ? '/demo/diary' : '/diary'
+      navigate(diaryPath, {
         state: {
           openSocrates: true,
           topic: node.name || node.id,
@@ -813,7 +815,7 @@ export default function MindmapView() {
             스크랩을 추가하면 지식 마인드맵이 자동으로 생성됩니다.<br />
             엔티티와 연결이 자동으로 추출됩니다.
           </p>
-          <button onClick={() => navigate('/scraps')} className="add-scrap-btn">
+          <button onClick={() => navigate(isDemoMode() ? '/demo/scraps' : '/scraps')} className="add-scrap-btn">
             + 스크랩 추가
           </button>
         </div>
@@ -956,7 +958,7 @@ export default function MindmapView() {
           onConnectionClick={handleConnectionClick}
           onScrapClick={setSelectedScrapId}
           onStartChat={handleStartChat}
-          onViewScraps={() => navigate('/scraps')}
+          onViewScraps={() => navigate(isDemoMode() ? '/demo/scraps' : '/scraps')}
         />
       )}
 
