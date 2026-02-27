@@ -1,21 +1,21 @@
 /* 인사이트 패널 - 우측 오버레이 */
 .insight-panel {
   position: absolute;
-  top: 16px;
-  right: 20px;
-  width: clamp(260px, 20vw, 340px);
-  max-height: calc(100% - 80px);
+  top: var(--space-4);
+  right: 1.25rem;
+  width: clamp(16.25rem, 20vw, 21.25rem);
+  max-height: calc(100% - 5rem);
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
   z-index: 10;
   overflow-y: auto;
   animation: slideIn 0.2s ease;
 }
 
 .insight-panel-title {
-  margin: 0 0 14px 0;
+  margin: 0 0 0.875rem 0;
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -24,10 +24,10 @@
 .insight-panel-loading {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   color: var(--text-muted);
   font-size: 0.8rem;
-  padding: 16px 0;
+  padding: var(--space-4) 0;
 }
 
 .insight-panel-empty {
@@ -38,7 +38,7 @@
 
 /* 섹션 */
 .insight-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 .insight-section:last-child {
@@ -48,13 +48,13 @@
 .insight-section-title {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin: 0 0 8px 0;
+  margin: 0 0 var(--space-2) 0;
 }
 
 /* 섹션 헤더 (타이틀 + 링크) */
@@ -62,7 +62,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .insight-section-header .insight-section-title {
@@ -72,14 +72,14 @@
 .section-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   font-size: 0.65rem;
   color: var(--accent-primary);
   background: none;
   border: none;
   cursor: pointer;
   font-family: inherit;
-  padding: 2px 0;
+  padding: 0.125rem 0;
 }
 
 .section-link:hover {
@@ -90,12 +90,12 @@
 .insight-cluster-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.375rem;
 }
 
 .insight-cluster-card-wrapper {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .insight-cluster-card-wrapper .insight-cluster-card {
@@ -108,10 +108,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(30px, 2.2vw, 42px);
+  width: clamp(1.875rem, 2.2vw, 2.625rem);
   background: var(--bg-secondary);
   border: 1px solid var(--border-secondary);
-  border-radius: 8px;
+  border-radius: var(--space-2);
   cursor: pointer;
   color: var(--text-muted);
   transition: all var(--transition-fast);
@@ -127,11 +127,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
+  padding: 0.625rem var(--space-3);
   background: var(--bg-secondary);
   border: 1px solid var(--border-secondary);
   border-left: 3px solid var(--accent-primary);
-  border-radius: 8px;
+  border-radius: var(--space-2);
   cursor: pointer;
   text-align: left;
   width: 100%;
@@ -157,27 +157,27 @@
   font-size: 0.65rem;
   color: var(--text-muted);
   flex-shrink: 0;
-  margin-left: 8px;
+  margin-left: var(--space-2);
 }
 
 /* 트렌드 */
 .insight-trend-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.375rem;
 }
 
 .insight-trend-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 0;
+  gap: var(--space-2);
+  padding: 0.375rem 0;
 }
 
 .trend-tag {
   font-size: 0.75rem;
   color: var(--text-primary);
-  min-width: 60px;
+  min-width: 3.75rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -186,16 +186,16 @@
 .trend-bars {
   display: flex;
   align-items: flex-end;
-  gap: 2px;
-  height: 24px;
+  gap: 0.125rem;
+  height: 1.5rem;
   flex: 1;
 }
 
 .trend-bar {
   width: 100%;
-  min-height: 4px;
+  min-height: 0.25rem;
   background: var(--accent-primary);
-  border-radius: 2px;
+  border-radius: 0.125rem;
   opacity: 0.6;
 }
 
@@ -221,7 +221,7 @@
 .insight-isolated-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .insight-isolated-item {
@@ -232,13 +232,13 @@
   display: block;
   width: 100%;
   text-align: left;
-  padding: 6px 8px;
+  padding: 0.375rem var(--space-2);
   background: none;
   border: none;
   color: var(--text-secondary);
   font-size: 0.8rem;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 0.375rem;
   transition: background var(--transition-fast);
   font-family: inherit;
 }
@@ -250,16 +250,16 @@
 
 .isolated-connect-btn {
   position: absolute;
-  right: 4px;
+  right: var(--space-1);
   top: 50%;
   transform: translateY(-50%);
-  padding: 2px 8px;
+  padding: 0.125rem var(--space-2);
   font-size: 0.65rem;
   font-weight: 500;
   color: var(--accent-primary);
   background: var(--accent-bg);
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 0.375rem;
   cursor: pointer;
   font-family: inherit;
   transition: all var(--transition-fast);
@@ -272,11 +272,11 @@
 }
 
 .connect-dropdown {
-  margin-top: 4px;
-  padding: 6px;
+  margin-top: var(--space-1);
+  padding: 0.375rem;
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
-  border-radius: 8px;
+  border-radius: var(--space-2);
   box-shadow: var(--shadow-md);
 }
 
@@ -285,19 +285,19 @@
   display: block;
   font-size: 0.72rem;
   color: var(--text-muted);
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
 }
 
 .connect-option {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 6px 8px;
+  padding: 0.375rem var(--space-2);
   font-size: 0.75rem;
   color: var(--text-secondary);
   background: none;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--space-1);
   cursor: pointer;
   font-family: inherit;
   overflow: hidden;
@@ -315,17 +315,17 @@
 .insight-hub-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .insight-hub-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 10px;
+  padding: var(--space-2) 0.625rem;
   background: none;
   border: none;
-  border-radius: 6px;
+  border-radius: 0.375rem;
   cursor: pointer;
   width: 100%;
   text-align: left;
@@ -351,18 +351,18 @@
   color: var(--text-muted);
   flex-shrink: 0;
   background: var(--bg-tertiary);
-  padding: 2px 6px;
+  padding: 0.125rem 0.375rem;
   border-radius: var(--radius-full);
 }
 
 /* 반응형 */
 @media (max-width: 767px) {
   .insight-panel {
-    width: calc(100% - 40px);
-    left: 20px;
-    right: 20px;
+    width: calc(100% - 2.5rem);
+    left: 1.25rem;
+    right: 1.25rem;
     top: auto;
-    bottom: 60px;
+    bottom: 3.75rem;
     max-height: 40%;
   }
 }

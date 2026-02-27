@@ -10,7 +10,7 @@
 /* Search bar - top center overlay */
 .mindmap-search {
   position: absolute;
-  top: 16px;
+  top: var(--space-4);
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
@@ -21,10 +21,10 @@
   align-items: center;
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
-  border-radius: 24px;
-  padding: 8px 16px;
-  gap: 8px;
-  min-width: clamp(200px, 20vw, 300px);
+  border-radius: 1.5rem;
+  padding: var(--space-2) var(--space-4);
+  gap: var(--space-2);
+  min-width: clamp(12.5rem, 20vw, 18.75rem);
   transition: border-color 0.2s;
 }
 
@@ -33,8 +33,8 @@
 }
 
 .search-icon {
-  width: 16px;
-  height: 16px;
+  width: 1rem;
+  height: 1rem;
   color: var(--text-muted);
   flex-shrink: 0;
 }
@@ -56,14 +56,14 @@
 /* Stats - top left (모드 토글 아래) */
 .mindmap-stats {
   position: absolute;
-  top: 52px;
-  left: 20px;
+  top: 3.25rem;
+  left: 1.25rem;
   z-index: 10;
   font-size: 0.8rem;
   color: var(--text-muted);
   background: var(--bg-card);
-  padding: 6px 12px;
-  border-radius: 12px;
+  padding: 0.375rem var(--space-3);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-secondary);
 }
 
@@ -76,13 +76,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
   color: var(--text-secondary);
 }
 
 .loader-spinner {
-  width: 40px;
-  height: 40px;
+  width: 2.5rem;
+  height: 2.5rem;
   border: 3px solid var(--border-secondary);
   border-top-color: var(--accent-primary);
   border-radius: 50%;
@@ -105,12 +105,12 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 12px;
+  gap: var(--space-3);
   color: var(--text-secondary);
 }
 
 .empty-icon {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
   opacity: 0.6;
 }
 
@@ -128,12 +128,12 @@
 }
 
 .add-scrap-btn {
-  margin-top: 8px;
-  padding: 10px 24px;
+  margin-top: var(--space-2);
+  padding: 0.625rem var(--space-6);
   background: var(--accent-bg);
   border: 1px solid var(--accent-primary);
   color: var(--text-primary);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   font-size: 0.9rem;
   transition: background 0.2s;
@@ -147,19 +147,19 @@
 /* Legend - bottom left overlay */
 .mindmap-legend {
   position: absolute;
-  bottom: 60px;
-  left: 20px;
+  bottom: 3.75rem;
+  left: 1.25rem;
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  padding: 0.875rem var(--space-4);
   z-index: 10;
-  max-height: 300px;
+  max-height: 18.75rem;
   overflow-y: auto;
 }
 
 .mindmap-legend h4 {
-  margin: 0 0 10px 0;
+  margin: 0 0 0.625rem 0;
   font-size: 0.7rem;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -169,21 +169,21 @@
 .legend-items {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.375rem;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   border: none;
   background: none;
   font: inherit;
   color: inherit;
   width: 100%;
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 6px;
+  padding: 0.125rem var(--space-1);
+  border-radius: 0.375rem;
   transition: background 0.15s;
   user-select: none;
 }
@@ -201,8 +201,8 @@
 }
 
 .legend-dot {
-  width: 10px;
-  height: 10px;
+  width: 0.625rem;
+  height: 0.625rem;
   border-radius: 50%;
   flex-shrink: 0;
   box-shadow: none;
@@ -216,23 +216,23 @@
 /* Node Info Panel - right side */
 .node-info-panel {
   position: absolute;
-  top: 16px;
-  right: 20px;
-  width: clamp(240px, 18vw, 320px);
+  top: var(--space-4);
+  right: 1.25rem;
+  width: clamp(15rem, 18vw, 20rem);
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
   z-index: 10;
   animation: slideIn 0.2s ease;
-  max-height: calc(100% - 80px);
+  max-height: calc(100% - 5rem);
   overflow-y: auto;
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateX(1.25rem);
   }
   to {
     opacity: 1;
@@ -244,15 +244,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .node-type-badge {
   font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 12px;
+  padding: var(--space-1) 0.625rem;
+  border-radius: var(--radius-lg);
   color: var(--text-inverse);
   letter-spacing: 0.3px;
 }
@@ -273,7 +273,7 @@
 }
 
 .node-info-panel h3 {
-  margin: 0 0 6px 0;
+  margin: 0 0 0.375rem 0;
   font-size: 1.05rem;
   color: var(--text-primary);
   line-height: 1.4;
@@ -283,20 +283,20 @@
 .node-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: var(--space-2);
+  margin-bottom: 0.625rem;
 }
 
 .node-meta-item {
   font-size: 0.72rem;
   color: var(--text-muted);
   background: var(--bg-tertiary);
-  padding: 2px 8px;
+  padding: 0.125rem var(--space-2);
   border-radius: var(--radius-full);
 }
 
 .node-summary {
-  margin: 0 0 12px 0;
+  margin: 0 0 var(--space-3) 0;
   font-size: 0.85rem;
   color: var(--text-secondary);
   line-height: 1.5;
@@ -305,25 +305,25 @@
 .node-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 12px;
+  gap: 0.375rem;
+  margin-bottom: var(--space-3);
 }
 
 .node-tag {
   font-size: 0.72rem;
   color: var(--accent-primary);
   background: var(--accent-bg);
-  padding: 3px 8px;
+  padding: 0.1875rem var(--space-2);
   border-radius: var(--radius-full);
 }
 
 /* Connections list */
 .node-connections {
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .node-connections h4 {
-  margin: 0 0 8px 0;
+  margin: 0 0 var(--space-2) 0;
   font-size: 0.75rem;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -336,21 +336,21 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .node-connections li {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   font-size: 0.8rem;
   color: var(--text-secondary);
-  padding: 4px 0;
+  padding: var(--space-1) 0;
 }
 
 .conn-dot {
-  width: 6px;
-  height: 6px;
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -360,7 +360,7 @@
   color: var(--text-muted);
   text-transform: uppercase;
   flex-shrink: 0;
-  min-width: 60px;
+  min-width: 3.75rem;
 }
 
 .conn-name {
@@ -390,13 +390,13 @@
   top: 100%;
   left: 0;
   right: 0;
-  margin-top: 4px;
+  margin-top: var(--space-1);
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   z-index: 20;
-  max-height: 320px;
+  max-height: 20rem;
   overflow-y: auto;
 }
 
@@ -405,7 +405,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 8px 12px;
+  padding: var(--space-2) var(--space-3);
   border: none;
   background: none;
   color: var(--text-primary);
@@ -431,13 +431,13 @@
 .search-item-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   flex-shrink: 0;
-  margin-left: 8px;
+  margin-left: var(--space-2);
 }
 
 .search-item-type {
-  padding: 2px 6px;
+  padding: 0.125rem 0.375rem;
   background: var(--bg-tertiary);
   border-radius: var(--radius-full);
   font-size: 0.6875rem;
@@ -452,7 +452,7 @@
 /* 연결 노드 클릭 */
 .conn-clickable {
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--space-1);
   transition: background 0.15s;
 }
 
@@ -462,11 +462,11 @@
 
 /* 관련 메모리 섹션 */
 .node-scraps {
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .node-scraps h4 {
-  margin: 0 0 8px 0;
+  margin: 0 0 var(--space-2) 0;
   font-size: 0.75rem;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -479,17 +479,17 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .scrap-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   font-size: 0.8rem;
   color: var(--text-secondary);
-  padding: 6px 8px;
-  border-radius: 6px;
+  padding: 0.375rem var(--space-2);
+  border-radius: 0.375rem;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -522,7 +522,7 @@
   display: block;
   width: 100%;
   text-align: right;
-  margin-top: 6px;
+  margin-top: 0.375rem;
   padding: 0;
   background: none;
   border: none;
@@ -539,12 +539,12 @@
 
 .socrates-with-topic-btn {
   width: 100%;
-  margin-top: 4px;
-  padding: 8px 0;
+  margin-top: var(--space-1);
+  padding: var(--space-2) 0;
   background: var(--accent-bg);
   border: 1px solid var(--accent-primary);
   color: var(--text-primary);
-  border-radius: 8px;
+  border-radius: var(--space-2);
   cursor: pointer;
   font-size: 0.85rem;
   transition: background 0.2s;
@@ -558,22 +558,22 @@
 /* 인사이트 컨트롤 */
 .mindmap-insight-controls {
   position: absolute;
-  top: 16px;
-  right: 20px;
+  top: var(--space-4);
+  right: 1.25rem;
   z-index: 10;
   display: flex;
-  gap: 6px;
+  gap: 0.375rem;
 }
 
 .insight-toggle-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(32px, 2.5vw, 46px);
-  height: clamp(32px, 2.5vw, 46px);
+  width: clamp(2rem, 2.5vw, 2.875rem);
+  height: clamp(2rem, 2.5vw, 2.875rem);
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
-  border-radius: 10px;
+  border-radius: 0.625rem;
   cursor: pointer;
   color: var(--text-muted);
   transition: all var(--transition-fast);
@@ -593,11 +593,11 @@
 .cluster-color-btn {
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  height: clamp(32px, 2.5vw, 46px);
+  padding: 0 var(--space-3);
+  height: clamp(2rem, 2.5vw, 2.875rem);
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
-  border-radius: 10px;
+  border-radius: 0.625rem;
   cursor: pointer;
   color: var(--text-muted);
   font-size: 0.75rem;
@@ -620,15 +620,15 @@
 /* Controls hint - bottom center */
 .mindmap-controls {
   position: absolute;
-  bottom: 16px;
+  bottom: var(--space-4);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 20px;
+  gap: 1.25rem;
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
-  padding: 8px 20px;
-  border-radius: 24px;
+  padding: var(--space-2) 1.25rem;
+  border-radius: 1.5rem;
   z-index: 10;
 }
 
@@ -642,7 +642,7 @@
 .mindmap-controls--onboarding {
   background: var(--accent-primary);
   border-color: var(--accent-primary);
-  padding: 10px 24px;
+  padding: 0.625rem var(--space-6);
   animation: coachmark-pulse 2s ease-in-out infinite;
 }
 
@@ -654,14 +654,14 @@
 
 .mindmap-controls-divider {
   width: 1px;
-  height: 12px;
+  height: 0.75rem;
   background: rgba(255, 255, 255, 0.3);
   flex-shrink: 0;
 }
 
 @keyframes coachmark-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+  50% { box-shadow: 0 0 0 0.5rem rgba(99, 102, 241, 0); }
 }
 
 /* 호버 툴팁 */
@@ -671,13 +671,13 @@
   pointer-events: none;
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
-  border-radius: 8px;
-  padding: 6px 10px;
+  border-radius: var(--space-2);
+  padding: 0.375rem 0.625rem;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0.125rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  max-width: 200px;
+  max-width: 12.5rem;
 }
 
 .hover-tooltip-name {
@@ -697,23 +697,23 @@
 /* 줌 컨트롤 패널 */
 .mindmap-zoom-controls {
   position: absolute;
-  bottom: 60px;
-  right: 20px;
+  bottom: 3.75rem;
+  right: 1.25rem;
   z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .mindmap-zoom-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(32px, 2.5vw, 46px);
-  height: clamp(32px, 2.5vw, 46px);
+  width: clamp(2rem, 2.5vw, 2.875rem);
+  height: clamp(2rem, 2.5vw, 2.875rem);
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
-  border-radius: 10px;
+  border-radius: 0.625rem;
   cursor: pointer;
   color: var(--text-muted);
   transition: all var(--transition-fast);
@@ -732,9 +732,9 @@
 
   .mindmap-search {
     top: var(--space-md);
-    left: 16px;
+    left: var(--space-4);
     transform: none;
-    right: 16px;
+    right: var(--space-4);
   }
 
   .search-input-wrapper {
@@ -743,18 +743,18 @@
   }
 
   .node-info-panel {
-    width: calc(100% - 40px);
-    left: 20px;
-    right: 20px;
+    width: calc(100% - 2.5rem);
+    left: 1.25rem;
+    right: 1.25rem;
     top: auto;
-    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
     max-height: 50%;
   }
 
   .mindmap-controls {
-    gap: 10px;
-    padding: 6px 14px;
-    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    gap: 0.625rem;
+    padding: 0.375rem 0.875rem;
+    bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   }
 
   .mindmap-controls span {
@@ -763,7 +763,7 @@
 
   .mindmap-mode-toggle {
     top: var(--space-md);
-    left: 16px;
+    left: var(--space-4);
   }
 
   .ego-info-bar {
@@ -771,38 +771,38 @@
   }
 
   .mindmap-stats {
-    top: calc(var(--space-md) + 40px);
-    left: 16px;
+    top: calc(var(--space-md) + 2.5rem);
+    left: var(--space-4);
   }
 
   /* 줌 컨트롤: 하단 탭 바 위로 배치 */
   .mindmap-zoom-controls {
-    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   }
 
   /* 줌 버튼 모바일 터치 타겟 44px */
   .mindmap-zoom-btn {
-    width: 44px;
-    height: 44px;
+    width: 2.75rem;
+    height: 2.75rem;
   }
 }
 
 /* ── Ego/전체 토글 ── */
 .mindmap-mode-toggle {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 0.75rem;
+  left: 0.75rem;
   display: flex;
-  gap: 2px;
+  gap: 0.125rem;
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
-  padding: 2px;
+  padding: 0.125rem;
   z-index: 5;
 }
 
 .mindmap-mode-btn {
-  padding: 6px 14px;
+  padding: 0.375rem 0.875rem;
   border: none;
   background: none;
   color: var(--text-secondary);
@@ -825,7 +825,7 @@
 /* ── Ego 중심 노드 표시 + 확장 ── */
 .ego-info-bar {
   position: absolute;
-  top: 12px;
+  top: 0.75rem;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -834,7 +834,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-full);
-  padding: 6px 16px;
+  padding: 0.375rem var(--space-4);
   z-index: 5;
   font-size: 0.8125rem;
   color: var(--text-secondary);
@@ -846,7 +846,7 @@
 }
 
 .ego-expand-btn {
-  padding: 4px 10px;
+  padding: var(--space-1) 0.625rem;
   border: 1px solid var(--accent-primary);
   background: var(--accent-bg);
   color: var(--accent-primary);
@@ -855,7 +855,7 @@
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   transition: all var(--transition-fast);
   font-family: inherit;
 }

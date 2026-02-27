@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import { useResizePanel } from '../hooks/useResizePanel'
 import { useNavigate, useLocation } from 'react-router-dom'
 import ForceGraph2D from 'react-force-graph-2d'
 import { Lightbulb, Maximize, ZoomIn, ZoomOut, Expand } from 'lucide-react'
@@ -82,6 +83,7 @@ export default function MindmapView() {
   const [insights, setInsights] = useState<MindmapInsights | null>(null)
   const [insightsLoading, setInsightsLoading] = useState(false)
   const [showInsights, setShowInsights] = useState(false)
+  const { vw: insightVw, onMouseDown: onInsightResize } = useResizePanel(19, 13, 35, 'left', 'mindmap-insight-vw')
   const [clusterColorMode, setClusterColorMode] = useState(false)
 
   const bgColor = resolvedTheme === 'dark' ? '#1a1a1a' : '#ffffff'
@@ -962,6 +964,8 @@ export default function MindmapView() {
             fetchMindmapData()
             loadInsights()
           }}
+          panelWidth={`${insightVw}vw`}
+          onPanelResize={onInsightResize}
         />
       )}
 
