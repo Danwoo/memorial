@@ -1,6 +1,7 @@
 import { Bot, BookOpen, FileText, GitBranch } from 'lucide-react'
 import type { BriefingData } from '../../types'
 import type { SocratesChatContext } from '../../hooks/useSocratesChat'
+import '../SocratesView.css'
 
 const CONTEXT_CONFIG: Record<string, { tagline: string; icon: typeof Bot; suggestions: string[] }> = {
   diary: {
