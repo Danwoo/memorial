@@ -25,6 +25,7 @@ ALLOWED_NODE_LABELS = frozenset(
         "Framework",
         "Language",
         "Tool",
+        "Project",
     }
 )
 
@@ -51,6 +52,9 @@ ALLOWED_REL_TYPES = frozenset(
         "BUILT_WITH",
         "INSPIRED_BY",
         "CONTAINS",
+        "SUPPORTS",
+        "CONTRADICTS",
+        "LEADS_TO",
     }
 )
 
@@ -337,18 +341,17 @@ class MindmapRepository:
     # 관련 컨텍스트 조회 (Socrates 챗용)
     # ------------------------------------------------------------------
     def _sync_get_related_context(self, topic: str, depth: int) -> list[dict]:
-        """주제와 N-hop 내 연관 엔티티 탐색 동기 구현."""
+        """주제와 직접 연결된 엔티티 탐색 동기 구현 (depth=1, 실제 rel_type 반환)."""
         conn = self._get_conn()
-        safe_depth = max(1, min(depth, MAX_GRAPH_TRAVERSAL_DEPTH))
+        # depth=1 직접 쿼리로 엣지 속성(rel_type) 접근
         query = f"""
-        MATCH p = (start:Entity {{name: $topic}})-[:ENTITY_REL*1..{safe_depth}]-(related:Entity)
+        MATCH (start:Entity {{name: $topic}})-[r:ENTITY_REL]->(related:Entity)
         WHERE related.name IS NOT NULL AND related.name <> $topic
         RETURN DISTINCT
             related.name AS name,
             related.type AS label,
-            'RELATED_TO' AS rel_type,
-            length(p) AS distance
-        ORDER BY distance
+            r.rel_type AS rel_type,
+            1 AS distance
         LIMIT {MAX_RELATED_CONTEXT_RESULTS}
         """
         return self._result_to_dicts(conn.execute(query, {"topic": topic}))

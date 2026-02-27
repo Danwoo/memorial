@@ -33,14 +33,19 @@ def get_analytical_llm() -> ChatOpenAI:
 
 @lru_cache
 def get_tagger_llm() -> ChatOpenAI:
-    """태그 추출 전용 LLM — OpenRouter upstage/solar-pro-3:free (temperature=0)."""
+    """태그 추출 전용 LLM — OpenRouter upstage/solar-pro-3:free (temperature=0).
+
+    OPENROUTER_API_KEY 미설정 시 get_analytical_llm() (gpt-4o-mini)로 폴백.
+    """
     settings = get_settings()
-    api_key = settings.OPENROUTER_API_KEY or settings.OPENAI_API_KEY
-    base_url = _OPENROUTER_BASE_URL if settings.OPENROUTER_API_KEY else None
-    kwargs = {"model": _TAGGER_MODEL, "temperature": 0, "api_key": api_key}
-    if base_url:
-        kwargs["base_url"] = base_url
-    return ChatOpenAI(**kwargs)
+    if not settings.OPENROUTER_API_KEY:
+        return get_analytical_llm()
+    return ChatOpenAI(
+        model=_TAGGER_MODEL,
+        temperature=0,
+        api_key=settings.OPENROUTER_API_KEY,
+        base_url=_OPENROUTER_BASE_URL,
+    )
 
 
 @lru_cache
