@@ -15,9 +15,10 @@ logger = logging.getLogger(__name__)
 # 저널 입력 최소 길이 (이 미만은 의미 있는 분석 불가)
 MIN_CONTENT_LENGTH = 10
 
-SENTIMENT_PROMPT = """Classify the overall mood of the following journal entry.
+SENTIMENT_PROMPT = """Classify the overall mood of this journal entry.
 Respond with exactly one word: POSITIVE, NEGATIVE, or NEUTRAL.
-No explanation needed."""
+For mixed-mood entries, choose the dominant emotion.
+No explanation."""
 
 TAG_EXTRACTION_PROMPT = """다이어리 내용에서 핵심 키워드 2~3개를 추출하세요.
 키워드만 쉼표로 구분해서 반환하세요. (예: 운동, 독서, 프로젝트)
