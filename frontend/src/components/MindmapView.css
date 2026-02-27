@@ -7,12 +7,6 @@
   border-radius: var(--radius-xl);
 }
 
-/* Canvas fills container */
-.mindmap-view-container > div:has(canvas) {
-  width: 100% !important;
-  height: 100% !important;
-}
-
 /* Search bar - top center overlay */
 .mindmap-search {
   position: absolute;

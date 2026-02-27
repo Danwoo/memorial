@@ -4,10 +4,11 @@ from uuid import UUID
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from app.config.llm import get_creative_llm
+from app.config.llm import get_analytical_llm, get_creative_llm
 from app.repositories.socrates_repository import SocratesRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.diary_service import MIN_CONTENT_LENGTH
+from app.utils import parse_llm_json_response
 
 logger = logging.getLogger(__name__)
 MAX_REVIEW_QUESTIONS = 3
@@ -15,7 +16,6 @@ MAX_TRANSCRIPT_CHARS = 10000
 RELATED_SCRAPS_LIMIT = 5
 RELATED_SCRAPS_THRESHOLD = 0.4
 RELATED_SCRAP_SUMMARY_LENGTH = 100
-WELLNESS_PENALTY_PER_DISTORTION = 20
 
 REVIEWER_PROMPT = """당신은 소크라테스식 사고 파트너입니다. 사용자의 저널 내용을 읽고, 2-3개의 깊이 있는 성찰 질문을 생성하세요.
 
@@ -33,46 +33,68 @@ REVIEWER_PROMPT = """당신은 소크라테스식 사고 파트너입니다. 사
 **반드시 한국어로 질문을 생성하세요.**
 형식: 질문만 반환, 줄바꿈으로 구분, 번호 매기기."""
 
-DRAFT_PROMPT = """You are a reflective journal writing assistant. Based on the evening conversation between the user and their AI thinking partner, write a journal entry draft.
+DRAFT_PROMPT = """You are a reflective journal writing assistant.
+Write a first-person journal entry based on the evening conversation transcript.
 
-**Guidelines:**
-- Write in the same language the user used during the conversation
-- Structure the journal as a first-person reflection (use "나는", "오늘은" etc. for Korean)
-- Include key topics, feelings, and insights discussed
-- Add a brief reflection or takeaway at the end
-- Use markdown formatting with headers
-- Keep it concise but meaningful (200-400 words)
-- Do NOT add fictional details; only reflect what was actually discussed
+Structure:
+## [Theme-based title in Korean]
+[2-3 paragraphs reflecting on key topics, feelings, and insights discussed]
 
-**Output:** A well-structured journal entry draft in markdown format."""
+### Key Takeaway
+[1-2 sentences: the most important insight or realization]
 
-COGNITIVE_DISTORTION_PATTERNS = {
-    "all_or_nothing": {
-        "name": "흑백논리 (All-or-Nothing)",
-        "keywords": ["항상", "절대", "전혀", "never", "always", "완전히", "100%"],
-        "feedback": "상황에 중간 지대가 있을 수 있어요. '때때로' 또는 '어떤 경우에는'으로 표현해보면 어떨까요?",
-    },
-    "overgeneralization": {
-        "name": "과잉일반화 (Overgeneralization)",
-        "keywords": ["매번", "언제나", "늘", "이런 식이야", "맨날", "every time"],
-        "feedback": "구체적인 이번 상황에 집중해보면 어떨까요? 실제로 매번 그랬나요?",
-    },
-    "personalization": {
-        "name": "개인화 (Personalization)",
-        "keywords": ["내 탓", "내가 잘못", "내 책임", "나 때문에", "my fault"],
-        "feedback": "상황에 영향을 준 다른 요인들도 있지 않았을까요?",
-    },
-    "catastrophizing": {
-        "name": "파국화 (Catastrophizing)",
-        "keywords": ["끔찍", "최악", "재앙", "망했", "terrible", "disaster", "worst"],
-        "feedback": "현실적으로 가장 가능성 높은 결과는 무엇일까요?",
-    },
-    "mind_reading": {
-        "name": "독심술 (Mind Reading)",
-        "keywords": ["~라고 생각할 거야", "분명히 ~일 거야", "나를 싫어", "무시하", "think I'm"],
-        "feedback": "실제로 상대방에게 확인해보셨나요? 다른 해석도 가능할 수 있어요.",
-    },
+Rules:
+- Write in the same language the user used (Korean if they spoke Korean)
+- First person voice ("나는", "오늘은")
+- Only reflect what was actually discussed — never add fictional details
+- 3-5 paragraphs total, concise but meaningful"""
+
+COGNITIVE_DISTORTION_PROMPT = """You are a cognitive behavioral therapy (CBT) analyst.
+Analyze this journal entry for potential cognitive distortions.
+
+**Process:**
+1. Separate factual statements from subjective interpretations
+2. For each subjective claim, consider evidence for and against
+3. Check if any match cognitive distortion patterns
+
+**Distortion Types:**
+- all_or_nothing: Absolute thinking in genuinely negative context.
+  NOTE: "항상 감사합니다" (always grateful) is NOT a distortion. "항상 실패해" (always fail) IS.
+- overgeneralization: One event generalized to universal pattern
+- personalization: Taking blame for things outside one's control
+- catastrophizing: Assuming worst-case outcome without evidence
+- mind_reading: Assuming others' thoughts without verification
+
+**Output JSON:**
+{
+  "distortions": [
+    {
+      "type": "overgeneralization",
+      "trigger_text": "exact triggering phrase",
+      "name": "과잉일반화 (Overgeneralization)",
+      "reasoning": "brief analysis in English",
+      "feedback": "gentle reframing suggestion in Korean"
+    }
+  ],
+  "wellness_note": "one-sentence assessment in Korean"
 }
+
+If no genuine distortions: {"distortions": [], "wellness_note": "건강한 사고 패턴이 관찰됩니다."}
+
+Example:
+Input: "오늘 발표를 망쳤다. 나는 항상 중요한 순간에 실수해."
+Output:
+{
+  "distortions": [
+    {"type": "overgeneralization", "trigger_text": "항상 중요한 순간에 실수해",
+     "name": "과잉일반화 (Overgeneralization)",
+     "reasoning": "Generalizes one presentation to all important moments",
+     "feedback": "이번 발표에서 구체적으로 어떤 부분이 아쉬웠는지 돌아보면 어떨까요?"}
+  ],
+  "wellness_note": "한 번의 경험을 일반화하는 경향이 보입니다. 구체적 사실에 집중하면 도움이 될 수 있어요."
+}
+
+Return ONLY valid JSON. No markdown."""
 
 
 class DiaryAnalysisService:
@@ -104,29 +126,36 @@ class DiaryAnalysisService:
             logger.exception("성찰 질문 생성 실패")
             return ["이 경험에서 어떤 인사이트를 얻었나요?"]
 
-    def detect_cognitive_distortions(self, content: str) -> dict[str, Any]:
-        """저널 내용에서 인지 왜곡 탐지. 탐지된 패턴과 리프레이밍 제안 반환."""
-        content_lower = content.lower()
-        detected = []
+    async def detect_cognitive_distortions(self, content: str) -> dict[str, Any]:
+        """저널 내용에서 인지 왜곡 탐지 (LLM 기반 DoT 접근법).
 
-        for pattern_id, pattern in COGNITIVE_DISTORTION_PATTERNS.items():
-            for keyword in pattern["keywords"]:
-                if keyword in content_lower:
-                    detected.append(
-                        {
-                            "type": pattern_id,
-                            "name": pattern["name"],
-                            "trigger": keyword,
-                            "feedback": pattern["feedback"],
-                        }
-                    )
-                    break
+        키워드 매칭 대신 LLM이 사실/주관 분리 → 근거 대조 → 인지 도식 분석 3단계를 수행.
+        "항상 감사합니다"와 같은 긍정적 절대어는 왜곡으로 탐지하지 않음.
+        """
+        if not content or len(content.strip()) < MIN_CONTENT_LENGTH:
+            return {"has_distortions": False, "distortions": [], "wellness_score": 85}
 
-        return {
-            "has_distortions": len(detected) > 0,
-            "distortions": detected,
-            "wellness_score": max(0, 100 - len(detected) * WELLNESS_PENALTY_PER_DISTORTION),
-        }
+        try:
+            llm = get_analytical_llm()
+            response = await llm.ainvoke(
+                [
+                    SystemMessage(content=COGNITIVE_DISTORTION_PROMPT),
+                    HumanMessage(content=f"Journal entry:\n{content[:2000]}"),
+                ]
+            )
+            result = parse_llm_json_response(response.content.strip())
+            distortions = result.get("distortions", [])
+            wellness_note = result.get("wellness_note", "")
+            wellness_score = max(0, 100 - len(distortions) * 20)
+            return {
+                "has_distortions": len(distortions) > 0,
+                "distortions": distortions,
+                "wellness_score": wellness_score,
+                "wellness_note": wellness_note,
+            }
+        except Exception:
+            logger.exception("인지 왜곡 LLM 분석 실패, 안전 폴백 반환")
+            return {"has_distortions": False, "distortions": [], "wellness_score": 85}
 
     async def generate_draft_from_conversation(self, session_id: UUID) -> str:
         """저녁 대화 세션으로부터 다이어리 초안 생성 (LLM 활용)."""
