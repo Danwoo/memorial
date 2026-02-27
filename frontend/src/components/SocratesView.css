@@ -103,7 +103,7 @@
 /* 환영 배너 */
 .welcome-banner {
   position: relative;
-  max-width: 400px;
+  max-width: 25rem;
   padding: var(--space-lg);
   margin-bottom: var(--space-xl);
   background: var(--bg-card);
@@ -183,7 +183,7 @@
   font-size: 0.8rem;
   color: var(--accent-primary);
   background: rgba(99, 102, 241, 0.1);
-  padding: 2px 8px;
+  padding: 0.125rem var(--space-2);
   border-radius: var(--radius-full);
 }
 
@@ -192,7 +192,7 @@
   flex-wrap: wrap;
   gap: var(--space-sm);
   margin-top: var(--space-lg);
-  max-width: 600px;
+  max-width: 37.5rem;
   justify-content: center;
 }
 
@@ -223,7 +223,7 @@
 @keyframes messageSlideIn {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(0.75rem);
   }
   to {
     opacity: 1;
@@ -236,8 +236,8 @@
 }
 
 .message-avatar {
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -367,13 +367,13 @@
 
 .typing-dots {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
   align-items: center;
 }
 
 .typing-dot {
-  width: 6px;
-  height: 6px;
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 50%;
   background: var(--text-muted);
   animation: typingBounce 1.2s ease-in-out infinite;
@@ -393,7 +393,7 @@
     opacity: 0.4;
   }
   30% {
-    transform: translateY(-6px);
+    transform: translateY(-0.375rem);
     opacity: 1;
   }
 }
@@ -421,7 +421,7 @@
   gap: var(--space-sm);
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
-  border-radius: 24px;
+  border-radius: 1.5rem;
   padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -439,7 +439,7 @@
   font-size: 0.9375rem;
   padding: var(--space-sm);
   resize: none;
-  max-height: 200px;
+  max-height: 12.5rem;
   overflow-y: auto;
   line-height: 1.5;
   font-family: inherit;
@@ -454,8 +454,8 @@
 }
 
 .send-button {
-  width: clamp(32px, 2.5vw, 46px);
-  height: clamp(32px, 2.5vw, 46px);
+  width: clamp(2rem, 2.5vw, 2.875rem);
+  height: clamp(2rem, 2.5vw, 2.875rem);
   border-radius: 50%;
   background: var(--text-primary);
   border: none;
@@ -484,11 +484,11 @@
 /* 맨 아래로 스크롤 버튼 */
 .socrates-scroll-bottom-btn {
   position: absolute;
-  bottom: 16px;
-  right: 24px;
+  bottom: var(--space-4);
+  right: var(--space-6);
   z-index: 5;
-  width: clamp(36px, 2.8vw, 50px);
-  height: clamp(36px, 2.8vw, 50px);
+  width: clamp(2.25rem, 2.8vw, 3.125rem);
+  height: clamp(2.25rem, 2.8vw, 3.125rem);
   border-radius: 50%;
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
@@ -505,11 +505,11 @@
 .socrates-scroll-bottom-btn:hover {
   border-color: var(--accent-primary);
   color: var(--accent-primary);
-  transform: translateY(-2px);
+  transform: translateY(-0.125rem);
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(0.5rem); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -549,8 +549,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 2.75rem;
+    height: 2.75rem;
     background: none;
     border: none;
     color: var(--text-secondary);
@@ -565,15 +565,15 @@
 
   /* 스크롤 버튼 위치 조정 */
   .socrates-scroll-bottom-btn {
-    right: 16px;
-    bottom: 12px;
+    right: var(--space-4);
+    bottom: 0.75rem;
   }
 }
 
 /* 참조 메모리 섹션 */
 .socrates-references {
-  margin-top: 10px;
-  padding: 8px 10px;
+  margin-top: 0.625rem;
+  padding: var(--space-2) 0.625rem;
   background: var(--bg-tertiary);
   border-radius: var(--radius-md);
   border-left: 3px solid var(--accent-primary);
@@ -582,14 +582,14 @@
 .socrates-references-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   background: none;
   border: none;
   color: var(--accent-primary);
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  padding: 4px 0;
+  padding: var(--space-1) 0;
   transition: color 0.15s;
 }
 
@@ -601,36 +601,36 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
+  min-width: 1.125rem;
+  height: 1.125rem;
   border-radius: 50%;
   background: var(--accent-primary);
   color: white;
   font-size: 0.65rem;
   font-weight: 700;
-  padding: 0 4px;
+  padding: 0 var(--space-1);
 }
 
 .socrates-references-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
 }
 
 .socrates-reference-chip {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
-  padding: 4px 10px;
+  padding: var(--space-1) 0.625rem;
   font-size: 0.78rem;
   color: var(--text-secondary);
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
-  max-width: 280px;
+  max-width: 17.5rem;
 }
 
 .socrates-reference-chip:hover {
@@ -653,8 +653,8 @@
 
 .socrates-feedback-buttons {
   display: flex;
-  gap: 4px;
-  margin-top: 6px;
+  gap: var(--space-1);
+  margin-top: 0.375rem;
   opacity: 0;
   transition: opacity 0.15s;
 }
@@ -668,8 +668,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 1.75rem;
+  height: 1.75rem;
   border: none;
   border-radius: var(--radius-full);
   background: transparent;
@@ -696,8 +696,8 @@
 /* 액션 버튼 */
 .socrates-action-buttons {
   display: flex;
-  gap: var(--space-xs, 6px);
-  margin-top: var(--space-xs, 6px);
+  gap: var(--space-xs, 0.375rem);
+  margin-top: var(--space-xs, 0.375rem);
   opacity: 0;
   transition: opacity 0.15s;
 }
@@ -710,8 +710,8 @@
 .socrates-action-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
+  gap: var(--space-1);
+  padding: var(--space-1) 0.625rem;
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-full, 9999px);
   background: var(--bg-tertiary);

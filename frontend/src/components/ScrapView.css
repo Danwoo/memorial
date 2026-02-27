@@ -34,8 +34,8 @@
 
 /* ── Socrates 사이드 패널 (데스크톱) ── */
 .scrap-socrates-side {
-  width: clamp(300px, 24vw, 420px);
-  min-width: clamp(300px, 24vw, 420px);
+  width: clamp(18.75rem, 24vw, 26.25rem);
+  min-width: clamp(18.75rem, 24vw, 26.25rem);
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--border-secondary);
@@ -61,8 +61,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(26px, 2vw, 36px);
-  height: clamp(26px, 2vw, 36px);
+  width: clamp(1.625rem, 2vw, 2.25rem);
+  height: clamp(1.625rem, 2vw, 2.25rem);
   border: none;
   border-radius: var(--radius-sm);
   background: none;
@@ -106,8 +106,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 2.75rem;
+  height: 2.75rem;
   border: none;
   border-radius: var(--radius-md);
   background: none;
@@ -209,8 +209,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(26px, 2vw, 36px);
-  height: clamp(26px, 2vw, 36px);
+  width: clamp(1.625rem, 2vw, 2.25rem);
+  height: clamp(1.625rem, 2vw, 2.25rem);
   border: none;
   border-radius: var(--radius-sm);
   background: none;
@@ -245,11 +245,11 @@
 
 .filter-bar-chips {
   display: flex;
-  gap: 6px;
+  gap: 0.375rem;
 }
 
 .filter-chip {
-  padding: 4px 12px;
+  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-full);
   border: 1px solid var(--border-secondary);
   background: transparent;
@@ -274,12 +274,12 @@
 .filter-bar-sort {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   color: var(--text-muted);
 }
 
 .filter-bar-sort select {
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-sm);
   background: var(--bg-secondary);
@@ -317,7 +317,7 @@
 }
 
 .skeleton-row {
-  height: 48px;
+  height: 3rem;
   margin: 0 var(--space-lg);
   border-radius: var(--radius-sm);
 }
@@ -337,7 +337,7 @@
   cursor: pointer;
   transition: background var(--transition-fast);
   width: 100%;
-  min-height: 48px;
+  min-height: 3rem;
 }
 
 .scrap-list-row--select-mode {
@@ -382,7 +382,7 @@
 
 .scrap-list-row__tags {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
   flex-shrink: 0;
 }
 
@@ -394,7 +394,7 @@
 }
 
 .scrap-tag-chip {
-  padding: 2px 8px;
+  padding: 0.125rem var(--space-2);
   border-radius: var(--radius-full);
   background: var(--bg-tertiary);
   color: var(--text-secondary);
@@ -430,15 +430,15 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .scrap-pagination__btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
-  height: 32px;
+  min-width: 2rem;
+  height: 2rem;
   padding: 0 var(--space-xs);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-sm);
@@ -473,8 +473,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   color: var(--text-muted);
   font-size: 0.8rem;
 }
@@ -489,31 +489,31 @@
 .timeline-container {
   position: relative;
   padding: var(--space-lg);
-  padding-left: 64px;
-  max-width: 1200px;
+  padding-left: 4rem;
+  max-width: 75rem;
   margin: 0 auto;
   width: 100%;
 }
 
 .timeline-line {
   position: absolute;
-  left: 39px;
-  top: 20px;
-  bottom: 20px;
+  left: 2.4375rem;
+  top: 1.25rem;
+  bottom: 1.25rem;
   width: 2px;
   background: linear-gradient(180deg, var(--accent-primary), var(--accent-primary-hover));
   border-radius: 2px;
 }
 
 .timeline-group {
-  margin-bottom: 32px;
+  margin-bottom: var(--space-8);
 }
 
 /* ── 아코디언 날짜 헤더 ── */
 
 .timeline-date-marker {
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
   display: flex;
   align-items: center;
   gap: var(--space-xs);
@@ -530,11 +530,11 @@
 .timeline-date-marker::before {
   content: '';
   position: absolute;
-  left: -33px;
+  left: -2.0625rem;
   top: 50%;
   transform: translateY(-50%);
-  width: 12px;
-  height: 12px;
+  width: 0.75rem;
+  height: 0.75rem;
   background: var(--accent-primary);
   border-radius: 50%;
   box-shadow: 0 0 12px var(--accent-bg);
@@ -555,8 +555,8 @@
   font-weight: 600;
   color: var(--accent-primary);
   background: var(--accent-bg);
-  padding: 6px 16px;
-  border-radius: 20px;
+  padding: 0.375rem var(--space-4);
+  border-radius: 1.25rem;
   display: inline-flex;
   align-items: center;
   gap: var(--space-xs);
@@ -571,7 +571,7 @@
 .timeline-items {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 button.timeline-item {
@@ -583,22 +583,22 @@ button.timeline-item {
 }
 
 .timeline-item {
-  padding: 16px 20px;
-  margin-left: 8px;
+  padding: var(--space-4) 1.25rem;
+  margin-left: var(--space-2);
   border-left: 3px solid var(--accent-primary);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .timeline-item:hover {
-  transform: translateX(4px);
+  transform: translateX(0.25rem);
   box-shadow: var(--shadow-lg);
 }
 
 .item-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 .source-icon {
@@ -627,17 +627,17 @@ button.timeline-item {
 
 .item-tags {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
   flex-wrap: wrap;
 }
 
 .item-tags .tag {
   font-size: 0.75rem;
-  padding: 4px 10px;
+  padding: var(--space-1) 0.625rem;
   background: var(--accent-bg);
   color: var(--accent-primary);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 }
 
 .tag-more {
@@ -646,7 +646,7 @@ button.timeline-item {
 }
 
 .load-more-trigger {
-  padding: 32px 0;
+  padding: var(--space-8) 0;
   display: flex;
   justify-content: center;
 }
@@ -654,7 +654,7 @@ button.timeline-item {
 .loading-more {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   color: var(--text-secondary);
 }
 
@@ -688,7 +688,7 @@ button.timeline-item {
 /* 플로팅 액션 바 */
 .bulk-action-bar {
   position: fixed;
-  bottom: 24px;
+  bottom: var(--space-6);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -704,7 +704,7 @@ button.timeline-item {
 }
 
 @keyframes slideUp {
-  from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  from { transform: translateX(-50%) translateY(1.25rem); opacity: 0; }
   to { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 
@@ -768,7 +768,7 @@ button.timeline-item {
   border-top: none;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   z-index: 10;
-  max-height: 150px;
+  max-height: 9.375rem;
   overflow-y: auto;
 }
 
@@ -804,7 +804,7 @@ button.timeline-item {
 
 .modal-content {
   width: 90%;
-  max-width: 500px;
+  max-width: 31.25rem;
   padding: var(--space-xl);
   display: flex;
   flex-direction: column;
@@ -981,15 +981,15 @@ button.timeline-item {
 
   .timeline-container {
     padding: var(--space-md);
-    padding-left: 48px;
+    padding-left: 3rem;
   }
 
   .timeline-line {
-    left: 23px;
+    left: 1.4375rem;
   }
 
   .timeline-date-marker::before {
-    left: -33px;
+    left: -2.0625rem;
   }
 
   .scrap-list-footer {
@@ -1002,7 +1002,7 @@ button.timeline-item {
     transform: none;
     flex-wrap: wrap;
     justify-content: center;
-    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   }
 
   .add-scrap-modal,
@@ -1016,7 +1016,7 @@ button.timeline-item {
   }
 
   @keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0; }
+    from { transform: translateY(1.25rem); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
 }

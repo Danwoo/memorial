@@ -22,14 +22,14 @@
 .landing-hero-content {
   position: relative;
   z-index: 1;
-  max-width: 640px;
+  max-width: 40rem;
   animation: landingFadeUp 0.8s ease-out;
 }
 
 .landing-hero-glow {
   position: absolute;
-  width: 600px;
-  height: 600px;
+  width: 37.5rem;
+  height: 37.5rem;
   border-radius: 50%;
   background: radial-gradient(circle, var(--accent-bg) 0%, transparent 70%);
   top: 50%;
@@ -39,8 +39,8 @@
 }
 
 .landing-logo-img {
-  width: 88px;
-  height: 88px;
+  width: 5.5rem;
+  height: 5.5rem;
   object-fit: contain;
   border-radius: var(--radius-xl);
   margin-bottom: var(--space-6);
@@ -59,7 +59,7 @@
   line-height: 1.8;
   color: var(--text-secondary);
   margin-bottom: var(--space-10);
-  max-width: 480px;
+  max-width: 30rem;
   margin-left: auto;
   margin-right: auto;
 }
@@ -121,7 +121,7 @@
 /* ─── Features ───────────────────────────────────── */
 .landing-features {
   padding: var(--space-12) var(--space-8);
-  max-width: 960px;
+  max-width: 60rem;
   margin: 0 auto;
 }
 
@@ -156,8 +156,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 3rem;
+  height: 3rem;
   border-radius: var(--radius-lg);
   background: var(--accent-bg);
   color: var(--accent-primary);
@@ -189,7 +189,7 @@
 @keyframes landingFadeUp {
   from {
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(1.5rem);
   }
   to {
     opacity: 1;
@@ -213,7 +213,7 @@
   }
 
   .landing-logo-img {
-    width: 72px;
-    height: 72px;
+    width: 4.5rem;
+    height: 4.5rem;
   }
 }

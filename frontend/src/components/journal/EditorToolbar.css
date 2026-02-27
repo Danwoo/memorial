@@ -12,7 +12,7 @@
 .toolbar-formats {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0.125rem;
   flex-wrap: wrap;
 }
 
@@ -20,8 +20,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(28px, 2.1vw, 38px);
-  height: clamp(28px, 2.1vw, 38px);
+  width: clamp(1.75rem, 2.1vw, 2.375rem);
+  height: clamp(1.75rem, 2.1vw, 2.375rem);
   border: none;
   background: none;
   border-radius: var(--radius-sm);
@@ -47,17 +47,17 @@
 
 .toolbar-divider {
   width: 1px;
-  height: 20px;
+  height: 1.25rem;
   background-color: var(--border-secondary);
-  margin: 0 4px;
+  margin: 0 var(--space-1);
 }
 
 .toolbar-modes {
   display: flex;
-  gap: 2px;
+  gap: 0.125rem;
   background-color: var(--bg-tertiary);
   border-radius: var(--radius-sm);
-  padding: 2px;
+  padding: 0.125rem;
 }
 
 .mode-btn {

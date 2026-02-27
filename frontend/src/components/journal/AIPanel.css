@@ -1,7 +1,7 @@
 /* AI 사이드바 (우측 패널) */
 .ai-sidebar {
-  width: clamp(260px, 20vw, 340px);
-  min-width: clamp(260px, 20vw, 340px);
+  width: clamp(16.25rem, 20vw, 21.25rem);
+  min-width: clamp(16.25rem, 20vw, 21.25rem);
   display: flex;
   flex-direction: column;
   background-color: var(--bg-secondary);
@@ -33,7 +33,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--space-1);
   padding: var(--space-sm) var(--space-xs);
   border: none;
   background: none;
@@ -228,13 +228,13 @@
   font-size: var(--fs-body-sm);
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
 }
 
 .distortion-trigger {
   font-size: var(--fs-caption);
   color: var(--text-secondary);
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
 }
 
 .distortion-feedback {
