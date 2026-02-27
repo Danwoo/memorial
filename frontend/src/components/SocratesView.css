@@ -77,6 +77,13 @@
   margin-bottom: var(--space-sm);
 }
 
+.socrates-empty-icon-emoji {
+  display: block;
+  margin-bottom: var(--space-sm);
+  line-height: 1;
+  user-select: none;
+}
+
 .socrates-empty-title {
   font-size: 1.75rem;
   font-weight: 700;

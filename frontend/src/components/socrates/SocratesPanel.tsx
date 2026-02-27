@@ -24,11 +24,11 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
     handleSendMessage, handleFeedback, scrollToBottom,
     handleMessagesScroll, adjustTextareaHeight, handleKeyDown,
     toggleRefExpand, sendMessageDirect, saveMessageAsScrap,
-    selectedMode, setSelectedMode,
+    selectedMode, setSelectedMode, agentType, availableModes,
   } = chat
 
   return (
-    <div className={`socrates-panel ${className}`}>
+    <div className={`socrates-panel ${className}`} data-agent={agentType}>
       {showHeader && (
         <div className="socrates-panel__header">
           <h3>Socrates</h3>
@@ -55,6 +55,7 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
               hasBriefingContent={hasBriefingContent}
               onSuggestedQuestion={sendMessageDirect}
               context={context}
+              agentType={agentType}
             />
           ) : (
             <SocratesMessageList
@@ -88,6 +89,7 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
         <SocratesModeSelector
           selectedMode={selectedMode}
           onModeChange={setSelectedMode}
+          availableModes={availableModes}
         />
         <SocratesInputBar
           input={input}

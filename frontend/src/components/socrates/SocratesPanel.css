@@ -1,5 +1,30 @@
 /* SocratesPanel — 재사용 채팅 UI (standalone + panel 모드) */
 
+/* 에이전트별 액센트 색상 */
+.socrates-panel[data-agent="socrates"] {
+  --agent-accent: var(--color-warning, #f59e0b);
+}
+.socrates-panel[data-agent="librarian"] {
+  --agent-accent: var(--accent-primary);
+}
+.socrates-panel[data-agent="oracle"] {
+  --agent-accent: var(--color-text-secondary, var(--text-secondary));
+}
+
+/* 에이전트 액센트 색상 — 모드 칩 활성 상태에 적용 */
+.socrates-panel[data-agent] .socrates-mode-chip--active {
+  background: var(--agent-accent, var(--accent-primary));
+  border-color: var(--agent-accent, var(--accent-primary));
+  color: #fff;
+}
+
+/* 에이전트 액센트 색상 — 빈 화면 이모지 아이콘 */
+.socrates-panel[data-agent="socrates"] .socrates-empty-icon-emoji,
+.socrates-panel[data-agent="librarian"] .socrates-empty-icon-emoji,
+.socrates-panel[data-agent="oracle"] .socrates-empty-icon-emoji {
+  filter: none;
+}
+
 .socrates-panel {
   display: flex;
   flex-direction: column;

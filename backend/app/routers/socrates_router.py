@@ -26,12 +26,13 @@ async def create_session(
     socrates_service: SocratesService = Depends(get_socrates_service),
 ):
     """새 채팅 세션 생성."""
-    session = await socrates_service.create_session(user_id, data.title)
+    session = await socrates_service.create_session(user_id, data.title, data.agent_type)
 
     return SocratesSessionResponse(
         id=UUID(session["id"]),
         title=session["title"],
         created_at=session["created_at"],
+        agent_type=session.get("agent_type", "oracle"),
     )
 
 
@@ -48,6 +49,7 @@ async def list_sessions(
             id=UUID(s["id"]),
             title=s["title"],
             created_at=s["created_at"],
+            agent_type=s.get("agent_type", "oracle"),
         )
         for s in sessions
     ]
@@ -72,6 +74,7 @@ async def update_session(
         id=UUID(session["id"]),
         title=session["title"],
         created_at=session["created_at"],
+        agent_type=session.get("agent_type", "oracle"),
     )
 
 
@@ -89,7 +92,7 @@ async def send_message(
 
     source_ctx = data.source_context.model_dump() if data.source_context else None
     return StreamingResponse(
-        socrates_service.send_message(session_id, user_id, data.content, data.mode, source_ctx),
+        socrates_service.send_message(session_id, user_id, data.content, data.mode, source_ctx, data.agent_type),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
