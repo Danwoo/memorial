@@ -51,6 +51,13 @@ async function handleErrorResponse(res: Response): Promise<never> {
   } catch {
     // JSON 파싱 실패 시 기본 메시지 사용
   }
+
+  // 토큰 만료 — 저장된 토큰 제거 후 로그아웃 이벤트 발행
+  if (res.status === 401) {
+    localStorage.removeItem('auth_token')
+    window.dispatchEvent(new CustomEvent('auth:token-expired'))
+  }
+
   throw new ApiResponseError(res.status, detail)
 }
 

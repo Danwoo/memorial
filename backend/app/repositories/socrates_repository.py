@@ -214,6 +214,28 @@ class SocratesRepository:
         result = await asyncio.to_thread(self._select_sessions_for_export, str(user_id), limit)
         return result.data or []
 
+    async def get_sessions_by_date_range(
+        self, user_id: UUID, start_iso: str, end_iso: str, limit: int = 100
+    ) -> list[dict]:
+        """날짜 범위 내 생성된 소크라테스 세션 목록 조회."""
+        result = await asyncio.to_thread(
+            self._select_sessions_by_date_range,
+            str(user_id),
+            start_iso,
+            end_iso,
+            limit,
+        )
+        if not result.data:
+            return []
+        return [
+            {
+                "id": s["id"],
+                "title": s["title"],
+                "created_at": s["created_at"],
+            }
+            for s in result.data
+        ]
+
     async def add_feedback(self, session_id: UUID, message_index: int, user_id: UUID, rating: str) -> bool:
         """메시지에 대한 피드백 저장 (upsert)."""
         try:
@@ -330,6 +352,18 @@ class SocratesRepository:
             self.db.table("socrates_sessions")
             .select("id, title, created_at")
             .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+
+    def _select_sessions_by_date_range(self, user_id: str, start_iso: str, end_iso: str, limit: int = 100):
+        return (
+            self.db.table("socrates_sessions")
+            .select("id, title, created_at")
+            .eq("user_id", user_id)
+            .gte("created_at", start_iso)
+            .lte("created_at", end_iso)
             .order("created_at", desc=True)
             .limit(limit)
             .execute()
