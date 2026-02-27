@@ -24,7 +24,7 @@ interface Props {
   onIsolatedNodeClick: (name: string) => void
   onHubNodeClick: (name: string) => void
   onConnectionCreated: () => void
-  panelWidth?: number
+  panelWidth?: string
   onPanelResize?: (e: MouseEvent) => void
 }
 

@@ -13,7 +13,7 @@ interface DayDetailPanelProps {
   onNavigateMemory: (memoryId: string) => void
   dailyInsights: DailyInsight[]
   onInsightClick: (path: string) => void
-  panelWidth?: number
+  panelWidth?: string
   onPanelResize?: (e: React.MouseEvent) => void
 }
 

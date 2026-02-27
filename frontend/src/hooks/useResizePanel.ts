@@ -6,44 +6,46 @@ function clampVal(val: number, min: number, max: number) {
 
 /**
  * 패널 드래그 리사이즈 훅.
+ * 너비를 vw(viewport width %) 단위로 관리해 모든 화면 크기에서 비례 유지.
  * direction: 'right' = 핸들이 오른쪽 → 마우스 오른쪽 이동 시 패널 확장
  *            'left'  = 핸들이 왼쪽  → 마우스 왼쪽  이동 시 패널 확장
- * storageKey: localStorage 키 (제공 시 너비 저장/복원)
+ * storageKey: localStorage 키 (제공 시 vw 값 저장/복원)
  */
 export function useResizePanel(
-  defaultWidth: number,
-  minWidth: number,
-  maxWidth: number,
+  defaultVw: number,
+  minVw: number,
+  maxVw: number,
   direction: 'left' | 'right' = 'right',
   storageKey?: string,
 ) {
-  const [width, setWidth] = useState(() => {
+  const [vw, setVw] = useState<number>(() => {
     if (storageKey) {
       const stored = localStorage.getItem(storageKey)
-      if (stored) return clampVal(Number(stored), minWidth, maxWidth)
+      if (stored) return clampVal(Number(stored), minVw, maxVw)
     }
-    return defaultWidth
+    return defaultVw
   })
 
-  const dragRef = useRef<{ startX: number; startW: number } | null>(null)
+  const dragRef = useRef<{ startX: number; startVw: number } | null>(null)
 
   useEffect(() => {
-    if (storageKey) localStorage.setItem(storageKey, String(width))
-  }, [width, storageKey])
+    if (storageKey) localStorage.setItem(storageKey, String(vw))
+  }, [vw, storageKey])
 
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault()
-      dragRef.current = { startX: e.clientX, startW: width }
+      dragRef.current = { startX: e.clientX, startVw: vw }
 
       const onMove = (ev: MouseEvent) => {
         if (!dragRef.current) return
-        const delta = ev.clientX - dragRef.current.startX
+        const deltaPx = ev.clientX - dragRef.current.startX
+        const deltaVw = (deltaPx / window.innerWidth) * 100
         const next =
           direction === 'right'
-            ? dragRef.current.startW + delta
-            : dragRef.current.startW - delta
-        setWidth(clampVal(next, minWidth, maxWidth))
+            ? dragRef.current.startVw + deltaVw
+            : dragRef.current.startVw - deltaVw
+        setVw(clampVal(next, minVw, maxVw))
       }
 
       const onUp = () => {
@@ -59,8 +61,8 @@ export function useResizePanel(
       window.addEventListener('mousemove', onMove)
       window.addEventListener('mouseup', onUp)
     },
-    [width, minWidth, maxWidth, direction],
+    [vw, minVw, maxVw, direction],
   )
 
-  return { width, onMouseDown }
+  return { vw, onMouseDown }
 }

@@ -153,8 +153,8 @@ export default function DiaryView() {
   const [mobileTab, setMobileTab] = useState<'editor' | 'memories' | 'ai'>('editor')
 
   // 패널 너비 (기본: 우측 = 좌측 2배)
-  const { width: leftPanelW, onMouseDown: onLeftResize } = useResizePanel(220, 120, 480, 'right', 'diary-left-panel-width')
-  const { width: rightPanelW, onMouseDown: onRightResize } = useResizePanel(440, 240, 680, 'left', 'diary-right-panel-width')
+  const { vw: leftVw, onMouseDown: onLeftResize } = useResizePanel(15, 8, 30, 'right', 'diary-left-panel-vw')
+  const { vw: rightVw, onMouseDown: onRightResize } = useResizePanel(30, 15, 45, 'left', 'diary-right-panel-vw')
 
   // 좌/우 패널 collapse 상태
   const [leftCollapsed, setLeftCollapsed] = useState(() => {
@@ -583,8 +583,8 @@ export default function DiaryView() {
   // 인라인 그리드 컬럼 (collapsed / today 상태 반영)
   const gridStyle = !isMobile ? {
     gridTemplateColumns: (() => {
-      const lw = (!isToday || leftCollapsed) ? '0' : `${leftPanelW}px`
-      const rw = (!isToday || rightCollapsed) ? '0' : `${rightPanelW}px`
+      const lw = (!isToday || leftCollapsed) ? '0' : `${leftVw}vw`
+      const rw = (!isToday || rightCollapsed) ? '0' : `${rightVw}vw`
       return `${lw} 1fr ${rw}`
     })(),
   } : undefined
