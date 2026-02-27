@@ -36,6 +36,7 @@
 /* 패널 모드에서의 조정 */
 .socrates-panel--panel .socrates-messages {
   max-width: 100%;
+  padding: var(--space-sm) var(--space-md);
 }
 
 .socrates-panel--panel .socrates-input-container {
@@ -48,6 +49,48 @@
 
 .socrates-panel--panel .message-content {
   max-width: 90%;
+}
+
+/* 빈 상태 브랜딩 — 패널 전용 축소 */
+.socrates-panel--panel .socrates-empty {
+  padding: var(--space-lg) var(--space-xs);
+  justify-content: flex-start;
+  gap: 0;
+}
+
+.socrates-panel--panel .socrates-empty-branding {
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.socrates-panel--panel .socrates-empty-icon {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 0;
+}
+
+.socrates-panel--panel .socrates-empty-title {
+  font-size: 1rem;
+}
+
+.socrates-panel--panel .socrates-empty-tagline {
+  font-size: 0.78rem;
+}
+
+/* 제안 질문 — 세로 스택, 전체 폭 */
+.socrates-panel--panel .suggested-questions {
+  max-width: 100%;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
+  justify-content: flex-start;
+}
+
+.socrates-panel--panel .suggested-q {
+  font-size: 0.8rem;
+  padding: var(--space-xs) var(--space-sm);
+  text-align: left;
 }
 
 /* 입력 영역 (모드 셀렉터 + 입력바) */
