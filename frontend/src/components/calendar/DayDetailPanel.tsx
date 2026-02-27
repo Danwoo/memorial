@@ -13,6 +13,8 @@ interface DayDetailPanelProps {
   onNavigateMemory: (memoryId: string) => void
   dailyInsights: DailyInsight[]
   onInsightClick: (path: string) => void
+  panelWidth?: string
+  onPanelResize?: (e: React.MouseEvent) => void
 }
 
 function getMoodDot(mood: string | null): string {
@@ -37,6 +39,7 @@ function isToday(dateStr: string): boolean {
 export default function DayDetailPanel({
   date, onClose, onNavigateJournal, onNavigateMemory,
   dailyInsights, onInsightClick,
+  panelWidth, onPanelResize,
 }: DayDetailPanelProps) {
   const isMobile = useIsMobile()
   const [digest, setDigest] = useState<DigestData | null>(null)
@@ -82,7 +85,13 @@ export default function DayDetailPanel({
   return (
     <>
       {isMobile && <div className="day-panel__backdrop" onClick={handleBackdropClick} />}
-      <div className={`day-panel ${isMobile ? 'day-panel--mobile' : 'day-panel--desktop'}`}>
+      <div
+        className={`day-panel ${isMobile ? 'day-panel--mobile' : 'day-panel--desktop'}`}
+        style={!isMobile && panelWidth ? { width: panelWidth } : undefined}
+      >
+        {!isMobile && onPanelResize && (
+          <div className="resize-handle resize-handle--left" onMouseDown={onPanelResize} />
+        )}
         {/* 헤더 */}
         <div className="day-panel__header">
           <h3 className="day-panel__date">{formatDateHeader(date)}</h3>

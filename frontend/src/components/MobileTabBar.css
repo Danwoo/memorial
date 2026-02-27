@@ -6,7 +6,7 @@
   left: 0;
   right: 0;
   z-index: 900;
-  height: 56px;
+  height: 3.5rem;
   padding-bottom: env(safe-area-inset-bottom);
   background-color: var(--bg-secondary);
   border-top: 1px solid var(--border-secondary);
@@ -21,14 +21,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 0.125rem;
   border: none;
   background: none;
   color: var(--text-muted);
   font-size: 0.625rem;
   font-family: inherit;
   text-decoration: none;
-  padding: 6px 0;
+  padding: 0.375rem 0;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: color var(--transition-fast);
@@ -55,7 +55,7 @@
 
 .mobile-more-sheet {
   position: fixed;
-  bottom: calc(56px + env(safe-area-inset-bottom));
+  bottom: calc(3.5rem + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
   z-index: 951;
@@ -84,8 +84,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   border: none;
   background: none;
   color: var(--text-secondary);
@@ -101,7 +101,7 @@
 .mobile-more-nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0.125rem;
 }
 
 .mobile-more-item {
@@ -110,7 +110,7 @@
   align-items: center;
   gap: var(--space-md);
   padding: var(--space-md);
-  min-height: 44px;
+  min-height: 2.75rem;
   border: none;
   background: none;
   color: var(--text-primary);

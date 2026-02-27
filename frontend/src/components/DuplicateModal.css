@@ -1,5 +1,5 @@
 .duplicate-modal {
-  max-width: 700px;
+  max-width: 43.75rem;
   width: 95%;
   max-height: 80vh;
   overflow-y: auto;
@@ -20,8 +20,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 40px 0;
+  gap: var(--space-3);
+  padding: 2.5rem 0;
   color: var(--text-secondary);
 }
 
@@ -36,16 +36,16 @@
 
 .duplicate-empty {
   text-align: center;
-  padding: 40px 0;
+  padding: 2.5rem 0;
   color: var(--text-muted);
 }
 
 .duplicate-pair {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  gap: 12px;
+  gap: var(--space-3);
   align-items: start;
-  padding: 16px 0;
+  padding: var(--space-4) 0;
   border-bottom: 1px solid var(--border-secondary);
 }
 
@@ -54,7 +54,7 @@
 }
 
 .duplicate-card {
-  padding: 12px;
+  padding: var(--space-3);
   background: var(--bg-secondary);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
@@ -63,7 +63,7 @@
 .duplicate-card h4 {
   font-size: 0.85rem;
   font-weight: 500;
-  margin: 0 0 6px 0;
+  margin: 0 0 0.375rem 0;
   color: var(--text-primary);
 }
 
@@ -81,8 +81,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding-top: 8px;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
 }
 
 .similarity-pct {
@@ -90,25 +90,25 @@
   font-weight: 700;
   color: var(--accent-primary);
   background: var(--accent-bg);
-  padding: 4px 10px;
+  padding: var(--space-1) 0.625rem;
   border-radius: var(--radius-full);
 }
 
 .duplicate-actions {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.375rem;
 }
 
 .duplicate-actions button {
   font-size: 0.75rem;
-  padding: 6px 10px;
+  padding: 0.375rem 0.625rem;
 }
 
 .duplicate-count {
   font-size: 0.85rem;
   color: var(--text-secondary);
-  margin: 0 0 8px 0;
+  margin: 0 0 var(--space-2) 0;
 }
 
 .duplicate-list {
@@ -119,8 +119,8 @@
 .duplicate-source {
   display: inline-block;
   font-size: 0.7rem;
-  padding: 2px 6px;
-  margin-top: 6px;
+  padding: 0.125rem 0.375rem;
+  margin-top: 0.375rem;
   border-radius: var(--radius-sm);
   background: var(--bg-tertiary);
   color: var(--text-muted);
@@ -135,9 +135,9 @@
 .btn-sm {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   font-size: 0.75rem;
-  padding: 5px 10px;
+  padding: 0.3125rem 0.625rem;
   border-radius: var(--radius-sm);
   white-space: nowrap;
 }

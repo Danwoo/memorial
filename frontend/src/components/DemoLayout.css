@@ -7,8 +7,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
   background: var(--color-primary, #6366f1);
   color: #fff;
   font-size: 0.85rem;
@@ -16,10 +16,10 @@
 }
 
 .demo-banner-cta {
-  margin-left: 12px;
-  padding: 4px 12px;
+  margin-left: 0.75rem;
+  padding: var(--space-1) 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: transparent;
   color: #fff;
   font-size: 0.8rem;
@@ -32,21 +32,21 @@
 }
 
 .demo-app-container {
-  margin-top: 36px;
-  height: calc(100vh - 36px) !important;
+  margin-top: 2.25rem;
+  height: calc(100vh - 2.25rem) !important;
 }
 
 /* 모바일: 데모 배너 간소화 */
 @media (max-width: 767px) {
   .demo-banner {
     font-size: 0.75rem;
-    padding: 6px 12px;
-    gap: 4px;
+    padding: 0.375rem 0.75rem;
+    gap: var(--space-1);
   }
 
   .demo-banner-cta {
     font-size: 0.7rem;
-    padding: 3px 8px;
-    margin-left: 6px;
+    padding: 0.1875rem var(--space-2);
+    margin-left: 0.375rem;
   }
 }
