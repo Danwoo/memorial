@@ -1,5 +1,5 @@
 import { get, post, postRaw } from './client'
-import type { SocratesSessionResponse, SocratesMessage, SocratesMessagePayload, SocratesStreamChunk, SocratesReference, SocratesFeedback } from '../types'
+import type { SocratesSessionResponse, SocratesMessage, SocratesMessagePayload, SocratesStreamChunk, SocratesReference, SocratesFeedback, AgentType } from '../types'
 import { isDemoMode } from '../contexts/DemoContext'
 import { DEMO_SOCRATES_SESSIONS, DEMO_SOCRATES_MESSAGES, DEMO_SOCRATES_RESPONSES } from '../data/demo-data'
 
@@ -37,9 +37,9 @@ function createDemoSSEResponse(userMessage: string): Response {
 }
 
 // 새 소크라테스 세션 생성
-export function createSocratesSession(): Promise<SocratesSessionResponse> {
+export function createSocratesSession(agentType: AgentType = 'oracle'): Promise<SocratesSessionResponse> {
   if (isDemoMode()) return Promise.resolve(DEMO_SOCRATES_SESSIONS[0])
-  return post<SocratesSessionResponse>('/socrates/sessions', {})
+  return post<SocratesSessionResponse>('/socrates/sessions', { agent_type: agentType })
 }
 
 // 사용자의 전체 소크라테스 세션 목록 조회

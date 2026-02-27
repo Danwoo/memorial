@@ -1,20 +1,22 @@
 import type { SocratesMode } from '../../types'
 import { SOCRATES_MODE_LABELS } from '../../types'
 
-const MODES = Object.keys(SOCRATES_MODE_LABELS) as SocratesMode[]
-
 interface SocratesModeSelectorProps {
   selectedMode: SocratesMode
   onModeChange: (mode: SocratesMode) => void
+  availableModes?: SocratesMode[]
 }
 
 export default function SocratesModeSelector({
   selectedMode,
   onModeChange,
+  availableModes,
 }: SocratesModeSelectorProps) {
+  const modes = availableModes ?? (Object.keys(SOCRATES_MODE_LABELS) as SocratesMode[])
+
   return (
     <div className="socrates-mode-selector">
-      {MODES.map((mode) => {
+      {modes.map((mode) => {
         const { label, icon } = SOCRATES_MODE_LABELS[mode]
         const isActive = selectedMode === mode
         return (

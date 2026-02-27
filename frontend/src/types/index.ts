@@ -11,6 +11,7 @@ export type {
 } from './scrap'
 
 export type {
+  AgentType,
   SocratesMode,
   SocratesReference,
   SocratesMessage,
@@ -21,7 +22,7 @@ export type {
   SocratesLocationState,
   SocratesFeedback,
 } from './socrates'
-export { SOCRATES_MODE_LABELS } from './socrates'
+export { SOCRATES_MODE_LABELS, AGENT_MODES, AGENT_CONFIG } from './socrates'
 
 export type {
   DiarySavePayload,

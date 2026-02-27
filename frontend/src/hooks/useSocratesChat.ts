@@ -3,7 +3,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useSocratesSession } from '../contexts/SocratesSessionContext'
 import { useToast } from '../contexts/ToastContext'
 import { useDemoMode } from '../contexts/DemoContext'
-import type { SocratesMessage, SocratesLocationState, BriefingData, SocratesFeedback, SocratesMessagePayload, SourceContext, SocratesMode } from '../types'
+import type { SocratesMessage, SocratesLocationState, BriefingData, SocratesFeedback, SocratesMessagePayload, SourceContext, SocratesMode, AgentType } from '../types'
+import { AGENT_MODES } from '../types'
 import {
   createSocratesSession, fetchSocratesHistory, sendSocratesMessage, readSSEStream,
   fetchBriefing, sendFeedback, fetchFeedbacks, createScrap,
@@ -23,6 +24,7 @@ export interface UseSocratesChatOptions {
   mode: 'standalone' | 'panel'
   context?: SocratesChatContext
   initialMessage?: string
+  agentType?: AgentType
 }
 
 export interface UseSocratesChatReturn {
@@ -52,10 +54,12 @@ export interface UseSocratesChatReturn {
   setSelectedMode: (mode: SocratesMode) => void
   hasBriefingContent: boolean
   sendMessageDirect: (text: string) => void
+  agentType: AgentType
+  availableModes: SocratesMode[]
 }
 
 export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesChatReturn {
-  const { mode } = options
+  const { mode, agentType = 'oracle' } = options
   const isStandalone = mode === 'standalone'
 
   const location = useLocation()
@@ -234,7 +238,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     try {
       let currentSessionId = sessionId
       if (!currentSessionId) {
-        const session = await createSocratesSession()
+        const session = await createSocratesSession(agentType)
         currentSessionId = session.id
         setSessionId(currentSessionId)
         if (isStandalone) {
@@ -245,6 +249,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
       const payload: SocratesMessagePayload = {
         content: userMessage,
         mode: selectedMode === 'default' ? undefined : selectedMode,
+        agent_type: agentType,
       }
       const ctx = sourceContextOverrideRef.current || contextRef.current
       if (ctx) {
@@ -297,7 +302,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
       abortControllerRef.current = null
       setIsLoading(false)
     }
-  }, [input, isLoading, sessionId, selectedMode, navigate, toast, triggerRefresh, pathPrefix, isStandalone])
+  }, [input, isLoading, sessionId, selectedMode, agentType, navigate, toast, triggerRefresh, pathPrefix, isStandalone])
 
   handleSendRef.current = handleSendMessage
 
@@ -347,6 +352,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
   }, [toast])
 
   const hasBriefingContent = !!(briefing && (briefing.today_scraps?.count ?? 0) > 0)
+  const availableModes = AGENT_MODES[agentType]
 
   return {
     sessionId,
@@ -375,5 +381,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     saveMessageAsScrap,
     selectedMode,
     setSelectedMode,
+    agentType,
+    availableModes,
   }
 }

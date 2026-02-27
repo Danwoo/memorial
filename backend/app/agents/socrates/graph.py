@@ -18,17 +18,17 @@ def route_after_grading(state: SocratesState) -> Literal["memory_retrieval", "en
     return "enrichment"
 
 
-def create_socrates_graph() -> StateGraph:
-    """Socrates 6노드 파이프라인 그래프 생성 (LangGraph 1.0).
+def route_after_grading_socrates(state: SocratesState) -> Literal["memory_retrieval", "emotional_enrichment"]:
+    """Socrates 전용 grading 이후 라우팅."""
+    if state.get("retrieval_quality") == "retry":
+        return "memory_retrieval"
+    return "emotional_enrichment"
 
-    LangGraph 1.0 기능 총집합:
-    - context_schema=SocratesContext: Runtime DI (get_agent_container() 제거)
-    - START: v1.0 진입점 상수 (set_entry_point 대신)
-    - RetryPolicy: LLM/네트워크 노드 자동 재시도
-    - CachePolicy(ttl=60): context_retrieval 노드 결과 캐싱
-    - defer=True: grading이 memory_retrieval + context_retrieval 둘 다 완료 대기
-    - InMemoryCache: 그래프 레벨 캐시 활성화
-    - add_messages: state.py에서 operator.add 대신 사용
+
+def create_socrates_graph() -> StateGraph:
+    """Oracle/기본 6노드 파이프라인 그래프 생성 (LangGraph 1.0).
+
+    하위호환: 기존 Oracle 대화에 사용. Socrates 전용 그래프는 create_socrates_diary_graph() 사용.
 
     워크플로우:
         START → query_understanding → memory_retrieval  ─┐ (병렬 fan-out)
@@ -95,5 +95,90 @@ def create_socrates_graph() -> StateGraph:
     return graph.compile(cache=InMemoryCache())  # 그래프 레벨 캐시 활성화
 
 
-# 싱글톤 인스턴스
+def create_socrates_diary_graph():
+    """Socrates 다이어리 전문 그래프 생성.
+
+    일반 파이프라인에 diary_deep_retrieval + emotional_enrichment + socrates_assembly 추가.
+
+    워크플로우:
+        START → query_understanding → memory_retrieval    ─┐ (병렬 fan-out)
+                                    → context_retrieval   ─┤
+                                    → diary_deep_retrieval─┤
+                                                           ↓
+                         grading (defer=True) ─────────────┤
+                              ↑                             │ retry
+                              └── memory_retrieval ─────────┘
+                                                           ↓
+                                              emotional_enrichment → socrates_assembly → END
+    """
+    from app.agents.socrates.nodes.context_retrieval import context_retrieval_node
+    from app.agents.socrates.nodes.diary_deep_retrieval import diary_deep_retrieval_node
+    from app.agents.socrates.nodes.emotional_enrichment import emotional_enrichment_node
+    from app.agents.socrates.nodes.grading import grading_node
+    from app.agents.socrates.nodes.memory_retrieval import memory_retrieval_node
+    from app.agents.socrates.nodes.query_understanding import query_understanding_node
+    from app.agents.socrates.nodes.socrates_assembly import socrates_assembly_node
+
+    llm_retry = RetryPolicy(max_attempts=3, initial_interval=1.0)
+    network_retry = RetryPolicy(max_attempts=2, initial_interval=0.5)
+
+    graph = StateGraph(SocratesState, context_schema=SocratesContext)
+
+    graph.add_node("query_understanding", query_understanding_node, retry_policy=llm_retry)
+    graph.add_node("memory_retrieval", memory_retrieval_node, retry_policy=network_retry)
+    graph.add_node(
+        "context_retrieval",
+        context_retrieval_node,
+        retry_policy=network_retry,
+        cache_policy=CachePolicy(ttl=60),
+    )
+    graph.add_node(
+        "diary_deep_retrieval",
+        diary_deep_retrieval_node,
+        retry_policy=network_retry,
+    )
+    graph.add_node(
+        "grading",
+        grading_node,
+        defer=True,
+        retry_policy=llm_retry,
+    )
+    graph.add_node("emotional_enrichment", emotional_enrichment_node, retry_policy=network_retry)
+    graph.add_node("socrates_assembly", socrates_assembly_node)
+
+    graph.add_edge(START, "query_understanding")
+    graph.add_edge("query_understanding", "memory_retrieval")
+    graph.add_edge("query_understanding", "context_retrieval")
+    graph.add_edge("query_understanding", "diary_deep_retrieval")
+
+    graph.add_edge("memory_retrieval", "grading")
+    graph.add_edge("context_retrieval", "grading")
+    graph.add_edge("diary_deep_retrieval", "grading")
+
+    graph.add_conditional_edges(
+        "grading",
+        route_after_grading_socrates,
+        {"memory_retrieval": "memory_retrieval", "emotional_enrichment": "emotional_enrichment"},
+    )
+
+    graph.add_edge("emotional_enrichment", "socrates_assembly")
+    graph.add_edge("socrates_assembly", END)
+
+    return graph.compile(cache=InMemoryCache())
+
+
+# 싱글톤 인스턴스 (하위호환 유지)
 socrates_graph = create_socrates_graph()
+
+# Socrates 다이어리 전문 그래프
+socrates_diary_graph = create_socrates_diary_graph()
+
+
+# AgentRegistry 등록
+def _register_socrates():
+    from app.agents.registry import AgentRegistry
+
+    AgentRegistry.register("socrates", socrates_diary_graph)
+
+
+_register_socrates()

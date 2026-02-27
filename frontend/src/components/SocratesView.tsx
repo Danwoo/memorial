@@ -11,7 +11,7 @@ export default function SocratesView() {
   const { isDemoMode: isDemo } = useDemoMode()
   const pathPrefix = isDemo ? '/demo' : ''
   const isMobile = useIsMobile()
-  const chat = useSocratesChat({ mode: 'standalone' })
+  const chat = useSocratesChat({ mode: 'standalone', agentType: 'oracle' })
 
   return (
     <div className="socrates-view">
