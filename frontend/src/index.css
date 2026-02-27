@@ -66,10 +66,10 @@
   --space-12: 3rem;
 
   /* Border Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
   --radius-full: 9999px;
 
   /* Transitions */
@@ -215,7 +215,7 @@ body {
   border: none;
   cursor: pointer;
   transition: all var(--transition-fast);
-  height: 36px;
+  height: 2.25rem;
   font-family: inherit;
 }
 
@@ -255,7 +255,7 @@ body {
 }
 
 .btn-sm {
-  height: 28px;
+  height: 1.75rem;
   padding: var(--space-1) var(--space-3);
   font-size: var(--fs-body-sm);
 }
@@ -263,7 +263,7 @@ body {
 /* Inputs */
 .input {
   width: 100%;
-  padding: 10px 14px;
+  padding: 0.625rem 0.875rem;
   font-size: var(--fs-body);
   background: var(--bg-tertiary);
   border: 1px solid var(--border-secondary);
@@ -294,7 +294,7 @@ body {
 .input-error-message {
   color: var(--color-error);
   font-size: 0.8rem;
-  margin-top: 4px;
+  margin-top: var(--space-1);
   margin-bottom: 0;
 }
 
@@ -357,8 +357,8 @@ select:focus-visible {
 }
 
 .loading-spinner {
-  width: 24px;
-  height: 24px;
+  width: 1.5rem;
+  height: 1.5rem;
   border: 2.5px solid var(--border-primary);
   border-top-color: var(--accent-primary);
   border-radius: 50%;
@@ -366,8 +366,8 @@ select:focus-visible {
 }
 
 .loading-spinner.small {
-  width: 18px;
-  height: 18px;
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 .state-icon {
@@ -389,7 +389,7 @@ select:focus-visible {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(0.625rem); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -413,7 +413,7 @@ select:focus-visible {
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-xl);
   padding: var(--space-6);
-  max-width: 480px;
+  max-width: 30rem;
   width: 90%;
   box-shadow: var(--shadow-lg);
 }
@@ -464,8 +464,8 @@ select:focus-visible {
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 10px;
+  gap: var(--space-1);
+  padding: 0.125rem 0.625rem;
   font-size: var(--fs-label);
   font-weight: 500;
   border-radius: var(--radius-full);
@@ -476,7 +476,7 @@ select:focus-visible {
 /* Toast 시스템 */
 .toast-container {
   position: fixed;
-  bottom: 24px;
+  bottom: var(--space-6);
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
@@ -491,14 +491,14 @@ select:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: 12px 16px;
+  padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   font-size: var(--fs-body);
   font-weight: 500;
   box-shadow: var(--shadow-lg);
   pointer-events: auto;
   animation: toastIn 200ms ease-out;
-  max-width: 420px;
+  max-width: 26.25rem;
 }
 
 .toast-success {
@@ -536,7 +536,7 @@ select:focus-visible {
   opacity: 0.6;
   cursor: pointer;
   font-size: 1.1rem;
-  padding: 0 2px;
+  padding: 0 0.125rem;
   flex-shrink: 0;
 }
 
@@ -545,7 +545,7 @@ select:focus-visible {
 }
 
 @keyframes toastIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(0.5rem); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -568,30 +568,30 @@ select:focus-visible {
 }
 
 .skeleton-text {
-  height: 14px;
-  margin-bottom: 8px;
+  height: 0.875rem;
+  margin-bottom: var(--space-2);
 }
 
 .skeleton-text-sm {
-  height: 10px;
+  height: 0.625rem;
   width: 60%;
-  margin-bottom: 6px;
+  margin-bottom: 0.375rem;
 }
 
 .skeleton-title {
-  height: 20px;
+  height: 1.25rem;
   width: 40%;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .skeleton-card {
-  height: 80px;
+  height: 5rem;
   border-radius: var(--radius-lg);
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .skeleton-stat {
-  height: 64px;
+  height: 4rem;
   border-radius: var(--radius-lg);
 }
 
@@ -610,7 +610,7 @@ select:focus-visible {
   align-items: center;
   justify-content: center;
   flex: 1;
-  min-height: 200px;
+  min-height: 12.5rem;
 }
 
 /* ─── S7-5: 다크↔라이트 전환 애니메이션 ─────────────────── */
@@ -645,7 +645,7 @@ button:active:not(:disabled) {
 }
 
 .card-hover-lift:hover {
-  transform: translateY(-2px);
+  transform: translateY(-0.125rem);
   box-shadow: var(--shadow-md);
 }
 
@@ -672,7 +672,7 @@ button:active:not(:disabled) {
 }
 
 .error-boundary-icon {
-  font-size: 48px;
+  font-size: 3rem;
   opacity: 0.5;
 }
 
@@ -685,7 +685,7 @@ button:active:not(:disabled) {
 .error-boundary p {
   font-size: var(--fs-body);
   color: var(--text-secondary);
-  max-width: 400px;
+  max-width: 25rem;
   line-height: 1.6;
 }
 
@@ -696,7 +696,7 @@ button:active:not(:disabled) {
   background: var(--bg-tertiary);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
-  max-width: 500px;
+  max-width: 31.25rem;
   overflow-x: auto;
   word-break: break-all;
 }

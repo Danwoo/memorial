@@ -17,9 +17,9 @@
 
 /* ─── 팔레트 메인 ──────────────────────────────── */
 .cmd-palette {
-  width: 560px;
+  width: 35rem;
   max-width: 90vw;
-  max-height: 420px;
+  max-height: 26.25rem;
   background: var(--bg-card);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-lg);
@@ -31,7 +31,7 @@
 }
 
 @keyframes cmdSlideDown {
-  from { opacity: 0; transform: translateY(-12px); }
+  from { opacity: 0; transform: translateY(-0.75rem); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -66,9 +66,9 @@
 .cmd-palette__kbd {
   font-size: 0.65rem;
   font-weight: 600;
-  padding: 2px 6px;
+  padding: 0.125rem 0.375rem;
   border: 1px solid var(--border-secondary);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--text-muted);
   background: var(--bg-secondary);
   font-family: inherit;
@@ -82,7 +82,7 @@
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 4px;
+  padding: var(--space-1);
   border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
 }
@@ -121,8 +121,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   border-radius: var(--radius-sm);
   background: var(--bg-secondary);
   color: var(--text-secondary);
@@ -134,7 +134,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0.125rem;
 }
 
 .cmd-palette__item-title {
@@ -156,7 +156,7 @@
 .cmd-palette__item-badge {
   font-size: 0.65rem;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 0.125rem var(--space-2);
   border-radius: var(--radius-full);
   background: var(--bg-secondary);
   color: var(--text-secondary);
