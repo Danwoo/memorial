@@ -114,11 +114,19 @@ class ScrapService:
         if self.mindmap_repo and relations:
             await self.mindmap_repo.save_relations(relations)
 
-        # Librarian 처리 후 요약+태그 포함하여 토큰 갱신
+        # Librarian 처리 후 요약+태그+원본 title 포함하여 토큰 갱신 (원본 키워드 보존)
         if success and summary:
             tags_text = " ".join(tags) if tags else ""
             entity_names = " ".join(e.get("name", "") for e in (entities or []))
-            token_source = f"{summary} {tags_text} {entity_names}".strip()
+            title_text = ""
+            if user_id:
+                try:
+                    scrap_obj = await self.scrap_repo.get_by_id(scrap_id, UUID(user_id))
+                    if scrap_obj:
+                        title_text = scrap_obj.title or ""
+                except Exception:
+                    pass
+            token_source = f"{title_text} {summary} {tags_text} {entity_names}".strip()
             await self._save_search_tokens(str(scrap_id), token_source)
 
         return success

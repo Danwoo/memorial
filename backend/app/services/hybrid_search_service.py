@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 # Weighted RRF 파라미터 (tune_hybrid_params.py 최적화 결과)
 RRF_K = 10
 WEIGHT_DENSE = 1.0
-WEIGHT_SPARSE = 1.2
-WEIGHT_GRAPH = 0.3
+WEIGHT_SPARSE = 1.0
+WEIGHT_GRAPH = 0.5
 
 # 기본 검색 설정
 DEFAULT_DENSE_LIMIT = 20
@@ -129,7 +129,7 @@ class HybridSearchService:
     async def _graph_search(self, query: str, user_id: str) -> list[dict[str, Any]]:
         """Graph-based search 실행. 엔티티 이름 매칭 → 스크랩 역탐색."""
         try:
-            results = await self.mindmap_repo.search_scraps_via_graph(
+            results = await self.mindmap_repo.search_memories_via_graph(
                 query=query,
                 user_id=user_id,
                 limit=DEFAULT_GRAPH_LIMIT,
