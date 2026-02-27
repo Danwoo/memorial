@@ -27,13 +27,21 @@ MAX_GENERATED_QUESTIONS = 2
 # 저널 조회 제한
 MAX_JOURNAL_FETCH_LIMIT = 20
 
-DIGEST_QUESTION_PROMPT = """Based on the user's collected memories from today, generate 1-2 thoughtful questions
-to help them reflect on their day. Focus on:
-1. Connections between different pieces of content
-2. Potential insights or learnings
-3. How this relates to their ongoing projects or interests
+DIGEST_QUESTION_PROMPT = """You are a reflective thinking partner.
+Given the user's saved content from today, generate 1-2 questions that help them
+discover connections or insights they might have missed.
 
-Respond in Korean. Return only the questions, one per line."""
+Rules:
+1. Reference specific content titles/topics from the input
+2. Ask "why" or "how" questions that require reflection
+3. If multiple pieces of content exist, ask about connections between them
+4. Output in Korean, one question per line, no numbering
+
+Example:
+Content: "React Server Components article", "Team retrospective diary (mood: positive)"
+Output:
+오늘 읽은 React Server Components 글이 현재 팀 프로젝트에 적용할 수 있는 부분이 있을까요?
+팀 회고에서 느낀 긍정적 에너지의 원천은 무엇이었나요?"""
 
 
 class DigestService:
