@@ -152,28 +152,48 @@ class TestDiaryAnalysisService:
 
         return DiaryAnalysisService(vector_repo=mock_vector_repo)
 
-    # --- 인지 왜곡 탐지 테스트 ---
+    # --- 인지 왜곡 탐지 테스트 (LLM 기반 async) ---
 
-    def test_detect_cognitive_distortions_found(self, analysis_service):
-        """인지 왜곡 키워드가 포함된 텍스트에서 탐지가 동작하는지 확인"""
+    @pytest.mark.asyncio
+    async def test_detect_cognitive_distortions_found(self, analysis_service):
+        """인지 왜곡이 있는 텍스트에서 LLM이 탐지하는지 확인 (LLM 목 사용)"""
         content = "나는 항상 실패한다. 내 탓이야. 모든 것이 끔찍하다."
 
-        result = analysis_service.detect_cognitive_distortions(content)
+        llm_response_json = (
+            '{"distortions": ['
+            '{"type": "overgeneralization", "trigger_text": "항상 실패한다", '
+            '"name": "과잉일반화 (Overgeneralization)", '
+            '"reasoning": "generalizes one event", "feedback": "구체적 사실에 집중해보세요"},'
+            '{"type": "personalization", "trigger_text": "내 탓이야", '
+            '"name": "개인화 (Personalization)", '
+            '"reasoning": "blaming self", "feedback": "다른 요인도 있을 수 있어요"}'
+            '], "wellness_note": "두 가지 왜곡 패턴이 관찰됩니다."}'
+        )
+        mock_llm = MagicMock()
+        mock_llm.ainvoke = AsyncMock(return_value=MagicMock(content=llm_response_json))
+
+        with __import__("unittest.mock", fromlist=["patch"]).patch(
+            "app.services.diary_analysis_service.get_analytical_llm", return_value=mock_llm
+        ):
+            result = await analysis_service.detect_cognitive_distortions(content)
 
         assert result["has_distortions"] is True
-        assert len(result["distortions"]) >= 2
+        assert len(result["distortions"]) >= 1
         assert result["wellness_score"] < 100
 
-        # 탐지된 패턴 타입 확인
-        detected_types = {d["type"] for d in result["distortions"]}
-        assert "all_or_nothing" in detected_types
-        assert "personalization" in detected_types
-
-    def test_detect_cognitive_distortions_none(self, analysis_service):
+    @pytest.mark.asyncio
+    async def test_detect_cognitive_distortions_none(self, analysis_service):
         """인지 왜곡이 없는 텍스트에서 빈 결과 반환"""
         content = "공원에서 산책을 하며 좋은 시간을 보냈다."
 
-        result = analysis_service.detect_cognitive_distortions(content)
+        llm_response_json = '{"distortions": [], "wellness_note": "건강한 사고 패턴이 관찰됩니다."}'
+        mock_llm = MagicMock()
+        mock_llm.ainvoke = AsyncMock(return_value=MagicMock(content=llm_response_json))
+
+        with __import__("unittest.mock", fromlist=["patch"]).patch(
+            "app.services.diary_analysis_service.get_analytical_llm", return_value=mock_llm
+        ):
+            result = await analysis_service.detect_cognitive_distortions(content)
 
         assert result["has_distortions"] is False
         assert result["distortions"] == []

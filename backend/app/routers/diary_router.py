@@ -152,7 +152,7 @@ async def analyze_insights(
 ):
     """다이어리 내용의 인지 왜곡 분석 및 피드백 제공."""
     try:
-        insights = analysis_service.detect_cognitive_distortions(request.content)
+        insights = await analysis_service.detect_cognitive_distortions(request.content)
         return InsightsResponse(**insights)
     except Exception:
         logger.exception("Failed to analyze cognitive distortions")
