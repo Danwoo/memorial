@@ -6,7 +6,7 @@ import type { MindmapNode, MindmapLink, MindmapData, SearchResult, MindmapInsigh
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
-import { isDemoMode } from '../contexts/DemoContext'
+import { demoPath } from '../utils/demoPath'
 import { fetchMindmap, fetchMindmapInsights, searchScraps, fetchEgoMindmap, fetchEgoDefault } from '../api'
 import { getViewCache, setViewCache, CACHE_KEYS } from '../utils/viewCache'
 import ScrapDetailModal from './ScrapDetailModal'
@@ -32,6 +32,9 @@ export default function MindmapView() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null)
   const cameraRestoredRef = useRef(false)
+
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
 
   const [data, setData] = useState<MindmapData>({ nodes: [], links: [] })
   const [maxVal, setMaxVal] = useState(1)
@@ -192,6 +195,20 @@ export default function MindmapView() {
     const handler = (e: MouseEvent) => { mousePos.current = { x: e.clientX, y: e.clientY } }
     window.addEventListener('mousemove', handler)
     return () => window.removeEventListener('mousemove', handler)
+  }, [])
+
+  // 컨테이너 리사이즈 감지 → 캔버스 크기 동기화
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect
+      if (width > 0 && height > 0) {
+        setDimensions({ width: Math.floor(width), height: Math.floor(height) })
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [])
 
   // 다른 뷰에서 focusNodeId로 진입 시 해당 노드 포커스
@@ -593,8 +610,7 @@ export default function MindmapView() {
           }
         })
 
-      const diaryPath = isDemoMode() ? '/demo/diary' : '/diary'
-      navigate(diaryPath, {
+      navigate(demoPath('/diary'), {
         state: {
           openSocrates: true,
           topic: node.name || node.id,
@@ -681,7 +697,7 @@ export default function MindmapView() {
   const isEmptyMindmap = !loading && data.nodes.length === 0
 
   return (
-    <div className="mindmap-view-container">
+    <div className="mindmap-view-container" ref={containerRef}>
       {/* Ego/전체 모드 토글 */}
       {!loading && !isEmptyMindmap && (
         <div className="mindmap-mode-toggle">
@@ -815,7 +831,7 @@ export default function MindmapView() {
             스크랩을 추가하면 지식 마인드맵이 자동으로 생성됩니다.<br />
             엔티티와 연결이 자동으로 추출됩니다.
           </p>
-          <button onClick={() => navigate(isDemoMode() ? '/demo/scraps' : '/scraps')} className="add-scrap-btn">
+          <button onClick={() => navigate(demoPath('/scraps'))} className="add-scrap-btn">
             + 스크랩 추가
           </button>
         </div>
@@ -825,6 +841,8 @@ export default function MindmapView() {
       {!loading && !isEmptyMindmap && (
         <ForceGraph2D
           ref={fgRef}
+          width={dimensions.width}
+          height={dimensions.height}
           graphData={filteredData}
           nodeCanvasObject={nodeCanvasObject}
           nodePointerAreaPaint={(node: AnyNode, color, ctx) => {
@@ -958,7 +976,7 @@ export default function MindmapView() {
           onConnectionClick={handleConnectionClick}
           onScrapClick={setSelectedScrapId}
           onStartChat={handleStartChat}
-          onViewScraps={() => navigate(isDemoMode() ? '/demo/scraps' : '/scraps')}
+          onViewScraps={() => navigate(demoPath('/scraps'))}
         />
       )}
 

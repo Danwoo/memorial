@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { demoPath } from '../utils/demoPath'
 import type { StreakData, StatsData, ActivityData, BriefingData, DailyInsight } from '../types'
 import type { DiaryDateInfo } from '../types/diary'
 import { fetchStreak, fetchStats, fetchActivity, fetchBriefing, fetchDailyInsights, fetchDiaryDates } from '../api'
@@ -141,11 +142,11 @@ export default function CalendarView() {
   }, [])
 
   const handleNavigateJournal = useCallback((date: string) => {
-    navigate('/diary', { state: { date } })
+    navigate(demoPath('/diary'), { state: { date } })
   }, [navigate])
 
   const handleNavigateMemory = useCallback((memoryId: string) => {
-    navigate('/scraps', { state: { openMemoryId: memoryId } })
+    navigate(demoPath('/scraps'), { state: { openMemoryId: memoryId } })
   }, [navigate])
 
   const handleInsightClick = useCallback((path: string) => {
@@ -259,7 +260,7 @@ export default function CalendarView() {
         {briefing?.suggested_question && (
           <button
             className="banner-question"
-            onClick={() => navigate('/diary', { state: { prefillQuestion: briefing.suggested_question } })}
+            onClick={() => navigate(demoPath('/diary'), { state: { prefillQuestion: briefing.suggested_question } })}
           >
             <Lightbulb size={16} className="banner-question-icon" />
             <span className="banner-question-text">{briefing.suggested_question}</span>

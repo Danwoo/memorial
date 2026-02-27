@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { X, ExternalLink, Trash2, Loader2, Tag, Pencil, Save, Undo2, BookOpen, PenLine, Network, MessageSquare } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { demoPath } from '../utils/demoPath'
 import { useToast } from '../contexts/ToastContext'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import type { ScrapDetail, RelatedScrap, LinkedDiary } from '../types'
@@ -354,7 +355,7 @@ export default function ScrapDetailModal({ scrapId, onClose, onDeleted, onUpdate
                         className="linked-diary-item"
                         onClick={() => {
                           onClose()
-                          navigate(`/diary`, { state: { date: diary.date } })
+                          navigate(demoPath('/diary'), { state: { date: diary.date } })
                         }}
                         type="button"
                       >
@@ -378,7 +379,7 @@ export default function ScrapDetailModal({ scrapId, onClose, onDeleted, onUpdate
                       className="linked-diaries-cta"
                       onClick={() => {
                         onClose()
-                        navigate('/diary')
+                        navigate(demoPath('/diary'))
                       }}
                       type="button"
                     >
@@ -397,7 +398,7 @@ export default function ScrapDetailModal({ scrapId, onClose, onDeleted, onUpdate
                   className="btn-cross-nav"
                   onClick={() => {
                     onClose()
-                    navigate('/mindmap', { state: { focusNodeId: scrapId } })
+                    navigate(demoPath('/mindmap'), { state: { focusNodeId: scrapId } })
                   }}
                   type="button"
                 >
@@ -408,7 +409,7 @@ export default function ScrapDetailModal({ scrapId, onClose, onDeleted, onUpdate
                   className="btn-cross-nav"
                   onClick={() => {
                     onClose()
-                    navigate('/diary', {
+                    navigate(demoPath('/diary'), {
                       state: {
                         openSocrates: true,
                         topic: detail.title,
