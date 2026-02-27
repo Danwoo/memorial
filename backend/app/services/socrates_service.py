@@ -6,7 +6,10 @@ from uuid import UUID
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from app.agents.socrates.nodes.chat import prepare_socrates_context
+from app.agents.container import get_agent_container
+from app.agents.socrates.context import SocratesContext
+from app.agents.socrates.graph import socrates_graph
+from app.agents.socrates.state import build_socrates_initial_state
 from app.config.llm import get_analytical_llm, get_streaming_llm
 from app.repositories.socrates_repository import SocratesRepository
 
@@ -25,7 +28,6 @@ SESSION_SUMMARY_PROMPT = (
 
 MAX_TITLE_LENGTH = 50
 SESSION_SUMMARY_MSG_THRESHOLD = 4
-PREVIOUS_SESSION_CONTEXT_LIMIT = 3
 CONVERSATION_PREVIEW_LENGTH = 2000
 
 logger = logging.getLogger(__name__)
@@ -64,7 +66,7 @@ class SocratesService:
     ) -> AsyncGenerator[str, None]:
         """메시지 전송 후 실시간 SSE 스트리밍으로 AI 응답 반환.
 
-        RAG 컨텍스트 준비 후 llm.astream()으로 토큰 단위 스트리밍.
+        LangGraph 6노드 파이프라인으로 컨텍스트 준비 후 llm.astream()으로 토큰 단위 스트리밍.
         """
         session = await self.socrates_repo.get_session(session_id)
         if not session:
@@ -79,42 +81,41 @@ class SocratesService:
             # 대화 이력 조회
             messages = await self.socrates_repo.get_messages(session_id)
 
-            # 이전 세션 컨텍스트 (첫 메시지일 때만)
-            prev_context = ""
-            topic_context = ""
-            if len(messages) == 1:
-                prev_context = await self._get_previous_session_context(user_id)
-                # source_context 태그 기반 과거 세션 검색
-                if source_context and source_context.get("tags"):
-                    topic_context = await self._get_topic_session_context(
-                        user_id,
-                        source_context["tags"],
-                        session_id,
-                    )
-
             # 턴 수 계산 (HumanMessage 개수 기준)
             turn_count = sum(1 for m in messages if isinstance(m, HumanMessage))
 
-            # RAG 검색, 저널, 모드별 프롬프트 준비
-            lc_messages, references = await prepare_socrates_context(
-                messages,
-                mode,
+            # Runtime DI 컨텍스트 조립 (get_agent_container 1회 호출)
+            container = get_agent_container()
+            ctx = SocratesContext(
+                hybrid_search=container.hybrid_search,
+                vector_repo=container.vector_repo,
+                diary_repo=container.diary_repo,
+                socrates_repo=self.socrates_repo,
+                community_summary=container.community_summary,
+            )
+
+            # 초기 상태 구성
+            initial_state = build_socrates_initial_state(
+                messages=messages,
                 user_id=str(user_id),
+                session_id=str(session_id),
+                user_query=content,
                 turn_count=turn_count,
+                mode=mode,
                 source_context=source_context,
             )
 
-            # 이전 세션 / 주제 컨텍스트를 시스템 프롬프트에 추가
-            extra_context = prev_context + topic_context
-            if extra_context and lc_messages:
-                original_system = lc_messages[0].content
-                lc_messages[0] = SystemMessage(content=original_system + extra_context)
+            # LangGraph 6노드 파이프라인 실행 (context= 파라미터로 Runtime DI 주입)
+            result = await socrates_graph.ainvoke(initial_state, context=ctx)
+
+            llm_messages = result["llm_messages"]
+            references = result["references"]
 
             # LLM에서 토큰 단위 스트리밍
             llm = get_streaming_llm()
             full_response = ""
 
-            async for chunk in llm.astream(lc_messages):
+            async for chunk in llm.astream(llm_messages):
                 chunk_text = chunk.content
                 if chunk_text:
                     full_response += chunk_text
@@ -124,18 +125,9 @@ class SocratesService:
             if full_response:
                 await self.socrates_repo.add_message(session_id, AIMessage(content=full_response))
 
-            # 참조 메모리 이벤트 (최대 5개)
+            # 참조 메모리 이벤트
             if references:
-                ref_data = [
-                    {
-                        "id": str(m.get("id", "")),
-                        "title": m.get("title", ""),
-                        "source_type": m.get("source_type", "NOTE"),
-                        "created_at": str(m.get("created_at", ""))[:10],
-                    }
-                    for m in references[:5]
-                ]
-                yield f"data: {json.dumps({'references': ref_data})}\n\n"
+                yield f"data: {json.dumps({'references': references})}\n\n"
 
             # 첫 대화 완료 시 세션 제목 자동 생성
             title = await self._maybe_generate_title(session_id, content, full_response)
@@ -194,61 +186,12 @@ class SocratesService:
             logger.exception("세션 요약 생성 실패 (session_id=%s)", session_id)
         return None
 
-    async def _get_previous_session_context(self, user_id: UUID) -> str:
-        """이전 세션 요약을 컨텍스트 문자열로 조합."""
-        try:
-            summaries = await self.socrates_repo.get_recent_session_summaries(
-                user_id,
-                limit=PREVIOUS_SESSION_CONTEXT_LIMIT,
-            )
-            if not summaries:
-                return ""
-
-            lines = []
-            for s in reversed(summaries):
-                date = str(s["created_at"])[:10]
-                title = s.get("title", "")
-                lines.append(f"- [{date}] {title}: {s['summary']}")
-
-            return "\n\n**이전 대화 요약:**\n" + "\n".join(lines)
-        except Exception:
-            logger.exception("이전 세션 컨텍스트 조회 실패")
-            return ""
-
     async def _save_topic_tags(self, session_id: UUID, tags: list[str]) -> None:
         """세션에 topic_tags 저장."""
         try:
             await self.socrates_repo.update_session_topic_tags(session_id, tags)
         except Exception:
             logger.exception("topic_tags 저장 실패 (session_id=%s)", session_id)
-
-    async def _get_topic_session_context(self, user_id: UUID, tags: list[str], exclude_session_id: UUID) -> str:
-        """같은 주제 태그를 가진 과거 세션 요약을 컨텍스트 문자열로 반환."""
-        try:
-            past_sessions = await self.socrates_repo.search_sessions_by_topic(
-                user_id,
-                tags,
-                exclude_session_id=exclude_session_id,
-                limit=3,
-            )
-            if not past_sessions:
-                return ""
-
-            lines = []
-            for s in past_sessions:
-                date = str(s["created_at"])[:10]
-                title = s.get("title", "")
-                summary = s.get("summary") or "(요약 없음)"
-                lines.append(f"- [{date}] {title}: {summary}")
-
-            return (
-                "\n\n**이 주제에 대한 과거 대화:**\n"
-                + "\n".join(lines)
-                + "\n과거 대화를 자연스럽게 언급하여 사용자의 사고 변화를 돌아볼 수 있게 해주세요."
-            )
-        except Exception:
-            logger.exception("주제 기반 세션 컨텍스트 조회 실패")
-            return ""
 
     async def _maybe_generate_title(self, session_id: UUID, user_msg: str, ai_msg: str) -> str | None:
         """첫 대화 완료 시 LLM으로 세션 제목 생성. 이미 제목이 있으면 스킵."""
