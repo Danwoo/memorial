@@ -83,7 +83,7 @@ export default function MindmapView() {
   const [insights, setInsights] = useState<MindmapInsights | null>(null)
   const [insightsLoading, setInsightsLoading] = useState(false)
   const [showInsights, setShowInsights] = useState(false)
-  const { width: insightPanelW, onMouseDown: onInsightResize } = useResizePanel(280, 200, 480, 'left', 'mindmap-insight-width')
+  const { vw: insightVw, onMouseDown: onInsightResize } = useResizePanel(19, 13, 35, 'left', 'mindmap-insight-vw')
   const [clusterColorMode, setClusterColorMode] = useState(false)
 
   const bgColor = resolvedTheme === 'dark' ? '#1a1a1a' : '#ffffff'
@@ -964,7 +964,7 @@ export default function MindmapView() {
             fetchMindmapData()
             loadInsights()
           }}
-          panelWidth={insightPanelW}
+          panelWidth={`${insightVw}vw`}
           onPanelResize={onInsightResize}
         />
       )}

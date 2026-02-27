@@ -40,7 +40,7 @@ interface SidebarProps {
 export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: SidebarProps) {
   const { isDemoMode: isDemo } = useDemoMode()
   const prefix = isDemo ? '/demo' : ''
-  const { width: sidebarW, onMouseDown: onSidebarResize } = useResizePanel(240, 160, 420, 'right', 'memoir-sidebar-width')
+  const { vw: sidebarVw, onMouseDown: onSidebarResize } = useResizePanel(16, 10, 28, 'right', 'memoir-sidebar-vw')
 
   // 모바일: Escape 키로 사이드바 닫기
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
     {mobileOpen && <div className="sidebar-backdrop" onClick={onMobileClose} />}
     <aside
       className={`sidebar ${mobileOpen ? 'sidebar--mobile-open' : ''}`}
-      style={{ '--memoir-sidebar-w': `${sidebarW}px` } as React.CSSProperties}
+      style={{ '--memoir-sidebar-w': `${sidebarVw}vw` } as React.CSSProperties}
     >
       <div className="resize-handle resize-handle--right" onMouseDown={onSidebarResize} />
       <div className="sidebar-header">

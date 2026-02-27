@@ -128,7 +128,7 @@ export default function CalendarView() {
 
   // 선택된 날짜 (DayDetailPanel 토글)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
-  const { width: calPanelW, onMouseDown: onCalPanelResize } = useResizePanel(320, 240, 560, 'left', 'calendar-panel-width')
+  const { vw: calPanelVw, onMouseDown: onCalPanelResize } = useResizePanel(22, 15, 40, 'left', 'calendar-panel-vw')
 
   const handleMonthChange = useCallback((year: number, month: number) => {
     setCalYear(year)
@@ -274,7 +274,7 @@ export default function CalendarView() {
       <div className={`calendar-main-container${selectedDate ? ' calendar-main-container--panel-open' : ''}`}>
         <div
           className="calendar-main-main"
-          style={selectedDate ? { marginRight: calPanelW } : undefined}
+          style={selectedDate ? { marginRight: `${calPanelVw}vw` } : undefined}
         >
           <MonthlyCalendar
             year={calYear}
@@ -293,7 +293,7 @@ export default function CalendarView() {
             onClose={handlePanelClose}
             onNavigateJournal={handleNavigateJournal}
             onNavigateMemory={handleNavigateMemory}
-            panelWidth={calPanelW}
+            panelWidth={`${calPanelVw}vw`}
             onPanelResize={onCalPanelResize}
             dailyInsights={dailyInsights}
             onInsightClick={handleInsightClick}
