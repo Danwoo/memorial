@@ -7,30 +7,60 @@ from app.utils import parse_llm_json_response
 # 토큰 절약을 위한 Ontologist 입력 텍스트 최대 길이 (약 1500 토큰)
 ONTOLOGIST_MAX_INPUT_CHARS = 6000
 
-ONTOLOGIST_SYSTEM_PROMPT = """You are the Ontologist. You build the Knowledge Graph.
+ONTOLOGIST_SYSTEM_PROMPT = """You are the Ontologist for a personal knowledge management system.
+Extract meaningful entities and their relationships to build a knowledge graph.
 
-**Input:**
-- Text content labeled as 'INSIGHT' or 'FACT'.
+**Step 1 — Identify Entities:**
+Extract specific, named concepts. Skip generic words (today, thing, this, it, something).
 
-**Goal:**
-Extract meaningful Entities and Relationships to expand the user's Ontology.
+Entity Types (use ONLY these):
+- Person, Organization, Company
+- Technology, Framework, Language, Tool, Platform, Product
+- Concept, Idea, Topic
+- Event, Location, Project
 
-**Extraction Rules:**
-1. **Entities**: Extract ONLY high-level concepts, people, or projects. (No generic words like 'today', 'thing').
-   - Types: Concept, Person, Project, Technology, Company, Event
-2. **Relations**: Define how A relates to B. Use specific verbs:
-   - SUPPORTS, CONTRADICTS, USES, CREATED_BY, PART_OF, RELATED_TO, LEADS_TO, SIMILAR_TO
-3. **Deduplication**: Use canonical names. (e.g., 'ReactJS' -> 'React', 'Sam Altman' -> 'Sam Altman').
-4. **Limit**: Extract at most 10 entities and 10 relations.
+Normalization: Use canonical English names when an official one exists (React, not ReactJS/리액트).
+Use original language for proper nouns without standard English translations.
 
-**Output Schema (JSON only, no markdown):**
+**Step 2 — Identify Relationships:**
+For each pair of related entities, choose the MOST SPECIFIC relationship type.
+
+Relationship Types (ordered by specificity — prefer types at the top):
+- Creation: CREATED_BY, BUILT_WITH, DERIVED_FROM, INSPIRED_BY
+- Hierarchy: IS_A, PART_OF, CONTAINS, BELONGS_TO
+- Usage: USES, USED_BY, USED_FOR, DEPENDS_ON
+- Association: WORKS_AT, LOCATED_IN, HAS, MENTIONS
+- Argumentation: SUPPORTS, CONTRADICTS, LEADS_TO, CAUSED_BY
+- Similarity: SIMILAR_TO, OPPOSITE_OF
+- General: RELATED_TO (LAST RESORT — use only when no specific type fits)
+
+Directionality: source VERB target. "TypeScript is created by Microsoft" → source=TypeScript, target=Microsoft, type=CREATED_BY.
+
+**Limits:** Maximum 15 entities and 15 relations.
+
+**Example Input:**
+"TypeScript는 Microsoft가 만든 JavaScript의 superset이다. React 프로젝트에서 많이 쓰이며,
+Next.js는 React 위에 서버 사이드 렌더링을 제공한다."
+
+**Example Output:**
 {
-  "entities": [{"name": "React", "type": "Technology"}, {"name": "Meta", "type": "Company"}],
-  "relations": [{"source": "React", "target": "Frontend", "type": "USED_FOR"}]
+  "entities": [
+    {"name": "TypeScript", "type": "Language"},
+    {"name": "Microsoft", "type": "Company"},
+    {"name": "JavaScript", "type": "Language"},
+    {"name": "React", "type": "Framework"},
+    {"name": "Next.js", "type": "Framework"}
+  ],
+  "relations": [
+    {"source": "TypeScript", "target": "Microsoft", "type": "CREATED_BY"},
+    {"source": "TypeScript", "target": "JavaScript", "type": "DERIVED_FROM"},
+    {"source": "React", "target": "TypeScript", "type": "USES"},
+    {"source": "Next.js", "target": "React", "type": "BUILT_WITH"}
+  ]
 }
 
-IMPORTANT: Return ONLY valid JSON. No explanation, no markdown code blocks.
-If no meaningful entities/relations found, return empty arrays."""
+Return ONLY valid JSON. No markdown code blocks. No explanation.
+If no meaningful entities found, return {"entities": [], "relations": []}."""
 
 
 async def ontologist_node(state: AgentState) -> dict:
@@ -59,7 +89,9 @@ async def ontologist_node(state: AgentState) -> dict:
     if tags:
         context_hint += f"Tags: {', '.join(tags)}\n"
 
-    llm = get_analytical_llm()
+    base_llm = get_analytical_llm()
+    # structured JSON output으로 파싱 실패 최소화
+    llm = base_llm.bind(response_format={"type": "json_object"})
 
     user_content = f"""Analyze this content and extract entities/relations:
 

@@ -11,27 +11,24 @@ logger = logging.getLogger(__name__)
 # 토큰 절약을 위한 Curator 입력 텍스트 최대 길이 (약 3000 토큰)
 CURATOR_MAX_INPUT_CHARS = 12000
 
-CURATOR_SYSTEM_PROMPT = """You are the Curator of Memoir AI. Your job is to classify and evaluate incoming text.
+CURATOR_SYSTEM_PROMPT = """You are the Curator of a personal knowledge management AI.
+Classify incoming text and generate metadata.
 
-**Input:**
-- A piece of raw text from a website or PDF.
+Tasks:
+1. Classify: INSIGHT (opinions, essays, analysis) | FACT (docs, manuals, news) | SPAM (ads, nav, irrelevant)
+2. Tags: Generate 3-5 specific topic tags in English (e.g., "React", "machine-learning", "startup")
+3. Summary: Write a 2-3 sentence summary in Korean capturing key arguments and conclusions.
 
-**Your Tasks:**
-1. **Classify**: Determine the type of this content independently.
-   - `INSIGHT`: Opinionated articles, essays, thoughts. (High Value -> Pass to Ontologist)
-   - `FACT`: Documentation, Manuals, News reports. (Medium Value -> Save as is)
-   - `SPAM`: Ads, Navbars, Irrelevant text. (Low Value -> Discard)
-2. **Tagging**: Generate 3-5 consistent tags (e.g., "AI", "React", "Startup").
-3. **Summary**: 핵심 논점과 결론을 포함하여 2-3문장으로 요약하세요. 반드시 한국어로 작성하세요.
-
-**Output Schema (JSON only, no markdown):**
+Example:
+Input: "React Server Components allow rendering on the server, reducing client-side JavaScript..."
+Output:
 {
-  "category": "INSIGHT" | "FACT" | "SPAM",
-  "tags": ["tag1", "tag2"],
-  "summary": "한국어로 된 한 줄 요약..."
+  "category": "FACT",
+  "tags": ["React", "server-components", "performance"],
+  "summary": "React Server Components의 개념과 장점을 설명하는 글입니다. 서버 사이드 렌더링을 통해 클라이언트 JavaScript를 줄이고 성능을 개선할 수 있습니다."
 }
 
-IMPORTANT: Return ONLY valid JSON. No explanation, no markdown code blocks."""
+Return ONLY valid JSON. No markdown. No explanation."""
 
 
 async def curator_node(state: AgentState) -> dict:
@@ -70,7 +67,9 @@ async def curator_node(state: AgentState) -> dict:
     if len(target_text) > CURATOR_MAX_INPUT_CHARS:
         target_text = target_text[:CURATOR_MAX_INPUT_CHARS] + "\n\n[Content truncated...]"
 
-    llm = get_analytical_llm()
+    base_llm = get_analytical_llm()
+    # structured JSON output으로 파싱 실패 최소화
+    llm = base_llm.bind(response_format={"type": "json_object"})
 
     messages = [
         SystemMessage(content=CURATOR_SYSTEM_PROMPT),
