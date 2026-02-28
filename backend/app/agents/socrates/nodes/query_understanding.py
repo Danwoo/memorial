@@ -51,6 +51,7 @@ Given the user's message and conversation context, output a JSON object with thr
    - "full_rag": Complex questions needing multi-source analysis
 
 3. "search_queries": Array of 1-2 rewritten search queries.
+   - CRITICAL: Keep queries in the SAME LANGUAGE as the user's message (Korean → Korean, English → English)
    - Resolve pronouns using conversation history
    - For comparisons, split into two queries
    - For no_retrieval, return original message as-is
