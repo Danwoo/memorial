@@ -31,56 +31,26 @@ def _base_state(**overrides) -> SocratesState:
 
 
 class TestQueryUnderstandingNode:
-    """의도 분류 + 쿼리 재작성 노드 테스트."""
-
-    def test_detect_intent_counter(self):
-        """반론 키워드 감지."""
-        from app.agents.socrates.nodes.query_understanding import _detect_intent
-
-        assert _detect_intent("이 주장에 대한 반론이 있을까요?") == "counter"
-
-    def test_detect_intent_summary(self):
-        """요약 키워드 감지."""
-        from app.agents.socrates.nodes.query_understanding import _detect_intent
-
-        assert _detect_intent("이 내용을 요약해줘") == "summary"
-
-    def test_detect_intent_evening(self):
-        """저녁 회고 키워드 감지."""
-        from app.agents.socrates.nodes.query_understanding import _detect_intent
-
-        assert _detect_intent("오늘 하루를 마무리하고 싶어") == "evening"
-
-    def test_detect_intent_none(self):
-        """분류 불가 시 None 반환."""
-        from app.agents.socrates.nodes.query_understanding import _detect_intent
-
-        assert _detect_intent("오늘 날씨가 좋네요") is None
-
-    def test_detect_intent_dialectic(self):
-        """변증법 키워드 감지."""
-        from app.agents.socrates.nodes.query_understanding import _detect_intent
-
-        assert _detect_intent("A vs B 비교해줘") == "dialectic"
-
-    @pytest.mark.asyncio
-    async def test_rewrite_query_single_message(self):
-        """메시지가 1개이면 재작성 없이 원본 반환."""
-        from app.agents.socrates.nodes.query_understanding import _rewrite_query
-
-        messages = [HumanMessage(content="함수형 프로그래밍이란?")]
-        result = await _rewrite_query(messages, "함수형 프로그래밍이란?")
-        assert result == ["함수형 프로그래밍이란?"]
+    """LLM 기반 통합 쿼리 분석 노드 테스트."""
 
     @pytest.mark.asyncio
     async def test_query_understanding_node_explicit_mode(self):
-        """explicit_mode가 있으면 자동 분류를 건너뛴다."""
+        """explicit_mode가 있으면 LLM 분류 mode를 오버라이드한다."""
+        from unittest.mock import AsyncMock, MagicMock
+
         from app.agents.socrates.nodes.query_understanding import query_understanding_node
 
         state = _base_state(explicit_mode="insight")
 
+        mock_response = MagicMock()
+        mock_response.content = '{"mode": null, "retrieval_plan": "full_rag", "search_queries": ["테스트 질문"]}'
+        mock_llm_bound = MagicMock()
+        mock_llm_bound.ainvoke = AsyncMock(return_value=mock_response)
+        mock_llm = MagicMock()
+        mock_llm.bind = MagicMock(return_value=mock_llm_bound)
+
         with (
-            patch("app.agents.socrates.nodes.query_understanding._rewrite_query", return_value=["테스트 질문"]),
+            patch("app.agents.socrates.nodes.query_understanding.get_analytical_llm", return_value=mock_llm),
             patch("app.agents.socrates.nodes.query_understanding.get_stream_writer", return_value=lambda x: None),
         ):
             result = await query_understanding_node(state)
@@ -90,8 +60,10 @@ class TestQueryUnderstandingNode:
         assert result["search_query"] == "테스트 질문"
 
     @pytest.mark.asyncio
-    async def test_query_understanding_node_auto_detect(self):
-        """explicit_mode 없으면 키워드 기반 자동 분류."""
+    async def test_query_understanding_node_llm_mode(self):
+        """explicit_mode 없으면 LLM 분류 결과를 사용한다."""
+        from unittest.mock import AsyncMock, MagicMock
+
         from app.agents.socrates.nodes.query_understanding import query_understanding_node
 
         state = _base_state(
@@ -99,10 +71,17 @@ class TestQueryUnderstandingNode:
             explicit_mode=None,
         )
 
+        mock_response = MagicMock()
+        mock_response.content = (
+            '{"mode": "counter", "retrieval_plan": "full_rag", "search_queries": ["이 논증의 반론을 알려줘"]}'
+        )
+        mock_llm_bound = MagicMock()
+        mock_llm_bound.ainvoke = AsyncMock(return_value=mock_response)
+        mock_llm = MagicMock()
+        mock_llm.bind = MagicMock(return_value=mock_llm_bound)
+
         with (
-            patch(
-                "app.agents.socrates.nodes.query_understanding._rewrite_query", return_value=["이 논증의 반론을 알려줘"]
-            ),
+            patch("app.agents.socrates.nodes.query_understanding.get_analytical_llm", return_value=mock_llm),
             patch("app.agents.socrates.nodes.query_understanding.get_stream_writer", return_value=lambda x: None),
         ):
             result = await query_understanding_node(state)
@@ -130,7 +109,7 @@ class TestGradingNode:
         )
 
         with (
-            patch("app.agents.socrates.nodes.grading._grade_relevance", return_value=[]),
+            patch("app.agents.socrates.nodes.grading._grade_relevance", return_value=([], False)),
             patch("app.agents.socrates.nodes.grading.get_stream_writer", return_value=lambda x: None),
         ):
             result = await grading_node(state)
@@ -151,7 +130,7 @@ class TestGradingNode:
         )
 
         with (
-            patch("app.agents.socrates.nodes.grading._grade_relevance", return_value=memories),
+            patch("app.agents.socrates.nodes.grading._grade_relevance", return_value=(memories, False)),
             patch("app.agents.socrates.nodes.grading.get_stream_writer", return_value=lambda x: None),
         ):
             result = await grading_node(state)
@@ -171,7 +150,7 @@ class TestGradingNode:
         )
 
         with (
-            patch("app.agents.socrates.nodes.grading._grade_relevance", return_value=[]),
+            patch("app.agents.socrates.nodes.grading._grade_relevance", return_value=([], False)),
             patch("app.agents.socrates.nodes.grading.get_stream_writer", return_value=lambda x: None),
         ):
             result = await grading_node(state)
@@ -284,33 +263,3 @@ class TestSocratesState:
             mode="summary",
         )
         assert state["explicit_mode"] == "summary"
-
-
-# ---------------------------------------------------------------------------
-# graph 라우팅 함수 테스트
-# ---------------------------------------------------------------------------
-
-
-class TestGraphRouting:
-    """graph.py route_after_grading 함수 테스트."""
-
-    def test_route_retry(self):
-        """retrieval_quality='retry' → memory_retrieval 재실행."""
-        from app.agents.socrates.graph import route_after_grading
-
-        state = _base_state(retrieval_quality="retry")
-        assert route_after_grading(state) == "memory_retrieval"
-
-    def test_route_good(self):
-        """retrieval_quality='good' → enrichment 진행."""
-        from app.agents.socrates.graph import route_after_grading
-
-        state = _base_state(retrieval_quality="good")
-        assert route_after_grading(state) == "enrichment"
-
-    def test_route_empty(self):
-        """retrieval_quality='empty' → enrichment 진행."""
-        from app.agents.socrates.graph import route_after_grading
-
-        state = _base_state(retrieval_quality="empty")
-        assert route_after_grading(state) == "enrichment"

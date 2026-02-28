@@ -9,6 +9,7 @@ class SocratesSessionCreate(BaseModel):
     """소크라테스 세션 생성 요청."""
 
     title: str | None = None
+    agent_type: str = "oracle"  # 'socrates' | 'librarian' | 'oracle'
 
 
 class SocratesSessionResponse(BaseModel):
@@ -17,6 +18,7 @@ class SocratesSessionResponse(BaseModel):
     id: UUID
     title: str
     created_at: datetime
+    agent_type: str = "oracle"
 
 
 class SocratesSessionUpdate(BaseModel):
@@ -49,6 +51,7 @@ class SocratesMessageRequest(BaseModel):
     content: str
     mode: str | None = None  # insight, counter, summary, evening
     source_context: SourceContext | None = None
+    agent_type: str | None = None  # 'socrates' | 'librarian' | 'oracle' (없으면 세션 기본값)
 
 
 class SocratesMessageResponse(BaseModel):

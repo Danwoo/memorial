@@ -23,11 +23,12 @@ class SocratesRepository:
         self,
         user_id: UUID,
         title: str | None = None,
+        agent_type: str = "oracle",
     ) -> dict:
         """새 채팅 세션 생성."""
         title = title or f"Chat {datetime.now(UTC).strftime('%Y-%m-%d %H:%M')}"
 
-        data = {"user_id": str(user_id), "title": title}
+        data = {"user_id": str(user_id), "title": title, "agent_type": agent_type}
 
         result = await asyncio.to_thread(self._insert_session, data)
 
@@ -38,6 +39,7 @@ class SocratesRepository:
                 "user_id": session["user_id"],
                 "title": session["title"],
                 "created_at": session["created_at"],
+                "agent_type": session.get("agent_type", agent_type),
             }
 
         # 폴백 (정상적으로는 도달하지 않음)
@@ -47,6 +49,7 @@ class SocratesRepository:
             "user_id": str(user_id),
             "title": title,
             "created_at": datetime.now(UTC).isoformat(),
+            "agent_type": agent_type,
         }
 
     async def get_session(self, session_id: UUID, user_id: UUID | None = None) -> dict | None:
@@ -60,12 +63,13 @@ class SocratesRepository:
                 "user_id": session["user_id"],
                 "title": session["title"],
                 "created_at": session["created_at"],
+                "agent_type": session.get("agent_type", "oracle"),
             }
         return None
 
-    async def get_sessions_by_user(self, user_id: UUID) -> list[dict]:
-        """사용자의 전체 세션 목록 조회."""
-        result = await asyncio.to_thread(self._select_sessions_by_user, str(user_id))
+    async def get_sessions_by_user(self, user_id: UUID, agent_type: str | None = None) -> list[dict]:
+        """사용자의 전체 세션 목록 조회. agent_type 지정 시 필터링."""
+        result = await asyncio.to_thread(self._select_sessions_by_user, str(user_id), agent_type)
 
         return (
             [
@@ -74,6 +78,7 @@ class SocratesRepository:
                     "user_id": s["user_id"],
                     "title": s["title"],
                     "created_at": s["created_at"],
+                    "agent_type": s.get("agent_type", "oracle"),
                 }
                 for s in result.data
             ]
@@ -277,14 +282,11 @@ class SocratesRepository:
             query = query.eq("user_id", user_id)
         return query.execute()
 
-    def _select_sessions_by_user(self, user_id: str):
-        return (
-            self.db.table("socrates_sessions")
-            .select("*")
-            .eq("user_id", user_id)
-            .order("created_at", desc=True)
-            .execute()
-        )
+    def _select_sessions_by_user(self, user_id: str, agent_type: str | None = None):
+        query = self.db.table("socrates_sessions").select("*").eq("user_id", user_id)
+        if agent_type:
+            query = query.eq("agent_type", agent_type)
+        return query.order("created_at", desc=True).execute()
 
     def _insert_message(self, data: dict):
         return self.db.table("socrates_messages").insert(data).execute()

@@ -6,9 +6,16 @@ from uuid import UUID
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
+import app.agents.librarian.graph  # noqa: F401
+
+# 에이전트 그래프 초기화 (import 시 registry 등록)
+import app.agents.oracle.graph  # noqa: F401
+import app.agents.socrates.graph  # noqa: F401
+from app.agents.base_context import AgentContext
 from app.agents.container import get_agent_container
-from app.agents.socrates.context import SocratesContext
-from app.agents.socrates.graph import socrates_graph
+from app.agents.librarian.state import build_librarian_chat_initial_state
+from app.agents.oracle.state import build_oracle_initial_state
+from app.agents.registry import AgentRegistry
 from app.agents.socrates.state import build_socrates_initial_state
 from app.config.llm import get_analytical_llm, get_streaming_llm
 from app.repositories.socrates_repository import SocratesRepository
@@ -43,9 +50,10 @@ class SocratesService:
         self,
         user_id: UUID,
         title: str | None = None,
+        agent_type: str = "oracle",
     ) -> dict:
         """새 채팅 세션 생성."""
-        return await self.socrates_repo.create_session(user_id, title)
+        return await self.socrates_repo.create_session(user_id, title, agent_type)
 
     async def get_session(self, session_id: UUID, user_id: UUID | None = None) -> dict | None:
         """ID로 세션 조회. user_id 지정 시 소유권도 함께 검증."""
@@ -63,15 +71,20 @@ class SocratesService:
         content: str,
         mode: str | None = None,
         source_context: dict | None = None,
+        agent_type: str | None = None,
     ) -> AsyncGenerator[str, None]:
         """메시지 전송 후 실시간 SSE 스트리밍으로 AI 응답 반환.
 
-        LangGraph 6노드 파이프라인으로 컨텍스트 준비 후 llm.astream()으로 토큰 단위 스트리밍.
+        AgentRegistry에서 agent_type 기반으로 적절한 그래프를 선택하여 실행한다.
+        agent_type이 None이면 세션에 저장된 agent_type을 사용한다.
         """
         session = await self.socrates_repo.get_session(session_id)
         if not session:
             yield f"data: {json.dumps({'error': 'Session not found'})}\n\n"
             return
+
+        # agent_type 결정: 요청값 > 세션값 > 기본값(oracle)
+        effective_agent_type = agent_type or session.get("agent_type", "oracle")
 
         # 사용자 메시지 저장
         user_message = HumanMessage(content=content)
@@ -84,9 +97,9 @@ class SocratesService:
             # 턴 수 계산 (HumanMessage 개수 기준)
             turn_count = sum(1 for m in messages if isinstance(m, HumanMessage))
 
-            # Runtime DI 컨텍스트 조립 (get_agent_container 1회 호출)
+            # Runtime DI 컨텍스트 조립 (AgentContext 공유)
             container = get_agent_container()
-            ctx = SocratesContext(
+            ctx = AgentContext(
                 hybrid_search=container.hybrid_search,
                 vector_repo=container.vector_repo,
                 diary_repo=container.diary_repo,
@@ -94,8 +107,16 @@ class SocratesService:
                 community_summary=container.community_summary,
             )
 
+            # agent_type별 초기 상태 빌더 선택
+            _STATE_BUILDERS = {
+                "socrates": build_socrates_initial_state,
+                "oracle": build_oracle_initial_state,
+                "librarian": build_librarian_chat_initial_state,
+            }
+            state_builder = _STATE_BUILDERS.get(effective_agent_type, build_oracle_initial_state)
+
             # 초기 상태 구성
-            initial_state = build_socrates_initial_state(
+            initial_state = state_builder(
                 messages=messages,
                 user_id=str(user_id),
                 session_id=str(session_id),
@@ -105,11 +126,27 @@ class SocratesService:
                 source_context=source_context,
             )
 
-            # LangGraph 6노드 파이프라인 실행 (context= 파라미터로 Runtime DI 주입)
-            result = await socrates_graph.ainvoke(initial_state, context=ctx)
+            # AgentRegistry에서 agent_type 기반 그래프 선택
+            graph = AgentRegistry.get(effective_agent_type)
+            if graph is None:
+                logger.warning("agent_type=%s에 해당하는 그래프 없음, oracle 폴백", effective_agent_type)
+                from app.agents.oracle.graph import oracle_graph
 
-            llm_messages = result["llm_messages"]
-            references = result["references"]
+                graph = oracle_graph
+
+            # LangGraph 파이프라인 실행 (context= 파라미터로 Runtime DI 주입)
+            result = await graph.ainvoke(initial_state, context=ctx)
+
+            if result.get("error"):
+                logger.warning("파이프라인 경고 (session=%s): %s", session_id, result["error"])
+
+            llm_messages = result.get("llm_messages")
+            if not llm_messages:
+                logger.error("파이프라인 llm_messages 누락 (session=%s)", session_id)
+                yield f"data: {json.dumps({'error': '응답 생성에 실패했습니다'})}\n\n"
+                return
+
+            references = result.get("references", [])
 
             # LLM에서 토큰 단위 스트리밍
             llm = get_streaming_llm()

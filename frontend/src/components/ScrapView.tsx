@@ -38,7 +38,7 @@ export default function ScrapView() {
   const { vw: socratesVw, onMouseDown: onSocratesResize } = useResizePanel(22, 15, 40, 'left', 'scrap-socrates-vw')
   const [showOverflow, setShowOverflow] = useState(false)
   const [showChat, setShowChat] = useState(false)
-  const socratesChat = useSocratesChat({ mode: 'panel', context: { type: 'scrap' } })
+  const socratesChat = useSocratesChat({ mode: 'panel', context: { type: 'scrap' }, agentType: 'librarian' })
 
   // ── 모달 상태 ──
   const [selectedScrapId, setSelectedScrapId] = useState<string | null>(null)
