@@ -76,7 +76,7 @@ async def emotional_enrichment_node(state: SocratesState, runtime: Runtime[Agent
     socrates_repo = runtime.context.socrates_repo
 
     # 1. 메모리 포맷팅
-    formatted_memories = format_memories_with_budget(graded_memories)
+    formatted_memories = format_memories_with_budget(graded_memories, item_label="자료")
 
     # 2. 인지 왜곡 감지 (소크라테스식 반문 힌트 생성)
     contradiction_context = ""

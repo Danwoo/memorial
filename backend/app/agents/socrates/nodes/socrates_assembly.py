@@ -46,7 +46,7 @@ def _assemble_socrates_prompt(
 
     # RAG 컨텍스트 섹션
     context_sections = [
-        ("검색된 기억", formatted_memories),
+        ("참고 자료 (스크랩/다이어리)", formatted_memories),
         ("지식 그래프 컨텍스트", graph_context),
     ]
     for title, content in context_sections:

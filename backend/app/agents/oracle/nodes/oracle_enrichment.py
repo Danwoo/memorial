@@ -16,19 +16,9 @@ logger = logging.getLogger(__name__)
 
 CONNECTION_TURN_INTERVAL = 3
 
-# Oracle 에이전트 전환 제안 키워드
-_DIARY_KEYWORDS = ["일기", "다이어리", "감정", "오늘 하루", "기분", "느낌", "마음", "힘들", "슬프", "기쁘"]
-_SCRAP_KEYWORDS = ["스크랩", "저장한", "아티클", "링크", "기사", "요약", "정리", "연결", "관계"]
-
-
-def _detect_agent_switch_suggestion(message: str) -> str | None:
-    """사용자 메시지에서 에이전트 전환 힌트를 감지."""
-    msg = message.lower()
-    if any(kw in msg for kw in _DIARY_KEYWORDS):
-        return "socrates"
-    if any(kw in msg for kw in _SCRAP_KEYWORDS):
-        return "librarian"
-    return None
+# LLM 분류 결과(detected_mode)로 에이전트 전환 제안 판단
+_SOCRATES_MODES = {"evening", "insight", "assumption", "five_whys"}
+_LIBRARIAN_MODES = {"connection", "compare", "deep_dive"}
 
 
 async def oracle_enrichment_node(state: OracleState, runtime: Runtime[AgentContext]) -> dict:
@@ -48,24 +38,21 @@ async def oracle_enrichment_node(state: OracleState, runtime: Runtime[AgentConte
     search_query = state.get("search_query", user_query)
     graded_memories = state.get("graded_memories", [])
     turn_count = state.get("turn_count", 0)
+    detected_mode = state.get("detected_mode")
+    retrieval_plan = state.get("retrieval_plan", "full_rag")
 
     vector_repo = runtime.context.vector_repo
     socrates_repo = runtime.context.socrates_repo
 
     # 1. 메모리 포맷팅
-    formatted_memories = format_memories_with_budget(graded_memories)
+    formatted_memories = format_memories_with_budget(graded_memories, item_label="자료")
 
-    # 2. 에이전트 전환 제안 감지 (contradiction_context 필드 재활용)
+    # 2. LLM 분류 결과로 에이전트 전환 제안 (contradiction_context 필드 재활용)
     contradiction_context = ""
-    switch_target = _detect_agent_switch_suggestion(user_query)
-    if switch_target == "socrates":
-        contradiction_context = (
-            "[Oracle 제안] 이 주제는 다이어리 뷰의 Socrates 에이전트에서 더 깊은 감정 탐색이 가능합니다."
-        )
-    elif switch_target == "librarian":
-        contradiction_context = (
-            "[Oracle 제안] 저장하신 스크랩 탐색은 스크랩 뷰의 Librarian 에이전트에서 더 체계적으로 할 수 있습니다."
-        )
+    if detected_mode in _SOCRATES_MODES or retrieval_plan == "deep_diary":
+        contradiction_context = "[Oracle 제안] 다이어리 뷰의 Socrates에서 더 깊은 감정 탐색이 가능합니다."
+    elif detected_mode in _LIBRARIAN_MODES:
+        contradiction_context = "[Oracle 제안] 스크랩 뷰의 Librarian에서 더 체계적으로 탐색할 수 있습니다."
 
     # 3. 연결 제안 (3턴 간격)
     connection_suggestion = ""

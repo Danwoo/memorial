@@ -59,10 +59,10 @@ def _assemble_system_prompt(
         )
 
     context_sections = [
-        ("검색된 기억", formatted_memories),
+        ("참고 자료 (스크랩/다이어리)", formatted_memories),
         ("지식 그래프 컨텍스트", graph_context),
-        ("반대 의견 기억", contradiction_context),
-        ("최근 저널 항목", diary_context),
+        ("반대 의견 자료", contradiction_context),
+        ("최근 다이어리 항목", diary_context),
     ]
     for title, content in context_sections:
         if content:

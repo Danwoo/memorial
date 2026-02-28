@@ -21,9 +21,8 @@ def create_chat_graph(
 ) -> object:
     """파라미터화된 채팅 그래프 팩토리.
 
-    START → query_understanding → query_planner
-        → (no_retrieval) → enrichment → assembly → END
-        → (retrieval) → [memory + context (+ diary?)] → grading → enrichment → assembly → END
+    START → query_understanding → (no_retrieval) → enrichment → assembly → END
+                                → (retrieval) → [memory + context (+ diary?)] → grading → enrichment → assembly → END
 
     Args:
         state_class: 에이전트별 State 클래스 (SocratesState / OracleState / LibrarianChatState)
@@ -36,7 +35,6 @@ def create_chat_graph(
         include_diary: True면 diary_deep_retrieval 노드 포함 (Socrates 전용)
         no_retrieval_target: no_retrieval 플랜 시 라우팅 대상 노드 이름 (기본: enrichment_node_name)
     """
-    from app.agents.shared.query_planner import query_planner_node
     from app.agents.socrates.nodes.context_retrieval import context_retrieval_node
     from app.agents.socrates.nodes.grading import grading_node
     from app.agents.socrates.nodes.memory_retrieval import memory_retrieval_node
@@ -59,7 +57,6 @@ def create_chat_graph(
 
     # 공통 노드 등록
     graph.add_node("query_understanding", query_understanding_node, retry_policy=llm_retry)
-    graph.add_node("query_planner", query_planner_node)
     graph.add_node(actual_retrieval_name, actual_retrieval_node, retry_policy=network_retry)
     graph.add_node(
         "context_retrieval",
@@ -83,8 +80,8 @@ def create_chat_graph(
     graph.add_node(assembly_node_name, assembly_node)
 
     # 라우팅 함수 (클로저로 에이전트별 설정 캡처)
-    def route_after_planner(state: ChatPipelineState):
-        """query_planner → retrieval fan-out 또는 no_retrieval 직접 분기."""
+    def route_after_understanding(state: ChatPipelineState):
+        """query_understanding → retrieval fan-out 또는 no_retrieval 직접 분기."""
         plan = state.get("retrieval_plan", "full_rag")
         if plan == "no_retrieval":
             return no_retrieval_dest
@@ -101,8 +98,7 @@ def create_chat_graph(
 
     # 엣지 구성
     graph.add_edge(START, "query_understanding")
-    graph.add_edge("query_understanding", "query_planner")
-    graph.add_conditional_edges("query_planner", route_after_planner)
+    graph.add_conditional_edges("query_understanding", route_after_understanding)
 
     graph.add_edge(actual_retrieval_name, "grading")
     graph.add_edge("context_retrieval", "grading")

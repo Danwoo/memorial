@@ -54,9 +54,9 @@ def _assemble_oracle_prompt(
 
     # RAG 컨텍스트
     context_sections = [
-        ("검색된 기억", formatted_memories),
+        ("참고 자료 (스크랩/다이어리)", formatted_memories),
         ("지식 그래프 컨텍스트", graph_context),
-        ("최근 저널 항목", diary_context),
+        ("최근 다이어리 항목", diary_context),
     ]
     for title, content in context_sections:
         if content:
