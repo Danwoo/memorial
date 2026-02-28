@@ -122,7 +122,6 @@ class ScrapRepository:
         status: str,
         summary: str | None = None,
         tags: list[str] | None = None,
-        source_url: str | None = None,
         source_type: str | None = None,
         extracted_entities: list[dict] | None = None,
         extracted_relations: list[dict] | None = None,
@@ -137,8 +136,6 @@ class ScrapRepository:
             update_data["summary"] = summary
         if tags is not None:
             update_data["tags"] = tags
-        if source_url is not None:
-            update_data["source_url"] = source_url
         if source_type is not None:
             update_data["source_type"] = source_type
         if extracted_entities is not None:
@@ -353,7 +350,7 @@ class ScrapRepository:
     def _select_all_for_export(self, user_id: str, limit: int):
         return (
             self.db.table("scraps")
-            .select("id, title, summary, content, tags, source_url, source_type, created_at, updated_at")
+            .select("id, title, summary, content, tags, source_type, created_at, updated_at")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
             .limit(limit)
