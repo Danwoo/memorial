@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from langgraph.config import get_stream_writer
@@ -93,7 +94,7 @@ async def diary_deep_retrieval_node(state: SocratesState, runtime: Runtime[Agent
     # pass-through: deep_diary 플랜이 아니면 건너뜀.
     # context_retrieval이 diary_context를 이미 담당하므로 빈 dict 반환 (write 충돌 방지).
     retrieval_plan = state.get("retrieval_plan", "full_rag")
-    if retrieval_plan not in ("deep_diary",):
+    if retrieval_plan != "deep_diary":
         return {}
 
     writer = get_stream_writer()
@@ -103,7 +104,7 @@ async def diary_deep_retrieval_node(state: SocratesState, runtime: Runtime[Agent
     source_context = state.get("source_context")
     diary_repo = runtime.context.diary_repo
 
-    current_diary, emotion_trend = await __import__("asyncio").gather(
+    current_diary, emotion_trend = await asyncio.gather(
         _fetch_current_diary_context(source_context),
         _fetch_recent_diary_emotions(user_id, diary_repo),
         return_exceptions=True,

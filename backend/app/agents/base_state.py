@@ -40,7 +40,7 @@ class ChatPipelineState(BaseAgentState):
     rewritten_queries: list[str]
     search_query: str
 
-    # 동적 검색 전략 (query_planner 출력)
+    # 동적 검색 전략 (query_understanding 출력)
     retrieval_plan: str
 
     # memory_retrieval 출력

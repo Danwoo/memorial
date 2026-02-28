@@ -8,6 +8,7 @@ from app.agents.base_context import AgentContext
 from app.agents.librarian.state import LibrarianChatState
 from app.agents.shared.enrichment_utils import (
     build_contradiction_context,
+    format_connection_suggestion,
     format_memories_with_budget,
     get_previous_session_context,
     search_connection_suggestion,
@@ -77,13 +78,7 @@ async def analytical_enrichment_node(state: LibrarianChatState, runtime: Runtime
             high_threshold=CONNECTION_SUGGEST_HIGH,
         )
         if suggestion:
-            date = suggestion.get("created_at", "")[:10]
-            title = suggestion.get("title", "Untitled")
-            summary = suggestion.get("summary") or suggestion.get("content", "")[:200]
-            url = suggestion.get("source_url") or suggestion.get("url", "")
-            connection_suggestion = f"[{date}] {title}: {summary}"
-            if url:
-                connection_suggestion += f" (출처: {url})"
+            connection_suggestion = format_connection_suggestion(suggestion, include_url=True)
 
     # 4. 이전 세션 컨텍스트 (첫 턴, Librarian 레이블)
     previous_session_context = ""

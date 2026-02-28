@@ -57,6 +57,26 @@ def format_memories_with_budget(
     return "\n\n".join(lines)
 
 
+def format_connection_suggestion(suggestion: dict | None, include_url: bool = False) -> str:
+    """연결 제안 dict를 표시용 문자열로 변환.
+
+    Args:
+        suggestion: search_connection_suggestion 반환값 (None이면 빈 문자열 반환)
+        include_url: True면 source_url 출처 표시 (Librarian용)
+    """
+    if not suggestion:
+        return ""
+    date = suggestion.get("created_at", "")[:10]
+    title = suggestion.get("title", "Untitled")
+    summary = suggestion.get("summary") or suggestion.get("content", "")[:200]
+    result = f"[{date}] {title}: {summary}"
+    if include_url:
+        url = suggestion.get("source_url") or suggestion.get("url", "")
+        if url:
+            result += f" (출처: {url})"
+    return result
+
+
 async def search_connection_suggestion(
     query: str,
     user_id: str,

@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 GRAPH_CONTEXT_LIMIT = 8
 GRAPH_KEYWORD_MIN_LENGTH = 2
 GRAPH_MAX_KEYWORDS = 3
-JOURNAL_CONTEXT_LIMIT = 3
-JOURNAL_PREVIEW_LENGTH = 400
+DIARY_CONTEXT_LIMIT = 3
+DIARY_PREVIEW_LENGTH = 400
 
 
 async def _fetch_graph_context(query: str, limit: int = GRAPH_CONTEXT_LIMIT) -> str:
@@ -53,7 +53,7 @@ async def _fetch_graph_context(query: str, limit: int = GRAPH_CONTEXT_LIMIT) -> 
         return ""
 
 
-async def _fetch_diary_context(user_id: str, diary_repo, limit: int = JOURNAL_CONTEXT_LIMIT) -> str:
+async def _fetch_diary_context(user_id: str, diary_repo, limit: int = DIARY_CONTEXT_LIMIT) -> str:
     """최근 다이어리 항목 조회. 포맷된 텍스트 반환."""
     try:
         recent_diaries = await diary_repo.get_diaries(user_id, limit=limit)
@@ -62,7 +62,7 @@ async def _fetch_diary_context(user_id: str, diary_repo, limit: int = JOURNAL_CO
                 f"- [Diary {diary.get('created_at', '')[:10]}] "
                 f"Mood: {diary.get('mood', 'N/A')} | "
                 f"Tags: {', '.join(diary.get('tags', []) or [])} — "
-                f"{diary.get('content', '')[:JOURNAL_PREVIEW_LENGTH]}..."
+                f"{diary.get('content', '')[:DIARY_PREVIEW_LENGTH]}..."
                 for diary in recent_diaries
             )
     except Exception:

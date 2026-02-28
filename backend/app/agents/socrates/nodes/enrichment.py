@@ -7,6 +7,7 @@ from langgraph.runtime import Runtime
 from app.agents.base_context import AgentContext
 from app.agents.shared.enrichment_utils import (
     build_contradiction_context,
+    format_connection_suggestion,
     format_memories_with_budget,
     get_previous_session_context,
     get_topic_session_context,
@@ -58,11 +59,8 @@ async def enrichment_node(state: SocratesState, runtime: Runtime[AgentContext]) 
         referenced_ids = {m.get("id") for m in graded_memories}
         suggestion = await search_connection_suggestion(search_query, user_id, referenced_ids, vector_repo)
         if suggestion:
-            date = suggestion.get("created_at", "")[:10]
-            title = suggestion.get("title", "Untitled")
-            summary = suggestion.get("summary") or suggestion.get("content", "")[:200]
-            connection_suggestion = f"[{date}] {title}: {summary}"
-            logger.debug("연결 제안 발견: %s", title)
+            connection_suggestion = format_connection_suggestion(suggestion)
+            logger.debug("연결 제안 발견: %s", suggestion.get("title", ""))
 
     # 4. 이전 세션 / 주제 세션 컨텍스트 (첫 턴일 때만)
     previous_session_context = ""
