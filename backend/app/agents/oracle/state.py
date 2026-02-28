@@ -3,15 +3,15 @@ from langchain_core.messages import BaseMessage
 from app.agents.base_state import ChatPipelineState
 
 
-class SocratesState(ChatPipelineState):
-    """Socrates 다이어리 전문 에이전트 상태.
+class OracleState(ChatPipelineState):
+    """Oracle 범용 대화 에이전트 상태.
 
     ChatPipelineState를 상속. 현재는 추가 필드 없음.
-    향후 emotion_tracking, cognitive_patterns 등 Socrates 전용 필드 확장 예정.
+    향후 agent_switch_suggestion 등 Oracle 전용 필드 확장 예정.
     """
 
 
-def build_socrates_initial_state(
+def build_oracle_initial_state(
     messages: list[BaseMessage],
     user_id: str,
     session_id: str,
@@ -19,18 +19,8 @@ def build_socrates_initial_state(
     turn_count: int,
     mode: str | None = None,
     source_context: dict | None = None,
-) -> SocratesState:
-    """Socrates 그래프 실행을 위한 초기 상태 생성.
-
-    Args:
-        messages: 전체 대화 이력 (HumanMessage + AIMessage)
-        user_id: 소유 사용자 ID (str)
-        session_id: 현재 세션 ID (str)
-        user_query: 현재 턴 사용자 메시지 원문
-        turn_count: HumanMessage 누적 수
-        mode: 명시적 대화 모드 (없으면 None → query_understanding에서 자동 분류)
-        source_context: 현재 화면 컨텍스트 (스크랩/다이어리 정보)
-    """
+) -> OracleState:
+    """Oracle 그래프 실행을 위한 초기 상태 생성."""
     return {
         "messages": messages,
         "user_id": user_id,

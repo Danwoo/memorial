@@ -3,7 +3,7 @@ import logging
 from langgraph.config import get_stream_writer
 from langgraph.runtime import Runtime
 
-from app.agents.socrates.context import SocratesContext
+from app.agents.base_context import AgentContext
 from app.agents.socrates.state import SocratesState
 
 logger = logging.getLogger(__name__)
@@ -82,12 +82,20 @@ async def _fetch_current_diary_context(source_context: dict | None) -> str:
     return "\n".join(parts)
 
 
-async def diary_deep_retrieval_node(state: SocratesState, runtime: Runtime[SocratesContext]) -> dict:
+async def diary_deep_retrieval_node(state: SocratesState, runtime: Runtime[AgentContext]) -> dict:
     """다이어리 전문 컨텍스트 수집 노드.
 
     Socrates 에이전트 전용: 현재 작성 중인 다이어리 본문 + 최근 7일 감정 추이를 수집한다.
     결과는 state의 diary_context에 저장되어 socrates_assembly에서 활용된다.
+    retrieval_plan이 no_retrieval / simple_search / full_rag이면 건너뛴다.
+    deep_diary 플랜일 때만 상세 다이어리 검색을 수행한다.
     """
+    # pass-through: deep_diary 플랜이 아니면 건너뜀.
+    # context_retrieval이 diary_context를 이미 담당하므로 빈 dict 반환 (write 충돌 방지).
+    retrieval_plan = state.get("retrieval_plan", "full_rag")
+    if retrieval_plan not in ("deep_diary",):
+        return {}
+
     writer = get_stream_writer()
     writer({"node": "diary_deep_retrieval", "status": "started"})
 
