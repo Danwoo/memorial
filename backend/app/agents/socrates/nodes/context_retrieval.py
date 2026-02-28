@@ -85,7 +85,7 @@ async def _fetch_community_context(user_id: str, query: str, community_summary) 
                 relevant.append(s["summary"])
 
         if not relevant:
-            relevant = [s["summary"] for s in summaries[:2]]
+            return ""
 
         return "\n".join(f"- {s}" for s in relevant[:3])
     except Exception:

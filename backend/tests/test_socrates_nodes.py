@@ -130,7 +130,7 @@ class TestGradingNode:
         )
 
         with (
-            patch("app.agents.socrates.nodes.grading._grade_relevance", return_value=[]),
+            patch("app.agents.socrates.nodes.grading._grade_relevance", return_value=([], False)),
             patch("app.agents.socrates.nodes.grading.get_stream_writer", return_value=lambda x: None),
         ):
             result = await grading_node(state)
@@ -151,7 +151,7 @@ class TestGradingNode:
         )
 
         with (
-            patch("app.agents.socrates.nodes.grading._grade_relevance", return_value=memories),
+            patch("app.agents.socrates.nodes.grading._grade_relevance", return_value=(memories, False)),
             patch("app.agents.socrates.nodes.grading.get_stream_writer", return_value=lambda x: None),
         ):
             result = await grading_node(state)
@@ -171,7 +171,7 @@ class TestGradingNode:
         )
 
         with (
-            patch("app.agents.socrates.nodes.grading._grade_relevance", return_value=[]),
+            patch("app.agents.socrates.nodes.grading._grade_relevance", return_value=([], False)),
             patch("app.agents.socrates.nodes.grading.get_stream_writer", return_value=lambda x: None),
         ):
             result = await grading_node(state)

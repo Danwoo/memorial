@@ -76,7 +76,7 @@ async def _find_contradicting_scraps(
                 if r.get("id") not in current_ids:
                     contradicting.append(r)
         except Exception:
-            pass
+            logger.debug("스크랩 반론 검색 실패: %s", cq, exc_info=True)
     return contradicting[:3]
 
 

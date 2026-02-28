@@ -13,10 +13,6 @@ SCRAP_SEARCH_LIMIT = 6
 DENSE_THRESHOLD = 0.25
 # 태그 기반 클러스터 검색 설정
 TAG_CLUSTER_LIMIT = 5
-# 그래프 탐색 설정
-GRAPH_CONTEXT_LIMIT = 8
-GRAPH_KEYWORD_MIN_LENGTH = 2
-GRAPH_MAX_KEYWORDS = 4
 
 
 async def _fetch_hybrid_scraps(
@@ -71,42 +67,6 @@ async def _fetch_tag_cluster_context(
         return []
 
 
-async def _fetch_graph_context_for_scrap(query: str, limit: int = GRAPH_CONTEXT_LIMIT) -> str:
-    """지식 그래프에서 관련 엔티티 조회. 스크랩 연결 강조."""
-    try:
-        from app.config.dependencies import get_mindmap_repository
-
-        graph_repo = get_mindmap_repository()
-        keywords = [word for word in query.split() if len(word) >= GRAPH_KEYWORD_MIN_LENGTH][:GRAPH_MAX_KEYWORDS]
-        graph_results = []
-        for keyword in keywords:
-            related = await graph_repo.get_related_context(keyword, depth=2)
-            graph_results.extend(related)
-
-        if not graph_results:
-            return ""
-
-        seen: set[str] = set()
-        unique_results = []
-        for entity in graph_results:
-            name = entity.get("name", "")
-            if name and name not in seen:
-                seen.add(name)
-                unique_results.append(entity)
-
-        graph_lines = []
-        for entity in unique_results[:limit]:
-            name = entity.get("name", "")
-            label = entity.get("label", "")
-            rel = entity.get("rel_type", "RELATED_TO")
-            dist = entity.get("distance", 1)
-            graph_lines.append(f"- {name} ({label}) -- {rel} (depth: {dist})")
-        return "\n".join(graph_lines)
-    except Exception:
-        logger.exception("Scrap graph context fetch 실패")
-        return ""
-
-
 async def knowledge_retrieval_node(state: SocratesState, runtime: Runtime[AgentContext]) -> dict:
     """스크랩 전문 지식 검색 노드 (Librarian 에이전트).
 
@@ -154,9 +114,6 @@ async def knowledge_retrieval_node(state: SocratesState, runtime: Runtime[AgentC
 
     raw_memories = raw_memories[:SCRAP_SEARCH_LIMIT]
 
-    # 그래프 컨텍스트 (지식 연결 시각화)
-    graph_context = await _fetch_graph_context_for_scrap(search_query)
-
     logger.debug(
         "knowledge_retrieval: query=%s, scraps=%d개, attempts=%d",
         search_query[:50],
@@ -169,5 +126,4 @@ async def knowledge_retrieval_node(state: SocratesState, runtime: Runtime[AgentC
     return {
         "raw_memories": raw_memories,
         "retrieval_attempts": retrieval_attempts + 1,
-        "graph_context": graph_context,
     }
