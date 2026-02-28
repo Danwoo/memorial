@@ -42,7 +42,7 @@ class ScrapService:
         )
 
         embed_text = f"{scrap.title}\n\n{scrap.content}"
-        await self.vector_repo.save_embedding(memory_id=str(scrap.id), content=embed_text)
+        await self.vector_repo.save_embedding(scrap_id=str(scrap.id), content=embed_text)
 
         # 검색용 토큰 저장 (sparse search)
         await self._save_search_tokens(str(scrap.id), embed_text)
@@ -91,7 +91,6 @@ class ScrapService:
         tags: list[str],
         entities: list[dict] | None = None,
         relations: list[dict] | None = None,
-        source_url: str | None = None,
         source_type: str | None = None,
         user_id: str | None = None,
     ) -> bool:
@@ -101,7 +100,6 @@ class ScrapService:
             status="completed",
             summary=summary,
             tags=tags,
-            source_url=source_url,
             source_type=source_type,
             extracted_entities=entities or [],
             extracted_relations=relations or [],

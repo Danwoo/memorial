@@ -4,7 +4,7 @@ from uuid import UUID
 from langgraph.config import get_stream_writer
 from langgraph.runtime import Runtime
 
-from app.agents.socrates.context import SocratesContext
+from app.agents.base_context import AgentContext
 from app.agents.socrates.state import SocratesState
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ async def _fetch_hybrid_memories(
         return []
 
 
-async def memory_retrieval_node(state: SocratesState, runtime: Runtime[SocratesContext]) -> dict:
+async def memory_retrieval_node(state: SocratesState, runtime: Runtime[AgentContext]) -> dict:
     """하이브리드 메모리 검색 전담 노드 (Runtime DI 적용).
 
     query_understanding과 병렬로 실행되는 context_retrieval과 함께 fan-out 구조 형성.

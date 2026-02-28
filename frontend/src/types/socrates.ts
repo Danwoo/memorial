@@ -1,3 +1,5 @@
+export type AgentType = 'socrates' | 'librarian' | 'oracle'
+
 export type SocratesMode =
   | 'default'
   | 'insight'
@@ -7,6 +9,10 @@ export type SocratesMode =
   | 'assumption'
   | 'five_whys'
   | 'dialectic'
+  // Librarian 전용 모드
+  | 'connection'
+  | 'compare'
+  | 'deep_dive'
 
 export const SOCRATES_MODE_LABELS: Record<SocratesMode, { label: string; icon: string; description: string }> = {
   default: { label: '기본', icon: '💬', description: '자유로운 대화' },
@@ -17,6 +23,43 @@ export const SOCRATES_MODE_LABELS: Record<SocratesMode, { label: string; icon: s
   assumption: { label: '전제 분석', icon: '🔍', description: '숨겨진 가정 발견' },
   five_whys: { label: '5 Whys', icon: '🎯', description: '근본 원인 탐색' },
   dialectic: { label: '양면 비교', icon: '⚡', description: '선택지 비교 평가' },
+  // Librarian 전용 모드
+  connection: { label: '연결 발견', icon: '🔗', description: '스크랩 간 연결 탐색' },
+  compare: { label: '비교 분석', icon: '⚖️', description: '스크랩 비교' },
+  deep_dive: { label: '심층 탐구', icon: '🔭', description: '주제 심층 분석' },
+}
+
+/** 에이전트별 사용 가능한 모드 필터 */
+export const AGENT_MODES: Record<AgentType, SocratesMode[]> = {
+  socrates: ['default', 'insight', 'counter', 'evening', 'assumption', 'five_whys', 'dialectic'],
+  librarian: ['default', 'summary', 'connection', 'compare', 'deep_dive'],
+  oracle: ['default', 'insight', 'counter', 'summary', 'evening', 'assumption', 'five_whys', 'dialectic'],
+}
+
+export const AGENT_CONFIG: Record<AgentType, {
+  label: string
+  tagline: string
+  icon: string
+  color: string
+}> = {
+  socrates: {
+    label: 'Socrates',
+    tagline: '감정 코치 · 소크라테스식 반문',
+    icon: '🧠',
+    color: 'var(--color-warning)',
+  },
+  librarian: {
+    label: 'Librarian',
+    tagline: '지식 큐레이터 · 스크랩 탐색',
+    icon: '📚',
+    color: 'var(--accent-primary)',
+  },
+  oracle: {
+    label: 'Oracle',
+    tagline: '범용 대화 · 지식 동반자',
+    icon: '🔮',
+    color: 'var(--color-text-secondary)',
+  },
 }
 
 export interface SocratesReference {
@@ -44,6 +87,7 @@ export interface SocratesMessagePayload {
   content: string
   mode?: string
   source_context?: SourceContext
+  agent_type?: AgentType
 }
 
 export interface SocratesStreamChunk {
@@ -58,6 +102,7 @@ export interface SocratesSessionResponse {
   id: string
   title: string
   created_at: string
+  agent_type?: AgentType
 }
 
 export interface SocratesLocationState {

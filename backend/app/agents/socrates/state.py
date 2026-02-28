@@ -1,59 +1,14 @@
-from typing import Annotated, Literal, TypedDict
-
 from langchain_core.messages import BaseMessage
-from langgraph.graph.message import add_messages
+
+from app.agents.base_state import ChatPipelineState
 
 
-class SocratesState(TypedDict):
-    """Socrates 6노드 파이프라인 상태.
+class SocratesState(ChatPipelineState):
+    """Socrates 다이어리 전문 에이전트 상태.
 
-    각 필드 그룹이 담당 노드와 1:1 매핑된다.
-    messages는 add_messages 리듀서를 사용하여 중복 없이 병합된다 (v1.0).
+    ChatPipelineState를 상속. 현재는 추가 필드 없음.
+    향후 emotion_tracking, cognitive_patterns 등 Socrates 전용 필드 확장 예정.
     """
-
-    # 입력 (SocratesService가 초기화)
-    messages: Annotated[list[BaseMessage], add_messages]  # operator.add 대신 add_messages 리듀서 사용
-    user_id: str
-    session_id: str
-    user_query: str
-    turn_count: int
-    source_context: dict | None
-    explicit_mode: str | None
-
-    # query_understanding 출력
-    detected_mode: str | None
-    rewritten_queries: list[str]
-    search_query: str
-
-    # memory_retrieval 출력
-    raw_memories: list[dict]
-    retrieval_attempts: int
-
-    # context_retrieval 출력
-    graph_context: str
-    diary_context: str
-    community_context: str
-
-    # grading 출력 (defer=True — memory_retrieval + context_retrieval 완료 후 실행)
-    graded_memories: list[dict]
-    retrieval_quality: Literal["good", "retry", "empty"]
-
-    # enrichment 출력
-    formatted_memories: str
-    contradiction_context: str
-    connection_suggestion: str
-    user_profile: dict | None
-    previous_session_context: str
-    topic_session_context: str
-
-    # context_assembly 출력
-    system_prompt: str
-    llm_messages: list[BaseMessage]
-    references: list[dict]
-
-    # 제어
-    next_step: str | None
-    error: str | None
 
 
 def build_socrates_initial_state(
@@ -87,6 +42,7 @@ def build_socrates_initial_state(
         "detected_mode": None,
         "rewritten_queries": [],
         "search_query": user_query,
+        "retrieval_plan": "full_rag",
         "raw_memories": [],
         "retrieval_attempts": 0,
         "graph_context": "",

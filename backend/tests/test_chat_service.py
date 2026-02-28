@@ -49,7 +49,7 @@ class TestSocratesService:
         result = await chat_service.create_session(USER_ID)
 
         assert result["id"] == str(SESSION_ID_1)
-        mock_chat_repo.create_session.assert_called_once_with(USER_ID, None)
+        mock_chat_repo.create_session.assert_called_once_with(USER_ID, None, "oracle")
 
     @pytest.mark.asyncio
     async def test_create_session_with_title(self, chat_service, mock_chat_repo):
@@ -65,7 +65,7 @@ class TestSocratesService:
         result = await chat_service.create_session(USER_ID, title="오늘의 회고")
 
         assert result["title"] == "오늘의 회고"
-        mock_chat_repo.create_session.assert_called_once_with(USER_ID, "오늘의 회고")
+        mock_chat_repo.create_session.assert_called_once_with(USER_ID, "오늘의 회고", "oracle")
 
     # --- 세션 조회 테스트 ---
 

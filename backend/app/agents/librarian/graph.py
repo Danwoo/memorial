@@ -1,8 +1,10 @@
 from langgraph.graph import END, StateGraph
 
+from app.agents.graph_factory import create_chat_graph
 from app.agents.librarian.nodes.curator import curator_node
 from app.agents.librarian.nodes.ontologist import ontologist_node
 from app.agents.librarian.nodes.save import save_node
+from app.agents.librarian.state import LibrarianChatState
 from app.agents.state import AgentState
 
 
@@ -19,7 +21,7 @@ def route_after_curator(state: AgentState) -> str:
 
 
 def create_librarian_graph() -> StateGraph:
-    """Librarian 서브그래프 생성.
+    """Librarian 콘텐츠 수집 서브그래프 생성 (스크랩 저장 파이프라인).
 
     워크플로우:
         START -> curator -> (router) -> ontologist -> save -> END
@@ -40,14 +42,41 @@ def create_librarian_graph() -> StateGraph:
         "curator", route_after_curator, {"ontologist": "ontologist", "save": "save", "end": END}
     )
 
-    # Ontologist 완료 후 항상 Save로 이동
     graph.add_edge("ontologist", "save")
-
-    # Save 완료 후 종료
     graph.add_edge("save", END)
 
     return graph.compile()
 
 
-# 싱글톤 인스턴스
+def _build_librarian_chat_graph():
+    from app.agents.librarian.nodes.analytical_enrichment import analytical_enrichment_node
+    from app.agents.librarian.nodes.knowledge_retrieval import knowledge_retrieval_node
+    from app.agents.librarian.nodes.librarian_assembly import librarian_assembly_node
+
+    return create_chat_graph(
+        state_class=LibrarianChatState,
+        enrichment_node=analytical_enrichment_node,
+        assembly_node=librarian_assembly_node,
+        enrichment_node_name="analytical_enrichment",
+        assembly_node_name="librarian_assembly",
+        retrieval_node=knowledge_retrieval_node,
+        retrieval_node_name="knowledge_retrieval",
+        no_retrieval_target="analytical_enrichment",
+    )
+
+
+# 싱글톤 인스턴스 (콘텐츠 수집 파이프라인)
 librarian_graph = create_librarian_graph()
+
+# Librarian 채팅 그래프
+librarian_chat_graph = _build_librarian_chat_graph()
+
+
+# AgentRegistry 등록
+def _register_librarian():
+    from app.agents.registry import AgentRegistry
+
+    AgentRegistry.register("librarian", librarian_chat_graph)
+
+
+_register_librarian()

@@ -5,94 +5,96 @@ from langgraph.config import get_stream_writer
 
 from app.agents.socrates.state import SocratesState
 from app.config.llm import get_analytical_llm
+from app.utils import parse_llm_json_response
 
 logger = logging.getLogger(__name__)
 
-# 의도 자동 분류 키워드
-_COUNTER_KEYWORDS = ["반론", "반대", "비판", "다른 관점", "약점", "문제점", "단점", "criticism"]
-_SUMMARY_KEYWORDS = ["요약", "정리", "핵심", "줄여", "summarize"]
-_EVENING_KEYWORDS = ["하루 정리", "하루 돌아", "오늘 회고", "저녁 회고", "하루를 마무리"]
-_INSIGHT_KEYWORDS = ["깊이 생각", "분석해", "본질", "통찰"]
-_ASSUMPTION_KEYWORDS = ["전제", "가정", "전제 분석", "assumption", "숨겨진 가정"]
-_FIVE_WHYS_KEYWORDS = ["왜 그런", "근본 원인", "왜?", "5 whys", "파고들"]
-_DIALECTIC_KEYWORDS = ["비교", "뭐가 나을", "장단점", "vs", "선택지", "어떤 게 좋"]
+# 유효한 mode / retrieval_plan 값 집합
+_VALID_MODES = {
+    "insight",
+    "counter",
+    "summary",
+    "evening",
+    "assumption",
+    "five_whys",
+    "dialectic",
+    "connection",
+    "compare",
+    "deep_dive",
+}
+_VALID_PLANS = {"no_retrieval", "deep_diary", "simple_search", "full_rag"}
 
-QUERY_REWRITE_PROMPT = """You are a search query optimizer for a personal knowledge management system.
+# deep_diary는 초반 턴(≤2)에만 유효 — 이후 full_rag로 강등
+_DEEP_DIARY_MAX_TURN = 2
 
-Given a conversation history and the user's latest message, rewrite the message into
-a standalone search query that captures the user's actual information need.
+UNIFIED_QUERY_ANALYSIS_PROMPT = """You are a query analyzer for a personal knowledge management system with diary, scrap, and chat features.
 
-Rules:
-1. Resolve pronouns and references ("that", "it", "the one I mentioned", "그거", "아까")
-   using conversation context
-2. If the message is already a clear, self-contained query, return it unchanged
-3. For comparison requests ("compare X and Y"), output TWO queries separated by |||
-4. Keep the query in the same language as the user's message
-5. Output ONLY the rewritten query, nothing else
+Given the user's message and conversation context, output a JSON object with three fields:
 
-Example 1:
-History: User asked about React hooks. AI explained useState.
-Latest: "What about the other one?"
-Output: React useEffect hook
+1. "mode": The conversation intent. Choose ONE or null:
+   - "insight": Deep analysis, exploring assumptions, seeking understanding
+   - "counter": Requesting counterarguments, criticism, opposing viewpoints
+   - "summary": Asking for summary or synthesis
+   - "evening": End-of-day reflection, reviewing the day
+   - "assumption": Analyzing hidden premises
+   - "five_whys": Drilling into root causes
+   - "dialectic": Comparing options, weighing pros and cons
+   - "connection": Discovering links between saved scraps
+   - "compare": Systematic comparison of saved content
+   - "deep_dive": In-depth exploration of a specific topic
+   - null: General conversation, greeting, simple question
 
-Example 2:
-History: User discussed pros of functional programming
-Latest: "그거랑 OOP 비교해줘"
-Output: 함수형 프로그래밍 장점 ||| 객체지향 프로그래밍 장점
+2. "retrieval_plan": Search strategy. Choose ONE:
+   - "no_retrieval": Greetings, thanks, simple acks, small talk
+   - "deep_diary": Emotional expression, mood, journaling, personal struggles
+   - "simple_search": Simple factual lookup
+   - "full_rag": Complex questions needing multi-source analysis
 
-Example 3:
-Latest: "함수형 프로그래밍의 장점은?"
-Output: 함수형 프로그래밍의 장점"""
+3. "search_queries": Array of 1-2 rewritten search queries.
+   - CRITICAL: Keep queries in the SAME LANGUAGE as the user's message (Korean → Korean, English → English)
+   - Resolve pronouns using conversation history
+   - For comparisons, split into two queries
+   - For no_retrieval, return original message as-is
 
+Examples:
+User: "안녕" -> {"mode": null, "retrieval_plan": "no_retrieval", "search_queries": ["안녕"]}
+User: "오늘 발표 망해서 너무 창피해" -> {"mode": null, "retrieval_plan": "deep_diary", "search_queries": ["발표 실패 후 창피함"]}
+User: "이 주장에 반론 있어?" -> {"mode": "counter", "retrieval_plan": "full_rag", "search_queries": ["주장에 대한 반론"]}
+User: "함수형 vs OOP 비교" -> {"mode": "dialectic", "retrieval_plan": "full_rag", "search_queries": ["함수형 프로그래밍 장점", "OOP 장점"]}
+User: "응" -> {"mode": null, "retrieval_plan": "no_retrieval", "search_queries": ["응"]}
 
-def _detect_intent(message: str) -> str | None:
-    """사용자 메시지에서 대화 의도를 키워드 기반으로 자동 분류.
-
-    반환값은 mode 문자열 또는 None(기본).
-    """
-    msg = message.lower()
-    for keywords, mode_value in [
-        (_COUNTER_KEYWORDS, "counter"),
-        (_SUMMARY_KEYWORDS, "summary"),
-        (_EVENING_KEYWORDS, "evening"),
-        (_INSIGHT_KEYWORDS, "insight"),
-        (_ASSUMPTION_KEYWORDS, "assumption"),
-        (_FIVE_WHYS_KEYWORDS, "five_whys"),
-        (_DIALECTIC_KEYWORDS, "dialectic"),
-    ]:
-        if any(kw in msg for kw in keywords):
-            return mode_value
-    return None
+Return ONLY valid JSON."""
 
 
-async def _rewrite_query(messages: list, query: str) -> list[str]:
-    """대화 맥락 반영 쿼리 재작성. 복합 질의는 분해."""
-    if len(messages) <= 1:
-        return [query]
-
+async def _unified_query_analysis(messages: list, query: str) -> dict:
+    """단일 LLM 호출로 mode + retrieval_plan + search_queries 통합 분석."""
     recent = messages[-6:]
-    history = "\n".join(f"{'User' if isinstance(m, HumanMessage) else 'AI'}: {m.content[:200]}" for m in recent[:-1])
-    try:
-        llm = get_analytical_llm()
-        response = await llm.ainvoke(
-            [
-                SystemMessage(content=QUERY_REWRITE_PROMPT),
-                HumanMessage(content=f"History:\n{history}\n\nLatest: {query}"),
-            ]
-        )
-        queries = [q.strip() for q in response.content.strip().split("|||") if q.strip()]
-        return queries if queries else [query]
-    except Exception:
-        logger.warning("Query rewrite 실패, 원본 사용")
-        return [query]
+    history_lines = []
+    for m in recent[:-1]:
+        role = "User" if isinstance(m, HumanMessage) else "AI"
+        history_lines.append(f"{role}: {m.content[:200]}")
+    history = "\n".join(history_lines)
+
+    user_content = f"History:\n{history}\n\nLatest message: {query}" if history else f"Latest message: {query}"
+
+    llm = get_analytical_llm()
+    llm_with_json = llm.bind(response_format={"type": "json_object"})
+    response = await llm_with_json.ainvoke(
+        [
+            SystemMessage(content=UNIFIED_QUERY_ANALYSIS_PROMPT),
+            HumanMessage(content=user_content),
+        ]
+    )
+    return parse_llm_json_response(response.content.strip())
 
 
 async def query_understanding_node(state: SocratesState) -> dict:
-    """의도 분류 + 쿼리 재작성 노드.
+    """LLM 기반 통합 쿼리 분석 노드.
 
-    explicit_mode가 있으면 그대로 사용, 없으면 키워드 기반 자동 분류.
-    대화 맥락을 반영하여 검색 쿼리를 재작성하고 복합 질의를 분해한다.
-    StreamWriter로 진행 상태를 실시간 전달한다.
+    단일 LLM 호출로 대화 의도(mode), 검색 전략(retrieval_plan), 재작성 쿼리를 한번에 결정한다.
+    explicit_mode가 있으면 mode를 오버라이드한다.
+    deep_diary는 초반 턴(≤2)에만 유효하며, 이후 full_rag로 강등된다.
+    LLM 실패 시 안전 폴백(full_rag)을 사용한다.
     """
     writer = get_stream_writer()
     writer({"node": "query_understanding", "status": "started"})
@@ -100,31 +102,57 @@ async def query_understanding_node(state: SocratesState) -> dict:
     user_query = state["user_query"]
     messages = state["messages"]
     explicit_mode = state.get("explicit_mode")
+    turn_count = state.get("turn_count", 0)
 
-    # explicit_mode 우선, 없으면 자동 분류
-    mode = explicit_mode if explicit_mode else _detect_intent(user_query)
-
-    # 쿼리 재작성 (대명사 해소, 복합 쿼리 분해)
+    # LLM 통합 분석
     try:
-        rewritten_queries = await _rewrite_query(messages, user_query)
+        result = await _unified_query_analysis(messages, user_query)
+
+        # 필드 유효성 검증
+        raw_mode = result.get("mode")
+        mode = raw_mode if raw_mode in _VALID_MODES else None
+
+        raw_plan = result.get("retrieval_plan", "full_rag")
+        plan = raw_plan if raw_plan in _VALID_PLANS else "full_rag"
+
+        queries_raw = result.get("search_queries", [user_query])
+        rewritten_queries = [q.strip() for q in queries_raw if isinstance(q, str) and q.strip()]
+        if not rewritten_queries:
+            rewritten_queries = [user_query]
+
     except Exception:
-        logger.warning("query_understanding: 쿼리 재작성 실패, 원본 사용")
+        logger.warning("query_understanding: LLM 분석 실패, 안전 폴백 사용")
+        mode = None
+        plan = "full_rag"
         rewritten_queries = [user_query]
 
-    search_query = rewritten_queries[0] if rewritten_queries else user_query
-    logger.debug("쿼리 재작성: %r → %r", user_query[:50], search_query[:50])
+    # explicit_mode 오버라이드 (UI에서 모드 선택 시)
+    if explicit_mode and explicit_mode in _VALID_MODES:
+        mode = explicit_mode
+
+    # deep_diary 턴 게이팅: 턴이 깊어지면 full_rag로 강등
+    if plan == "deep_diary" and turn_count > _DEEP_DIARY_MAX_TURN:
+        logger.debug(
+            "query_understanding: turn_count=%d > %d, deep_diary → full_rag 강등", turn_count, _DEEP_DIARY_MAX_TURN
+        )
+        plan = "full_rag"
+
+    search_query = rewritten_queries[0]
+    logger.debug("query_understanding: mode=%s, plan=%s, queries=%r", mode, plan, rewritten_queries)
 
     writer(
         {
             "node": "query_understanding",
             "status": "done",
             "mode": mode,
+            "plan": plan,
             "queries": len(rewritten_queries),
         }
     )
 
     return {
         "detected_mode": mode,
+        "retrieval_plan": plan,
         "rewritten_queries": rewritten_queries,
         "search_query": search_query,
     }

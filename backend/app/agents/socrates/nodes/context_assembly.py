@@ -1,6 +1,5 @@
 import logging
 
-from langchain_core.messages import SystemMessage
 from langgraph.config import get_stream_writer
 
 from app.agents.prompts import (
@@ -8,7 +7,9 @@ from app.agents.prompts import (
     build_profile_section,
     get_mode_prompt,
 )
+from app.agents.shared.assembly_utils import build_llm_messages, build_references
 from app.agents.socrates.state import SocratesState
+from app.agents.token_budget import enforce_context_budget
 
 logger = logging.getLogger(__name__)
 
@@ -58,10 +59,10 @@ def _assemble_system_prompt(
         )
 
     context_sections = [
-        ("검색된 기억", formatted_memories),
+        ("참고 자료 (스크랩/다이어리)", formatted_memories),
         ("지식 그래프 컨텍스트", graph_context),
-        ("반대 의견 기억", contradiction_context),
-        ("최근 저널 항목", diary_context),
+        ("반대 의견 자료", contradiction_context),
+        ("최근 다이어리 항목", diary_context),
     ]
     for title, content in context_sections:
         if content:
@@ -93,34 +94,38 @@ async def context_assembly_node(state: SocratesState) -> dict:
     writer = get_stream_writer()
     writer({"node": "context_assembly", "status": "started"})
 
+    raw_sections = {
+        "formatted_memories": state.get("formatted_memories", ""),
+        "graph_context": state.get("graph_context", ""),
+        "contradiction_context": state.get("contradiction_context", ""),
+        "diary_context": state.get("diary_context", ""),
+        "community_context": state.get("community_context", ""),
+        "connection_suggestion": state.get("connection_suggestion", ""),
+        "previous_session_context": state.get("previous_session_context", ""),
+        "topic_session_context": state.get("topic_session_context", ""),
+    }
+    sections = enforce_context_budget(raw_sections)
+
     system_prompt = _assemble_system_prompt(
         mode=state.get("detected_mode"),
-        formatted_memories=state.get("formatted_memories", ""),
-        graph_context=state.get("graph_context", ""),
-        contradiction_context=state.get("contradiction_context", ""),
-        diary_context=state.get("diary_context", ""),
+        formatted_memories=sections["formatted_memories"],
+        graph_context=sections["graph_context"],
+        contradiction_context=sections["contradiction_context"],
+        diary_context=sections["diary_context"],
         user_profile=state.get("user_profile"),
-        connection_suggestion=state.get("connection_suggestion", ""),
+        connection_suggestion=sections["connection_suggestion"],
         source_context=state.get("source_context"),
-        community_context=state.get("community_context", ""),
-        previous_session_context=state.get("previous_session_context", ""),
-        topic_session_context=state.get("topic_session_context", ""),
+        community_context=sections["community_context"],
+        previous_session_context=sections["previous_session_context"],
+        topic_session_context=sections["topic_session_context"],
     )
 
-    messages = state["messages"]
-    llm_messages = [SystemMessage(content=system_prompt), *messages]
+    if len(system_prompt) > 100_000:
+        logger.warning("context_assembly: 시스템 프롬프트 크기 초과 (%d chars) — 절삭", len(system_prompt))
+        system_prompt = system_prompt[:100_000]
 
-    # 참조 메모리 (최대 5개, 프론트엔드용 포맷)
-    graded_memories = state.get("graded_memories", [])
-    references = [
-        {
-            "id": str(m.get("id", "")),
-            "title": m.get("title", ""),
-            "source_type": m.get("source_type", "NOTE"),
-            "created_at": str(m.get("created_at", ""))[:10],
-        }
-        for m in graded_memories[:5]
-    ]
+    llm_messages = build_llm_messages(system_prompt, state["messages"])
+    references = build_references(state.get("graded_memories", []))
 
     writer(
         {

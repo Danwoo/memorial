@@ -146,6 +146,7 @@ export default function DiaryView() {
   const socratesChat = useSocratesChat({
     mode: 'panel',
     context: { type: 'diary', content: markdownContent, title: `${selectedDate} 일기` },
+    agentType: 'socrates',
   })
 
   // 모바일 탭 전환
