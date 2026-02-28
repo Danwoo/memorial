@@ -47,7 +47,6 @@ async def save_node(state: AgentState) -> dict:
                 scrap_id=UUID(scrap_id),
                 summary="Spam detected",
                 tags=tags,
-                source_url=source_url,
                 source_type=source_type,
                 user_id=str(user_id) if user_id else None,
             )
@@ -58,7 +57,6 @@ async def save_node(state: AgentState) -> dict:
                 tags=tags,
                 entities=entities,
                 relations=relations,
-                source_url=source_url,
                 source_type=source_type,
                 user_id=str(user_id) if user_id else None,
             )
