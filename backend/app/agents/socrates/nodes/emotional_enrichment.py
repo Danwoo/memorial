@@ -1,3 +1,4 @@
+import json
 import logging
 from uuid import UUID
 
@@ -7,6 +8,7 @@ from langgraph.runtime import Runtime
 
 from app.agents.base_context import AgentContext
 from app.agents.shared.enrichment_utils import (
+    format_connection_suggestion,
     format_memories_with_budget,
     get_previous_session_context,
     get_topic_session_context,
@@ -43,8 +45,6 @@ async def _detect_cognitive_distortion(message: str) -> dict:
         llm_with_json = llm.bind(response_format={"type": "json_object"})
         prompt = COGNITIVE_DISTORTION_PROMPT.format(message=message[:500])
         response = await llm_with_json.ainvoke([HumanMessage(content=prompt)])
-        import json
-
         result = json.loads(response.content.strip())
         return result
     except Exception:
@@ -92,11 +92,8 @@ async def emotional_enrichment_node(state: SocratesState, runtime: Runtime[Agent
         referenced_ids = {m.get("id") for m in graded_memories}
         suggestion = await search_connection_suggestion(search_query, user_id, referenced_ids, vector_repo)
         if suggestion:
-            date = suggestion.get("created_at", "")[:10]
-            title = suggestion.get("title", "Untitled")
-            summary = suggestion.get("summary") or suggestion.get("content", "")[:200]
-            connection_suggestion = f"[{date}] {title}: {summary}"
-            logger.debug("연결 제안 발견: %s", title)
+            connection_suggestion = format_connection_suggestion(suggestion)
+            logger.debug("연결 제안 발견: %s", suggestion.get("title", ""))
 
     # 4. 이전 세션 / 주제 세션 컨텍스트 (첫 턴일 때만)
     previous_session_context = ""
