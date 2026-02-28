@@ -1,6 +1,5 @@
 import logging
 
-from langchain_core.messages import SystemMessage
 from langgraph.config import get_stream_writer
 
 from app.agents.prompts import (
@@ -8,6 +7,7 @@ from app.agents.prompts import (
     build_profile_section,
     get_mode_prompt,
 )
+from app.agents.shared.assembly_utils import build_llm_messages, build_references
 from app.agents.socrates.state import SocratesState
 from app.agents.token_budget import enforce_context_budget
 
@@ -114,19 +114,8 @@ async def socrates_assembly_node(state: SocratesState) -> dict:
         logger.warning("socrates_assembly: 시스템 프롬프트 크기 초과 (%d chars) — 절삭", len(system_prompt))
         system_prompt = system_prompt[:100_000]
 
-    messages = state["messages"]
-    llm_messages = [SystemMessage(content=system_prompt), *messages]
-
-    graded_memories = state.get("graded_memories", [])
-    references = [
-        {
-            "id": str(m.get("id", "")),
-            "title": m.get("title", ""),
-            "source_type": m.get("source_type", "NOTE"),
-            "created_at": str(m.get("created_at", ""))[:10],
-        }
-        for m in graded_memories[:5]
-    ]
+    llm_messages = build_llm_messages(system_prompt, state["messages"])
+    references = build_references(state.get("graded_memories", []))
 
     writer({"node": "socrates_assembly", "status": "done", "references": len(references)})
 

@@ -4,7 +4,7 @@ import logging
 from langgraph.config import get_stream_writer
 from langgraph.runtime import Runtime
 
-from app.agents.socrates.context import SocratesContext
+from app.agents.base_context import AgentContext
 from app.agents.socrates.state import SocratesState
 
 logger = logging.getLogger(__name__)
@@ -93,14 +93,20 @@ async def _fetch_community_context(user_id: str, query: str, community_summary) 
         return ""
 
 
-async def context_retrieval_node(state: SocratesState, runtime: Runtime[SocratesContext]) -> dict:
+async def context_retrieval_node(state: SocratesState, runtime: Runtime[AgentContext]) -> dict:
     """보조 컨텍스트 3축 병렬 수집 노드 (Runtime DI + CachePolicy 적용).
 
     graph + diary + community를 asyncio.gather로 내부 병렬화한다.
     CachePolicy(ttl=60)에 의해 같은 사용자가 60초 내 연속 메시지 시 결과를 재활용한다.
 
     memory_retrieval과 병렬로 실행되며, grading 노드(defer=True)가 둘 다 완료 후 실행된다.
+    retrieval_plan이 no_retrieval 또는 simple_search이면 실행을 건너뛴다 (pass-through).
     """
+    # pass-through: no_retrieval / simple_search는 graph+diary 검색 불필요
+    retrieval_plan = state.get("retrieval_plan", "full_rag")
+    if retrieval_plan in ("no_retrieval", "simple_search"):
+        return {"graph_context": "", "diary_context": "", "community_context": ""}
+
     writer = get_stream_writer()
     writer({"node": "context_retrieval", "status": "started"})
 
@@ -128,6 +134,14 @@ async def context_retrieval_node(state: SocratesState, runtime: Runtime[Socrates
         community_ctx = ""
 
     writer({"node": "context_retrieval", "status": "done"})
+
+    # deep_diary 플랜에서는 diary_deep_retrieval이 diary_context를 담당하므로
+    # 이 노드는 diary_context를 write하지 않음 (fan-out 동시 write 충돌 방지).
+    if retrieval_plan == "deep_diary":
+        return {
+            "graph_context": graph_ctx,
+            "community_context": community_ctx,
+        }
 
     return {
         "graph_context": graph_ctx,

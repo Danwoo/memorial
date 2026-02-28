@@ -5,15 +5,16 @@ from langgraph.config import get_stream_writer
 from langgraph.runtime import Runtime
 
 from app.agents.base_context import AgentContext
-from app.agents.socrates.state import SocratesState
+from app.agents.oracle.state import OracleState
+from app.agents.shared.enrichment_utils import (
+    format_memories_with_budget,
+    get_previous_session_context,
+    search_connection_suggestion,
+)
 
 logger = logging.getLogger(__name__)
 
-CONTEXT_BUDGET_CHARS = 4000
-CONNECTION_SUGGEST_LOW = 0.80
-CONNECTION_SUGGEST_HIGH = 0.92
 CONNECTION_TURN_INTERVAL = 3
-PREVIOUS_SESSION_LIMIT = 3
 
 # Oracle 에이전트 전환 제안 키워드
 _DIARY_KEYWORDS = ["일기", "다이어리", "감정", "오늘 하루", "기분", "느낌", "마음", "힘들", "슬프", "기쁘"]
@@ -30,73 +31,7 @@ def _detect_agent_switch_suggestion(message: str) -> str | None:
     return None
 
 
-def _format_memories_with_budget(memories: list[dict], budget: int = CONTEXT_BUDGET_CHARS) -> str:
-    """RRF 순위 기반 가변 길이 할당."""
-    if not memories:
-        return ""
-    n = len(memories)
-    weights = [1.0 / (i + 1) for i in range(n)]
-    total_w = sum(weights)
-    allocs = [int(budget * w / total_w) for w in weights]
-
-    lines = []
-    for i, mem in enumerate(memories):
-        date = mem.get("created_at", "")[:10]
-        title = mem.get("title", "Untitled")
-        tags = ", ".join(mem.get("tags", []) or [])
-        content = mem.get("summary") or mem.get("content", "")
-        alloc = allocs[i] if i < len(allocs) else 200
-        preview = content[:alloc]
-
-        header = f"--- 기억 #{i + 1} [{date}] {title} ---"
-        if tags:
-            header += f"\n태그: {tags}"
-        lines.append(f"{header}\n{preview}")
-    return "\n\n".join(lines)
-
-
-async def _search_connection_suggestion(
-    query: str,
-    user_id: str,
-    already_referenced_ids: set,
-    vector_repo,
-) -> dict | None:
-    """0.80~0.92 유사도 범위의 연결 후보 반환."""
-    try:
-        filters = {"user_id": user_id}
-        results = await vector_repo.similarity_search(
-            query,
-            limit=5,
-            threshold=CONNECTION_SUGGEST_LOW,
-            filters=filters,
-        )
-        for r in results:
-            sim = r.get("similarity", 0)
-            if CONNECTION_SUGGEST_LOW <= sim <= CONNECTION_SUGGEST_HIGH and r.get("id") not in already_referenced_ids:
-                return r
-    except Exception:
-        logger.exception("Oracle connection suggestion 실패")
-    return None
-
-
-async def _get_previous_session_context(user_id: UUID, socrates_repo) -> str:
-    """이전 세션 요약 컨텍스트 반환."""
-    try:
-        summaries = await socrates_repo.get_recent_session_summaries(user_id, limit=PREVIOUS_SESSION_LIMIT)
-        if not summaries:
-            return ""
-        lines = []
-        for s in reversed(summaries):
-            date = str(s["created_at"])[:10]
-            title = s.get("title", "")
-            lines.append(f"- [{date}] {title}: {s['summary']}")
-        return "\n\n**이전 대화 요약:**\n" + "\n".join(lines)
-    except Exception:
-        logger.exception("Oracle 이전 세션 컨텍스트 조회 실패")
-        return ""
-
-
-async def oracle_enrichment_node(state: SocratesState, runtime: Runtime[AgentContext]) -> dict:
+async def oracle_enrichment_node(state: OracleState, runtime: Runtime[AgentContext]) -> dict:
     """Oracle 범용 추가 컨텍스트 수집 + 에이전트 전환 감지 노드.
 
     1. formatted_memories: graded_memories를 RRF 가변 할당 포맷
@@ -118,7 +53,7 @@ async def oracle_enrichment_node(state: SocratesState, runtime: Runtime[AgentCon
     socrates_repo = runtime.context.socrates_repo
 
     # 1. 메모리 포맷팅
-    formatted_memories = _format_memories_with_budget(graded_memories)
+    formatted_memories = format_memories_with_budget(graded_memories)
 
     # 2. 에이전트 전환 제안 감지 (contradiction_context 필드 재활용)
     contradiction_context = ""
@@ -136,7 +71,7 @@ async def oracle_enrichment_node(state: SocratesState, runtime: Runtime[AgentCon
     connection_suggestion = ""
     if turn_count > 0 and turn_count % CONNECTION_TURN_INTERVAL == 0:
         referenced_ids = {m.get("id") for m in graded_memories}
-        suggestion = await _search_connection_suggestion(search_query, user_id, referenced_ids, vector_repo)
+        suggestion = await search_connection_suggestion(search_query, user_id, referenced_ids, vector_repo)
         if suggestion:
             date = suggestion.get("created_at", "")[:10]
             title = suggestion.get("title", "Untitled")
@@ -146,7 +81,7 @@ async def oracle_enrichment_node(state: SocratesState, runtime: Runtime[AgentCon
     # 4. 이전 세션 컨텍스트 (첫 턴)
     previous_session_context = ""
     if turn_count == 1:
-        previous_session_context = await _get_previous_session_context(UUID(user_id), socrates_repo)
+        previous_session_context = await get_previous_session_context(UUID(user_id), socrates_repo)
 
     # 5. 사용자 프로필
     user_profile = None

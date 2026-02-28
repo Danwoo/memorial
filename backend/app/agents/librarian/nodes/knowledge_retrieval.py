@@ -4,7 +4,7 @@ from langgraph.config import get_stream_writer
 from langgraph.runtime import Runtime
 
 from app.agents.base_context import AgentContext
-from app.agents.socrates.state import SocratesState
+from app.agents.librarian.state import LibrarianChatState
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ async def _fetch_tag_cluster_context(
         return []
 
 
-async def knowledge_retrieval_node(state: SocratesState, runtime: Runtime[AgentContext]) -> dict:
+async def knowledge_retrieval_node(state: LibrarianChatState, runtime: Runtime[AgentContext]) -> dict:
     """스크랩 전문 지식 검색 노드 (Librarian 에이전트).
 
     태그 기반 클러스터 검색 + 하이브리드 검색 + 그래프 탐색으로 스크랩 지식 검색.

@@ -13,6 +13,8 @@ import app.agents.oracle.graph  # noqa: F401
 import app.agents.socrates.graph  # noqa: F401
 from app.agents.base_context import AgentContext
 from app.agents.container import get_agent_container
+from app.agents.librarian.state import build_librarian_chat_initial_state
+from app.agents.oracle.state import build_oracle_initial_state
 from app.agents.registry import AgentRegistry
 from app.agents.socrates.state import build_socrates_initial_state
 from app.config.llm import get_analytical_llm, get_streaming_llm
@@ -105,8 +107,16 @@ class SocratesService:
                 community_summary=container.community_summary,
             )
 
+            # agent_type별 초기 상태 빌더 선택
+            _STATE_BUILDERS = {
+                "socrates": build_socrates_initial_state,
+                "oracle": build_oracle_initial_state,
+                "librarian": build_librarian_chat_initial_state,
+            }
+            state_builder = _STATE_BUILDERS.get(effective_agent_type, build_oracle_initial_state)
+
             # 초기 상태 구성
-            initial_state = build_socrates_initial_state(
+            initial_state = state_builder(
                 messages=messages,
                 user_id=str(user_id),
                 session_id=str(session_id),

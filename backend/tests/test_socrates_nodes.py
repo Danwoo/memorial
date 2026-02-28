@@ -287,30 +287,56 @@ class TestSocratesState:
 
 
 # ---------------------------------------------------------------------------
-# graph 라우팅 함수 테스트
+# query_planner 라우팅 테스트
 # ---------------------------------------------------------------------------
 
 
-class TestGraphRouting:
-    """graph.py route_after_grading 함수 테스트."""
+class TestQueryPlannerRouting:
+    """query_planner_node 검색 전략 분류 테스트."""
 
-    def test_route_retry(self):
-        """retrieval_quality='retry' → memory_retrieval 재실행."""
-        from app.agents.socrates.graph import route_after_grading
+    @pytest.mark.asyncio
+    async def test_no_retrieval_greeting(self):
+        """인사 쿼리 → no_retrieval."""
+        from app.agents.shared.query_planner import query_planner_node
 
-        state = _base_state(retrieval_quality="retry")
-        assert route_after_grading(state) == "memory_retrieval"
+        with patch("app.agents.shared.query_planner.get_stream_writer", return_value=lambda x: None):
+            state = _base_state(user_query="안녕하세요", turn_count=1)
+            result = await query_planner_node(state)
 
-    def test_route_good(self):
-        """retrieval_quality='good' → enrichment 진행."""
-        from app.agents.socrates.graph import route_after_grading
+        assert result["retrieval_plan"] == "no_retrieval"
 
-        state = _base_state(retrieval_quality="good")
-        assert route_after_grading(state) == "enrichment"
+    @pytest.mark.asyncio
+    async def test_no_retrieval_thanks(self):
+        """감사 쿼리 → no_retrieval."""
+        from app.agents.shared.query_planner import query_planner_node
 
-    def test_route_empty(self):
-        """retrieval_quality='empty' → enrichment 진행."""
-        from app.agents.socrates.graph import route_after_grading
+        with patch("app.agents.shared.query_planner.get_stream_writer", return_value=lambda x: None):
+            state = _base_state(user_query="감사합니다", turn_count=1)
+            result = await query_planner_node(state)
 
-        state = _base_state(retrieval_quality="empty")
-        assert route_after_grading(state) == "enrichment"
+        assert result["retrieval_plan"] == "no_retrieval"
+
+    @pytest.mark.asyncio
+    async def test_deep_diary_emotional_query(self):
+        """감정 키워드 포함 쿼리 → deep_diary (턴 <= 2)."""
+        from app.agents.shared.query_planner import query_planner_node
+
+        with patch("app.agents.shared.query_planner.get_stream_writer", return_value=lambda x: None):
+            state = _base_state(user_query="오늘 기분이 너무 우울해", turn_count=1)
+            result = await query_planner_node(state)
+
+        assert result["retrieval_plan"] == "deep_diary"
+
+    @pytest.mark.asyncio
+    async def test_full_rag_complex_query(self):
+        """복잡한 긴 쿼리 → full_rag."""
+        from app.agents.shared.query_planner import query_planner_node
+
+        with patch("app.agents.shared.query_planner.get_stream_writer", return_value=lambda x: None):
+            state = _base_state(
+                user_query="함수형 프로그래밍의 장단점을 내 스크랩들을 기반으로 정리해줘",
+                turn_count=3,
+            )
+            result = await query_planner_node(state)
+
+        assert result["retrieval_plan"] == "full_rag"
