@@ -9,6 +9,7 @@ from app.agents.prompts import (
     get_mode_prompt,
 )
 from app.agents.socrates.state import SocratesState
+from app.agents.token_budget import enforce_context_budget
 
 logger = logging.getLogger(__name__)
 
@@ -83,19 +84,35 @@ async def socrates_assembly_node(state: SocratesState) -> dict:
     writer = get_stream_writer()
     writer({"node": "socrates_assembly", "status": "started"})
 
+    raw_sections = {
+        "formatted_memories": state.get("formatted_memories", ""),
+        "graph_context": state.get("graph_context", ""),
+        "contradiction_context": state.get("contradiction_context", ""),
+        "diary_context": state.get("diary_context", ""),
+        "community_context": state.get("community_context", ""),
+        "connection_suggestion": state.get("connection_suggestion", ""),
+        "previous_session_context": state.get("previous_session_context", ""),
+        "topic_session_context": state.get("topic_session_context", ""),
+    }
+    sections = enforce_context_budget(raw_sections)
+
     system_prompt = _assemble_socrates_prompt(
         mode=state.get("detected_mode"),
-        formatted_memories=state.get("formatted_memories", ""),
-        graph_context=state.get("graph_context", ""),
-        contradiction_context=state.get("contradiction_context", ""),
-        diary_context=state.get("diary_context", ""),
+        formatted_memories=sections["formatted_memories"],
+        graph_context=sections["graph_context"],
+        contradiction_context=sections["contradiction_context"],
+        diary_context=sections["diary_context"],
         user_profile=state.get("user_profile"),
-        connection_suggestion=state.get("connection_suggestion", ""),
+        connection_suggestion=sections["connection_suggestion"],
         source_context=state.get("source_context"),
-        community_context=state.get("community_context", ""),
-        previous_session_context=state.get("previous_session_context", ""),
-        topic_session_context=state.get("topic_session_context", ""),
+        community_context=sections["community_context"],
+        previous_session_context=sections["previous_session_context"],
+        topic_session_context=sections["topic_session_context"],
     )
+
+    if len(system_prompt) > 100_000:
+        logger.warning("socrates_assembly: 시스템 프롬프트 크기 초과 (%d chars) — 절삭", len(system_prompt))
+        system_prompt = system_prompt[:100_000]
 
     messages = state["messages"]
     llm_messages = [SystemMessage(content=system_prompt), *messages]

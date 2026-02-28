@@ -78,7 +78,7 @@ async def _find_contradicting_memories(
                 if r.get("id") not in current_ids:
                     contradicting.append(r)
         except Exception:
-            pass
+            logger.debug("반론 검색 실패: %s", cq, exc_info=True)
 
     return contradicting[:MAX_CONTRADICTING_RESULTS]
 

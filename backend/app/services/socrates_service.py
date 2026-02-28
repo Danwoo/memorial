@@ -127,8 +127,16 @@ class SocratesService:
             # LangGraph 파이프라인 실행 (context= 파라미터로 Runtime DI 주입)
             result = await graph.ainvoke(initial_state, context=ctx)
 
-            llm_messages = result["llm_messages"]
-            references = result["references"]
+            if result.get("error"):
+                logger.warning("파이프라인 경고 (session=%s): %s", session_id, result["error"])
+
+            llm_messages = result.get("llm_messages")
+            if not llm_messages:
+                logger.error("파이프라인 llm_messages 누락 (session=%s)", session_id)
+                yield f"data: {json.dumps({'error': '응답 생성에 실패했습니다'})}\n\n"
+                return
+
+            references = result.get("references", [])
 
             # LLM에서 토큰 단위 스트리밍
             llm = get_streaming_llm()
