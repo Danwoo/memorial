@@ -8,7 +8,7 @@ from app.config.settings import get_settings
 # OpenAI 크레딧 충전 후 _USE_OPENROUTER = False 로 전환
 _USE_OPENROUTER = True
 _OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-_OPENROUTER_MAIN_MODEL = "deepseek/deepseek-chat:free"  # 메인 LLM (limit 넉넉, 한국어 양호)
+_OPENROUTER_MAIN_MODEL = "upstage/solar-pro-3:free"  # 메인 LLM (한국어 특화, 현재 작동 모델)
 _TAGGER_MODEL = "upstage/solar-pro-3:free"  # 태그 전용 (한국어 특화)
 _OPENAI_MODEL = "gpt-4o-mini"  # OpenAI 직접 사용 시
 
