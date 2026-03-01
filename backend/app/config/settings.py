@@ -19,7 +19,9 @@ class Settings(BaseSettings):
     ]
     ALLOWED_ORIGINS: str | None = None  # 쉼표로 구분된 프로덕션 도메인 (예: "https://memoir.fly.dev")
 
-    OPENAI_API_KEY: str
+    EMBEDDING_PROVIDER: str = "gemini"  # "gemini" | "openai"
+    OPENAI_API_KEY: str | None = None
+    GOOGLE_API_KEY: str | None = None
     OPENROUTER_API_KEY: str | None = None
 
     SUPABASE_URL: str
