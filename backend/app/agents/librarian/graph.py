@@ -95,11 +95,3 @@ def build_librarian_chat_react_graph():
         tools=LIBRARIAN_TOOLS,
         system_prompt=LIBRARIAN_REACT_SYSTEM_PROMPT,
     )
-
-
-def build_librarian_chat_initial_state(query: str, context: str, config) -> dict:
-    """Librarian 채팅 초기 상태를 생성한다."""
-    from langchain_core.messages import HumanMessage
-
-    content = f"{context}\n\n{query}" if context else query
-    return {"messages": [HumanMessage(content=content)]}

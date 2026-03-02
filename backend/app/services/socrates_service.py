@@ -8,10 +8,13 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 
 import app.agents.analyst.graph  # noqa: F401
+import app.agents.curator.graph  # noqa: F401
 import app.agents.librarian.graph  # noqa: F401
 
 # 에이전트 그래프 초기화 (import 시 registry 등록)
 import app.agents.oracle.graph  # noqa: F401
+import app.agents.reporter.graph  # noqa: F401
+import app.agents.scribe.graph  # noqa: F401
 import app.agents.socrates.graph  # noqa: F401
 import app.agents.supervisor.graph  # noqa: F401
 from app.agents.base_context import AgentContext
@@ -111,8 +114,11 @@ class SocratesService:
 
                 graph = oracle_graph
 
-            # socrates ReAct 에이전트: astream_events로 tool 이벤트 + 스트리밍 응답 처리
-            if effective_agent_type == "socrates" and USE_REACT_STREAM:
+            # ReAct 에이전트 타입 집합 — 이 타입들은 _stream_react_agent 경로로 처리
+            REACT_AGENT_TYPES = {"socrates", "librarian", "analyst", "scribe", "curator", "reporter"}
+
+            # ReAct 에이전트: astream_events로 tool 이벤트 + 스트리밍 응답 처리
+            if effective_agent_type in REACT_AGENT_TYPES and USE_REACT_STREAM:
                 async for sse_chunk in self._stream_react_agent(
                     graph=graph,
                     messages=messages,
