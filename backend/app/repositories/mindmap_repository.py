@@ -603,6 +603,32 @@ class MindmapRepository:
             logger.exception("엔티티 이름 검색 실패: query='%s'", query)
             return []
 
+    async def search_entities(
+        self,
+        keyword: str,
+        user_id: str,
+        entity_type: str = "",
+        limit: int = 10,
+    ) -> list[dict]:
+        """키워드와 엔티티 타입으로 Knowledge Graph 엔티티를 검색한다.
+
+        Args:
+            keyword: 엔티티 이름 검색 키워드
+            user_id: 사용자 ID (해당 사용자의 Memory에 연결된 엔티티만 반환)
+            entity_type: 필터링할 엔티티 타입. 빈 문자열이면 전체 타입 반환
+            limit: 최대 반환 결과 수
+
+        Returns:
+            name, type 필드를 가진 dict 리스트
+        """
+        results = await self.search_entities_by_name(keyword, user_id)
+
+        if entity_type:
+            normalized = entity_type.strip()
+            results = [r for r in results if r.get("type", "") == normalized]
+
+        return results[: max(1, limit)]
+
     def _sync_search_memories_by_entities(self, entity_names: list[str], user_id: str, limit: int) -> list[dict]:
         """엔티티 이름으로 연결된 메모리 ID 검색 (동기)."""
         conn = self._get_conn()
