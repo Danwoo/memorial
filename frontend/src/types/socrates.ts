@@ -96,6 +96,11 @@ export interface SocratesStreamChunk {
   error?: string
   title?: string
   references?: SocratesReference[]
+  step?: string                          // 도구 이름 (status 이벤트 시)
+  status?: 'started' | 'done'           // 도구 실행 상태
+  args?: string                          // 도구 인자 (선택)
+  detail?: string                        // 도구 결과 상세 (선택)
+  agent?: string                         // 에이전트 이름 (agent_switch 이벤트 시)
 }
 
 export interface SocratesSessionResponse {
