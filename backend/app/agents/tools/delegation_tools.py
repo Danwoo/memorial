@@ -11,7 +11,11 @@ from app.agents.tools._context import get_user_id
 
 logger = logging.getLogger(__name__)
 
-# 위임 최대 깊이 (무한 루프 방지)
+# 위임 최대 깊이 상수.
+# 참고: 각 도구는 서브 에이전트를 재귀 호출하는 대신 하위 도구(retrieval_tools 등)를
+# 직접 ainvoke 하므로 delegation_depth는 실제로 증가하지 않는다.
+# 무한 루프 방지는 LangGraph 자체의 recursion_limit(RunnableConfig)이 담당한다.
+# 따라서 아래 depth 체크는 방어적 코드로만 남겨두며, 실제 동작에는 영향 없다.
 _MAX_DELEGATION_DEPTH = 2
 
 
