@@ -9,6 +9,8 @@ import {
   createSocratesSession, fetchSocratesHistory, sendSocratesMessage, readSSEStream,
   fetchBriefing, sendFeedback, fetchFeedbacks, createScrap,
 } from '../api'
+import type { AgentStep, AgentStepStatus } from '../types/agentStep'
+import { getToolLabel } from '../types/agentStep'
 
 const ERROR_MESSAGE = '죄송합니다, 오류가 발생했습니다. 다시 시도해주세요.'
 
@@ -56,6 +58,8 @@ export interface UseSocratesChatReturn {
   sendMessageDirect: (text: string) => void
   agentType: AgentType
   availableModes: SocratesMode[]
+  agentSteps: AgentStep[]
+  isThinking: boolean
 }
 
 export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesChatReturn {
@@ -82,6 +86,8 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
   const [feedbacks, setFeedbacks] = useState<Map<number, 'good' | 'bad'>>(new Map())
   const [showScrollBtn, setShowScrollBtn] = useState(false)
   const [selectedMode, setSelectedMode] = useState<SocratesMode>('default')
+  const [agentSteps, setAgentSteps] = useState<AgentStep[]>([])
+  const [isStreaming, setIsStreaming] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -231,6 +237,8 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     setMessages(prev => [...prev, { role: 'user', content: userMessage }])
     setIsLoading(true)
+    setAgentSteps([])
+    setIsStreaming(false)
 
     const abortController = new AbortController()
     abortControllerRef.current = abortController
@@ -272,14 +280,38 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
       )
 
       setMessages(prev => [...prev, { role: 'assistant', content: '' }])
+      setIsStreaming(true)
 
-      const result = await readSSEStream(response, (accumulated) => {
-        setMessages(prev => {
-          const updated = [...prev]
-          updated[updated.length - 1] = { role: 'assistant', content: accumulated }
-          return updated
-        })
-      })
+      const result = await readSSEStream(
+        response,
+        (accumulated) => {
+          setMessages(prev => {
+            const updated = [...prev]
+            updated[updated.length - 1] = { role: 'assistant', content: accumulated }
+            return updated
+          })
+        },
+        (chunk) => {
+          // 도구 시작 이벤트
+          if (chunk.step && chunk.status === 'started') {
+            setAgentSteps(prev => [...prev, {
+              id: `${chunk.step}-${Date.now()}`,
+              tool: chunk.step!,
+              label: getToolLabel(chunk.step!),
+              status: 'active' as AgentStepStatus,
+              startedAt: Date.now(),
+            }])
+          }
+          // 도구 완료 이벤트
+          if (chunk.step && chunk.status === 'done') {
+            setAgentSteps(prev => prev.map(s =>
+              s.tool === chunk.step && s.status === 'active'
+                ? { ...s, status: 'done' as AgentStepStatus, detail: chunk.detail, endedAt: Date.now() }
+                : s
+            ))
+          }
+        },
+      )
 
       if (result.references && result.references.length > 0) {
         setMessages(prev => {
@@ -301,6 +333,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     } finally {
       abortControllerRef.current = null
       setIsLoading(false)
+      setIsStreaming(false)
     }
   }, [input, isLoading, sessionId, selectedMode, agentType, navigate, toast, triggerRefresh, pathPrefix, isStandalone])
 
@@ -353,6 +386,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
 
   const hasBriefingContent = !!(briefing && (briefing.today_scraps?.count ?? 0) > 0)
   const availableModes = AGENT_MODES[agentType]
+  const isThinking = isStreaming && agentSteps.some(s => s.status === 'active')
 
   return {
     sessionId,
@@ -383,5 +417,7 @@ export function useSocratesChat(options: UseSocratesChatOptions): UseSocratesCha
     setSelectedMode,
     agentType,
     availableModes,
+    agentSteps,
+    isThinking,
   }
 }
