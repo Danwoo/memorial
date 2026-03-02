@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from langchain.agents import create_agent
 from langchain_core.tools import tool
-from langgraph.prebuilt import create_react_agent
 
 from app.agents.supervisor.prompts import SUPERVISOR_SYSTEM_PROMPT
 
@@ -45,10 +45,10 @@ def build_supervisor_graph():
     from app.config.llm import get_analytical_llm
 
     llm = get_analytical_llm()
-    return create_react_agent(
-        model=llm,
+    return create_agent(
+        llm,
         tools=SUPERVISOR_TOOLS,
-        prompt=SUPERVISOR_SYSTEM_PROMPT,
+        system_prompt=SUPERVISOR_SYSTEM_PROMPT,
     )
 
 
