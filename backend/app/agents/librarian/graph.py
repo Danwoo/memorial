@@ -80,3 +80,26 @@ def _register_librarian():
 
 
 _register_librarian()
+
+
+def build_librarian_chat_react_graph():
+    """Librarian 채팅 ReAct 에이전트 그래프를 빌드한다."""
+    from app.agents.librarian.prompts_react import LIBRARIAN_REACT_SYSTEM_PROMPT
+    from app.agents.react_agent import build_react_agent
+    from app.agents.tools import LIBRARIAN_TOOLS
+    from app.config.llm import get_analytical_llm
+
+    llm = get_analytical_llm()
+    return build_react_agent(
+        llm=llm,
+        tools=LIBRARIAN_TOOLS,
+        system_prompt=LIBRARIAN_REACT_SYSTEM_PROMPT,
+    )
+
+
+def build_librarian_chat_initial_state(query: str, context: str, config) -> dict:
+    """Librarian 채팅 초기 상태를 생성한다."""
+    from langchain_core.messages import HumanMessage
+
+    content = f"{context}\n\n{query}" if context else query
+    return {"messages": [HumanMessage(content=content)]}
