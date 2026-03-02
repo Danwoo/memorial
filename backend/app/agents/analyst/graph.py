@@ -30,3 +30,13 @@ def register_analyst_graph(registry) -> None:
     """Analyst 에이전트를 레지스트리에 등록한다."""
     graph = build_analyst_react_graph()
     registry.register("analyst", graph)
+
+
+# AgentRegistry 등록
+def _register_analyst():
+    from app.agents.registry import AgentRegistry
+
+    register_analyst_graph(AgentRegistry)
+
+
+_register_analyst()

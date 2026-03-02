@@ -7,11 +7,13 @@ from uuid import UUID
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 
+import app.agents.analyst.graph  # noqa: F401
 import app.agents.librarian.graph  # noqa: F401
 
 # 에이전트 그래프 초기화 (import 시 registry 등록)
 import app.agents.oracle.graph  # noqa: F401
 import app.agents.socrates.graph  # noqa: F401
+import app.agents.supervisor.graph  # noqa: F401
 from app.agents.base_context import AgentContext
 from app.agents.container import get_agent_container
 from app.agents.librarian.state import build_librarian_chat_initial_state

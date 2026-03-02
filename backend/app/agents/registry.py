@@ -19,10 +19,10 @@ class AgentRegistry:
 
     @classmethod
     def get(cls, agent_type: str):
-        """agent_type으로 등록된 그래프 반환. 없으면 oracle로 폴백."""
+        """agent_type으로 등록된 그래프 반환. 없으면 socrates로 폴백."""
         if agent_type not in cls._agents:
-            logger.warning("미등록 agent_type=%s, oracle로 폴백", agent_type)
-            return cls._agents.get("oracle")
+            logger.warning("미등록 agent_type=%s, socrates로 폴백", agent_type)
+            return cls._agents.get("socrates")
         return cls._agents[agent_type]
 
     @classmethod
