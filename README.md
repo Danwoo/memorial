@@ -1,155 +1,104 @@
 # Memoir AI
 
-AI 기반 개인 지식 관리(PKM) 시스템. 읽고, 생각하고, 깨달은 것들을 AI와 함께 정리하는 **지능형 인지 장부**.
+> A personal app for capturing what you read, think, and write — and making sense of it over time.
 
-## 주요 기능
+[![Live Demo](https://img.shields.io/badge/demo-memoir--knowledge.vercel.app-4f86f4?style=flat-square)](https://memoir-knowledge.vercel.app/demo)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/Danwoo/memorial/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/Danwoo/memorial/actions)
 
-### 수집 (Memory)
-- 웹 URL, 메모, PDF 저장 → AI 자동 분류/태그/요약
-- 고급 검색 (태그, 소스, 날짜, 정렬) + 벡터 유사도 검색
-- 중복 감지 및 병합, 일괄 관리
-
-### 대화 (Chat with Socrates)
-- 저장된 기억을 바탕으로 한 맥락 인식 AI 대화
-- 실시간 스트리밍 응답 + 출처 참조 표시
-- 사용자 프로필 기반 개인화 + 장기 맥락
-
-### 회고 (Journal)
-- 3-Panel 레이아웃: 날짜 목록 / Tiptap 에디터 / AI 회고 패널
-- 서버 자동 저장 + @멘션 메모리 참조
-- AI 회고 질문 + 일간 요약 초안
-
-### 발견 (Knowledge Graph)
-- 3D 지식 그래프 시각화 (react-force-graph)
-- 클러스터/트렌드/허브/고립 노드 인사이트
-
-### 대시보드
-- 오늘의 브리핑 + 추천 질문 + 활동 히트맵
-- 주간/월간 AI 리포트 + AI 인사이트
-
-### 추가 기능
-- 데모 모드 (`/demo`) — 비로그인 체험
-- Ctrl+K 글로벌 검색 (`tag:`, `source:` 필터 문법)
-- 데이터 내보내기 + PWA 오프라인 지원
+**[한국어](#한국어)** · [**Live Demo →**](https://memoir-knowledge.vercel.app/demo) · [**Issues**](https://github.com/Danwoo/memorial/issues)
 
 ---
 
-## 기술 스택
-
-| 구분 | 기술 |
-|------|------|
-| **Frontend** | React 18 + TypeScript + Vite |
-| **Editor** | Tiptap (ProseMirror) |
-| **3D Graph** | react-force-graph-3d / 2d |
-| **Backend** | FastAPI + Python 3.11 |
-| **AI Agent** | LangGraph (Socrates + Librarian) |
-| **LLM** | OpenAI GPT-4o / GPT-4o-mini |
-| **Database** | Supabase (PostgreSQL + pgvector) |
-| **Graph DB** | KuzuDB |
-| **Auth** | Supabase Auth (Google/Kakao OAuth) |
-| **Deploy** | Fly.io (Backend) + Vercel (Frontend) |
-| **CI** | GitHub Actions |
+![Memoir AI Diary View](assets/screenshot.gif)
 
 ---
 
-## 아키텍처
+Write diary entries, save web articles and PDFs, then talk to **Socrates** — an AI agent that searches your own notes to answer questions and prompt reflection. A 3D knowledge graph maps how your content connects over time.
 
-```
-┌──────────────────┐     ┌──────────────────────────────────┐
-│   React SPA      │────▶│   FastAPI Backend                 │
-│   (Vercel)       │     │   (Fly.io)                        │
-│                  │     │                                    │
-│  Chat / Memory   │     │  ┌─────────────┐  ┌────────────┐ │
-│  Journal / Graph │     │  │  Socrates    │  │  Librarian  │ │
-│  Dashboard       │     │  │  (LangGraph) │  │  (LangGraph)│ │
-│  Demo Mode       │     │  └─────────────┘  └────────────┘ │
-└──────────────────┘     │         │                │        │
-                         │    ┌────┴────────────────┴───┐    │
-                         │    │  Supabase                │    │
-                         │    │  PostgreSQL + pgvector   │    │
-                         │    └─────────────────────────┘    │
-                         │    ┌─────────────────────────┐    │
-                         │    │  KuzuDB (Graph)         │    │
-                         │    └─────────────────────────┘    │
-                         └──────────────────────────────────┘
-```
+Built with React + FastAPI and a two-agent LangGraph system (Socrates for dialogue, Librarian for retrieval) using GraphRAG over Supabase pgvector and KuzuDB.
+
+[Try the demo →](https://memoir-knowledge.vercel.app/demo) — no account needed.
 
 ---
 
-## 로컬 개발
+## Features
 
-### 필수 요구사항
-- Node.js 20+, Python 3.11+, uv
-- Supabase 프로젝트 (PostgreSQL + pgvector)
-- OpenAI API Key
+| Feature | Description |
+|---|---|
+| **Calendar** | See what you read and wrote on any day — diary entries, scraps, and AI-generated tags on a monthly view |
+| **Diary** | Write daily entries in a rich text editor; AI suggests reflection questions and generates a daily summary |
+| **Scrap** | Save any URL, text, or PDF; AI auto-tags and summarizes, and flags duplicate content |
+| **Mindmap** | 3D graph showing how your diary entries and saved scraps connect to each other |
+| **Socrates** | Multi-turn AI conversation that retrieves context from your own notes via GraphRAG |
 
-### Frontend
+---
+
+## Quick Start
+
+**Prerequisites:** Node.js 20+, Python 3.11+, [`uv`](https://docs.astral.sh/uv/) (Python package manager)
+
 ```bash
-cd frontend
-npm install
-npm run dev          # http://localhost:5173
-```
+# Frontend
+cd frontend && npm install && npm run dev     # → localhost:5173
 
-### Backend
-```bash
+# Backend
 cd backend
+cp .env.example .env                          # fill in your API keys
 uv sync
-cp .env.example .env  # 환경변수 설정
-uv run uvicorn app.main:app --reload  # http://localhost:8000
+uv run uvicorn app.main:app --reload          # → localhost:8000
 ```
 
-### 환경변수 (Backend `.env`)
+Required: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and either `OPENROUTER_API_KEY` or `GOOGLE_API_KEY`. See [`.env.example`](.env.example) for all options.
+
+---
+
+## Tech Stack
+
+| | |
+|---|---|
+| **Frontend** | React 18, TypeScript, Vite, Tiptap, react-force-graph-3d |
+| **Backend** | FastAPI, Python 3.11, LangGraph |
+| **LLM** | OpenRouter (Solar Pro 3) · Gemini fallback |
+| **Database** | Supabase (PostgreSQL + pgvector), KuzuDB |
+| **Auth** | Supabase Auth — Google / Kakao OAuth |
+| **Deploy** | Vercel · Render |
+
+---
+
+## Architecture
+
 ```
-OPENAI_API_KEY=sk-...
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-KUZU_DB_PATH=./kuzu_data
+┌──────────────────┐     ┌────────────────────────────────────┐
+│   React SPA      │────▶│   FastAPI (Render)                 │
+│   (Vercel)       │     │                                    │
+│                  │     │  ┌──────────────┐  ┌───────────┐  │
+│  Diary / Scrap   │     │  │   Socrates   │  │ Librarian │  │
+│  Mindmap         │     │  │  (LangGraph) │  │(LangGraph)│  │
+│  Socrates        │     │  └──────┬───────┘  └─────┬─────┘  │
+│  Calendar        │     │         └────────┬────────┘        │
+└──────────────────┘     │    ┌─────────────▼──────────────┐  │
+                         │    │  Supabase (PostgreSQL +     │  │
+                         │    │  pgvector + Auth)           │  │
+                         │    └────────────────────────────┘  │
+                         │    ┌────────────────────────────┐  │
+                         │    │  KuzuDB (Knowledge Graph)  │  │
+                         │    └────────────────────────────┘  │
+                         └────────────────────────────────────┘
 ```
 
 ---
 
-## 개발 컨벤션
+## 한국어
 
-| 항목 | 규칙 |
-|------|------|
-| Backend 패키지 관리 | `uv` (pip/python 직접 사용 금지) |
-| Backend Lint | `ruff check --fix` + `ruff format` |
-| Frontend Lint | `eslint --max-warnings=0` |
-| Pre-commit | `.pre-commit-config.yaml` (ruff + eslint 자동 적용) |
-| Commit 메시지 | 한국어 |
+일기 작성, 웹 콘텐츠 저장, AI 대화를 하나로 통합한 개인 지식 관리 앱입니다. **소크라테스** 에이전트가 저장된 다이어리와 스크랩을 GraphRAG로 검색해 맥락 기반 대화를 제공합니다.
 
----
+React + FastAPI 풀스택, LangGraph 기반 멀티 에이전트 시스템(소크라테스 + 라이브러리언), Supabase pgvector + KuzuDB로 구성되어 있습니다.
 
-## 프로젝트 구조
-
-```
-memorial/
-├── frontend/               # React SPA
-│   ├── src/
-│   │   ├── components/     # 뷰 컴포넌트 (26+)
-│   │   ├── api/            # API 클라이언트 (13개)
-│   │   ├── contexts/       # React Context (Auth, Theme, Toast, Demo)
-│   │   ├── types/          # TypeScript 타입 (9개)
-│   │   └── data/           # 데모 데이터
-│   ├── e2e/                # Playwright E2E 테스트
-│   └── public/             # 정적 에셋
-├── backend/
-│   └── app/
-│       ├── routers/        # API 라우터 (14개)
-│       ├── services/       # 비즈니스 로직 (16개)
-│       ├── repositories/   # 데이터 접근 (8개)
-│       ├── schemas/        # Pydantic 스키마 (13개)
-│       ├── config/         # 설정/미들웨어/의존성
-│       └── utils/          # 유틸리티 (캐시 등)
-├── docs/                   # 설계 문서
-├── .github/workflows/      # CI (GitHub Actions)
-└── README.md
-```
-
-## 문서
-- [PRD (제품 요구사항)](./docs/01_PRD.md)
-- [Tech Spec (기술 명세서)](./docs/02_Tech_Spec.md)
-- [Data Schema](./docs/03_Data_Schema.md)
-- [API Spec](./docs/04_API_Spec.md)
-- [Agent Architecture](./docs/06_Agent_Architecture.md)
+| 기능 | 설명 |
+|---|---|
+| **캘린더** | 날짜별 다이어리·스크랩·AI 태그를 월간 뷰로 확인 |
+| **다이어리** | 리치 텍스트 에디터 + AI 회고 질문 + 일간 요약 |
+| **스크랩** | URL·텍스트·PDF 저장 → AI 자동 태그·요약·중복 감지 |
+| **마인드맵** | 다이어리와 스크랩 간 연결을 3D 그래프로 시각화 |
+| **소크라테스** | 내 노트 기반 GraphRAG 멀티턴 AI 대화 |
