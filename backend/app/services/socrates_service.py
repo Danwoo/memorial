@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator
 from uuid import UUID
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.runnables import RunnableConfig
 
 import app.agents.librarian.graph  # noqa: F401
 
@@ -19,6 +20,9 @@ from app.agents.registry import AgentRegistry
 from app.agents.socrates.state import build_socrates_initial_state
 from app.config.llm import get_analytical_llm, get_streaming_llm
 from app.repositories.socrates_repository import SocratesRepository
+
+# ReAct 에이전트 astream_events 사용 여부 (socrates agent_type에 적용)
+USE_REACT_STREAM = True
 
 TITLE_GEN_PROMPT = (
     "다음 대화의 핵심 주제를 한국어 15자 이내 명사구로 요약하세요. "
@@ -97,6 +101,29 @@ class SocratesService:
             # 턴 수 계산 (HumanMessage 개수 기준)
             turn_count = sum(1 for m in messages if isinstance(m, HumanMessage))
 
+            # AgentRegistry에서 agent_type 기반 그래프 선택
+            graph = AgentRegistry.get(effective_agent_type)
+            if graph is None:
+                logger.warning("agent_type=%s에 해당하는 그래프 없음, oracle 폴백", effective_agent_type)
+                from app.agents.oracle.graph import oracle_graph
+
+                graph = oracle_graph
+
+            # socrates ReAct 에이전트: astream_events로 tool 이벤트 + 스트리밍 응답 처리
+            if effective_agent_type == "socrates" and USE_REACT_STREAM:
+                async for sse_chunk in self._stream_react_agent(
+                    graph=graph,
+                    messages=messages,
+                    user_id=user_id,
+                    session_id=session_id,
+                    content=content,
+                    source_context=source_context,
+                ):
+                    yield sse_chunk
+                return
+
+            # --- 기존 DAG 파이프라인 경로 (oracle / librarian / fallback) ---
+
             # Runtime DI 컨텍스트 조립 (AgentContext 공유)
             container = get_agent_container()
             ctx = AgentContext(
@@ -125,14 +152,6 @@ class SocratesService:
                 mode=mode,
                 source_context=source_context,
             )
-
-            # AgentRegistry에서 agent_type 기반 그래프 선택
-            graph = AgentRegistry.get(effective_agent_type)
-            if graph is None:
-                logger.warning("agent_type=%s에 해당하는 그래프 없음, oracle 폴백", effective_agent_type)
-                from app.agents.oracle.graph import oracle_graph
-
-                graph = oracle_graph
 
             # LangGraph 파이프라인 실행 (context= 파라미터로 Runtime DI 주입)
             result = await graph.ainvoke(initial_state, context=ctx)
@@ -183,6 +202,95 @@ class SocratesService:
         except Exception:
             logger.exception("Error during SSE streaming for session %s", session_id)
             yield f"data: {json.dumps({'error': 'An internal error occurred'})}\n\n"
+
+    async def _stream_react_agent(
+        self,
+        graph,
+        messages: list,
+        user_id: UUID,
+        session_id: UUID,
+        content: str,
+        source_context: dict | None,
+    ) -> AsyncGenerator[str, None]:
+        """ReAct 에이전트를 astream_events로 실행하고 SSE 청크를 yield한다.
+
+        tool 호출 이벤트(on_tool_start / on_tool_end)와 LLM 토큰
+        (on_chat_model_stream)을 SSE 형식으로 변환하여 반환한다.
+        """
+        # ReAct 에이전트 상태: {"messages": [...]} 형식
+        initial_state = {"messages": messages}
+
+        # user_id / session_id를 configurable에 담아 tools가 꺼내 쓸 수 있게 한다
+        run_config = RunnableConfig(
+            configurable={
+                "user_id": str(user_id),
+                "session_id": str(session_id),
+            }
+        )
+
+        full_response = ""
+
+        try:
+            async for event in graph.astream_events(
+                initial_state,
+                config=run_config,
+                version="v2",
+            ):
+                event_type = event.get("event", "")
+
+                if event_type == "on_chat_model_stream":
+                    # LLM이 토큰을 스트리밍하는 이벤트
+                    chunk = event.get("data", {}).get("chunk")
+                    if chunk and hasattr(chunk, "content") and chunk.content:
+                        token = chunk.content
+                        if isinstance(token, str) and token:
+                            full_response += token
+                            yield f"data: {json.dumps({'content': token})}\n\n"
+                        elif isinstance(token, list):
+                            for part in token:
+                                if isinstance(part, dict) and part.get("type") == "text":
+                                    text = part.get("text", "")
+                                    if text:
+                                        full_response += text
+                                        yield f"data: {json.dumps({'content': text})}\n\n"
+
+                elif event_type == "on_tool_start":
+                    # 도구 호출 시작 이벤트
+                    tool_name = event.get("name", "")
+                    if tool_name:
+                        yield f"data: {json.dumps({'step': tool_name, 'status': 'started'})}\n\n"
+
+                elif event_type == "on_tool_end":
+                    # 도구 호출 완료 이벤트
+                    tool_name = event.get("name", "")
+                    output = event.get("data", {}).get("output", "")
+                    detail = str(output)[:200] if output else ""
+                    if tool_name:
+                        yield f"data: {json.dumps({'step': tool_name, 'status': 'done', 'detail': detail})}\n\n"
+
+        except asyncio.CancelledError:
+            logger.info("SSE client disconnected (react) for session %s", session_id)
+            return
+        except Exception:
+            logger.exception("ReAct astream_events 오류 (session=%s)", session_id)
+            yield f"data: {json.dumps({'error': 'An internal error occurred'})}\n\n"
+            return
+
+        # 완성된 응답 저장
+        if full_response:
+            await self.socrates_repo.add_message(session_id, AIMessage(content=full_response))
+
+        # 첫 대화 완료 시 세션 제목 자동 생성
+        title = await self._maybe_generate_title(session_id, content, full_response)
+        done_data: dict = {"done": True}
+        if title:
+            done_data["title"] = title
+
+        # source_context 태그가 있으면 세션에 저장
+        if source_context and source_context.get("tags"):
+            await self._save_topic_tags(session_id, source_context["tags"])
+
+        yield f"data: {json.dumps(done_data)}\n\n"
 
     async def update_session_title(self, session_id: UUID, title: str) -> bool:
         """세션 제목 수동 업데이트."""
