@@ -25,6 +25,7 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
     handleMessagesScroll, adjustTextareaHeight, handleKeyDown,
     toggleRefExpand, sendMessageDirect, saveMessageAsScrap,
     selectedMode, setSelectedMode, agentType, availableModes,
+    agentSteps, isThinking,
   } = chat
 
   return (
@@ -68,6 +69,8 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
               onSaveAsScrap={saveMessageAsScrap}
               onInsertToDiary={onInsertToDiary}
               isPanelMode={isPanelMode}
+              agentSteps={agentSteps}
+              isThinking={isThinking}
             />
           )}
           <div ref={messagesEndRef} />

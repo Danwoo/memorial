@@ -93,6 +93,7 @@ export interface SSEResult {
 export async function readSSEStream(
   response: Response,
   onChunk: (accumulated: string) => void,
+  onStepChunk?: (chunk: SocratesStreamChunk) => void,
 ): Promise<SSEResult> {
   const reader = response.body?.getReader()
   if (!reader) return { content: '' }
@@ -131,6 +132,10 @@ export async function readSSEStream(
           }
           if (data.references) {
             references = data.references
+          }
+          // 도구 실행 상태 이벤트 처리
+          if (data.step && data.status) {
+            onStepChunk?.(data)
           }
           if (data.content) {
             content += data.content

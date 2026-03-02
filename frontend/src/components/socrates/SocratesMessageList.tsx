@@ -6,8 +6,10 @@ import {
   ThumbsUp, ThumbsDown,
 } from 'lucide-react'
 import type { SocratesMessage } from '../../types'
+import type { AgentStep } from '../../types/agentStep'
 import SourceIcon from '../shared/SourceIcon'
 import SocratesActionButtons from './SocratesActionButtons'
+import { ThinkingProcess } from './ThinkingProcess'
 
 const INSIGHT_PATTERNS = [
   '인사이트', '정리하면', '핵심은', '결론적으로', '요약하면',
@@ -37,12 +39,15 @@ interface SocratesMessageListProps {
   onSaveAsScrap?: (content: string) => void
   onInsertToDiary?: (content: string) => void
   isPanelMode?: boolean
+  agentSteps?: AgentStep[]
+  isThinking?: boolean
 }
 
 export default function SocratesMessageList({
   messages, expandedRefs, feedbacks,
   onToggleRefExpand, onFeedback, onScrapClick,
   onSaveAsScrap, onInsertToDiary, isPanelMode = false,
+  agentSteps = [], isThinking = false,
 }: SocratesMessageListProps) {
 
   return (
@@ -120,14 +125,7 @@ export default function SocratesMessageList({
                   )}
                 </>
               ) : (
-                <div className="typing-indicator-container">
-                  <div className="typing-dots">
-                    <span className="typing-dot" />
-                    <span className="typing-dot" />
-                    <span className="typing-dot" />
-                  </div>
-                  <span className="typing-text">Socrates가 생각하고 있습니다...</span>
-                </div>
+                <ThinkingProcess steps={agentSteps} isThinking={isThinking || agentSteps.length === 0} />
               )
             ) : (
               msg.content || <span className="typing-indicator">...</span>
