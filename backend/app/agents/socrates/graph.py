@@ -1,5 +1,6 @@
 from app.agents.graph_factory import create_chat_graph
 from app.agents.socrates.state import SocratesState
+from app.config.llm import get_creative_llm
 
 
 def _build_socrates_graph():
@@ -17,15 +18,30 @@ def _build_socrates_graph():
     )
 
 
-# Socrates 다이어리 전문 그래프
+# Socrates 다이어리 전문 그래프 (구형 DAG 파이프라인 — 하위호환 유지)
 socrates_diary_graph = _build_socrates_graph()
+
+
+def build_socrates_react_graph():
+    """Socrates ReAct 에이전트 그래프를 빌드한다."""
+    from app.agents.react_agent import build_react_agent
+    from app.agents.socrates.prompts_react import SOCRATES_REACT_SYSTEM_PROMPT
+    from app.agents.tools import SOCRATES_TOOLS
+
+    llm = get_creative_llm()
+    return build_react_agent(
+        llm=llm,
+        tools=SOCRATES_TOOLS,
+        system_prompt=SOCRATES_REACT_SYSTEM_PROMPT,
+    )
 
 
 # AgentRegistry 등록
 def _register_socrates():
     from app.agents.registry import AgentRegistry
 
-    AgentRegistry.register("socrates", socrates_diary_graph)
+    graph = build_socrates_react_graph()
+    AgentRegistry.register("socrates", graph)
 
 
 _register_socrates()
