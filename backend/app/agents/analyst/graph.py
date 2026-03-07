@@ -32,11 +32,8 @@ def register_analyst_graph(registry) -> None:
     registry.register("analyst", graph)
 
 
-# AgentRegistry 등록
+# AgentRegistry 등록 (fallback import 방식에서 호출)
 def _register_analyst():
     from app.agents.registry import AgentRegistry
 
     register_analyst_graph(AgentRegistry)
-
-
-_register_analyst()

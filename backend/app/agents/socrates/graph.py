@@ -36,12 +36,9 @@ def build_socrates_react_graph():
     )
 
 
-# AgentRegistry 등록
+# AgentRegistry 등록 (fallback import 방식에서 호출)
 def _register_socrates():
     from app.agents.registry import AgentRegistry
 
     graph = build_socrates_react_graph()
     AgentRegistry.register("socrates", graph)
-
-
-_register_socrates()
