@@ -24,11 +24,8 @@ def register_curator_graph(registry) -> None:
     registry.register("curator", graph)
 
 
-# AgentRegistry 등록
+# AgentRegistry 등록 (fallback import 방식에서 호출)
 def _register_curator():
     from app.agents.registry import AgentRegistry
 
     register_curator_graph(AgentRegistry)
-
-
-_register_curator()

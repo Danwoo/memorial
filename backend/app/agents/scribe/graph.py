@@ -24,11 +24,8 @@ def register_scribe_graph(registry) -> None:
     registry.register("scribe", graph)
 
 
-# AgentRegistry 등록
+# AgentRegistry 등록 (fallback import 방식에서 호출)
 def _register_scribe():
     from app.agents.registry import AgentRegistry
 
     register_scribe_graph(AgentRegistry)
-
-
-_register_scribe()
