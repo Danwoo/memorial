@@ -54,6 +54,12 @@ class RedisCache:
 
     TTLCache와 동일한 인터페이스(get/set/invalidate/invalidate_prefix/clear)를 제공.
     값은 JSON 직렬화하여 저장하며, Upstash SDK가 자동 처리.
+
+    주의 — 동기 클라이언트 한계:
+        upstash_redis.Redis는 동기 HTTP 클라이언트(httpx sync)를 사용한다.
+        async 핸들러에서 호출 시 이벤트 루프를 차단할 수 있다.
+        현재 소규모 트래픽(Render Free 단일 워커) 환경에서는 허용 범위로 판단하여 유지한다.
+        트래픽 증가 시 AsyncRedis(upstash_redis.asyncio.Redis)로 전환 필요.
     """
 
     def __init__(self, url: str, token: str, ttl_seconds: int = 300):
@@ -108,11 +114,15 @@ class RedisCache:
             logger.warning("RedisCache.invalidate_prefix 실패: prefix=%s", prefix, exc_info=True)
 
     def clear(self) -> None:
-        """전체 캐시 초기화 (FLUSHDB — 주의: 모든 키 삭제)."""
-        try:
-            self._redis.flushdb()
-        except Exception:
-            logger.warning("RedisCache.clear 실패", exc_info=True)
+        """[비활성화] 공유 Redis에서 FLUSHDB는 모든 사용자의 캐시를 삭제하므로 안전하지 않다.
+
+        이 메서드는 의도적으로 아무 동작도 하지 않는다.
+        사용자별 캐시 무효화가 필요하면 invalidate_prefix(f"<prefix>:{user_id}") 를 사용할 것.
+        """
+        logger.warning(
+            "RedisCache.clear() 호출됨 — 공유 Redis 보호를 위해 FLUSHDB를 실행하지 않음. "
+            "사용자 범위 무효화에는 invalidate_prefix()를 사용하세요."
+        )
 
 
 def make_cache(ttl_seconds: int = 300, max_size: int = 256) -> TTLCache | RedisCache:

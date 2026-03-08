@@ -21,7 +21,11 @@ class MindmapService:
         return self.mindmap_repo.is_connected
 
     async def save_knowledge_mindmap(
-        self, scrap_id: str, entities: list[dict[str, Any]], relations: list[dict[str, Any]]
+        self,
+        scrap_id: str,
+        entities: list[dict[str, Any]],
+        relations: list[dict[str, Any]],
+        user_id: str | None = None,
     ) -> bool:
         """추출된 엔티티/관계를 Knowledge Mindmap에 저장. Librarian 에이전트가 호출."""
         if not self.is_available:
@@ -30,19 +34,27 @@ class MindmapService:
         try:
             await self.mindmap_repo.save_entities(entities, scrap_id)
             await self.mindmap_repo.save_relations(relations)
-            graph_cache.clear()
+            # 해당 사용자의 그래프 캐시만 무효화 (공유 Redis 전체 삭제 방지)
+            if user_id:
+                graph_cache.invalidate_prefix(f"graph:{user_id}")
+            else:
+                graph_cache.invalidate_prefix("graph:")
             return True
         except Exception:
             logger.exception("Error saving to mindmap")
             return False
 
-    async def create_relation(self, relations: list[dict[str, str]]) -> bool:
+    async def create_relation(self, relations: list[dict[str, str]], user_id: str | None = None) -> bool:
         """수동 관계 생성."""
         if not self.is_available:
             return False
         try:
             await self.mindmap_repo.save_relations(relations)
-            graph_cache.clear()
+            # 해당 사용자의 그래프 캐시만 무효화 (공유 Redis 전체 삭제 방지)
+            if user_id:
+                graph_cache.invalidate_prefix(f"graph:{user_id}")
+            else:
+                graph_cache.invalidate_prefix("graph:")
             return True
         except Exception:
             logger.exception("Error creating relation")
@@ -82,7 +94,8 @@ class MindmapService:
                 total_relations += len(relations)
             rebuilt += 1
 
-        graph_cache.clear()
+        # 전체 리빌드이므로 모든 사용자의 그래프 캐시를 무효화
+        graph_cache.invalidate_prefix("graph:")
         logger.info(
             "KuzuDB rebuild complete: %d scraps, %d entities, %d relations",
             rebuilt,

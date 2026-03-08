@@ -86,7 +86,10 @@ async def create_relation(
         raise HTTPException(status_code=503, detail="마인드맵 서비스를 사용할 수 없습니다")
 
     try:
-        await mindmap_service.create_relation([{"source": body.source, "target": body.target, "type": body.rel_type}])
+        await mindmap_service.create_relation(
+            [{"source": body.source, "target": body.target, "type": body.rel_type}],
+            user_id=str(user_id),
+        )
         return {"ok": True, "message": f"{body.source} → {body.target} 연결 생성됨"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
