@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     KAKAO_REDIRECT_URI: str | None = None
     KAKAO_SKILL_SECRET: str | None = None
 
+    UPSTASH_REDIS_REST_URL: str | None = None
+    UPSTASH_REDIS_REST_TOKEN: str | None = None
+
     VAPID_PUBLIC_KEY: str | None = None
     VAPID_PRIVATE_KEY: str | None = None
     VAPID_MAILTO: str = "mailto:noreply@memoir.ai"

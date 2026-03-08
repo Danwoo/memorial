@@ -1,3 +1,4 @@
+import json
 import logging
 from collections import OrderedDict
 from time import monotonic
@@ -48,10 +49,97 @@ class TTLCache:
         self._store.clear()
 
 
+class RedisCache:
+    """Upstash Redis REST API 기반 분산 TTL 캐시.
+
+    TTLCache와 동일한 인터페이스(get/set/invalidate/invalidate_prefix/clear)를 제공.
+    값은 JSON 직렬화하여 저장하며, Upstash SDK가 자동 처리.
+    """
+
+    def __init__(self, url: str, token: str, ttl_seconds: int = 300):
+        from upstash_redis import Redis
+
+        self._redis = Redis(url=url, token=token)
+        self._ttl = ttl_seconds
+
+    def get(self, key: str) -> Any | None:
+        """Redis에서 값 조회. 만료되었거나 없으면 None 반환."""
+        try:
+            value = self._redis.get(key)
+            if value is None:
+                return None
+            # upstash-redis SDK가 JSON 문자열을 반환할 수 있으므로 파싱 시도
+            if isinstance(value, str):
+                try:
+                    return json.loads(value)
+                except (json.JSONDecodeError, ValueError):
+                    return value
+            return value
+        except Exception:
+            logger.warning("RedisCache.get 실패: key=%s", key, exc_info=True)
+            return None
+
+    def set(self, key: str, value: Any) -> None:
+        """Redis에 값 저장 (TTL 적용)."""
+        try:
+            serialized = json.dumps(value, ensure_ascii=False)
+            self._redis.set(key, serialized, ex=self._ttl)
+        except Exception:
+            logger.warning("RedisCache.set 실패: key=%s", key, exc_info=True)
+
+    def invalidate(self, key: str) -> None:
+        """특정 키 무효화."""
+        try:
+            self._redis.delete(key)
+        except Exception:
+            logger.warning("RedisCache.invalidate 실패: key=%s", key, exc_info=True)
+
+    def invalidate_prefix(self, prefix: str) -> None:
+        """접두사로 시작하는 모든 키 무효화 (SCAN 사용)."""
+        try:
+            cursor = 0
+            while True:
+                cursor, keys = self._redis.scan(cursor=cursor, match=f"{prefix}*", count=100)
+                if keys:
+                    self._redis.delete(*keys)
+                if cursor == 0:
+                    break
+        except Exception:
+            logger.warning("RedisCache.invalidate_prefix 실패: prefix=%s", prefix, exc_info=True)
+
+    def clear(self) -> None:
+        """전체 캐시 초기화 (FLUSHDB — 주의: 모든 키 삭제)."""
+        try:
+            self._redis.flushdb()
+        except Exception:
+            logger.warning("RedisCache.clear 실패", exc_info=True)
+
+
+def make_cache(ttl_seconds: int = 300, max_size: int = 256) -> TTLCache | RedisCache:
+    """환경변수에 따라 RedisCache 또는 TTLCache 인스턴스를 반환하는 팩토리.
+
+    UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN 모두 설정된 경우 RedisCache 반환.
+    그 외에는 TTLCache 반환 (로컬 개발 폴백).
+    """
+    from app.config.settings import get_settings
+
+    settings = get_settings()
+    if settings.UPSTASH_REDIS_REST_URL and settings.UPSTASH_REDIS_REST_TOKEN:
+        logger.info("RedisCache 사용 (Upstash Redis): ttl=%ds", ttl_seconds)
+        return RedisCache(
+            url=settings.UPSTASH_REDIS_REST_URL,
+            token=settings.UPSTASH_REDIS_REST_TOKEN,
+            ttl_seconds=ttl_seconds,
+        )
+    logger.debug("TTLCache 사용 (인메모리 폴백): ttl=%ds", ttl_seconds)
+    return TTLCache(ttl_seconds=ttl_seconds, max_size=max_size)
+
+
 # 전역 캐시 인스턴스 (서비스 간 공유)
-stats_cache = TTLCache(ttl_seconds=300)  # 통계: 5분
-briefing_cache = TTLCache(ttl_seconds=300)  # 브리핑: 5분
-tags_cache = TTLCache(ttl_seconds=600)  # 태그 목록: 10분
-graph_cache = TTLCache(ttl_seconds=300)  # 그래프: 5분
-insights_cache = TTLCache(ttl_seconds=600)  # 인사이트: 10분
-report_cache = TTLCache(ttl_seconds=3600)  # 리포트: 1시간
+stats_cache = make_cache(ttl_seconds=300)  # 통계: 5분
+briefing_cache = make_cache(ttl_seconds=300)  # 브리핑: 5분
+tags_cache = make_cache(ttl_seconds=600)  # 태그 목록: 10분
+graph_cache = make_cache(ttl_seconds=300)  # 그래프: 5분
+insights_cache = make_cache(ttl_seconds=600)  # 인사이트: 10분
+report_cache = make_cache(ttl_seconds=3600)  # 리포트: 1시간
+community_cache = make_cache(ttl_seconds=3600)  # 커뮤니티 요약: 1시간
