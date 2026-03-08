@@ -72,11 +72,23 @@ librarian_graph = create_librarian_graph()
 librarian_chat_graph = _build_librarian_chat_graph()
 
 
-# AgentRegistry 등록
+# AgentRegistry 등록 (fallback import 방식에서 호출)
 def _register_librarian():
     from app.agents.registry import AgentRegistry
 
     AgentRegistry.register("librarian", librarian_chat_graph)
 
 
-_register_librarian()
+def build_librarian_chat_react_graph():
+    """Librarian 채팅 ReAct 에이전트 그래프를 빌드한다."""
+    from app.agents.librarian.prompts_react import LIBRARIAN_REACT_SYSTEM_PROMPT
+    from app.agents.react_agent import build_react_agent
+    from app.agents.tools import LIBRARIAN_TOOLS
+    from app.config.llm import get_analytical_llm
+
+    llm = get_analytical_llm()
+    return build_react_agent(
+        llm=llm,
+        tools=LIBRARIAN_TOOLS,
+        system_prompt=LIBRARIAN_REACT_SYSTEM_PROMPT,
+    )

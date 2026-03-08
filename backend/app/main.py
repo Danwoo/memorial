@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    """앱 시작/종료 시 스케줄러 관리 + KuzuDB 리빌드."""
+    """앱 시작/종료 시 스케줄러 관리 + KuzuDB 리빌드 + 에이전트 등록."""
     start_scheduler()
 
     # Supabase에 저장된 그래프 데이터로 KuzuDB 리빌드 (영구 디스크 없이도 그래프 복원)
@@ -31,8 +31,30 @@ async def lifespan(_app: FastAPI):
     except Exception:
         logger.exception("KuzuDB rebuild failed on startup (non-fatal)")
 
+    _register_all_agents()
+
     yield
     stop_scheduler()
+
+
+def _register_all_agents() -> None:
+    """모든 에이전트를 AgentRegistry에 등록한다."""
+    from app.agents.analyst.graph import _register_analyst
+    from app.agents.curator.graph import _register_curator
+    from app.agents.librarian.graph import _register_librarian
+    from app.agents.reporter.graph import _register_reporter
+    from app.agents.scribe.graph import _register_scribe
+    from app.agents.socrates.graph import _register_socrates
+    from app.agents.supervisor.graph import _register_supervisor
+
+    _register_socrates()
+    _register_librarian()
+    _register_analyst()
+    _register_scribe()
+    _register_curator()
+    _register_reporter()
+    _register_supervisor()
+    logger.info("에이전트 등록 완료")
 
 
 app = FastAPI(

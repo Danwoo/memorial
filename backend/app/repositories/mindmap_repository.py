@@ -540,23 +540,48 @@ class MindmapRepository:
             logger.exception("Error fetching hub nodes")
             return []
 
-    def _sync_get_orphan_entities(self, user_id: str) -> list[dict]:
+    async def get_hub_entities(self, user_id: str, limit: int = 10) -> list[dict]:
+        """연결 수 기준 상위 N 허브 엔티티 조회. connection_count 키로 연결 수 반환.
+
+        Args:
+            user_id: 사용자 ID
+            limit: 반환할 최대 엔티티 수 (기본 10)
+        """
+        rows = await self.get_hub_nodes(user_id=user_id, top_n=limit)
+        # get_hub_nodes의 "degree" 키를 "connection_count"로 변환
+        return [
+            {
+                "name": r.get("name", ""),
+                "type": r.get("type", "Concept"),
+                "connection_count": int(r.get("degree", 0)),
+            }
+            for r in rows
+        ]
+
+    def _sync_get_orphan_entities(self, user_id: str, limit: int) -> list[dict]:
         """관계 없는 고아 엔티티 동기 조회."""
         conn = self._get_conn()
-        query = """
-        MATCH (mem:Memory {user_id: $user_id})-[:MENTIONS]->(e:Entity)
-        WHERE NOT EXISTS { MATCH (e)-[:ENTITY_REL]->(:Entity) }
-          AND NOT EXISTS { MATCH (:Entity)-[:ENTITY_REL]->(e) }
+        safe_limit = max(1, min(int(limit), MAX_GRAPH_QUERY_LIMIT))
+        query = f"""
+        MATCH (mem:Memory {{user_id: $user_id}})-[:MENTIONS]->(e:Entity)
+        WHERE NOT EXISTS {{ MATCH (e)-[:ENTITY_REL]->(:Entity) }}
+          AND NOT EXISTS {{ MATCH (:Entity)-[:ENTITY_REL]->(e) }}
         RETURN DISTINCT e.name AS name, e.type AS type
+        LIMIT {safe_limit}
         """
         return self._result_to_dicts(conn.execute(query, {"user_id": user_id}))
 
-    async def get_orphan_entities(self, user_id: str) -> list[dict]:
-        """관계 없는 고아 엔티티 조회."""
+    async def get_orphan_entities(self, user_id: str, limit: int = 100) -> list[dict]:
+        """관계 없는 고아 엔티티 조회.
+
+        Args:
+            user_id: 사용자 ID
+            limit: 반환할 최대 엔티티 수 (기본 100)
+        """
         if not self.db:
             return []
         try:
-            return await asyncio.to_thread(self._sync_get_orphan_entities, user_id)
+            return await asyncio.to_thread(self._sync_get_orphan_entities, user_id, limit)
         except Exception:
             logger.exception("Error fetching orphan entities")
             return []
@@ -602,6 +627,32 @@ class MindmapRepository:
         except Exception:
             logger.exception("엔티티 이름 검색 실패: query='%s'", query)
             return []
+
+    async def search_entities(
+        self,
+        keyword: str,
+        user_id: str,
+        entity_type: str = "",
+        limit: int = 10,
+    ) -> list[dict]:
+        """키워드와 엔티티 타입으로 Knowledge Graph 엔티티를 검색한다.
+
+        Args:
+            keyword: 엔티티 이름 검색 키워드
+            user_id: 사용자 ID (해당 사용자의 Memory에 연결된 엔티티만 반환)
+            entity_type: 필터링할 엔티티 타입. 빈 문자열이면 전체 타입 반환
+            limit: 최대 반환 결과 수
+
+        Returns:
+            name, type 필드를 가진 dict 리스트
+        """
+        results = await self.search_entities_by_name(keyword, user_id)
+
+        if entity_type:
+            normalized = entity_type.strip()
+            results = [r for r in results if r.get("type", "") == normalized]
+
+        return results[: max(1, limit)]
 
     def _sync_search_memories_by_entities(self, entity_names: list[str], user_id: str, limit: int) -> list[dict]:
         """엔티티 이름으로 연결된 메모리 ID 검색 (동기)."""

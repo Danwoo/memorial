@@ -1,5 +1,5 @@
 import asyncio
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -106,6 +106,46 @@ class DiaryRepository:
         )
         return response.data
 
+    async def get_diary_by_id(self, diary_id: str, user_id: str) -> dict[str, Any] | None:
+        """ID로 단일 다이어리 상세 조회."""
+        response = await asyncio.to_thread(self._select_by_id, diary_id, user_id)
+        return response.data[0] if response.data else None
+
+    async def search_diaries(self, query: str, user_id: str, limit: int = 5) -> list[dict[str, Any]]:
+        """일기를 텍스트로 검색한다."""
+        response = await asyncio.to_thread(self._search_text, query, user_id, limit)
+        return response.data or []
+
+    async def get_emotion_trend(self, user_id: str, days: int = 7) -> list[dict[str, Any]]:
+        """최근 N일간 감정 추세를 반환한다."""
+        cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        response = await asyncio.to_thread(self._select_emotion_trend, user_id, cutoff)
+        return response.data or []
+
+    async def list_diary_dates(self, user_id: str, limit: int = 30) -> list[str]:
+        """일기가 작성된 날짜 목록을 반환한다."""
+        response = await asyncio.to_thread(self._select_dates_simple, user_id, limit)
+        dates = []
+        for row in response.data or []:
+            created = row.get("created_at", "")
+            if created:
+                dates.append(created[:10])  # YYYY-MM-DD
+        return dates
+
+    async def get_diary_statistics(self, user_id: str) -> dict[str, Any]:
+        """일기 작성 통계를 반환한다."""
+        response = await asyncio.to_thread(self._select_stats, user_id)
+        rows = response.data or []
+        total = len(rows)
+        mood_dist: dict[str, int] = {}
+        for row in rows:
+            mood = row.get("mood") or "neutral"
+            mood_dist[mood] = mood_dist.get(mood, 0) + 1
+        return {
+            "total_count": total,
+            "mood_distribution": mood_dist,
+        }
+
     # ------------------------------------------------------------------
     # 동기 헬퍼 (스레드에서 실행)
     # ------------------------------------------------------------------
@@ -166,3 +206,46 @@ class DiaryRepository:
 
     def _update(self, diary_id: str, data: dict):
         return self.db.table("diaries").update(data).eq("id", diary_id).execute()
+
+    def _select_by_id(self, diary_id: str, user_id: str):
+        return self.db.table("diaries").select("*").eq("id", diary_id).eq("user_id", user_id).execute()
+
+    def _search_text(self, query: str, user_id: str, limit: int):
+        return (
+            self.db.table("diaries")
+            .select("id, title, content, mood, tags, created_at")
+            .eq("user_id", user_id)
+            .or_(f"title.ilike.%{query}%,content.ilike.%{query}%")
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+
+    def _select_emotion_trend(self, user_id: str, cutoff: str):
+        return (
+            self.db.table("diaries")
+            .select("id, title, mood, tags, created_at")
+            .eq("user_id", user_id)
+            .gte("created_at", cutoff)
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+    def _select_dates_simple(self, user_id: str, limit: int):
+        return (
+            self.db.table("diaries")
+            .select("created_at")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+
+    def _select_stats(self, user_id: str):
+        return (
+            self.db.table("diaries")
+            .select("id, created_at, mood")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
