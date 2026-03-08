@@ -14,18 +14,10 @@ services:
       - ./kuzu_data:/app/kuzu_data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    restart: unless-stopped
 
 # Note: KuzuDB는 임베디드 DB로 백엔드 컨테이너 내부에 포함
 # Supabase는 외부 서비스 - .env에서 URL 설정
