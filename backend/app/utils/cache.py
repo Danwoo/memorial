@@ -129,18 +129,21 @@ def make_cache(ttl_seconds: int = 300, max_size: int = 256) -> TTLCache | RedisC
     """환경변수에 따라 RedisCache 또는 TTLCache 인스턴스를 반환하는 팩토리.
 
     UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN 모두 설정된 경우 RedisCache 반환.
-    그 외에는 TTLCache 반환 (로컬 개발 폴백).
+    그 외에는 TTLCache 반환 (로컬 개발 폴백 및 테스트 환경).
     """
-    from app.config.settings import get_settings
+    try:
+        from app.config.settings import get_settings
 
-    settings = get_settings()
-    if settings.UPSTASH_REDIS_REST_URL and settings.UPSTASH_REDIS_REST_TOKEN:
-        logger.info("RedisCache 사용 (Upstash Redis): ttl=%ds", ttl_seconds)
-        return RedisCache(
-            url=settings.UPSTASH_REDIS_REST_URL,
-            token=settings.UPSTASH_REDIS_REST_TOKEN,
-            ttl_seconds=ttl_seconds,
-        )
+        settings = get_settings()
+        if settings.UPSTASH_REDIS_REST_URL and settings.UPSTASH_REDIS_REST_TOKEN:
+            logger.info("RedisCache 사용 (Upstash Redis): ttl=%ds", ttl_seconds)
+            return RedisCache(
+                url=settings.UPSTASH_REDIS_REST_URL,
+                token=settings.UPSTASH_REDIS_REST_TOKEN,
+                ttl_seconds=ttl_seconds,
+            )
+    except Exception:
+        logger.debug("설정 로드 실패 — TTLCache 폴백 (테스트 환경 등): ttl=%ds", ttl_seconds)
     logger.debug("TTLCache 사용 (인메모리 폴백): ttl=%ds", ttl_seconds)
     return TTLCache(ttl_seconds=ttl_seconds, max_size=max_size)
 
