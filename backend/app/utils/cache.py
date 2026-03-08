@@ -147,7 +147,6 @@ def make_cache(ttl_seconds: int = 300, max_size: int = 256) -> TTLCache | RedisC
 
 # 전역 캐시 인스턴스 (서비스 간 공유)
 stats_cache = make_cache(ttl_seconds=300)  # 통계: 5분
-briefing_cache = make_cache(ttl_seconds=300)  # 브리핑: 5분
 tags_cache = make_cache(ttl_seconds=600)  # 태그 목록: 10분
 graph_cache = make_cache(ttl_seconds=300)  # 그래프: 5분
 insights_cache = make_cache(ttl_seconds=600)  # 인사이트: 10분
