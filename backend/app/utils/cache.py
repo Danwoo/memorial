@@ -45,7 +45,7 @@ class TTLCache:
             self._store.pop(k, None)
 
     def clear(self) -> None:
-        """전체 캐시 초기화."""
+        """전체 캐시 초기화. RedisCache.clear()와 달리 인메모리이므로 전체 삭제가 안전하다."""
         self._store.clear()
 
 

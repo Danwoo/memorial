@@ -37,6 +37,7 @@ class MindmapService:
             # 해당 사용자의 그래프 캐시만 무효화 (공유 Redis 전체 삭제 방지)
             if user_id:
                 graph_cache.invalidate_prefix(f"graph:{user_id}")
+                graph_cache.invalidate_prefix(f"graph:ego:{user_id}")
             else:
                 graph_cache.invalidate_prefix("graph:")
             return True
@@ -53,6 +54,7 @@ class MindmapService:
             # 해당 사용자의 그래프 캐시만 무효화 (공유 Redis 전체 삭제 방지)
             if user_id:
                 graph_cache.invalidate_prefix(f"graph:{user_id}")
+                graph_cache.invalidate_prefix(f"graph:ego:{user_id}")
             else:
                 graph_cache.invalidate_prefix("graph:")
             return True
