@@ -34,6 +34,8 @@ class Settings(BaseSettings):
 
     UPSTAGE_API_KEY: str | None = None
 
+    KAKAO_REST_API_KEY: str | None = None
+    KAKAO_REDIRECT_URI: str | None = None
     KAKAO_SKILL_SECRET: str | None = None
 
     VAPID_PUBLIC_KEY: str | None = None
