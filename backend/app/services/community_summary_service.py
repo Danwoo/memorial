@@ -1,16 +1,14 @@
 import logging
-import time
 from collections import defaultdict
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.config.llm import get_analytical_llm
 from app.repositories.mindmap_repository import MindmapRepository
+from app.utils.cache import community_cache
 
 logger = logging.getLogger(__name__)
 
-# 캐시 TTL (초)
-COMMUNITY_CACHE_TTL = 3600  # 1시간
 # 요약할 최대 클러스터 수
 MAX_COMMUNITIES_TO_SUMMARIZE = 5
 # 요약 시 사용할 최대 엔티티 수
@@ -50,23 +48,21 @@ class CommunitySummaryService:
 
     def __init__(self, mindmap_repo: MindmapRepository):
         self.mindmap_repo = mindmap_repo
-        # user_id → {"summaries": list[dict], "timestamp": float}
-        self._cache: dict[str, dict] = {}
 
     async def get_community_summaries(self, user_id: str) -> list[dict]:
         """캐시된 커뮤니티 요약 반환. 캐시 미스 시 재생성."""
-        now = time.time()
-        cached = self._cache.get(user_id)
-        if cached and (now - cached["timestamp"]) < COMMUNITY_CACHE_TTL:
-            return cached["summaries"]
+        cache_key = f"community:{user_id}"
+        cached = community_cache.get(cache_key)
+        if cached is not None:
+            return cached
 
         summaries = await self._build_community_summaries(user_id)
-        self._cache[user_id] = {"summaries": summaries, "timestamp": now}
+        community_cache.set(cache_key, summaries)
         return summaries
 
     def invalidate_cache(self, user_id: str) -> None:
         """사용자 커뮤니티 캐시 무효화 (스크랩 저장 후 호출)."""
-        self._cache.pop(user_id, None)
+        community_cache.invalidate(f"community:{user_id}")
 
     async def _build_community_summaries(self, user_id: str) -> list[dict]:
         """그래프 엣지에서 클러스터 감지 후 LLM 요약 생성."""
