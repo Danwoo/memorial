@@ -48,3 +48,9 @@ export function fetchEgoDefault(): Promise<MindmapApiResponse & { center_node?: 
   if (isDemoMode()) return Promise.resolve({ ...DEMO_MINDMAP as unknown as MindmapApiResponse, center_node: null })
   return get<MindmapApiResponse & { center_node?: string | null }>('/mindmap/ego/default')
 }
+
+// KuzuDB 그래프 재구축 (EC2 이전 등으로 로컬 그래프가 비어있을 때)
+export function rebuildGraph(): Promise<{ ok: boolean; processed: number; skipped: number; message: string }> {
+  if (isDemoMode()) return Promise.resolve({ ok: true, processed: 0, skipped: 0, message: '데모 모드' })
+  return post('/mindmap/rebuild-graph', {})
+}

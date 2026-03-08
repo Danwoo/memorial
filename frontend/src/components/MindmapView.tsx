@@ -8,7 +8,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
 import { demoPath } from '../utils/demoPath'
-import { fetchMindmap, fetchMindmapInsights, searchScraps, fetchEgoMindmap, fetchEgoDefault } from '../api'
+import { fetchMindmap, fetchMindmapInsights, searchScraps, fetchEgoMindmap, fetchEgoDefault, rebuildGraph } from '../api'
 import { getViewCache, setViewCache, CACHE_KEYS } from '../utils/viewCache'
 import ScrapDetailModal from './ScrapDetailModal'
 import MindmapInsightPanel, { CLUSTER_COLORS } from './MindmapInsightPanel'
@@ -130,6 +130,9 @@ export default function MindmapView() {
     }
   }, [])
 
+  // 세션당 한 번만 자동 재구축 시도 (서버 마이그레이션 후 빈 그래프 복구)
+  const rebuildAttemptedRef = useRef(false)
+
   // Ego/Full 모드에 따른 데이터 로딩 (userId 스코핑 캐시)
   useEffect(() => {
     let cancelled = false
@@ -173,6 +176,33 @@ export default function MindmapView() {
 
         if (!cancelled) {
           const { nodes, links, mv } = processNodes(result)
+
+          // 노드가 0개이고 첫 시도라면 서버 그래프 재구축 시도 (EC2 이전 후 빈 그래프 복구)
+          if (nodes.length === 0 && !rebuildAttemptedRef.current) {
+            rebuildAttemptedRef.current = true
+            try {
+              const rebuildResult = await rebuildGraph()
+              if (rebuildResult.processed > 0 && !cancelled) {
+                // 재구축 성공 → 데이터 다시 로드
+                const freshResult = viewMode === 'ego' ? await fetchEgoDefault() : await fetchMindmap(300)
+                if (!cancelled) {
+                  const { nodes: freshNodes, links: freshLinks, mv: freshMv } = processNodes(freshResult)
+                  setMaxVal(freshMv)
+                  setData({ nodes: freshNodes, links: freshLinks })
+                  if ((freshResult as { center_node?: string | null }).center_node) {
+                    setEgoCenter((freshResult as { center_node?: string | null }).center_node ?? null)
+                  }
+                  cameraRestoredRef.current = false
+                  const finalCacheKey = `${CACHE_KEYS.GRAPH_PREFIX}${viewMode}:${(freshResult as { center_node?: string | null }).center_node ?? egoCenter ?? 'default'}:${egoDepth}`
+                  setViewCache(userId, finalCacheKey, { data: { nodes: freshNodes, links: freshLinks }, maxVal: freshMv, egoCenter: (freshResult as { center_node?: string | null }).center_node ?? egoCenter })
+                }
+                return
+              }
+            } catch {
+              // 재구축 실패는 조용히 무시 — 빈 상태로 표시
+            }
+          }
+
           setMaxVal(mv)
           setData({ nodes, links })
           cameraRestoredRef.current = false
