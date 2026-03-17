@@ -920,18 +920,7 @@ export default function MindmapView() {
                 fgRef.current?.centerAt(-x / k, -y / k, 0)
               } catch { fgRef.current?.zoomToFit(400, 40) }
             } else {
-              // 밀집 영역 중심 줌: 노드 좌표 평균으로 centerAt + 적절한 줌
-              const nodes = filteredData.nodes as AnyNode[]
-              if (nodes.length === 0) return
-              const withPos = nodes.filter(n => n.x !== undefined && n.y !== undefined)
-              if (withPos.length === 0) {
-                fgRef.current?.zoomToFit(400, 40)
-                return
-              }
-              const cx = withPos.reduce((s, n) => s + (n.x || 0), 0) / withPos.length
-              const cy = withPos.reduce((s, n) => s + (n.y || 0), 0) / withPos.length
-              fgRef.current?.centerAt(cx, cy, 400)
-              fgRef.current?.zoom(2.5, 400)
+              fgRef.current?.zoomToFit(400, 60)
             }
           }}
         />

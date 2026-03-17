@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -197,10 +198,13 @@ class DigestService:
                 HumanMessage(content="Today's content:\n" + "\n".join(context_parts)),
             ]
 
-            response = await llm.ainvoke(messages)
+            response = await asyncio.wait_for(llm.ainvoke(messages), timeout=5.0)
             questions = [q.strip() for q in response.content.split("\n") if q.strip()]
             return questions[:MAX_GENERATED_QUESTIONS]
 
+        except TimeoutError:
+            logger.warning("LLM timeout while generating digest questions")
+            return ["오늘 저장한 내용들에서 어떤 인사이트를 얻으셨나요?"]
         except Exception:
             logger.exception("Error generating questions")
             return ["오늘 저장한 내용들에서 어떤 인사이트를 얻으셨나요?"]

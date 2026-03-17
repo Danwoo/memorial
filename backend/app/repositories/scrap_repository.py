@@ -314,8 +314,9 @@ class ScrapRepository:
         query = self.db.table("scraps").select("*", count="exact").eq("user_id", user_id)
 
         if search:
-            escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            query = query.or_(f"title.ilike.%{escaped}%,content.ilike.%{escaped}%")
+            # PostgREST or_() 필터는 * 와일드카드 사용 (SQL % 아님)
+            escaped = search.replace("\\", "\\\\").replace("*", "\\*").replace("?", "\\?")
+            query = query.or_(f"title.ilike.*{escaped}*,content.ilike.*{escaped}*")
 
         if source_type:
             query = query.eq("source_type", source_type)
