@@ -207,9 +207,11 @@ export default function MindmapView() {
           setData({ nodes, links })
           cameraRestoredRef.current = false
 
-          // 캐시 저장 (userId 스코핑)
-          const finalCacheKey = `${CACHE_KEYS.GRAPH_PREFIX}${viewMode}:${result.center_node ?? egoCenter ?? 'default'}:${egoDepth}`
-          setViewCache(userId, finalCacheKey, { data: { nodes, links }, maxVal: mv, egoCenter: result.center_node ?? egoCenter })
+          // 캐시 저장 (빈 그래프는 캐싱하지 않음 — 재구축 기회 보존)
+          if (nodes.length > 0) {
+            const finalCacheKey = `${CACHE_KEYS.GRAPH_PREFIX}${viewMode}:${result.center_node ?? egoCenter ?? 'default'}:${egoDepth}`
+            setViewCache(userId, finalCacheKey, { data: { nodes, links }, maxVal: mv, egoCenter: result.center_node ?? egoCenter })
+          }
         }
       } catch {
         if (!cancelled) toast.error('마인드맵을 불러올 수 없습니다')

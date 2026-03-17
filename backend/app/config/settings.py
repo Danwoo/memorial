@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str | None = None
     SUPABASE_JWT_SECRET: str | None = None
 
-    KUZU_DB_PATH: str = "./kuzu_data"
+    KUZU_DB_PATH: str = "./kuzu_data/graph"
 
     UPSTAGE_API_KEY: str | None = None
 
