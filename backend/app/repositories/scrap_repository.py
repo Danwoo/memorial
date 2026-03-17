@@ -196,6 +196,11 @@ class ScrapRepository:
         result = await asyncio.to_thread(self._select_all_for_export, str(user_id), limit)
         return result.data or []
 
+    async def get_all_with_entities(self, user_id: UUID, limit: int = 10000) -> list[dict]:
+        """그래프 재구축용 엔티티/관계 포함 전체 Scrap 조회."""
+        result = await asyncio.to_thread(self._select_all_with_entities, str(user_id), limit)
+        return result.data or []
+
     async def update_tags(self, memory_id: UUID, user_id: UUID, tags: list[str]) -> bool:
         """사용자 소유 스크랩의 태그 업데이트."""
         result = await asyncio.to_thread(
@@ -353,6 +358,16 @@ class ScrapRepository:
             .select("id, title, summary, content, tags, source_type, created_at, updated_at")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+
+    def _select_all_with_entities(self, user_id: str, limit: int):
+        return (
+            self.db.table("scraps")
+            .select("id, extracted_entities, extracted_relations")
+            .eq("user_id", user_id)
+            .not_.is_("extracted_entities", "null")
             .limit(limit)
             .execute()
         )

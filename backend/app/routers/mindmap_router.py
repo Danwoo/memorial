@@ -99,8 +99,8 @@ async def rebuild_graph(
         raise HTTPException(status_code=503, detail="마인드맵 서비스를 사용할 수 없습니다")
 
     try:
-        # Supabase에서 추출된 엔티티/관계가 있는 모든 스크랩 조회
-        raw_scraps = await scrap_repo.get_all_for_export(user_id, limit=10000)
+        # Supabase에서 extracted_entities가 있는 모든 스크랩 조회
+        raw_scraps = await scrap_repo.get_all_with_entities(user_id, limit=10000)
 
         processed = 0
         skipped = 0
