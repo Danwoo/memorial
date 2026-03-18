@@ -82,6 +82,7 @@ export default function MindmapView() {
   // 레이아웃 조정 패널
   const [showLayoutPanel, setShowLayoutPanel] = useState(false)
   const [chargeStrength, setChargeStrength] = useState(-30)
+  const [chargeDistanceMax, setChargeDistanceMax] = useState(150)
   const [linkDistance, setLinkDistance] = useState(30)
   const [velocityDecay, setVelocityDecay] = useState(0.3)
 
@@ -310,11 +311,11 @@ export default function MindmapView() {
   // 레이아웃 파라미터 변경 시 시뮬레이션에 즉시 반영
   useEffect(() => {
     if (!fgRef.current || data.nodes.length === 0) return
-    fgRef.current.d3Force('charge')?.strength(chargeStrength)
+    fgRef.current.d3Force('charge')?.strength(chargeStrength).distanceMax(chargeDistanceMax)
     fgRef.current.d3Force('link')?.distance(linkDistance)
     fgRef.current.d3ReheatSimulation()
-    console.log('[Layout]', { chargeStrength, linkDistance, velocityDecay })
-  }, [chargeStrength, linkDistance, velocityDecay, data])
+    console.log('[Layout]', { chargeStrength, chargeDistanceMax, linkDistance, velocityDecay })
+  }, [chargeStrength, chargeDistanceMax, linkDistance, velocityDecay, data])
 
   // 선택 노드 변경 시 관련 스크랩 조회
   useEffect(() => {
@@ -1052,6 +1053,7 @@ export default function MindmapView() {
             <span>레이아웃 조정</span>
             <button className="layout-reset-btn" onClick={() => {
               setChargeStrength(-30)
+              setChargeDistanceMax(150)
               setLinkDistance(30)
               setVelocityDecay(0.3)
             }}>기본값으로</button>
@@ -1060,19 +1062,30 @@ export default function MindmapView() {
             <label>반발력 <span>{chargeStrength}</span></label>
             <input
               type="range"
-              min={-100}
-              max={-5}
+              min={-300}
+              max={-1}
               step={1}
               value={chargeStrength}
               onChange={e => setChargeStrength(Number(e.target.value))}
             />
           </div>
           <div className="layout-slider-row">
+            <label>반발 범위 <span>{chargeDistanceMax}</span></label>
+            <input
+              type="range"
+              min={30}
+              max={500}
+              step={10}
+              value={chargeDistanceMax}
+              onChange={e => setChargeDistanceMax(Number(e.target.value))}
+            />
+          </div>
+          <div className="layout-slider-row">
             <label>링크 거리 <span>{linkDistance}</span></label>
             <input
               type="range"
-              min={10}
-              max={100}
+              min={5}
+              max={200}
               step={1}
               value={linkDistance}
               onChange={e => setLinkDistance(Number(e.target.value))}
