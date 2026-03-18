@@ -104,8 +104,8 @@ class MindmapRepository:
     def _init_db(self, path: str):
         """KuzuDB 데이터베이스를 열고(또는 생성) 스키마 보장."""
         try:
-            # buffer_pool_size를 128MB로 제한 (EC2 t2.micro 1GB RAM 대응)
-            self.db = kuzu.Database(path, buffer_pool_size=128 * 1024 * 1024)
+            # buffer_pool_size를 64MB로 제한 (EC2 t2.micro 1GB RAM 대응)
+            self.db = kuzu.Database(path, buffer_pool_size=64 * 1024 * 1024)
             self._ensure_schema()
             logger.info("KuzuDB initialized at %s", path)
         except Exception:
