@@ -585,9 +585,12 @@ export default function MindmapView() {
     setShowSearchDropdown(false)
     setHighlightNodes(new Set([candidate.id]))
     const node = data.nodes.find(n => n.id === candidate.id) as AnyNode | undefined
-    if (node && fgRef.current) {
-      fgRef.current.centerAt(node.x || 0, node.y || 0, 400)
-      fgRef.current.zoom(3, 400)
+    if (node) {
+      setSelectedNode(node)
+      if (fgRef.current) {
+        fgRef.current.centerAt(node.x || 0, node.y || 0, 400)
+        fgRef.current.zoom(4, 400)
+      }
     }
   }, [data.nodes])
 
