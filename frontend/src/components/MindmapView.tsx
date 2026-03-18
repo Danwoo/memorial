@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useResizePanel } from '../hooks/useResizePanel'
 import { useNavigate, useLocation } from 'react-router-dom'
 import ForceGraph2D from 'react-force-graph-2d'
-import { Lightbulb, Maximize, ZoomIn, ZoomOut } from 'lucide-react'
+import { Lightbulb, Maximize, ZoomIn, ZoomOut, SlidersHorizontal } from 'lucide-react'
 import type { MindmapNode, MindmapLink, MindmapData, SearchResult, MindmapInsights, ClusterInfo } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
@@ -78,6 +78,12 @@ export default function MindmapView() {
   const currentZoomRef = useRef(1)
   const labelBoundsRef = useRef<Array<{ x1: number; y1: number; x2: number; y2: number }>>([])
   const lastFrameRef = useRef(0)
+
+  // 레이아웃 조정 패널
+  const [showLayoutPanel, setShowLayoutPanel] = useState(false)
+  const [chargeStrength, setChargeStrength] = useState(-30)
+  const [linkDistance, setLinkDistance] = useState(30)
+  const [velocityDecay, setVelocityDecay] = useState(0.3)
 
   // 인사이트 패널
   const [insights, setInsights] = useState<MindmapInsights | null>(null)
@@ -300,6 +306,15 @@ export default function MindmapView() {
     const currentZoom = fgRef.current.zoom()
     fgRef.current.zoom(currentZoom / 1.5, 300)
   }, [])
+
+  // 레이아웃 파라미터 변경 시 시뮬레이션에 즉시 반영
+  useEffect(() => {
+    if (!fgRef.current || data.nodes.length === 0) return
+    fgRef.current.d3Force('charge')?.strength(chargeStrength)
+    fgRef.current.d3Force('link')?.distance(linkDistance)
+    fgRef.current.d3ReheatSimulation()
+    console.log('[Layout]', { chargeStrength, linkDistance, velocityDecay })
+  }, [chargeStrength, linkDistance, velocityDecay, data])
 
   // 선택 노드 변경 시 관련 스크랩 조회
   useEffect(() => {
@@ -887,7 +902,7 @@ export default function MindmapView() {
           onBackgroundClick={handleBackgroundClick}
           cooldownTicks={120}
           d3AlphaDecay={0.02}
-          d3VelocityDecay={0.3}
+          d3VelocityDecay={velocityDecay}
           onZoom={handleZoom}
           onEngineStop={() => {
             if (cameraRestoredRef.current) return
@@ -1020,6 +1035,60 @@ export default function MindmapView() {
           <button className="mindmap-zoom-btn" onClick={handleZoomOut} title="축소">
             <ZoomOut size={16} />
           </button>
+          <button
+            className={`mindmap-zoom-btn ${showLayoutPanel ? 'active' : ''}`}
+            onClick={() => setShowLayoutPanel(v => !v)}
+            title="레이아웃 조정"
+          >
+            <SlidersHorizontal size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* 레이아웃 조정 패널 */}
+      {!loading && !isEmptyMindmap && showLayoutPanel && (
+        <div className="mindmap-layout-panel">
+          <div className="layout-panel-header">
+            <span>레이아웃 조정</span>
+            <button className="layout-reset-btn" onClick={() => {
+              setChargeStrength(-30)
+              setLinkDistance(30)
+              setVelocityDecay(0.3)
+            }}>기본값으로</button>
+          </div>
+          <div className="layout-slider-row">
+            <label>반발력 <span>{chargeStrength}</span></label>
+            <input
+              type="range"
+              min={-100}
+              max={-5}
+              step={1}
+              value={chargeStrength}
+              onChange={e => setChargeStrength(Number(e.target.value))}
+            />
+          </div>
+          <div className="layout-slider-row">
+            <label>링크 거리 <span>{linkDistance}</span></label>
+            <input
+              type="range"
+              min={10}
+              max={100}
+              step={1}
+              value={linkDistance}
+              onChange={e => setLinkDistance(Number(e.target.value))}
+            />
+          </div>
+          <div className="layout-slider-row">
+            <label>마찰 <span>{velocityDecay.toFixed(2)}</span></label>
+            <input
+              type="range"
+              min={0.1}
+              max={0.9}
+              step={0.01}
+              value={velocityDecay}
+              onChange={e => setVelocityDecay(Number(e.target.value))}
+            />
+          </div>
         </div>
       )}
 

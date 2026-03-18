@@ -724,6 +724,81 @@
   color: var(--accent-primary);
 }
 
+.mindmap-zoom-btn.active {
+  background: var(--accent-primary);
+  color: #fff;
+  border-color: var(--accent-primary);
+}
+
+/* 레이아웃 조정 패널 */
+.mindmap-layout-panel {
+  position: absolute;
+  bottom: 3.75rem;
+  right: 4.5rem;
+  z-index: 10;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.layout-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.layout-reset-btn {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.layout-reset-btn:hover {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.layout-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.layout-slider-row label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.layout-slider-row label span {
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.layout-slider-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
 /* Responsive */
 @media (max-width: 767px) {
   .mindmap-legend {
