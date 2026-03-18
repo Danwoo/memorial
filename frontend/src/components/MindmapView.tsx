@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useResizePanel } from '../hooks/useResizePanel'
 import { useNavigate, useLocation } from 'react-router-dom'
 import ForceGraph2D from 'react-force-graph-2d'
-import { Lightbulb, Maximize, ZoomIn, ZoomOut, Expand } from 'lucide-react'
+import { Lightbulb, Maximize, ZoomIn, ZoomOut } from 'lucide-react'
 import type { MindmapNode, MindmapLink, MindmapData, SearchResult, MindmapInsights, ClusterInfo } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
@@ -46,10 +46,10 @@ export default function MindmapView() {
   const [searchQuery, setSearchQuery] = useState('')
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
 
-  // Ego 그래프 모드
-  const [viewMode, setViewMode] = useState<'ego' | 'full'>('ego')
+  // Ego 그래프 모드 (현재는 full 고정)
+  const [viewMode] = useState<'ego' | 'full'>('full')
   const [egoCenter, setEgoCenter] = useState<string | null>(null)
-  const [egoDepth, setEgoDepth] = useState(1)
+  const [egoDepth] = useState(1)
 
   // 관련 스크랩 조회
   const [relatedScraps, setRelatedScraps] = useState<SearchResult[]>([])
@@ -383,7 +383,9 @@ export default function MindmapView() {
       lastFrameRef.current = now
     }
 
-    const val = node.val || 1
+    const isSelected = selectedNode?.id === node.id
+    const rawVal = node.val || 1
+    const val = isSelected ? rawVal * 2.5 : rawVal
     const MIN_NODE_SIZE = 3
     const MAX_NODE_SIZE = 15
     const normalizedVal = Math.log2(val + 1) / Math.log2(maxVal + 1)
@@ -395,10 +397,20 @@ export default function MindmapView() {
     const isHighlighted = !highlightNodes || highlightNodes.has(node.id)
     const alpha = isHighlighted ? 0.92 : 0.12
 
+    // 선택된 노드 외부 링 강조
+    if (isSelected) {
+      ctx.beginPath()
+      ctx.arc(node.x || 0, node.y || 0, size + 3.5, 0, 2 * Math.PI)
+      ctx.strokeStyle = '#f59e0b'
+      ctx.lineWidth = 2.5
+      ctx.globalAlpha = 1
+      ctx.stroke()
+    }
+
     // 원 그리기
     ctx.beginPath()
     ctx.arc(node.x || 0, node.y || 0, size, 0, 2 * Math.PI)
-    ctx.fillStyle = color
+    ctx.fillStyle = isSelected ? '#f59e0b' : color
     ctx.globalAlpha = alpha
     ctx.fill()
     ctx.globalAlpha = 1
@@ -445,7 +457,7 @@ export default function MindmapView() {
         ctx.globalAlpha = 1
       }
     }
-  }, [clusterColorMode, getNodeColor, highlightNodes, labelBg, textColor, maxVal, topNodeIds])
+  }, [clusterColorMode, getNodeColor, highlightNodes, labelBg, textColor, maxVal, topNodeIds, selectedNode])
 
   // 하이라이트 매칭용 링크 키 생성
   const getLinkKey = useCallback((link: MindmapLink) => {
@@ -517,17 +529,12 @@ export default function MindmapView() {
 
     setSelectedNode(node)
     if (showInsights) setShowInsights(false)
-    // Ego 모드에서 다른 노드 클릭 시 중심 전환
-    if (viewMode === 'ego' && node.name !== egoCenter) {
-      setEgoCenter(node.name || node.id)
-      setEgoDepth(1)
-    }
-    // 2D 카메라 이동
+    // 2D 카메라 이동 + 줌
     if (fgRef.current) {
       fgRef.current.centerAt(node.x || 0, node.y || 0, 600)
       fgRef.current.zoom(4, 600)
     }
-  }, [showInsights, dismissOnboarding, viewMode, egoCenter])
+  }, [showInsights, dismissOnboarding])
 
   // 배경 클릭 시 선택 해제
   const handleBackgroundClick = useCallback(() => {
@@ -732,36 +739,6 @@ export default function MindmapView() {
 
   return (
     <div className="mindmap-view-container" ref={containerRef}>
-      {/* Ego/전체 모드 토글 */}
-      {!loading && !isEmptyMindmap && (
-        <div className="mindmap-mode-toggle">
-          <button
-            className={`mindmap-mode-btn ${viewMode === 'ego' ? 'active' : ''}`}
-            onClick={() => { setViewMode('ego'); setEgoCenter(null); setEgoDepth(1) }}
-          >
-            로컬
-          </button>
-          <button
-            className={`mindmap-mode-btn ${viewMode === 'full' ? 'active' : ''}`}
-            onClick={() => setViewMode('full')}
-          >
-            전체
-          </button>
-        </div>
-      )}
-
-      {/* Ego 중심 노드 정보 바 */}
-      {viewMode === 'ego' && egoCenter && !loading && (
-        <div className="ego-info-bar">
-          <span className="ego-center-name">{egoCenter}</span>
-          <span>중심 · {egoDepth === 1 ? '1단계' : '2단계'}</span>
-          {egoDepth < 2 && (
-            <button className="ego-expand-btn" onClick={() => setEgoDepth(2)}>
-              <Expand size={12} /> 더 보기
-            </button>
-          )}
-        </div>
-      )}
 
       {/* 검색 바 */}
       {!loading && !isEmptyMindmap && (

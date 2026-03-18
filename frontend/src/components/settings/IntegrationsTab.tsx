@@ -24,7 +24,10 @@ export default function IntegrationsTab() {
     const load = async () => {
       try {
         setLoading(true)
-        const status = await getIntegrationStatus()
+        const status = await Promise.race([
+          getIntegrationStatus(),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+        ])
         if (cancelled) return
         setProviders(status.providers)
       } catch {
