@@ -584,8 +584,9 @@ export default function DiaryView() {
   // 인라인 그리드 컬럼 (collapsed / today 상태 반영)
   const gridStyle = !isMobile ? {
     gridTemplateColumns: (() => {
-      const lw = (!isToday || leftCollapsed) ? '0' : `${leftVw}vw`
-      const rw = (!isToday || rightCollapsed) ? '0' : `${rightVw}vw`
+      if (!isToday) return '1fr'
+      const lw = leftCollapsed ? '0' : `${leftVw}vw`
+      const rw = rightCollapsed ? '0' : `${rightVw}vw`
       return `${lw} 1fr ${rw}`
     })(),
   } : undefined
