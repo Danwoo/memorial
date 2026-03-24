@@ -11,10 +11,23 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-lg) var(--space-xl);
-  background: var(--bg-secondary);
+  background: var(--bg-card);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-lg);
   margin-bottom: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.settings-profile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-gradient);
 }
 
 .profile-left {
@@ -111,9 +124,11 @@
 }
 
 .settings-section-title {
-  font-size: 0.938rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 0.813rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
   margin-bottom: var(--space-md);
   padding-bottom: var(--space-xs);
   border-bottom: 1px solid var(--border-secondary);
@@ -143,10 +158,16 @@
 /* ─── 설정 카드 ────────────────────────────────────────────────────── */
 
 .settings-card {
-  background: var(--bg-secondary);
+  background: var(--bg-card);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-lg);
   padding: var(--space-md) var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast);
+}
+
+.settings-card:hover {
+  border-color: var(--border-primary);
 }
 
 .card-title {

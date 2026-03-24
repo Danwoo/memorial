@@ -114,6 +114,7 @@
 .monthly-calendar__cell--today {
   border-color: var(--accent-primary);
   background: var(--accent-bg);
+  box-shadow: inset 0 0 0 1.5px var(--accent-primary);
 }
 
 .monthly-calendar__cell--today:hover {
@@ -122,12 +123,28 @@
 
 .monthly-calendar__cell--has-journal {
   background: var(--accent-bg);
+  border-color: var(--border-secondary);
 }
 
 .monthly-calendar__cell--selected {
-  border-color: var(--accent-primary);
-  background: var(--accent-bg);
-  box-shadow: 0 0 0 2px var(--accent-primary);
+  background: var(--accent-primary) !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 12px var(--accent-bg-hover);
+}
+
+.monthly-calendar__cell--selected .monthly-calendar__day {
+  color: #fff !important;
+  font-weight: 700;
+}
+
+.monthly-calendar__cell--selected .monthly-calendar__diary-chip {
+  color: rgba(255, 255, 255, 0.90);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.monthly-calendar__cell--selected .monthly-calendar__tag-chip {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.80);
 }
 
 /* 날짜 숫자 */
@@ -141,6 +158,10 @@
 .monthly-calendar__cell--today .monthly-calendar__day {
   color: var(--accent-primary);
   font-weight: 700;
+}
+
+.monthly-calendar__cell--today.monthly-calendar__cell--selected .monthly-calendar__day {
+  color: #fff !important;
 }
 
 .monthly-calendar__chips {
