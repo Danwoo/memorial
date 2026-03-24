@@ -47,12 +47,25 @@ export default function ProfileSection({ user, email, themePreference, setThemeP
     <header className="settings-profile">
       <div className="profile-left">
         {user?.avatar_url ? (
-          <img src={user.avatar_url} alt="" className="profile-avatar" referrerPolicy="no-referrer" />
-        ) : (
-          <div className="profile-avatar-placeholder">
-            {(user?.full_name || user?.email || '?')[0].toUpperCase()}
-          </div>
-        )}
+          <img
+            src={user.avatar_url}
+            alt=""
+            className="profile-avatar"
+            referrerPolicy="no-referrer"
+            onError={e => {
+              const target = e.currentTarget
+              target.style.display = 'none'
+              const placeholder = target.nextElementSibling as HTMLElement | null
+              if (placeholder) placeholder.style.display = 'flex'
+            }}
+          />
+        ) : null}
+        <div
+          className="profile-avatar-placeholder"
+          style={{ display: user?.avatar_url ? 'none' : 'flex' }}
+        >
+          {(user?.full_name || user?.email || '?')[0].toUpperCase()}
+        </div>
         <div className="profile-text">
           <h1 className="profile-name">{user?.full_name || '사용자'}</h1>
           <p className="profile-email">{email ?? user?.email ?? '-'}</p>

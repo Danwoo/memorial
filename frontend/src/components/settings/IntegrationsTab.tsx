@@ -159,8 +159,12 @@ export default function IntegrationsTab() {
           <div className="integration-left">
             <div className="provider-icon chrome-icon">
               <svg viewBox="0 0 24 24" width="20" height="20">
-                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
-                <circle cx="12" cy="12" r="4" fill="currentColor"/>
+                <circle cx="12" cy="12" r="10" fill="#4285F4"/>
+                <path d="M12 2a10 10 0 0 1 8.66 5H12a5 5 0 0 0 0 10l-4.33 7.5A10 10 0 0 1 12 2z" fill="#EA4335"/>
+                <path d="M12 2a10 10 0 0 1 8.66 5H12v10l-4.33 7.5A10 10 0 0 0 22 12 10 10 0 0 0 12 2z" fill="#FBBC05"/>
+                <path d="M20.66 7H12v5h8.66A10 10 0 0 0 12 2a10 10 0 0 0-8.66 5z" fill="#4285F4" opacity="0"/>
+                <circle cx="12" cy="12" r="4" fill="white"/>
+                <circle cx="12" cy="12" r="3" fill="#4285F4"/>
               </svg>
             </div>
             <div className="integration-info">

@@ -121,9 +121,31 @@
   background: var(--accent-bg-hover);
 }
 
-.monthly-calendar__cell--has-journal {
+/* 히트맵: 활동량 기반 배경 강도 (레벨 1~3) */
+.monthly-calendar__cell--has-journal,
+.monthly-calendar__cell[data-activity="1"] {
   background: var(--accent-bg);
   border-color: var(--border-secondary);
+}
+
+.monthly-calendar__cell[data-activity="2"] {
+  background: var(--accent-bg-hover);
+  border-color: var(--border-primary);
+}
+
+.monthly-calendar__cell[data-activity="3"] {
+  background: rgba(109, 79, 232, 0.28);
+  border-color: var(--accent-primary);
+}
+
+:root[data-theme="dark"] .monthly-calendar__cell[data-activity="3"] {
+  background: rgba(155, 127, 255, 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .monthly-calendar__cell[data-activity="3"] {
+    background: rgba(155, 127, 255, 0.35);
+  }
 }
 
 .monthly-calendar__cell--selected {

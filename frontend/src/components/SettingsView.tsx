@@ -6,8 +6,6 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
 import { getNotificationSettings, updateNotificationSetting } from '../api/notifications'
 import type { NudgeSetting } from '../api/notifications'
-import { fetchExportCounts, exportScraps, exportDiaries, exportAll } from '../api/export'
-import type { ExportCounts } from '../api/export'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 import { usePWAInstall } from '../hooks/usePWAInstall'
 import ProfileSection from './settings/ProfileSection'
@@ -29,10 +27,6 @@ export default function SettingsView() {
   const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, subscribe: subscribePush } = usePushNotifications()
   const { canInstall, isInstalled, install: installPWA } = usePWAInstall()
 
-  // 데이터 내보내기
-  const [exportCounts, setExportCounts] = useState<ExportCounts | null>(null)
-  const [exportLoading, setExportLoading] = useState<string | null>(null)
-
   // URL 파라미터에서 계정 연결 결과 확인 (OAuth 콜백)
   useEffect(() => {
     const linked = searchParams.get('linked')
@@ -44,14 +38,12 @@ export default function SettingsView() {
     }
   }, [searchParams, setSearchParams, toast])
 
-  // 알림 설정 + 내보내기 데이터 로드
+  // 알림 설정 로드
   const loadData = useCallback(async () => {
-    const [nudgeResult, exportResult] = await Promise.allSettled([
-      getNotificationSettings(),
-      fetchExportCounts(),
-    ])
-    if (nudgeResult.status === 'fulfilled') setNudgeSettings(nudgeResult.value.nudges)
-    if (exportResult.status === 'fulfilled') setExportCounts(exportResult.value)
+    try {
+      const result = await getNotificationSettings()
+      setNudgeSettings(result.nudges)
+    } catch { /* silent */ }
   }, [])
 
   useEffect(() => {
@@ -89,22 +81,6 @@ export default function SettingsView() {
       toast.success('브라우저 알림이 활성화되었습니다')
     } else {
       toast.error('알림 권한을 허용해주세요')
-    }
-  }
-
-  // ─── 데이터 내보내기 핸들러 ────────────────────────────────────────────────
-  const handleExport = async (type: 'scraps' | 'diaries' | 'all') => {
-    setExportLoading(type)
-    toast.info('내보내기를 준비하고 있습니다...')
-    try {
-      if (type === 'scraps') await exportScraps()
-      else if (type === 'diaries') await exportDiaries()
-      else await exportAll()
-      toast.success('다운로드가 시작됩니다')
-    } catch {
-      toast.error('내보내기에 실패했습니다')
-    } finally {
-      setExportLoading(null)
     }
   }
 
@@ -152,11 +128,8 @@ export default function SettingsView() {
       <section className="settings-section">
         <h2 className="settings-section-title">데이터</h2>
         <DataTab
-          exportCounts={exportCounts}
-          exportLoading={exportLoading}
           canInstall={canInstall}
           isInstalled={isInstalled}
-          handleExport={handleExport}
           handleOnboardingReset={handleOnboardingReset}
           handleInstallPWA={handleInstallPWA}
         />

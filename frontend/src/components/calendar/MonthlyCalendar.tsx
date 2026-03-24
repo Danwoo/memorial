@@ -43,6 +43,20 @@ function toDateStr(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
+/** 활동량 → 히트맵 레벨 (0~3) */
+function getActivityLevel(
+  journal: DiaryDateInfo | undefined,
+  activity: ActivityData | undefined,
+): 0 | 1 | 2 | 3 {
+  const scrapScore = activity?.count ?? 0
+  const journalScore = journal ? 2 : 0
+  const total = scrapScore + journalScore
+  if (total === 0) return 0
+  if (total <= 1) return 1
+  if (total <= 3) return 2
+  return 3
+}
+
 /** 무드 → 다이어리 칩 배경색 */
 function getMoodBg(mood: string | null | undefined): string {
   switch (mood) {
@@ -146,10 +160,13 @@ export default function MonthlyCalendar({
           const journal = journalMap.get(dateStr)
           const activity = activityMap.get(dateStr)
 
+          const actLevel = getActivityLevel(journal, activity)
+
           return (
             <button
               key={dateStr}
-              className={`monthly-calendar__cell${isToday ? ' monthly-calendar__cell--today' : ''}${journal ? ' monthly-calendar__cell--has-journal' : ''}${isSelected ? ' monthly-calendar__cell--selected' : ''}`}
+              className={`monthly-calendar__cell${isToday ? ' monthly-calendar__cell--today' : ''}${actLevel > 0 ? ' monthly-calendar__cell--has-journal' : ''}${isSelected ? ' monthly-calendar__cell--selected' : ''}`}
+              data-activity={actLevel > 0 ? actLevel : undefined}
               onClick={() => onDateClick(dateStr)}
               type="button"
             >
