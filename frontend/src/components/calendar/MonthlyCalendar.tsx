@@ -43,19 +43,6 @@ function toDateStr(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
-/** 활동량 → 히트맵 레벨 (0~3) */
-function getActivityLevel(
-  journal: DiaryDateInfo | undefined,
-  activity: ActivityData | undefined,
-): 0 | 1 | 2 | 3 {
-  const scrapScore = activity?.count ?? 0
-  const journalScore = journal ? 2 : 0
-  const total = scrapScore + journalScore
-  if (total === 0) return 0
-  if (total <= 1) return 1
-  if (total <= 3) return 2
-  return 3
-}
 
 /** 무드 → 다이어리 칩 배경색 */
 function getMoodBg(mood: string | null | undefined): string {
@@ -96,6 +83,18 @@ export default function MonthlyCalendar({
     }
     return map
   }, [activityData])
+
+  // 이달 최대 활동 점수 (정규화 기준)
+  const monthlyMax = useMemo(() => {
+    let max = 0
+    for (const day of cells) {
+      if (day === null) continue
+      const dateStr = toDateStr(year, month, day)
+      const score = (activityMap.get(dateStr)?.count ?? 0) + (journalMap.has(dateStr) ? 1 : 0)
+      if (score > max) max = score
+    }
+    return Math.max(max, 1)
+  }, [cells, activityMap, journalMap, year, month])
 
   const handlePrev = () => {
     if (month === 0) onMonthChange(year - 1, 11)
@@ -160,7 +159,8 @@ export default function MonthlyCalendar({
           const journal = journalMap.get(dateStr)
           const activity = activityMap.get(dateStr)
 
-          const actLevel = getActivityLevel(journal, activity)
+          const score = (activity?.count ?? 0) + (journal ? 1 : 0)
+          const actLevel = score === 0 ? 0 : (Math.ceil((score / monthlyMax) * 3) as 1 | 2 | 3)
 
           return (
             <button
