@@ -701,14 +701,12 @@ export default function DiaryView() {
           </div>
         )}
 
-        {/* 툴바 (오늘일 때만) */}
-        {isToday && (
-          <EditorToolbar
-            editor={tiptapEditor}
-            mode={editorMode}
-            onModeChange={handleModeChange}
-          />
-        )}
+        {/* 툴바 */}
+        <EditorToolbar
+          editor={tiptapEditor}
+          mode={editorMode}
+          onModeChange={handleModeChange}
+        />
 
         {/* 히스토리 로딩 */}
         {isLoadingHistory && (

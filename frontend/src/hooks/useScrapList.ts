@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import type { Scrap } from '../types'
@@ -62,6 +62,18 @@ export function useScrapList() {
   const goToPage = useCallback((n: number) => {
     setPage(Math.max(1, Math.min(n, totalPages)))
   }, [totalPages])
+
+  // 타이핑 시 300ms 디바운스 자동 검색
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchQuery.trim()
+      if (trimmed !== committedSearch) {
+        setCommittedSearch(trimmed)
+        setPage(1)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const commitSearch = useCallback(() => {
     setCommittedSearch(searchQuery.trim())
