@@ -102,7 +102,22 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
           <div className="user-section">
             <div className="user-info">
               {user.avatar_url ? (
-                <img src={user.avatar_url} alt="Profile" className="user-avatar" />
+                <>
+                  <img
+                    src={user.avatar_url}
+                    alt="Profile"
+                    className="user-avatar"
+                    referrerPolicy="no-referrer"
+                    onError={e => {
+                      e.currentTarget.style.display = 'none'
+                      const ph = e.currentTarget.nextElementSibling as HTMLElement | null
+                      if (ph) ph.style.display = 'flex'
+                    }}
+                  />
+                  <div className="user-avatar-placeholder" style={{ display: 'none' }}>
+                    {avatarInitial}
+                  </div>
+                </>
               ) : (
                 <div className="user-avatar-placeholder">
                   {avatarInitial}
