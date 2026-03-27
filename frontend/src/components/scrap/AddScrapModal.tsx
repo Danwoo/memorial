@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 import { Globe, FileText, StickyNote, Upload } from 'lucide-react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useToast } from '../../contexts/ToastContext'
+import { useAuth } from '../../contexts/AuthContext'
 import type { ScrapCreatePayload, SourceType } from '../../types'
 import { createScrap, uploadPdfScrap } from '../../api'
 import { ApiResponseError } from '../../api/client'
+import { invalidateViewCache, CACHE_KEYS } from '../../utils/viewCache'
 
 interface AddScrapModalProps {
   onClose: () => void
@@ -13,6 +15,7 @@ interface AddScrapModalProps {
 
 export default function AddScrapModal({ onClose, onAdded }: AddScrapModalProps) {
   const toast = useToast()
+  const { user } = useAuth()
   const trapRef = useFocusTrap(true)
   const [addType, setAddType] = useState<Extract<SourceType, 'WEB' | 'NOTE' | 'PDF'>>('WEB')
   const [newUrl, setNewUrl] = useState('')
@@ -56,6 +59,7 @@ export default function AddScrapModal({ onClose, onAdded }: AddScrapModalProps) 
           : { sourceType: 'NOTE', content: newNote }
         await createScrap(payload)
       }
+      if (user?.id) invalidateViewCache(user.id, CACHE_KEYS.SCRAP_LIST)
       onClose()
       onAdded()
       toast.success('스크랩이 추가되었습니다!')
