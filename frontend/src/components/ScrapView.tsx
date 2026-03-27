@@ -5,7 +5,7 @@ import { Plus, X, Check, Copy, MoreVertical, Bot } from 'lucide-react'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import { useToast } from '../contexts/ToastContext'
 import { useSocratesChat } from '../hooks/useSocratesChat'
-import { bulkScrapAction } from '../api'
+import { bulkScrapAction, fetchUserTags } from '../api'
 import { useScrapList } from '../hooks/useScrapList'
 import { useScrapTimeline } from '../hooks/useScrapTimeline'
 import { useBulkSelection } from '../hooks/useBulkSelection'
@@ -39,6 +39,12 @@ export default function ScrapView() {
   const [showOverflow, setShowOverflow] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const socratesChat = useSocratesChat({ mode: 'panel', context: { type: 'scrap' }, agentType: 'librarian' })
+
+  // ── 태그 목록 ──
+  const [availableTags, setAvailableTags] = useState<string[]>([])
+  useEffect(() => {
+    fetchUserTags().then(setAvailableTags).catch(() => {})
+  }, [])
 
   // ── 모달 상태 ──
   const [selectedScrapId, setSelectedScrapId] = useState<string | null>(null)
@@ -194,6 +200,14 @@ export default function ScrapView() {
             onSearchCommit={scrapList.commitSearch}
             onSearchClear={scrapList.clearSearch}
             onPageChange={scrapList.goToPage}
+            onAddClick={() => setShowAddModal(true)}
+            dateFrom={scrapList.dateFrom}
+            dateTo={scrapList.dateTo}
+            onDateFromChange={scrapList.setDateFrom}
+            onDateToChange={scrapList.setDateTo}
+            tagFilter={scrapList.tagFilter}
+            onTagFilterChange={scrapList.setTagFilter}
+            availableTags={availableTags}
           />
         )}
         {activeTab === 'timeline' && (
@@ -205,6 +219,7 @@ export default function ScrapView() {
             loadMoreRef={timeline.loadMoreRef}
             onRetry={() => timeline.loadTimeline(1)}
             onSelectScrap={setSelectedScrapId}
+            onAddClick={() => setShowAddModal(true)}
           />
         )}
       </div>

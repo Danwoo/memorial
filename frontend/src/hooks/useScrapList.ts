@@ -22,12 +22,15 @@ export function useScrapList() {
   const [total, setTotal] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const [committedSearch, setCommittedSearch] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [tagFilter, setTagFilter] = useState<string[]>([])
 
   const totalPages = Math.max(1, Math.ceil(total / ITEMS_PER_PAGE))
 
   const loadScraps = useCallback(async () => {
     // 기본 상태(page=1, 검색 없음, 기본 정렬)에서만 캐시 사용
-    const isDefault = page === 1 && !committedSearch && sortBy === 'created_at' && sortOrder === 'desc' && !sourceFilter
+    const isDefault = page === 1 && !committedSearch && sortBy === 'created_at' && sortOrder === 'desc' && !sourceFilter && !dateFrom && !dateTo && tagFilter.length === 0
     if (isDefault && userId && getViewCache(userId, CACHE_KEYS.SCRAP_LIST)) {
       setIsLoading(false)
       return
@@ -43,6 +46,9 @@ export function useScrapList() {
       }
       if (sourceFilter) params.source_type = sourceFilter
       if (committedSearch) params.search = committedSearch
+      if (dateFrom) params.date_from = dateFrom
+      if (dateTo) params.date_to = dateTo
+      if (tagFilter.length > 0) params.tags = tagFilter
       const data = await fetchScraps(params)
       const items = data.items || []
       setScraps(items)
@@ -57,7 +63,7 @@ export function useScrapList() {
     } finally {
       setIsLoading(false)
     }
-  }, [userId, toast, sortBy, sortOrder, sourceFilter, page, committedSearch])
+  }, [userId, toast, sortBy, sortOrder, sourceFilter, page, committedSearch, dateFrom, dateTo, tagFilter])
 
   const goToPage = useCallback((n: number) => {
     setPage(Math.max(1, Math.min(n, totalPages)))
@@ -104,5 +110,11 @@ export function useScrapList() {
     commitSearch,
     clearSearch,
     goToPage,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    tagFilter,
+    setTagFilter,
   }
 }

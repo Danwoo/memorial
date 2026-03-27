@@ -43,7 +43,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
         await createScrap({ sourceType: 'NOTE', content: inputValue.trim() })
       }
       setMemoryAdded(true)
-      toast.success('첫 번째 기억이 저장되었습니다!')
+      toast.success('첫 번째 스크랩이 저장되었습니다!')
     } catch {
       toast.error('저장에 실패했습니다. 다시 시도해주세요.')
     } finally {
@@ -118,7 +118,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
         {/* Step 2: 첫 메모리 추가 유도 */}
         {step === 2 && (
           <div className="onboarding-content step-2">
-            <h2>먼저 기억을 하나 추가해볼까요?</h2>
+            <h2>먼저 스크랩을 하나 추가해볼까요?</h2>
             <p className="onboarding-subtitle">
               흥미로운 글의 URL이나 간단한 메모를 저장해보세요
             </p>

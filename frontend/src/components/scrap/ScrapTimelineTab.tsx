@@ -16,6 +16,7 @@ interface ScrapTimelineTabProps {
   loadMoreRef: React.RefObject<HTMLDivElement>
   onRetry: () => void
   onSelectScrap: (id: string) => void
+  onAddClick?: () => void
 }
 
 export default function ScrapTimelineTab({
@@ -26,6 +27,7 @@ export default function ScrapTimelineTab({
   loadMoreRef,
   onRetry,
   onSelectScrap,
+  onAddClick,
 }: ScrapTimelineTabProps) {
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(() => {
     // 초기값: 모든 날짜 접힘 (최근 3일은 나중에 제외)
@@ -107,6 +109,8 @@ export default function ScrapTimelineTab({
         icon={<CalendarX2 size={48} />}
         title="아직 스크랩이 없습니다"
         description="새로운 지식을 저장해보세요!"
+        ctaLabel="+ 스크랩 추가"
+        onCtaClick={onAddClick}
       />
     )
   }

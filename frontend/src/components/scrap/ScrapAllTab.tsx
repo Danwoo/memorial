@@ -26,6 +26,14 @@ interface ScrapAllTabProps {
   onSearchCommit: () => void
   onSearchClear: () => void
   onPageChange: (page: number) => void
+  onAddClick?: () => void
+  dateFrom?: string
+  dateTo?: string
+  onDateFromChange?: (v: string) => void
+  onDateToChange?: (v: string) => void
+  tagFilter?: string[]
+  onTagFilterChange?: (tags: string[]) => void
+  availableTags?: string[]
 }
 
 function Pagination({ page, totalPages, onPageChange }: { page: number; totalPages: number; onPageChange: (n: number) => void }) {
@@ -99,6 +107,14 @@ export default function ScrapAllTab({
   onSearchCommit,
   onSearchClear,
   onPageChange,
+  onAddClick,
+  dateFrom,
+  dateTo,
+  onDateFromChange,
+  onDateToChange,
+  tagFilter = [],
+  onTagFilterChange,
+  availableTags = [],
 }: ScrapAllTabProps) {
   const isMobile = useIsMobile()
 
@@ -156,6 +172,62 @@ export default function ScrapAllTab({
         </div>
       </div>
 
+      {/* 날짜 범위 + 태그 필터 */}
+      {(onDateFromChange || (availableTags.length > 0 && onTagFilterChange)) && (
+        <div className="advanced-filter-bar">
+          {onDateFromChange && onDateToChange && (
+            <div className="date-range-filter">
+              <input
+                type="date"
+                className="date-input"
+                value={dateFrom || ''}
+                onChange={e => onDateFromChange(e.target.value)}
+              />
+              <span className="date-separator">~</span>
+              <input
+                type="date"
+                className="date-input"
+                value={dateTo || ''}
+                onChange={e => onDateToChange(e.target.value)}
+              />
+              {(dateFrom || dateTo) && (
+                <button
+                  className="filter-chip"
+                  onClick={() => { onDateFromChange(''); onDateToChange('') }}
+                  aria-label="날짜 필터 초기화"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          )}
+          {availableTags.length > 0 && onTagFilterChange && (
+            <div className="tag-filter-chips">
+              {availableTags.slice(0, 10).map(tag => (
+                <button
+                  key={tag}
+                  className={`filter-chip filter-chip--tag ${tagFilter.includes(tag) ? 'active' : ''}`}
+                  onClick={() => {
+                    if (tagFilter.includes(tag)) {
+                      onTagFilterChange(tagFilter.filter(t => t !== tag))
+                    } else {
+                      onTagFilterChange([...tagFilter, tag])
+                    }
+                  }}
+                >
+                  #{tag}
+                </button>
+              ))}
+              {tagFilter.length > 0 && (
+                <button className="filter-chip" onClick={() => onTagFilterChange([])}>
+                  초기화
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 선택 모드 헤더 */}
       {selectMode && scraps.length > 0 && (
         <div className="scrap-list-select-header">
@@ -179,8 +251,10 @@ export default function ScrapAllTab({
         ) : scraps.length === 0 ? (
           <EmptyState
             icon={<FolderOpen size={48} />}
-            title="아직 저장된 기억이 없습니다"
+            title="아직 저장된 스크랩이 없습니다"
             description="웹 페이지나 메모를 추가해보세요"
+            ctaLabel="+ 스크랩 추가"
+            onCtaClick={onAddClick}
           />
         ) : (
           scraps.map((scrap, index) => (

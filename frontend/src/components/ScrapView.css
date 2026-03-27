@@ -294,6 +294,46 @@
   border-color: var(--accent-primary);
 }
 
+/* ── 고급 필터 (날짜 범위 + 태그) ── */
+.advanced-filter-bar {
+  padding: var(--space-xs) var(--space-lg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.date-range-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.date-input {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+}
+
+.date-separator {
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+}
+
+.tag-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.filter-chip--tag {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+}
+
 /* ── 선택 모드 헤더 (리스트) ── */
 
 .scrap-list-select-header {
