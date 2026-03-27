@@ -1,4 +1,4 @@
-import { get, post } from './client'
+import { get, post, put } from './client'
 import type { RelatedScrapsResponse, ReviewQuestionsResponse, InsightsResponse, InlineAIAction, DiaryDatesResponse, DiaryEntry } from '../types'
 import { isDemoMode } from '../contexts/DemoContext'
 import { DEMO_DIARY_DATES, DEMO_DIARY_ENTRIES, DEMO_DIARY_ANALYSIS, DEMO_REVIEW_QUESTIONS, DEMO_RELATED_SCRAPS } from '../data/demo-data'
@@ -44,6 +44,18 @@ export function fetchDiaryDates(limit = 90): Promise<DiaryDatesResponse> {
     })
   }
   return get<DiaryDatesResponse>(`/diaries/dates?limit=${limit}`)
+}
+
+export function updateDiary(diaryId: string, content: string, scrapIds?: string[]): Promise<void> {
+  if (isDemoMode()) return Promise.resolve()
+  const body: { content: string; scrap_ids?: string[] } = { content }
+  if (scrapIds && scrapIds.length > 0) body.scrap_ids = scrapIds
+  return put(`/diaries/${diaryId}`, body)
+}
+
+export function searchDiaries(query: string, limit = 20): Promise<DiaryEntry[]> {
+  if (isDemoMode()) return Promise.resolve([])
+  return get<DiaryEntry[]>(`/diaries/search?q=${encodeURIComponent(query)}&limit=${limit}`)
 }
 
 export function fetchDiariesByDate(date: string): Promise<DiaryEntry[]> {

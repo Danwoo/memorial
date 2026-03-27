@@ -4,7 +4,8 @@ import {
   Bold, Italic, Underline, Strikethrough,
   Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Minus,
-  Link2, Undo2, Redo2,
+  Link2, ImageIcon, CheckSquare,
+  Undo2, Redo2,
   type LucideIcon,
 } from 'lucide-react'
 import './EditorToolbar.css'
@@ -30,6 +31,14 @@ export function EditorToolbar({ editor, mode, onModeChange }: EditorToolbarProps
     }
   }
 
+  const handleImage = () => {
+    if (!editor) return
+    const url = window.prompt('이미지 URL을 입력하세요:')
+    if (url) {
+      editor.chain().focus().setImage({ src: url }).run()
+    }
+  }
+
   const items: ToolbarItem[] = [
     { kind: 'button', icon: Bold, action: () => { editor?.chain().focus().toggleBold().run() }, active: 'bold', label: 'Bold' },
     { kind: 'button', icon: Italic, action: () => { editor?.chain().focus().toggleItalic().run() }, active: 'italic', label: 'Italic' },
@@ -45,6 +54,8 @@ export function EditorToolbar({ editor, mode, onModeChange }: EditorToolbarProps
     { kind: 'button', icon: Quote, action: () => { editor?.chain().focus().toggleBlockquote().run() }, active: 'blockquote', label: 'Blockquote' },
     { kind: 'button', icon: Minus, action: () => { editor?.chain().focus().setHorizontalRule().run() }, label: 'Divider' },
     { kind: 'button', icon: Link2, action: handleLink, active: 'link', label: 'Link' },
+    { kind: 'button', icon: ImageIcon, action: handleImage, label: 'Image' },
+    { kind: 'button', icon: CheckSquare, action: () => { editor?.chain().focus().toggleTaskList().run() }, active: 'taskList', label: 'Checklist' },
     { kind: 'divider' },
     { kind: 'button', icon: Undo2, action: () => { editor?.chain().focus().undo().run() }, label: 'Undo' },
     { kind: 'button', icon: Redo2, action: () => { editor?.chain().focus().redo().run() }, label: 'Redo' },

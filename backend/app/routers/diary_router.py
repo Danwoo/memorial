@@ -11,6 +11,7 @@ from app.schemas.diary_schema import (
     DiaryCreate,
     DiaryDateInfo,
     DiaryDatesResponse,
+    DiaryUpdate,
     GenerateDraftRequest,
     GenerateDraftResponse,
     InsightsResponse,
@@ -96,6 +97,44 @@ async def create_diary(
             status_code=500,
             detail="Internal server error while creating diary entry",
         ) from None
+
+
+@router.put("/{diary_id}")
+async def update_diary(
+    diary_id: UUID,
+    body: DiaryUpdate,
+    user_id: UUID = Depends(get_user_id),
+    diary_service: DiaryService = Depends(get_diary_service),
+):
+    """기존 다이어리 항목 수정."""
+    try:
+        result = await diary_service.update_entry(diary_id, user_id, body.content, body.scrap_ids)
+        if not result:
+            raise HTTPException(status_code=404, detail="Diary entry not found")
+        return result
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Failed to update diary entry %s", diary_id)
+        raise HTTPException(status_code=500, detail="Internal server error") from None
+
+
+@router.get("/search")
+async def search_diaries(
+    q: str,
+    limit: int = 20,
+    user_id: UUID = Depends(get_user_id),
+    diary_service: DiaryService = Depends(get_diary_service),
+):
+    """다이어리 내용 검색."""
+    try:
+        entries = await diary_service.get_entries(user_id, limit=100)
+        q_lower = q.lower()
+        results = [e for e in entries if q_lower in (e.get("content", "")).lower()]
+        return results[:limit]
+    except Exception:
+        logger.exception("Failed to search diaries")
+        raise HTTPException(status_code=500, detail="Search failed") from None
 
 
 @router.get("")

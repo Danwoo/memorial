@@ -105,6 +105,34 @@ class DiaryService:
 
         return diary
 
+    async def update_entry(
+        self,
+        diary_id: UUID,
+        user_id: UUID,
+        content: str,
+        scrap_ids: list[str] | None = None,
+    ) -> dict[str, Any] | None:
+        """다이어리 항목 수정 (감정 재분석 + AI 태그 재추출)."""
+        # 소유권 확인
+        existing = await self.diary_repo.get_diary_by_id(diary_id, user_id)
+        if not existing:
+            return None
+
+        mood, tags = await asyncio.gather(
+            self._analyze_sentiment(content),
+            self._extract_tags_ai(content),
+        )
+        diary = await self.diary_repo.update_diary(diary_id, content, mood=mood, tags=tags)
+
+        # 스크랩 링크 재동기화
+        if diary and scrap_ids is not None and self.link_repo:
+            try:
+                await self.link_repo.sync_links(diary_id, scrap_ids, link_type="manual")
+            except Exception:
+                logger.exception("다이어리-스크랩 링크 재동기화 실패 (diary_id=%s)", diary_id)
+
+        return diary
+
     async def get_entries(self, user_id: UUID, limit: int = 10) -> list[dict[str, Any]]:
         """사용자의 다이어리 항목 목록 조회."""
         return await self.diary_repo.get_diaries(user_id, limit)

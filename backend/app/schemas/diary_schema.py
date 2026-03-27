@@ -11,6 +11,13 @@ class DiaryCreate(BaseModel):
     scrap_ids: list[str] | None = None
 
 
+class DiaryUpdate(BaseModel):
+    """일기 항목 수정 요청."""
+
+    content: str
+    scrap_ids: list[str] | None = None
+
+
 class DiaryResponse(BaseModel):
     """일기 항목 응답."""
 

@@ -9,6 +9,7 @@ import TurndownService from 'turndown'
 import type { EditorMode, RelatedScrap, DigestScrap, DigestData, SocratesSessionResponse, DiaryDateInfo } from '../types'
 import {
   saveDiary,
+  updateDiary,
   fetchRelatedScraps as fetchRelatedScrapsApi,
   generateDiaryDraft,
   fetchSocratesSessions,
@@ -133,6 +134,7 @@ export default function DiaryView() {
   const [sessions, setSessions] = useState<SocratesSessionResponse[]>([])
   const [showSessionPicker, setShowSessionPicker] = useState(false)
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [pastEntryId, setPastEntryId] = useState<string | null>(null)
 
   const [tiptapEditor, setTiptapEditor] = useState<Editor | null>(null)
   const [starterQuestions, setStarterQuestions] = useState<string[]>([])
@@ -307,13 +309,16 @@ export default function DiaryView() {
       const saved = localStorage.getItem(JOURNAL_DRAFT_KEY)
       setMarkdownContent(saved && saved.trim() ? saved : defaultContent)
       setEditorMode('wysiwyg')
+      setPastEntryId(null)
       return
     }
     setIsLoadingHistory(true)
+    setPastEntryId(null)
     fetchDiariesByDate(selectedDate)
       .then((entries) => {
         if (entries.length > 0) {
           setMarkdownContent(entries[0].content)
+          setPastEntryId(entries[0].id ?? null)
           setEditorMode('viewer')
         } else {
           setMarkdownContent(`*${formatDateKo(selectedDate)}에 작성된 저널이 없습니다.*`)
@@ -488,13 +493,17 @@ export default function DiaryView() {
     setIsSaving(true)
     try {
       const memoryIds = extractMemoryIds()
-      await saveDiary(markdownContent, memoryIds)
-      localStorage.removeItem(JOURNAL_DRAFT_KEY)
+      if (pastEntryId && !isToday) {
+        await updateDiary(pastEntryId, markdownContent, memoryIds)
+      } else {
+        await saveDiary(markdownContent, memoryIds)
+        localStorage.removeItem(JOURNAL_DRAFT_KEY)
+      }
       markSaved()
       toast.success('저장되었습니다!')
     } catch (e) {
       console.error('저널 저장 실패', e)
-      toast.error( '저장에 실패했습니다.')
+      toast.error('저장에 실패했습니다.')
     } finally {
       setIsSaving(false)
     }
@@ -656,7 +665,7 @@ export default function DiaryView() {
                 저장 중...
               </span>
             )}
-            {isToday && (
+            {(isToday || editorMode !== 'viewer') && (
               <button
                 className="diary-save-btn"
                 onClick={handleSave}
