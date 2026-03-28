@@ -510,16 +510,18 @@ export default function DiaryView() {
   }
 
   // Ctrl+S 키보드 단축키로 저장
+  const handleSaveRef = useRef(handleSave)
+  handleSaveRef.current = handleSave
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault()
-        handleSave()
+        handleSaveRef.current()
       }
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   // 하루 정리: 채팅 세션 기반 초안 → 실패 시 메모리 기반 템플릿 폴백
   const handleDailySummary = async () => {
