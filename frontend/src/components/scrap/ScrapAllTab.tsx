@@ -1,4 +1,5 @@
-import { CheckSquare, Square, FolderOpen, ArrowUpDown, Search, X } from 'lucide-react'
+import { useState } from 'react'
+import { CheckSquare, Square, FolderOpen, ArrowUpDown, Search, X, ChevronDown, ChevronUp } from 'lucide-react'
 import type { Scrap } from '../../types'
 import { timeAgo } from '../../utils'
 import SourceIcon from '../shared/SourceIcon'
@@ -117,6 +118,7 @@ export default function ScrapAllTab({
   availableTags = [],
 }: ScrapAllTabProps) {
   const isMobile = useIsMobile()
+  const [showAllTags, setShowAllTags] = useState(false)
 
   return (
     <div className="scrap-all-tab">
@@ -203,7 +205,7 @@ export default function ScrapAllTab({
           )}
           {availableTags.length > 0 && onTagFilterChange && (
             <div className="tag-filter-chips">
-              {availableTags.slice(0, 10).map(tag => (
+              {(showAllTags ? availableTags : availableTags.slice(0, 10)).map(tag => (
                 <button
                   key={tag}
                   className={`filter-chip filter-chip--tag ${tagFilter.includes(tag) ? 'active' : ''}`}
@@ -218,6 +220,11 @@ export default function ScrapAllTab({
                   #{tag}
                 </button>
               ))}
+              {availableTags.length > 10 && (
+                <button className="filter-chip" onClick={() => setShowAllTags(!showAllTags)}>
+                  {showAllTags ? <><ChevronUp size={12} /> 접기</> : <><ChevronDown size={12} /> +{availableTags.length - 10}개</>}
+                </button>
+              )}
               {tagFilter.length > 0 && (
                 <button className="filter-chip" onClick={() => onTagFilterChange([])}>
                   초기화

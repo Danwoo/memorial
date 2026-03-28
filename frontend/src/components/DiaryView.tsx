@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useResizePanel } from '../hooks/useResizePanel'
 import { useLocation } from 'react-router-dom'
-import { Save, Loader2, Check, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, Bot, Brain } from 'lucide-react'
+import { Save, Loader2, Check, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, Bot, Brain, Pencil } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import { useSocratesChat } from '../hooks/useSocratesChat'
@@ -678,6 +678,16 @@ export default function DiaryView() {
                 <Loader2 size={14} className="spin" />
                 저장 중...
               </span>
+            )}
+            {!isToday && pastEntryId && editorMode === 'viewer' && (
+              <button
+                className="diary-save-btn"
+                onClick={() => setEditorMode('wysiwyg')}
+                type="button"
+              >
+                <Pencil size={16} />
+                편집
+              </button>
             )}
             {(isToday || editorMode !== 'viewer') && (
               <button
