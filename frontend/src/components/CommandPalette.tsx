@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { demoPath } from '../utils/demoPath'
-import { Search, X, MessageSquare, BookOpen, FileText } from 'lucide-react'
-import { searchScraps, fetchSocratesSessions } from '../api'
-import type { SearchResult, SocratesSessionResponse } from '../types'
+import { Search, X, MessageSquare, BookOpen, FileText, PenLine } from 'lucide-react'
+import { searchScraps, fetchSocratesSessions, searchDiaries } from '../api'
+import type { SearchResult, SocratesSessionResponse, DiaryEntry } from '../types'
 import './CommandPalette.css'
 
 interface CommandPaletteProps {
@@ -14,6 +14,7 @@ interface CommandPaletteProps {
 type ResultItem =
   | { kind: 'scrap'; data: SearchResult }
   | { kind: 'session'; data: SocratesSessionResponse }
+  | { kind: 'diary'; data: DiaryEntry }
 
 export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const navigate = useNavigate()
@@ -67,9 +68,10 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         if (searchParams.source) scrapSearchParams.source_type = searchParams.source.toUpperCase()
         if (searchParams.tag) scrapSearchParams.tags = searchParams.tag
 
-        const [scrapRes, sessionRes] = await Promise.allSettled([
+        const [scrapRes, sessionRes, diaryRes] = await Promise.allSettled([
           searchScraps(scrapSearchParams),
           fetchSocratesSessions(),
+          searchDiaries(cleanQuery || query, 5),
         ])
 
         const items: ResultItem[] = []
@@ -78,6 +80,12 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
           scrapRes.value.results.forEach((r) =>
             items.push({ kind: 'scrap', data: r }),
           )
+        }
+
+        if (diaryRes.status === 'fulfilled') {
+          diaryRes.value
+            .slice(0, 5)
+            .forEach((d) => items.push({ kind: 'diary', data: d }))
         }
 
         if (sessionRes.status === 'fulfilled') {
@@ -105,6 +113,9 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
       onClose()
       if (item.kind === 'scrap') {
         navigate(demoPath('/scraps'))
+      } else if (item.kind === 'diary') {
+        const dateStr = item.data.created_at?.slice(0, 10)
+        navigate(demoPath('/diary'), { state: { date: dateStr } })
       } else if (item.kind === 'session') {
         navigate(demoPath('/diary'), { state: { openSocrates: true, sessionId: item.data.id } })
       }
@@ -145,7 +156,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
           <input
             ref={inputRef}
             type="text"
-            placeholder="스크랩, 대화 검색..."
+            placeholder="스크랩, 다이어리, 대화 검색..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -162,7 +173,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
           <div className="cmd-palette__results">
             {results.map((item, idx) => (
               <button
-                key={item.kind === 'scrap' ? `sc-${item.data.id}` : `s-${item.data.id}`}
+                key={item.kind === 'scrap' ? `sc-${item.data.id}` : item.kind === 'diary' ? `d-${item.data.id}` : `s-${item.data.id}`}
                 className={`cmd-palette__item ${idx === activeIdx ? 'active' : ''}`}
                 onClick={() => handleSelect(item)}
                 onMouseEnter={() => setActiveIdx(idx)}
@@ -171,22 +182,28 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
                 <span className="cmd-palette__item-icon">
                   {item.kind === 'scrap' ? (
                     item.data.source_type === 'NOTE' ? <FileText size={16} /> : <BookOpen size={16} />
+                  ) : item.kind === 'diary' ? (
+                    <PenLine size={16} />
                   ) : (
                     <MessageSquare size={16} />
                   )}
                 </span>
                 <div className="cmd-palette__item-content">
                   <span className="cmd-palette__item-title">
-                    {item.kind === 'scrap' ? item.data.title : item.data.title}
+                    {item.kind === 'diary'
+                      ? item.data.content.replace(/<[^>]*>/g, '').slice(0, 50)
+                      : item.data.title}
                   </span>
                   <span className="cmd-palette__item-meta">
                     {item.kind === 'scrap'
                       ? (item.data.summary || '').slice(0, 60)
-                      : new Date(item.data.created_at).toLocaleDateString('ko-KR')}
+                      : item.kind === 'diary'
+                        ? item.data.created_at?.slice(0, 10)
+                        : new Date(item.data.created_at).toLocaleDateString('ko-KR')}
                   </span>
                 </div>
                 <span className="cmd-palette__item-badge">
-                  {item.kind === 'scrap' ? item.data.source_type : '대화'}
+                  {item.kind === 'scrap' ? item.data.source_type : item.kind === 'diary' ? '다이어리' : '대화'}
                 </span>
               </button>
             ))}
@@ -210,7 +227,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         {/* 안내 */}
         {!query && (
           <div className="cmd-palette__hint">
-            스크랩, 대화 세션을 검색하세요
+            스크랩, 다이어리, 대화 세션을 검색하세요 &middot; Ctrl+K
           </div>
         )}
       </div>

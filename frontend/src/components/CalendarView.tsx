@@ -10,7 +10,7 @@ import { useToast } from '../contexts/ToastContext'
 import { useViewCache } from '../hooks/useViewCache'
 import { CACHE_KEYS } from '../utils/viewCache'
 import {
-  BookOpen, Lightbulb, Pencil, Sparkles, Network,
+  BookOpen, Lightbulb, Pencil, Sparkles, Network, Bot,
   ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import MonthlyCalendar from './calendar/MonthlyCalendar'
@@ -269,6 +269,24 @@ export default function CalendarView() {
           </button>
         )}
       </div>
+
+      {/* 퀵 액션 카드 (활동 적을 때) */}
+      {activity.length < 3 && (
+        <div className="calendar-quick-actions">
+          <button className="quick-action-card" onClick={() => navigate(demoPath('/diary'))}>
+            <Pencil size={20} />
+            <span>다이어리 쓰기</span>
+          </button>
+          <button className="quick-action-card" onClick={() => navigate(demoPath('/scraps'))}>
+            <BookOpen size={20} />
+            <span>스크랩 추가</span>
+          </button>
+          <button className="quick-action-card" onClick={() => navigate(demoPath('/diary'), { state: { openSocrates: true } })}>
+            <Bot size={20} />
+            <span>Socrates 대화</span>
+          </button>
+        </div>
+      )}
 
       {/* 캘린더 + DayDetailPanel */}
       <div className={`calendar-main-container${selectedDate ? ' calendar-main-container--panel-open' : ''}`}>
