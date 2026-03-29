@@ -177,11 +177,25 @@
 /* 모바일 반응형 */
 @media (max-width: 767px) {
   .cmd-palette-overlay {
-    padding-top: 5vh;
+    padding: 0;
+    align-items: flex-start;
   }
 
   .cmd-palette {
-    max-height: 70vh;
+    width: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    border: none;
+  }
+
+  .cmd-palette__input-row {
+    padding: var(--space-md);
+    padding-top: max(var(--space-md), env(safe-area-inset-top));
+  }
+
+  .cmd-palette__results {
+    max-height: calc(100vh - 4rem);
   }
 
   .cmd-palette__kbd {

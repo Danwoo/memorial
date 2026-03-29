@@ -97,6 +97,9 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
         ))}
       </nav>
 
+      <div className="sidebar-shortcut-hint">
+        <kbd>Ctrl+K</kbd> 검색
+      </div>
       <div className="sidebar-footer">
         {user && (
           <div className="user-section">

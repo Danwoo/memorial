@@ -34,7 +34,7 @@ export default function AppLayout() {
       <main className="main-content" id="main-content">
         <Outlet />
       </main>
-      {isMobile && <MobileTabBar user={user} onLogout={signOut} />}
+      {isMobile && <MobileTabBar user={user} onLogout={signOut} onOpenSearch={() => setShowCmdPalette(true)} />}
       <CommandPalette isOpen={showCmdPalette} onClose={() => setShowCmdPalette(false)} />
     </div>
   )

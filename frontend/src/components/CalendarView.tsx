@@ -271,19 +271,28 @@ export default function CalendarView() {
       </div>
 
       {/* 퀵 액션 카드 (활동 적을 때) */}
-      {activity.length < 3 && (
+      {(!dashData?.stats || (dashData.stats.overview?.total_scraps ?? 0) < 10) && (
         <div className="calendar-quick-actions">
           <button className="quick-action-card" onClick={() => navigate(demoPath('/diary'))}>
             <Pencil size={20} />
-            <span>다이어리 쓰기</span>
+            <div className="quick-action-text">
+              <span className="quick-action-title">다이어리 쓰기</span>
+              <span className="quick-action-desc">오늘의 생각을 기록하세요</span>
+            </div>
           </button>
           <button className="quick-action-card" onClick={() => navigate(demoPath('/scraps'))}>
             <BookOpen size={20} />
-            <span>스크랩 추가</span>
+            <div className="quick-action-text">
+              <span className="quick-action-title">스크랩 추가</span>
+              <span className="quick-action-desc">웹 글이나 메모를 저장하세요</span>
+            </div>
           </button>
           <button className="quick-action-card" onClick={() => navigate(demoPath('/diary'), { state: { openSocrates: true } })}>
             <Bot size={20} />
-            <span>Socrates 대화</span>
+            <div className="quick-action-text">
+              <span className="quick-action-title">Socrates 대화</span>
+              <span className="quick-action-desc">AI와 지식을 탐색하세요</span>
+            </div>
           </button>
         </div>
       )}

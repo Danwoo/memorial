@@ -210,6 +210,28 @@
   background: var(--accent-bg);
 }
 
+@media (max-width: 767px) {
+  .diary-search-results {
+    position: fixed;
+    top: auto;
+    bottom: 3.5rem;
+    left: 0;
+    right: 0;
+    max-height: 50vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    z-index: 200;
+  }
+
+  .diary-search-bar {
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .diary-date-nav__btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
 /* ─── 날짜 선택 드롭다운 ──────────────────────────────── */
 .diary-date-picker {
   position: relative;
@@ -656,8 +678,12 @@
   font-size: var(--fs-body-sm);
   font-weight: 500;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
   min-height: 2.75rem;
+}
+
+.diary-mobile-tab:active {
+  background: var(--accent-bg);
 }
 
 .diary-mobile-tab.active {

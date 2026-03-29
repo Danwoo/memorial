@@ -218,6 +218,22 @@
   color: var(--accent-primary);
 }
 
+.quick-action-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.quick-action-title {
+  font-weight: 600;
+}
+
+.quick-action-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
 @media (max-width: 767px) {
   .calendar-quick-actions {
     flex-direction: column;

@@ -724,3 +724,22 @@ button:active:not(:disabled) {
   background-color: var(--accent-primary);
   opacity: 0.4;
 }
+
+/* ── 모바일 터치 타겟 + Safe-area ── */
+@media (max-width: 767px) {
+  button:not(.toolbar-btn):not(.mode-btn),
+  [role="button"] {
+    min-height: 44px;
+  }
+
+  .main-content {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}
+
+@supports (padding: max(0px)) {
+  .app-container--mobile .main-content {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+}

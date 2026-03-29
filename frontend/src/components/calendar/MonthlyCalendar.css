@@ -234,8 +234,8 @@
   }
 
   .monthly-calendar__cell {
-    min-height: 2.75rem;
-    padding: var(--space-1) 0.0625rem 0.125rem;
+    min-height: 3rem;
+    padding: var(--space-1) 0.125rem 0.25rem;
     border-radius: var(--space-2);
   }
 

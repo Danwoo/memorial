@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  Calendar, BookOpen, PenLine, Network, MoreHorizontal,
+  Calendar, BookOpen, PenLine, Network, Search, MoreHorizontal,
   Settings as SettingsIcon, LogOut, X,
 } from 'lucide-react'
 import type { User } from '../types'
@@ -11,9 +11,10 @@ interface MobileTabBarProps {
   user?: User | null
   onLogout?: () => void
   prefix?: string
+  onOpenSearch?: () => void
 }
 
-export default function MobileTabBar({ user, onLogout, prefix = '' }: MobileTabBarProps) {
+export default function MobileTabBar({ user, onLogout, prefix = '', onOpenSearch }: MobileTabBarProps) {
   const navigate = useNavigate()
   const [moreOpen, setMoreOpen] = useState(false)
 
@@ -71,6 +72,18 @@ export default function MobileTabBar({ user, onLogout, prefix = '' }: MobileTabB
             <span className="mobile-tab__label">{label}</span>
           </NavLink>
         ))}
+
+        {onOpenSearch && (
+          <button
+            type="button"
+            className="mobile-tab"
+            onClick={onOpenSearch}
+            aria-label="검색"
+          >
+            <Search size={22} />
+            <span className="mobile-tab__label">검색</span>
+          </button>
+        )}
 
         <button
           type="button"
