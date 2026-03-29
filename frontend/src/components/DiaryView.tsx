@@ -17,6 +17,7 @@ import {
   fetchReviewQuestions,
   fetchDiaryDates,
   fetchDiariesByDate,
+  searchDiaries,
 } from '../api'
 import type { Editor } from '@tiptap/react'
 import { TiptapEditor, type TiptapEditorHandle } from './journal/TiptapEditor'
@@ -135,6 +136,10 @@ export default function DiaryView() {
   const [showSessionPicker, setShowSessionPicker] = useState(false)
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [pastEntryId, setPastEntryId] = useState<string | null>(null)
+  const [diarySearchOpen, setDiarySearchOpen] = useState(false)
+  const [diarySearchQuery, setDiarySearchQuery] = useState('')
+  const [diarySearchResults, setDiarySearchResults] = useState<Array<{ id: string; content: string; created_at: string }>>([])
+  const [isSearching, setIsSearching] = useState(false)
 
   const [tiptapEditor, setTiptapEditor] = useState<Editor | null>(null)
   const [starterQuestions, setStarterQuestions] = useState<string[]>([])
@@ -509,6 +514,22 @@ export default function DiaryView() {
     }
   }
 
+  // 다이어리 검색 디바운스
+  useEffect(() => {
+    if (!diarySearchQuery.trim()) {
+      setDiarySearchResults([])
+      return
+    }
+    setIsSearching(true)
+    const timer = setTimeout(() => {
+      searchDiaries(diarySearchQuery.trim())
+        .then(results => setDiarySearchResults(results))
+        .catch(() => setDiarySearchResults([]))
+        .finally(() => setIsSearching(false))
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [diarySearchQuery])
+
   // Ctrl+S 키보드 단축키로 저장
   const handleSaveRef = useRef(handleSave)
   handleSaveRef.current = handleSave
@@ -665,7 +686,47 @@ export default function DiaryView() {
             isToday={isToday}
             onDateChange={setSelectedDate}
             onToggleDatePicker={() => setShowDatePicker(!showDatePicker)}
+            onToggleSearch={() => setDiarySearchOpen(!diarySearchOpen)}
+            isSearchOpen={diarySearchOpen}
           />
+          {diarySearchOpen && (
+            <div className="diary-search-bar">
+              <input
+                className="diary-search-input"
+                type="text"
+                placeholder="다이어리 내용 검색..."
+                value={diarySearchQuery}
+                onChange={e => setDiarySearchQuery(e.target.value)}
+                autoFocus
+              />
+              {isSearching && <Loader2 size={14} className="spin" />}
+              {diarySearchResults.length > 0 && (
+                <div className="diary-search-results">
+                  {diarySearchResults.slice(0, 10).map(r => (
+                    <button
+                      key={r.id}
+                      className="diary-search-result-item"
+                      onClick={() => {
+                        const dateStr = r.created_at.slice(0, 10)
+                        setSelectedDate(dateStr)
+                        setDiarySearchOpen(false)
+                        setDiarySearchQuery('')
+                      }}
+                      type="button"
+                    >
+                      <span className="diary-search-result-date">{r.created_at.slice(0, 10)}</span>
+                      <span className="diary-search-result-preview">
+                        {r.content.replace(/<[^>]*>/g, '').slice(0, 80)}...
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {diarySearchQuery && !isSearching && diarySearchResults.length === 0 && (
+                <div className="diary-search-empty">검색 결과가 없습니다</div>
+              )}
+            </div>
+          )}
           <div className="diary-editor-actions">
             {isToday && autoSaveStatus === 'saved' && (
               <span className="diary-autosave-status">

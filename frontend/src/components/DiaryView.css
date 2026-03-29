@@ -123,6 +123,93 @@
   color: var(--text-inverse);
 }
 
+/* ─── 다이어리 검색 바 ──────────────────────────────── */
+.diary-search-bar {
+  padding: var(--space-xs) var(--space-md);
+  border-bottom: 1px solid var(--border-secondary);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.diary-search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+}
+
+.diary-search-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
+.diary-search-results {
+  position: absolute;
+  top: 100%;
+  left: var(--space-md);
+  right: var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.diary-search-result-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.8125rem;
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.diary-search-result-item:hover {
+  background: var(--accent-bg);
+}
+
+.diary-search-result-date {
+  color: var(--accent-primary);
+  font-weight: 600;
+  white-space: nowrap;
+  font-size: 0.75rem;
+}
+
+.diary-search-result-preview {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diary-search-empty {
+  padding: var(--space-md);
+  color: var(--text-tertiary);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.diary-date-nav__btn.active {
+  color: var(--accent-primary);
+  background: var(--accent-bg);
+}
+
 /* ─── 날짜 선택 드롭다운 ──────────────────────────────── */
 .diary-date-picker {
   position: relative;

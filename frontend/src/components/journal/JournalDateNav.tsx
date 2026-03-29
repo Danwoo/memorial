@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar, Search } from 'lucide-react'
 
 // YYYY-MM-DD 형식 날짜 헬퍼
 function formatDateKo(dateStr: string): string {
@@ -18,6 +18,8 @@ interface JournalDateNavProps {
   isToday: boolean
   onDateChange: (date: string) => void
   onToggleDatePicker: () => void
+  onToggleSearch?: () => void
+  isSearchOpen?: boolean
 }
 
 export function JournalDateNav({
@@ -26,6 +28,8 @@ export function JournalDateNav({
   isToday,
   onDateChange,
   onToggleDatePicker,
+  onToggleSearch,
+  isSearchOpen,
 }: JournalDateNavProps) {
   return (
     <div className="diary-date-nav">
@@ -61,6 +65,16 @@ export function JournalDateNav({
           type="button"
         >
           오늘
+        </button>
+      )}
+      {onToggleSearch && (
+        <button
+          className={`diary-date-nav__btn ${isSearchOpen ? 'active' : ''}`}
+          onClick={onToggleSearch}
+          type="button"
+          aria-label="다이어리 검색"
+        >
+          <Search size={16} />
         </button>
       )}
     </div>

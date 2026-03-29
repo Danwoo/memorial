@@ -334,6 +334,36 @@
   padding: 0.2rem 0.5rem;
 }
 
+/* ── 모바일 필터 레이아웃 ── */
+@media (max-width: 767px) {
+  .advanced-filter-bar {
+    flex-direction: column;
+    padding: var(--space-xs) var(--space-sm);
+    gap: var(--space-xs);
+  }
+
+  .date-range-filter {
+    width: 100%;
+  }
+
+  .date-input {
+    flex: 1;
+    font-size: 0.75rem;
+  }
+
+  .tag-filter-chips {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .tag-filter-chips::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* ── 선택 모드 헤더 (리스트) ── */
 
 .scrap-list-select-header {
