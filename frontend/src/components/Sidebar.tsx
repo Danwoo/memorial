@@ -77,7 +77,7 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose, onO
     >
       <div className="resize-handle resize-handle--right" onMouseDown={onSidebarResize} />
       <div className="sidebar-header">
-        <NavLink to={`${prefix}/calendar`} className="logo" onClick={handleNavClick}>
+        <NavLink to={`${prefix}/calendar`} className="logo" onClick={handleNavClick} aria-label="Memoir 홈">
           <img src="/favicon.png" alt="" width={24} height={24} className="logo-icon" />
           <span className="logo-text">Memoir</span>
         </NavLink>
@@ -92,8 +92,9 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose, onO
               `nav-item ${isActive ? 'active' : ''}`
             }
             onClick={handleNavClick}
+            aria-label={label}
           >
-            <span className="nav-icon">{icon}</span>
+            <span className="nav-icon" aria-hidden="true">{icon}</span>
             <span className="nav-label">{label}</span>
           </NavLink>
         ))}
