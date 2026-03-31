@@ -75,9 +75,12 @@
   border-radius: 50%;
   background: var(--bg-tertiary);
   border: none;
-  padding: 0;
+  padding: 1.125rem 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
+  /* 44px hit area via padding while keeping visual dot size */
+  background-clip: content-box;
+  box-sizing: content-box;
 }
 
 .ob-dot--active {

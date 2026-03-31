@@ -11,6 +11,7 @@ import { demoPath } from '../utils/demoPath'
 import { fetchMindmap, fetchMindmapInsights, searchScraps, fetchEgoMindmap, fetchEgoDefault, rebuildGraph } from '../api'
 import { getViewCache, setViewCache, CACHE_KEYS } from '../utils/viewCache'
 import ScrapDetailModal from './ScrapDetailModal'
+import FeatureTip from './FeatureTip'
 import MindmapInsightPanel, { CLUSTER_COLORS } from './MindmapInsightPanel'
 import NodeInfoPanel from './mindmap/NodeInfoPanel'
 import GraphLegend from './mindmap/GraphLegend'
@@ -758,6 +759,11 @@ export default function MindmapView() {
 
   return (
     <div className="mindmap-view-container" ref={containerRef}>
+      {/* 기능 팁: 첫 방문 시 1회 */}
+      <FeatureTip
+        tipKey="mindmap-intro"
+        message="다이어리와 스크랩이 쌓이면 지식 연결이 자동으로 나타납니다. 노드를 클릭하면 연결된 스크랩을 확인할 수 있습니다."
+      />
 
       {/* 검색 바 */}
       {!loading && !isEmptyMindmap && (

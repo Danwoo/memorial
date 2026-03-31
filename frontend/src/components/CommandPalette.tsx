@@ -4,6 +4,7 @@ import { demoPath } from '../utils/demoPath'
 import { Search, X, MessageSquare, BookOpen, FileText, PenLine } from 'lucide-react'
 import { searchScraps, fetchSocratesSessions, searchDiaries } from '../api'
 import type { SearchResult, SocratesSessionResponse, DiaryEntry } from '../types'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import './CommandPalette.css'
 
 interface CommandPaletteProps {
@@ -19,6 +20,7 @@ type ResultItem =
 export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
+  const trapRef = useFocusTrap(isOpen)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<ResultItem[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -149,6 +151,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         aria-modal="true"
         aria-label="글로벌 검색"
         onClick={(e) => e.stopPropagation()}
+        ref={trapRef}
       >
         {/* 검색 입력 */}
         <div className="cmd-palette__input-row">
@@ -189,11 +192,20 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
                   )}
                 </span>
                 <div className="cmd-palette__item-content">
-                  <span className="cmd-palette__item-title">
-                    {item.kind === 'diary'
-                      ? item.data.content.replace(/<[^>]*>/g, '').slice(0, 50)
-                      : item.data.title}
-                  </span>
+                  {item.kind === 'diary' ? (
+                    <span
+                      className="cmd-palette__item-title"
+                      dangerouslySetInnerHTML={{
+                        __html: (() => {
+                          const plain = item.data.content.replace(/<[^>]*>/g, '').slice(0, 50)
+                          const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                          return escaped ? plain.replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>') : plain
+                        })(),
+                      }}
+                    />
+                  ) : (
+                    <span className="cmd-palette__item-title">{item.data.title}</span>
+                  )}
                   <span className="cmd-palette__item-meta">
                     {item.kind === 'scrap'
                       ? (item.data.summary || '').slice(0, 60)

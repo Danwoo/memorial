@@ -15,7 +15,7 @@
   /* Text */
   --text-primary: #1A1628;
   --text-secondary: #4B4668;
-  --text-muted: #6E6A8C;
+  --text-muted: #5C5878;
   --text-inverse: #FFFFFF;
 
   /* Accent */
@@ -102,7 +102,7 @@
 
     --text-primary: #EDE9F8;
     --text-secondary: #A89EC8;
-    --text-muted: #9490AF;
+    --text-muted: #A09CBC;
     --text-inverse: #111018;
 
     --accent-primary: #9B7FFF;
@@ -542,8 +542,8 @@ select:focus-visible {
   font-size: 1.1rem;
   padding: 0 0.125rem;
   flex-shrink: 0;
-  min-width: 1.75rem;
-  min-height: 1.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   display: flex;
   align-items: center;
   justify-content: center;

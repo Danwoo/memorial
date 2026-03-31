@@ -16,6 +16,7 @@ import {
 import MonthlyCalendar from './calendar/MonthlyCalendar'
 import StreakBadge from './calendar/StreakBadge'
 import DayDetailPanel from './calendar/DayDetailPanel'
+import EmptyState from './EmptyState'
 import './CalendarView.css'
 
 const ONBOARDING_KEY = 'memoir:onboarded'
@@ -291,8 +292,8 @@ export default function CalendarView() {
         )}
       </div>
 
-      {/* 퀵 액션 카드 (첫 주 또는 활동 적을 때) */}
-      {(isFirstWeek() || !dashData?.stats || (dashData.stats.overview?.total_scraps ?? 0) < 10) && (
+      {/* 퀵 액션 카드 (첫 주 또는 활동/기록 적을 때) */}
+      {(isFirstWeek() || journalDates.length < 3 || !dashData?.stats || (dashData.stats.overview?.total_scraps ?? 0) < 10) && (
         <div className="calendar-quick-actions">
           <button className="quick-action-card" onClick={() => navigate(demoPath('/diary'))}>
             <Pencil size={20} />
@@ -316,6 +317,17 @@ export default function CalendarView() {
             </div>
           </button>
         </div>
+      )}
+
+      {/* 빈 상태: 기록이 전혀 없을 때 */}
+      {!loading && journalDates.length === 0 && activity.length === 0 && (
+        <EmptyState
+          icon={<Pencil size={32} />}
+          title="아직 기록이 없습니다"
+          description="첫 다이어리를 작성하거나 스크랩을 저장하면 여기에 활동이 나타납니다."
+          ctaLabel="첫 다이어리 쓰기"
+          onCtaClick={() => navigate(demoPath('/diary'))}
+        />
       )}
 
       {/* 캘린더 + DayDetailPanel */}

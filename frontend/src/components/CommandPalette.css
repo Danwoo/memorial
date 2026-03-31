@@ -78,8 +78,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   background: none;
   border: none;
   color: var(--text-muted);
@@ -180,6 +180,14 @@
   text-align: center;
   font-size: var(--fs-body-sm);
   color: var(--text-muted);
+}
+
+/* 검색어 하이라이팅 */
+.cmd-palette__item-title mark {
+  background: rgba(109, 79, 232, 0.2);
+  color: var(--accent-primary);
+  border-radius: 2px;
+  padding: 0 1px;
 }
 
 /* 모바일 반응형 */

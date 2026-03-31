@@ -40,8 +40,18 @@
 }
 
 .mobile-tab--search {
-  color: var(--accent-primary);
-  opacity: 0.85;
+  color: white;
+  background: var(--accent-primary);
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  box-shadow: 0 2px 8px rgba(109, 79, 232, 0.4);
+  margin-bottom: 0.25rem;
+}
+
+.mobile-tab--search:active {
+  transform: scale(0.92);
+  box-shadow: 0 1px 4px rgba(109, 79, 232, 0.3);
 }
 
 .mobile-tab__label {

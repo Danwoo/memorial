@@ -210,6 +210,47 @@
   background: var(--accent-bg);
 }
 
+/* ─── 다이어리 태그 필터 바 ──────────────────────────────── */
+.diary-tag-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-1) 0;
+}
+
+.diary-tag-chip {
+  padding: 0.2rem 0.6rem;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.diary-tag-chip:hover {
+  background: var(--accent-bg);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.diary-tag-chip--active {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+/* 검색 결과 하이라이팅 */
+.diary-search-result-preview mark {
+  background: rgba(109, 79, 232, 0.2);
+  color: var(--accent-primary);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
 @media (max-width: 767px) {
   .diary-search-results {
     position: fixed;
@@ -229,6 +270,17 @@
   .diary-date-nav__btn {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  .diary-tag-filter-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .diary-tag-filter-bar::-webkit-scrollbar {
+    display: none;
   }
 }
 

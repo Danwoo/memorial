@@ -33,6 +33,7 @@ import { JournalDateNav } from './journal/JournalDateNav'
 import { JournalStarter } from './journal/JournalStarter'
 import { useJournalAutosave } from '../hooks/useJournalAutosave'
 import ScrapDetailModal from './ScrapDetailModal'
+import FeatureTip from './FeatureTip'
 import './DiaryView.css'
 
 // 관련 스크랩 검색을 트리거하기 위한 최소 글자 수
@@ -140,6 +141,7 @@ export default function DiaryView() {
   const [diarySearchQuery, setDiarySearchQuery] = useState('')
   const [diarySearchResults, setDiarySearchResults] = useState<Array<{ id: string; content: string; created_at: string }>>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
 
   const [tiptapEditor, setTiptapEditor] = useState<Editor | null>(null)
   const [starterQuestions, setStarterQuestions] = useState<string[]>([])
@@ -210,6 +212,24 @@ export default function DiaryView() {
     ],
     [todayLabel],
   )
+
+  // 다이어리 날짜에서 고유 태그 목록 추출
+  const allDiaryTags = useMemo(() => {
+    const tagSet = new Set<string>()
+    diaryDates.forEach(d => (d.tags ?? []).forEach(t => tagSet.add(t)))
+    return Array.from(tagSet).slice(0, 20)
+  }, [diaryDates])
+
+  // 태그 선택 시 해당 날짜로 이동
+  const handleTagFilter = useCallback((tag: string) => {
+    if (selectedTag === tag) {
+      setSelectedTag(null)
+      return
+    }
+    setSelectedTag(tag)
+    const match = diaryDates.find(d => (d.tags ?? []).includes(tag))
+    if (match) setSelectedDate(match.date)
+  }, [selectedTag, diaryDates])
 
   // Tiptap 에디터 HTML에서 삽입된 메모리 블록의 ID를 추출
   const extractMemoryIds = useCallback((): string[] => {
@@ -634,6 +654,31 @@ export default function DiaryView() {
     }
   }, [])
 
+  // 모바일 스와이프로 날짜 이동
+  const touchStartXRef = useRef<number | null>(null)
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX
+  }, [])
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartXRef.current
+    touchStartXRef.current = null
+    if (Math.abs(dx) < 50) return
+    if (dx > 0) {
+      // 오른쪽 스와이프 → 이전 날짜
+      const d = new Date(selectedDate + 'T00:00:00')
+      d.setDate(d.getDate() - 1)
+      const prev = d.toISOString().slice(0, 10)
+      if (prev >= '2020-01-01') setSelectedDate(prev)
+    } else {
+      // 왼쪽 스와이프 → 다음 날짜
+      const d = new Date(selectedDate + 'T00:00:00')
+      d.setDate(d.getDate() + 1)
+      const next = d.toISOString().slice(0, 10)
+      if (next <= todayStr) setSelectedDate(next)
+    }
+  }, [selectedDate, todayStr])
+
   const journalViewClass = [
     'diary-view',
     isMobile ? 'diary-view--mobile' : '',
@@ -651,6 +696,12 @@ export default function DiaryView() {
 
   return (
     <div className={journalViewClass} style={gridStyle}>
+      {/* 기능 팁 (첫 방문 시 1회 표시) */}
+      <FeatureTip
+        tipKey="diary-shortcuts"
+        message="Ctrl+S로 저장, Ctrl+[ / Ctrl+]로 날짜 이동이 가능합니다. ? 키로 모든 단축키를 확인하세요."
+      />
+
       {/* 모바일 탭 바 */}
       {isMobile && (
         <div className="diary-mobile-tabs">
@@ -681,7 +732,11 @@ export default function DiaryView() {
         </div>
       )}
 
-      <div className={`diary-editor-section ${isMobile && mobileTab !== 'editor' ? 'diary-panel--hidden' : ''}`}>
+      <div
+        className={`diary-editor-section ${isMobile && mobileTab !== 'editor' ? 'diary-panel--hidden' : ''}`}
+        onTouchStart={isMobile ? handleTouchStart : undefined}
+        onTouchEnd={isMobile ? handleTouchEnd : undefined}
+      >
         {/* 에디터 헤더 */}
         <div className="diary-editor-header">
           {isToday && (
@@ -713,27 +768,50 @@ export default function DiaryView() {
                 onChange={e => setDiarySearchQuery(e.target.value)}
                 autoFocus
               />
+              {allDiaryTags.length > 0 && (
+                <div className="diary-tag-filter-bar" aria-label="태그로 필터">
+                  {allDiaryTags.map(tag => (
+                    <button
+                      key={tag}
+                      type="button"
+                      className={`diary-tag-chip ${selectedTag === tag ? 'diary-tag-chip--active' : ''}`}
+                      onClick={() => handleTagFilter(tag)}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              )}
               {isSearching && <Loader2 size={14} className="spin" />}
               {diarySearchResults.length > 0 && (
                 <div className="diary-search-results" role="listbox" aria-label="다이어리 검색 결과" aria-live="polite">
-                  {diarySearchResults.slice(0, 10).map(r => (
-                    <button
-                      key={r.id}
-                      className="diary-search-result-item"
-                      onClick={() => {
-                        const dateStr = r.created_at.slice(0, 10)
-                        setSelectedDate(dateStr)
-                        setDiarySearchOpen(false)
-                        setDiarySearchQuery('')
-                      }}
-                      type="button"
-                    >
-                      <span className="diary-search-result-date">{r.created_at.slice(0, 10)}</span>
-                      <span className="diary-search-result-preview">
-                        {r.content.replace(/<[^>]*>/g, '').slice(0, 80)}...
-                      </span>
-                    </button>
-                  ))}
+                  {diarySearchResults.slice(0, 10).map(r => {
+                    const plain = r.content.replace(/<[^>]*>/g, '')
+                    const preview = plain.slice(0, 80)
+                    const escapedQuery = diarySearchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                    const highlighted = escapedQuery
+                      ? preview.replace(new RegExp(`(${escapedQuery})`, 'gi'), '<mark>$1</mark>')
+                      : preview
+                    return (
+                      <button
+                        key={r.id}
+                        className="diary-search-result-item"
+                        onClick={() => {
+                          const dateStr = r.created_at.slice(0, 10)
+                          setSelectedDate(dateStr)
+                          setDiarySearchOpen(false)
+                          setDiarySearchQuery('')
+                        }}
+                        type="button"
+                      >
+                        <span className="diary-search-result-date">{r.created_at.slice(0, 10)}</span>
+                        <span
+                          className="diary-search-result-preview"
+                          dangerouslySetInnerHTML={{ __html: highlighted + '...' }}
+                        />
+                      </button>
+                    )
+                  })}
                 </div>
               )}
               {diarySearchQuery && !isSearching && diarySearchResults.length === 0 && (

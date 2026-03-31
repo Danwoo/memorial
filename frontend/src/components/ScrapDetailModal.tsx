@@ -199,7 +199,7 @@ export default function ScrapDetailModal({ scrapId, onClose, onDeleted, onUpdate
           <h2>{isEditing ? '스크랩 편집' : '스크랩 상세'}</h2>
           <div className="scrap-detail-header-actions">
             {!isEditing && detail && (
-              <button className="btn-edit-scrap" onClick={enterEditMode} type="button" title="편집">
+              <button className="btn-edit-scrap" onClick={enterEditMode} type="button" title="편집" aria-label="편집">
                 <Pencil size={16} />
               </button>
             )}
