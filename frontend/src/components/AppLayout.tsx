@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import MobileTabBar from './MobileTabBar'
 import CommandPalette from './CommandPalette'
+import ShortcutsModal from './ShortcutsModal'
 import { useAuth } from '../contexts/AuthContext'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import '../App.css'
@@ -14,13 +15,16 @@ export default function AppLayout() {
   const { signOut, user } = useAuth()
   const isMobile = useIsMobile()
   const [showCmdPalette, setShowCmdPalette] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
 
-  // Cmd+K / Ctrl+K 글로벌 단축키
+  // Cmd+K / Ctrl+K + ? 글로벌 단축키
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         setShowCmdPalette((v) => !v)
+      } else if (e.key === '?' && !e.ctrlKey && !e.metaKey && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        setShowShortcuts((v) => !v)
       }
     }
     document.addEventListener('keydown', handler)
@@ -29,7 +33,7 @@ export default function AppLayout() {
 
   const handleOpenHelp = useCallback(() => {
     localStorage.removeItem(ONBOARDING_KEY)
-    window.location.reload()
+    window.dispatchEvent(new CustomEvent('memoir:show-onboarding'))
   }, [])
 
   return (
@@ -43,6 +47,7 @@ export default function AppLayout() {
       </main>
       {isMobile && <MobileTabBar user={user} onLogout={signOut} onOpenSearch={() => setShowCmdPalette(true)} />}
       <CommandPalette isOpen={showCmdPalette} onClose={() => setShowCmdPalette(false)} />
+      {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
     </div>
   )
 }

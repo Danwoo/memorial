@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useResizePanel } from '../hooks/useResizePanel'
 import { useNavigate } from 'react-router-dom'
 import { demoPath } from '../utils/demoPath'
@@ -174,6 +174,16 @@ export default function CalendarView() {
   )
   const [slideIndex, setSlideIndex] = useState(0)
   const [neverShow, setNeverShow] = useState(true)
+
+  // 사이드바 ? 버튼으로 온보딩 재오픈
+  useEffect(() => {
+    const handler = () => {
+      setSlideIndex(0)
+      setShowOnboarding(true)
+    }
+    window.addEventListener('memoir:show-onboarding', handler)
+    return () => window.removeEventListener('memoir:show-onboarding', handler)
+  }, [])
 
   const dismissOnboarding = useCallback(() => {
     if (neverShow) {

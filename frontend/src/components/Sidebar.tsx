@@ -100,7 +100,7 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose, onO
       </nav>
 
       <div className="sidebar-shortcut-hint">
-        <kbd>Ctrl+K</kbd> 검색
+        <kbd>Ctrl+K</kbd> 검색 · <kbd>?</kbd> 단축키
         {onOpenHelp && (
           <button
             className="sidebar-help-btn"
