@@ -873,7 +873,8 @@ export default function DiaryView() {
               title={leftCollapsed && rightCollapsed ? '패널 복원' : '집중 모드 (패널 숨기기)'}
               type="button"
             >
-              <Focus size={18} />
+              <Focus size={16} />
+              <span className="diary-focus-label">집중</span>
             </button>
             {(isToday || pastEntryId) && (
               <button

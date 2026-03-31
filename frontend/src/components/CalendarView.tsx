@@ -168,6 +168,30 @@ export default function CalendarView() {
     navigate(path)
   }, [navigate])
 
+  // 캘린더 키보드 월 네비게이션 (←/→: 이전/다음 달, t: 오늘)
+  const handleKeyNav = useCallback((e: KeyboardEvent) => {
+    const tag = (e.target as HTMLElement).tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      setCalYear(y => calMonth === 0 ? y - 1 : y)
+      setCalMonth(m => m === 0 ? 11 : m - 1)
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      setCalYear(y => calMonth === 11 ? y + 1 : y)
+      setCalMonth(m => m === 11 ? 0 : m + 1)
+    } else if (e.key === 't' || e.key === 'T') {
+      const n = new Date()
+      setCalYear(n.getFullYear())
+      setCalMonth(n.getMonth())
+    }
+  }, [calMonth])
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyNav)
+    return () => window.removeEventListener('keydown', handleKeyNav)
+  }, [handleKeyNav])
+
   const displayName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''
 
   // 온보딩 위자드
@@ -313,6 +337,14 @@ export default function CalendarView() {
             <span className="banner-insight">{bannerMsg}</span>
           )}
         </div>
+        <button
+          className="banner-diary-cta"
+          onClick={() => navigate(demoPath('/diary'))}
+          type="button"
+        >
+          <Pencil size={14} />
+          오늘 다이어리 쓰기
+        </button>
         {briefing?.suggested_question && (
           <button
             className="banner-question"

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { demoPath } from '../utils/demoPath'
-import { Search, X, MessageSquare, BookOpen, FileText, PenLine } from 'lucide-react'
+import { Search, X, MessageSquare, BookOpen, FileText, PenLine, Calendar, Settings, Network, Bot } from 'lucide-react'
 import { searchScraps, fetchSocratesSessions, searchDiaries } from '../api'
 import type { SearchResult, SocratesSessionResponse, DiaryEntry } from '../types'
 import { useFocusTrap } from '../hooks/useFocusTrap'
@@ -17,12 +17,30 @@ type ResultItem =
   | { kind: 'session'; data: SocratesSessionResponse }
   | { kind: 'diary'; data: DiaryEntry }
 
+interface ActionItem {
+  kind: 'action'
+  label: string
+  path: string
+  icon: React.ReactNode
+}
+
+const ACTION_COMMANDS: ActionItem[] = [
+  { kind: 'action', label: '다이어리 열기', path: '/diary', icon: <PenLine size={16} /> },
+  { kind: 'action', label: '스크랩 열기', path: '/scraps', icon: <BookOpen size={16} /> },
+  { kind: 'action', label: '캘린더 열기', path: '/calendar', icon: <Calendar size={16} /> },
+  { kind: 'action', label: '마인드맵 열기', path: '/mindmap', icon: <Network size={16} /> },
+  { kind: 'action', label: 'Socrates 대화', path: '/diary', icon: <Bot size={16} /> },
+  { kind: 'action', label: '설정 열기', path: '/settings', icon: <Settings size={16} /> },
+]
+
+type AnyItem = ResultItem | ActionItem
+
 export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const trapRef = useFocusTrap(isOpen)
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<ResultItem[]>([])
+  const [results, setResults] = useState<AnyItem[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [activeIdx, setActiveIdx] = useState(0)
 
@@ -48,6 +66,17 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
 
   // 검색 디바운스
   useEffect(() => {
+    // ">" 접두어: 액션 커맨드 필터
+    if (query.startsWith('>')) {
+      const q = query.slice(1).trim().toLowerCase()
+      const filtered = q
+        ? ACTION_COMMANDS.filter(a => a.label.toLowerCase().includes(q))
+        : ACTION_COMMANDS
+      setResults(filtered)
+      setActiveIdx(0)
+      return
+    }
+
     if (!query.trim() || query.length < 2) {
       // 빈/짧은 쿼리 시 최근 세션 다시 표시
       fetchSocratesSessions()
@@ -116,9 +145,11 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
   }, [query])
 
   const handleSelect = useCallback(
-    (item: ResultItem) => {
+    (item: AnyItem) => {
       onClose()
-      if (item.kind === 'scrap') {
+      if (item.kind === 'action') {
+        navigate(demoPath(item.path))
+      } else if (item.kind === 'scrap') {
         navigate(demoPath('/scraps'), { state: { openMemoryId: item.data.id } })
       } else if (item.kind === 'diary') {
         const dateStr = item.data.created_at?.slice(0, 10)
@@ -164,7 +195,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
           <input
             ref={inputRef}
             type="text"
-            placeholder="스크랩, 다이어리, 대화 검색... (tag:태그 / source:web)"
+            placeholder="검색... (tag:태그 / source:web / > 화면 이동)"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -179,10 +210,30 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         {/* 결과 목록 */}
         {results.length > 0 && (
           <div className="cmd-palette__results" role="listbox" aria-label="검색 결과" aria-live="polite">
+            {query.startsWith('>') && (
+              <div className="cmd-palette__section-header">화면 이동</div>
+            )}
             {!query.trim() && (
               <div className="cmd-palette__section-header">최근 대화</div>
             )}
             {results.map((item, idx) => {
+              if (item.kind === 'action') {
+                return (
+                  <button
+                    key={item.label}
+                    className={`cmd-palette__item ${idx === activeIdx ? 'active' : ''}`}
+                    onClick={() => handleSelect(item)}
+                    onMouseEnter={() => setActiveIdx(idx)}
+                    type="button"
+                  >
+                    <span className="cmd-palette__item-icon">{item.icon}</span>
+                    <div className="cmd-palette__item-content">
+                      <span className="cmd-palette__item-title">{item.label}</span>
+                    </div>
+                    <span className="cmd-palette__item-badge">이동</span>
+                  </button>
+                )
+              }
               const kindLabel: Record<string, string> = { scrap: '스크랩', diary: '다이어리', session: '대화' }
               const prevKind = idx > 0 ? results[idx - 1].kind : null
               const showHeader = !!query.trim() && item.kind !== prevKind
@@ -257,7 +308,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         {/* 안내 */}
         {!query && (
           <div className="cmd-palette__hint">
-            스크랩, 다이어리, 대화 세션을 검색하세요 &middot; Ctrl+K
+            검색 또는 <kbd className="cmd-palette__kbd">&gt;</kbd> 로 화면 이동 &middot; Ctrl+K
           </div>
         )}
       </div>

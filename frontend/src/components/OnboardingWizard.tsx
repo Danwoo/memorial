@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { demoPath } from '../utils/demoPath'
-import { BookOpen, MessageCircle, PenTool, Globe, FileText, ChevronRight, Check, Sparkles, X } from 'lucide-react'
+import { BookOpen, MessageCircle, PenTool, Globe, FileText, ChevronRight, Check, Sparkles, X, Pencil } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import { createScrap } from '../api'
 import './OnboardingWizard.css'
@@ -202,31 +202,31 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
           </div>
         )}
 
-        {/* Step 3: 첫 대화 유도 */}
+        {/* Step 3: 다음 할 일 선택 */}
         {step === 3 && (
           <div className="onboarding-content step-3">
-            <h2>Socrates에게 질문해보세요</h2>
+            <h2>이제 무엇을 해볼까요?</h2>
             <p className="onboarding-subtitle">
-              AI 비서가 저장된 기억을 바탕으로 대화해줍니다
+              지금 바로 시작하거나 자유롭게 탐색해보세요
             </p>
 
             <div className="question-suggestions">
               <button
                 className="question-card"
-                onClick={() => handleQuestionClick('최근 관심사에 대해 이야기해줘')}
+                onClick={() => { onComplete(); navigate(demoPath('/diary')) }}
                 type="button"
               >
-                <MessageCircle size={18} />
-                <span>최근 관심사에 대해 이야기해줘</span>
+                <Pencil size={18} />
+                <span>오늘 다이어리 첫 줄 써보기</span>
                 <ChevronRight size={14} />
               </button>
               <button
                 className="question-card"
-                onClick={() => handleQuestionClick('저장한 글 중 인상적인 것은?')}
+                onClick={() => handleQuestionClick('오늘 처음 Memoir를 시작했어. 어떻게 활용하면 좋을지 알려줘')}
                 type="button"
               >
                 <MessageCircle size={18} />
-                <span>저장한 글 중 인상적인 것은?</span>
+                <span>Socrates에게 활용법 물어보기</span>
                 <ChevronRight size={14} />
               </button>
               <button
@@ -235,13 +235,13 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                 type="button"
               >
                 <MessageCircle size={18} />
-                <span>이번 주 내가 읽은 것들을 정리해줘</span>
+                <span>이번 주 읽은 것들 정리해줘</span>
                 <ChevronRight size={14} />
               </button>
             </div>
 
             <button className="onboarding-btn-primary" onClick={handleNext} type="button">
-              완료 <Check size={16} />
+              자유롭게 탐색하기 <Check size={16} />
             </button>
           </div>
         )}
