@@ -283,7 +283,10 @@ export default function CalendarView() {
   if (showInteractiveWizard) {
     return (
       <div className="calendar-view">
-        <OnboardingWizard onComplete={() => setShowInteractiveWizard(false)} />
+        <OnboardingWizard onComplete={() => {
+          setShowInteractiveWizard(false)
+          toast.success('준비 완료! 이제 Memoir를 자유롭게 사용해보세요 🎉')
+        }} />
       </div>
     )
   }
@@ -356,7 +359,7 @@ export default function CalendarView() {
             📝 다이어리 <strong>{thisWeekSummary.diaryCount}</strong>/{thisWeekSummary.daysElapsed}일
           </span>
           <span className="week-summary-item">
-            📌 활동 <strong>{thisWeekSummary.activityCount}</strong>일
+            📌 기록한 날 <strong>{thisWeekSummary.activityCount}</strong>일
           </span>
         </div>
       )}

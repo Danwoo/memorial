@@ -93,8 +93,8 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         if (sessionRes.status === 'fulfilled') {
           const q = query.toLowerCase()
           sessionRes.value
-            .filter((s) => s.title.toLowerCase().includes(q))
-            .slice(0, 4)
+            .filter((s) => !q || s.title.toLowerCase().includes(q) || (s.agent_type ?? '').toLowerCase().includes(q))
+            .slice(0, 6)
             .forEach((s) => items.push({ kind: 'session', data: s }))
         }
 

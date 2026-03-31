@@ -871,23 +871,40 @@ export default function DiaryView() {
           </div>
         </div>
 
-        {/* 날짜 선택 드롭다운 */}
+        {/* 날짜 선택 드롭다운 (월별 그룹) */}
         {showDatePicker && diaryDates.length > 0 && (
           <div className="diary-date-picker">
             <div className="diary-date-picker__list">
-              {diaryDates.map((d) => (
-                <button
-                  key={d.date}
-                  className={`diary-date-picker__item ${d.date === selectedDate ? 'active' : ''}`}
-                  onClick={() => { setSelectedDate(d.date); setShowDatePicker(false) }}
-                  type="button"
-                >
-                  <span className="diary-date-picker__date">{formatDateKo(d.date)}</span>
-                  <span className="diary-date-picker__meta">
-                    {d.count}개 {d.mood === 'POSITIVE' ? '😊' : d.mood === 'NEGATIVE' ? '😔' : '📝'}
-                  </span>
-                </button>
-              ))}
+              {(() => {
+                const groups: Record<string, typeof diaryDates> = {}
+                diaryDates.forEach(d => {
+                  const ym = d.date.slice(0, 7)
+                  if (!groups[ym]) groups[ym] = []
+                  groups[ym].push(d)
+                })
+                return Object.entries(groups).map(([ym, entries]) => {
+                  const [y, m] = ym.split('-')
+                  const label = `${y}년 ${parseInt(m)}월`
+                  return (
+                    <div key={ym} className="diary-date-picker__group">
+                      <div className="diary-date-picker__group-header">{label}</div>
+                      {entries.map((d) => (
+                        <button
+                          key={d.date}
+                          className={`diary-date-picker__item ${d.date === selectedDate ? 'active' : ''}`}
+                          onClick={() => { setSelectedDate(d.date); setShowDatePicker(false) }}
+                          type="button"
+                        >
+                          <span className="diary-date-picker__date">{formatDateKo(d.date)}</span>
+                          <span className="diary-date-picker__meta">
+                            {d.count}개 {d.mood === 'POSITIVE' ? '😊' : d.mood === 'NEGATIVE' ? '😔' : '📝'}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })
+              })()}
             </div>
           </div>
         )}
