@@ -45,12 +45,16 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
   const [isSearching, setIsSearching] = useState(false)
   const [activeIdx, setActiveIdx] = useState(0)
 
-  // 열릴 때 입력창에 포커스
+  // 열릴 때 입력창에 포커스 + 최근 세션 로드
   useEffect(() => {
     if (isOpen) {
       setQuery('')
-      setResults([])
       setActiveIdx(0)
+      fetchSocratesSessions()
+        .then((sessions) => {
+          setResults(sessions.slice(0, 6).map(s => ({ kind: 'session' as const, data: s })))
+        })
+        .catch(() => setResults([]))
       setTimeout(() => inputRef.current?.focus(), 50)
     }
   }, [isOpen])
