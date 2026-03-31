@@ -416,7 +416,7 @@ select:focus-visible {
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-xl);
   padding: var(--space-6);
-  max-width: 30rem;
+  max-width: 36rem;
   width: 90%;
   box-shadow: var(--shadow-lg);
 }
@@ -468,7 +468,7 @@ select:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 0.125rem 0.625rem;
+  padding: 0.25rem 0.625rem;
   font-size: var(--fs-label);
   font-weight: 500;
   border-radius: var(--radius-full);

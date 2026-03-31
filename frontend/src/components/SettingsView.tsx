@@ -86,6 +86,7 @@ export default function SettingsView() {
 
   const handleOnboardingReset = () => {
     localStorage.removeItem('onboarding_completed')
+    localStorage.removeItem('memoir:onboarded')
     toast.info('온보딩 가이드를 다시 시작합니다')
     navigate(demoPath('/calendar'))
     window.location.reload()

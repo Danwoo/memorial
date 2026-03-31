@@ -4,6 +4,7 @@ import { useIsMobile } from '../hooks/useMediaQuery'
 import { useDemoMode } from '../contexts/DemoContext'
 import { useSocratesChat } from '../hooks/useSocratesChat'
 import SocratesPanel from './socrates/SocratesPanel'
+import FeatureTip from './FeatureTip'
 import './SocratesView.css'
 
 export default function SocratesView() {
@@ -15,6 +16,10 @@ export default function SocratesView() {
 
   return (
     <div className="socrates-view">
+      <FeatureTip
+        tipKey="socrates-intro"
+        message="AI 대화 상대와 하루를 돌아보세요. 다이어리 작성 전 Evening 모드를 먼저 시도해보세요."
+      />
       <div className="socrates-header">
         <div>
           <h1>Socrates</h1>

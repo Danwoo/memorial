@@ -688,8 +688,10 @@ export default function DiaryView() {
   const gridStyle = !isMobile ? {
     gridTemplateColumns: (() => {
       if (!isToday) return '1fr'
-      const lw = leftCollapsed ? '0' : `${leftVw}vw`
+      const lw = (!isToday || leftCollapsed) ? '0' : `${leftVw}vw`
       const rw = rightCollapsed ? '0' : `${rightVw}vw`
+      if (!isToday && !pastEntryId) return '1fr'
+      if (!isToday) return `1fr ${rw}`
       return `${lw} 1fr ${rw}`
     })(),
   } : undefined
@@ -699,7 +701,9 @@ export default function DiaryView() {
       {/* 기능 팁 (첫 방문 시 1회 표시) */}
       <FeatureTip
         tipKey="diary-shortcuts"
-        message="Ctrl+S로 저장, Ctrl+[ / Ctrl+]로 날짜 이동이 가능합니다. ? 키로 모든 단축키를 확인하세요."
+        message={isMobile
+          ? "스와이프로 날짜를 이동하고, 상단 탭으로 AI/메모리를 확인하세요."
+          : "Ctrl+S로 저장, Ctrl+[ / Ctrl+]로 날짜 이동이 가능합니다. ? 키로 모든 단축키를 확인하세요."}
       />
 
       {/* 모바일 탭 바 */}
@@ -853,7 +857,7 @@ export default function DiaryView() {
                 {isSaving ? '저장 중...' : '저장'}
               </button>
             )}
-            {isToday && (
+            {(isToday || pastEntryId) && (
               <button
                 className="diary-panel-toggle diary-panel-toggle--right"
                 onClick={() => setRightCollapsed(!rightCollapsed)}
@@ -938,15 +942,34 @@ export default function DiaryView() {
               onChange={handleMarkdownChange}
             />
           )}
-          {editorMode === 'viewer' && (
+          {editorMode === 'viewer' && !isToday && !pastEntryId && (
+            <div className="diary-past-empty">
+              <p className="diary-past-empty__msg">이 날의 기록이 없습니다.</p>
+              <button
+                className="diary-past-empty__cta"
+                onClick={() => setEditorMode('wysiwyg')}
+                type="button"
+              >
+                <Pencil size={16} />
+                이 날의 다이어리 작성하기
+              </button>
+            </div>
+          )}
+          {editorMode === 'viewer' && (pastEntryId || isToday) && (
             <ReadOnlyViewer content={markdownContent} />
           )}
         </div>
 
+        {isGenerating && (
+          <div className="diary-generating-overlay">
+            <Loader2 size={24} className="spin" />
+            <span>AI 초안 생성 중...</span>
+          </div>
+        )}
         </div>
 
-      {/* 우측 패널: AI 분석 + Socrates (오늘일 때만) */}
-      {isToday && (
+      {/* 우측 패널: AI 분석 + Socrates (오늘 or 과거 기록 있을 때) */}
+      {(isToday || pastEntryId) && (
         <div className={`diary-right-panel ${isMobile && mobileTab !== 'ai' ? 'diary-panel--hidden' : ''} ${!isMobile && rightCollapsed ? 'diary-right-panel--collapsed' : ''}`}>
           {!isMobile && !rightCollapsed && (
             <div className="resize-handle resize-handle--left" onMouseDown={onRightResize} />

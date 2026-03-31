@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Editor } from '@tiptap/react'
-import { Expand, Minimize2, Wand2 } from 'lucide-react'
+import { Expand, Minimize2, Wand2, Loader2 } from 'lucide-react'
 import { useToast } from '../../contexts/ToastContext'
 import type { InlineAIAction } from '../../types'
 import { postInlineAssist, ApiResponseError } from '../../api'
@@ -97,19 +97,26 @@ export function AIBubbleMenu({ editor }: AIBubbleMenuProps) {
         zIndex: 50,
       }}
     >
-      {ACTIONS.map(({ action, icon: Icon, label }) => (
-        <button
-          key={action}
-          className="ai-bubble-btn"
-          onClick={() => handleAction(action)}
-          disabled={isLoading}
-          type="button"
-          title={label}
-        >
-          <Icon size={14} />
-          <span>{label}</span>
-        </button>
-      ))}
+      {isLoading ? (
+        <div className="ai-bubble-btn ai-bubble-btn--loading">
+          <Loader2 size={14} className="spin" />
+          <span>처리 중...</span>
+        </div>
+      ) : (
+        ACTIONS.map(({ action, icon: Icon, label }) => (
+          <button
+            key={action}
+            className="ai-bubble-btn"
+            onClick={() => handleAction(action)}
+            disabled={isLoading}
+            type="button"
+            title={label}
+          >
+            <Icon size={14} />
+            <span>{label}</span>
+          </button>
+        ))
+      )}
     </div>
   )
 }

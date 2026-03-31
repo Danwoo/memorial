@@ -87,6 +87,7 @@
   background: var(--accent-primary);
   width: 1.5rem;
   border-radius: var(--space-1);
+  padding: 1.125rem 0.5rem;
 }
 
 .ob-arrow {
