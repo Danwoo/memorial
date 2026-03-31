@@ -166,11 +166,12 @@ export default function DiaryView() {
   const { vw: leftVw, onMouseDown: onLeftResize } = useResizePanel(15, 8, 30, 'right', 'diary-left-panel-vw')
   const { vw: rightVw, onMouseDown: onRightResize } = useResizePanel(30, 15, 45, 'left', 'diary-right-panel-vw')
 
-  // 좌/우 패널 collapse 상태 (신규 사용자는 우측 패널 기본 닫힘)
+  // 좌/우 패널 collapse 상태 (신규 사용자는 양쪽 패널 기본 닫힘)
   const [leftCollapsed, setLeftCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem('memoir-diary-panels')
-      return saved ? JSON.parse(saved).left ?? false : false
+      if (!saved) return true  // 신규 사용자: 좌측 패널도 닫힘으로 시작
+      return JSON.parse(saved).left ?? false
     } catch { return false }
   })
   const [rightCollapsed, setRightCollapsed] = useState(() => {

@@ -49,7 +49,12 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
   // 검색 디바운스
   useEffect(() => {
     if (!query.trim() || query.length < 2) {
-      setResults([])
+      // 빈/짧은 쿼리 시 최근 세션 다시 표시
+      fetchSocratesSessions()
+        .then((sessions) => {
+          setResults(sessions.slice(0, 6).map(s => ({ kind: 'session' as const, data: s })))
+        })
+        .catch(() => setResults([]))
       return
     }
 
@@ -159,7 +164,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
           <input
             ref={inputRef}
             type="text"
-            placeholder="스크랩, 다이어리, 대화 검색..."
+            placeholder="스크랩, 다이어리, 대화 검색... (tag:태그 / source:web)"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -174,6 +179,9 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         {/* 결과 목록 */}
         {results.length > 0 && (
           <div className="cmd-palette__results" role="listbox" aria-label="검색 결과" aria-live="polite">
+            {!query.trim() && (
+              <div className="cmd-palette__section-header">최근 대화</div>
+            )}
             {results.map((item, idx) => (
               <button
                 key={item.kind === 'scrap' ? `sc-${item.data.id}` : item.kind === 'diary' ? `d-${item.data.id}` : `s-${item.data.id}`}
