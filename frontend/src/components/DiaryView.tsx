@@ -306,7 +306,7 @@ export default function DiaryView() {
 
   // 마운트 시 저널 날짜 목록 로드
   useEffect(() => {
-    fetchDiaryDates()
+    fetchDiaryDates(365)
       .then((res) => setDiaryDates(res.dates))
       .catch((err) => console.error('저널 날짜 로드 실패', err))
   }, [])

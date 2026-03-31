@@ -86,7 +86,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
 
         if (diaryRes.status === 'fulfilled') {
           diaryRes.value
-            .slice(0, 5)
+            .slice(0, 10)
             .forEach((d) => items.push({ kind: 'diary', data: d }))
         }
 

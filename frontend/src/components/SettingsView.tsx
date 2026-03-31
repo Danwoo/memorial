@@ -87,6 +87,10 @@ export default function SettingsView() {
   const handleOnboardingReset = () => {
     localStorage.removeItem('onboarding_completed')
     localStorage.removeItem('memoir:onboarded')
+    // 기능 팁도 초기화 (다시 안내 표시)
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('memoir:tip-dismissed:'))
+      .forEach(k => localStorage.removeItem(k))
     toast.info('온보딩 가이드를 다시 시작합니다')
     navigate(demoPath('/calendar'))
     window.location.reload()
