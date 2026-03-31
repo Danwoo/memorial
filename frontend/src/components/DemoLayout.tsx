@@ -1,5 +1,5 @@
 import { Outlet, useNavigate } from 'react-router-dom'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Sparkles } from 'lucide-react'
 import { DemoProvider, DEMO_USER } from '../contexts/DemoContext'
 import { AuthContext } from '../contexts/AuthContext'
@@ -18,6 +18,18 @@ export default function DemoLayout() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const [showCmdPalette, setShowCmdPalette] = useState(false)
+
+  // Ctrl+K / Cmd+K 글로벌 단축키 (데모 모드)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setShowCmdPalette((v) => !v)
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
 
   const demoAuthValue = useMemo(() => ({
     user: DEMO_USER as import('../types').User,
