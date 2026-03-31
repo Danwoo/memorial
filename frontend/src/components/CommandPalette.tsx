@@ -182,51 +182,61 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
             {!query.trim() && (
               <div className="cmd-palette__section-header">최근 대화</div>
             )}
-            {results.map((item, idx) => (
-              <button
-                key={item.kind === 'scrap' ? `sc-${item.data.id}` : item.kind === 'diary' ? `d-${item.data.id}` : `s-${item.data.id}`}
-                className={`cmd-palette__item ${idx === activeIdx ? 'active' : ''}`}
-                onClick={() => handleSelect(item)}
-                onMouseEnter={() => setActiveIdx(idx)}
-                type="button"
-              >
-                <span className="cmd-palette__item-icon">
-                  {item.kind === 'scrap' ? (
-                    item.data.source_type === 'NOTE' ? <FileText size={16} /> : <BookOpen size={16} />
-                  ) : item.kind === 'diary' ? (
-                    <PenLine size={16} />
-                  ) : (
-                    <MessageSquare size={16} />
+            {results.map((item, idx) => {
+              const kindLabel: Record<string, string> = { scrap: '스크랩', diary: '다이어리', session: '대화' }
+              const prevKind = idx > 0 ? results[idx - 1].kind : null
+              const showHeader = !!query.trim() && item.kind !== prevKind
+              const itemKey = item.kind === 'scrap' ? `sc-${item.data.id}` : item.kind === 'diary' ? `d-${item.data.id}` : `s-${item.data.id}`
+              return (
+                <div key={itemKey}>
+                  {showHeader && (
+                    <div className="cmd-palette__section-header">{kindLabel[item.kind]}</div>
                   )}
-                </span>
-                <div className="cmd-palette__item-content">
-                  {item.kind === 'diary' ? (
-                    <span
-                      className="cmd-palette__item-title"
-                      dangerouslySetInnerHTML={{
-                        __html: (() => {
-                          const plain = item.data.content.replace(/<[^>]*>/g, '').slice(0, 50)
-                          const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-                          return escaped ? plain.replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>') : plain
-                        })(),
-                      }}
-                    />
-                  ) : (
-                    <span className="cmd-palette__item-title">{item.data.title}</span>
-                  )}
-                  <span className="cmd-palette__item-meta">
-                    {item.kind === 'scrap'
-                      ? (item.data.summary || '').slice(0, 60)
-                      : item.kind === 'diary'
-                        ? item.data.created_at?.slice(0, 10)
-                        : new Date(item.data.created_at).toLocaleDateString('ko-KR')}
-                  </span>
+                  <button
+                    className={`cmd-palette__item ${idx === activeIdx ? 'active' : ''}`}
+                    onClick={() => handleSelect(item)}
+                    onMouseEnter={() => setActiveIdx(idx)}
+                    type="button"
+                  >
+                    <span className="cmd-palette__item-icon">
+                      {item.kind === 'scrap' ? (
+                        item.data.source_type === 'NOTE' ? <FileText size={16} /> : <BookOpen size={16} />
+                      ) : item.kind === 'diary' ? (
+                        <PenLine size={16} />
+                      ) : (
+                        <MessageSquare size={16} />
+                      )}
+                    </span>
+                    <div className="cmd-palette__item-content">
+                      {item.kind === 'diary' ? (
+                        <span
+                          className="cmd-palette__item-title"
+                          dangerouslySetInnerHTML={{
+                            __html: (() => {
+                              const plain = item.data.content.replace(/<[^>]*>/g, '').slice(0, 50)
+                              const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                              return escaped ? plain.replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>') : plain
+                            })(),
+                          }}
+                        />
+                      ) : (
+                        <span className="cmd-palette__item-title">{item.data.title}</span>
+                      )}
+                      <span className="cmd-palette__item-meta">
+                        {item.kind === 'scrap'
+                          ? (item.data.summary || '').slice(0, 60)
+                          : item.kind === 'diary'
+                            ? item.data.created_at?.slice(0, 10)
+                            : new Date(item.data.created_at).toLocaleDateString('ko-KR')}
+                      </span>
+                    </div>
+                    <span className="cmd-palette__item-badge">
+                      {item.kind === 'scrap' ? item.data.source_type : item.kind === 'diary' ? '다이어리' : '대화'}
+                    </span>
+                  </button>
                 </div>
-                <span className="cmd-palette__item-badge">
-                  {item.kind === 'scrap' ? item.data.source_type : item.kind === 'diary' ? '다이어리' : '대화'}
-                </span>
-              </button>
-            ))}
+              )
+            })}
           </div>
         )}
 

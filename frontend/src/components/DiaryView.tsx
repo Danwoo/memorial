@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useResizePanel } from '../hooks/useResizePanel'
 import { useLocation } from 'react-router-dom'
-import { Save, Loader2, Check, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, Bot, Brain, Pencil } from 'lucide-react'
+import { Save, Loader2, Check, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, Bot, Brain, Pencil, Focus } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import { useSocratesChat } from '../hooks/useSocratesChat'
@@ -859,6 +859,22 @@ export default function DiaryView() {
                 {isSaving ? '저장 중...' : '저장'}
               </button>
             )}
+            <button
+              className={`diary-panel-toggle diary-focus-btn ${leftCollapsed && rightCollapsed ? 'active' : ''}`}
+              onClick={() => {
+                if (leftCollapsed && rightCollapsed) {
+                  setLeftCollapsed(false)
+                  setRightCollapsed(false)
+                } else {
+                  setLeftCollapsed(true)
+                  setRightCollapsed(true)
+                }
+              }}
+              title={leftCollapsed && rightCollapsed ? '패널 복원' : '집중 모드 (패널 숨기기)'}
+              type="button"
+            >
+              <Focus size={18} />
+            </button>
             {(isToday || pastEntryId) && (
               <button
                 className="diary-panel-toggle diary-panel-toggle--right"

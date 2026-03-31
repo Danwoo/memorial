@@ -38,6 +38,11 @@
   color: var(--text-primary);
 }
 
+.diary-focus-btn.active {
+  color: var(--accent-primary);
+  background: rgba(109, 79, 232, 0.1);
+}
+
 /* 에디터 섹션 (중앙) */
 .diary-editor-section {
   display: flex;
