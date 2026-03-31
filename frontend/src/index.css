@@ -1,6 +1,6 @@
 /* Memoir - Design System
  * Z-index scale: graph-controls 5, node-panel 10, insight-panel 10,
- * sidebar 100, modal-backdrop 500, modal 501, tab-bar 1000, toast 1200, cmd-palette 2000
+ * sidebar 100, modal-overlay 500, modal-content 501, tab-bar 900, more-sheet 951, toast 9999, cmd-palette 2000
  */
 
 :root {
@@ -408,7 +408,7 @@ select:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 500;
 }
 
 .modal-content {
@@ -542,6 +542,11 @@ select:focus-visible {
   font-size: 1.1rem;
   padding: 0 0.125rem;
   flex-shrink: 0;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .toast-close:hover {

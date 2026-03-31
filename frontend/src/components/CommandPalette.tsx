@@ -125,12 +125,12 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'ArrowDown') {
+      if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
         e.preventDefault()
-        setActiveIdx((i) => Math.min(i + 1, results.length - 1))
-      } else if (e.key === 'ArrowUp') {
+        setActiveIdx((i) => (i + 1) % Math.max(results.length, 1))
+      } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
         e.preventDefault()
-        setActiveIdx((i) => Math.max(i - 1, 0))
+        setActiveIdx((i) => (i - 1 + Math.max(results.length, 1)) % Math.max(results.length, 1))
       } else if (e.key === 'Enter' && results[activeIdx]) {
         e.preventDefault()
         handleSelect(results[activeIdx])
@@ -163,7 +163,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
             className="cmd-palette__input"
           />
           <kbd className="cmd-palette__kbd">ESC</kbd>
-          <button className="cmd-palette__close" onClick={onClose} type="button">
+          <button className="cmd-palette__close" onClick={onClose} type="button" aria-label="검색 닫기">
             <X size={16} />
           </button>
         </div>

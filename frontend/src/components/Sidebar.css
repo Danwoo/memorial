@@ -186,9 +186,8 @@
 .sidebar-shortcut-hint {
   padding: var(--space-xs) var(--space-md);
   text-align: center;
-  font-size: 0.6875rem;
-  color: var(--text-muted);
-  opacity: 0.6;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 
 .sidebar-shortcut-hint kbd {

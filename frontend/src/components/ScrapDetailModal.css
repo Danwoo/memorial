@@ -42,10 +42,12 @@
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  padding: var(--space-xs);
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .modal-close-btn:hover {

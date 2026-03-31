@@ -203,7 +203,7 @@ export default function ScrapDetailModal({ scrapId, onClose, onDeleted, onUpdate
                 <Pencil size={16} />
               </button>
             )}
-            <button className="modal-close-btn" onClick={onClose} type="button">
+            <button className="modal-close-btn" onClick={onClose} type="button" aria-label="닫기">
               <X size={20} />
             </button>
           </div>

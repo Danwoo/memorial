@@ -39,7 +39,7 @@ import './DiaryView.css'
 const MIN_CONTENT_LENGTH_FOR_RELATED = 20
 
 // 관련 스크랩 디바운스 지연 시간(ms)
-const RELATED_SCRAPS_DEBOUNCE_MS = 1500
+const RELATED_SCRAPS_DEBOUNCE_MS = 800
 
 const JOURNAL_DRAFT_KEY = 'memoir-journal-draft'
 
@@ -530,19 +530,32 @@ export default function DiaryView() {
     return () => clearTimeout(timer)
   }, [diarySearchQuery])
 
-  // Ctrl+S 키보드 단축키로 저장
+  // Ctrl+S / Ctrl+[ / Ctrl+] 키보드 단축키
   const handleSaveRef = useRef(handleSave)
   handleSaveRef.current = handleSave
+  const selectedDateRef = useRef(selectedDate)
+  selectedDateRef.current = selectedDate
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault()
         handleSaveRef.current()
+      } else if ((e.metaKey || e.ctrlKey) && e.key === '[') {
+        e.preventDefault()
+        const d = new Date(selectedDateRef.current + 'T00:00:00')
+        d.setDate(d.getDate() - 1)
+        setSelectedDate(d.toISOString().slice(0, 10))
+      } else if ((e.metaKey || e.ctrlKey) && e.key === ']') {
+        e.preventDefault()
+        const d = new Date(selectedDateRef.current + 'T00:00:00')
+        d.setDate(d.getDate() + 1)
+        const next = d.toISOString().slice(0, 10)
+        if (next <= todayStr) setSelectedDate(next)
       }
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [])
+  }, [todayStr, setSelectedDate])
 
   // 하루 정리: 채팅 세션 기반 초안 → 실패 시 메모리 기반 템플릿 폴백
   const handleDailySummary = async () => {
