@@ -17,6 +17,7 @@ import MonthlyCalendar from './calendar/MonthlyCalendar'
 import StreakBadge from './calendar/StreakBadge'
 import DayDetailPanel from './calendar/DayDetailPanel'
 import EmptyState from './EmptyState'
+import OnboardingWizard from './OnboardingWizard'
 import './CalendarView.css'
 
 const ONBOARDING_KEY = 'memoir:onboarded'
@@ -107,9 +108,9 @@ export default function CalendarView() {
           fetchBriefing().catch(() => null),
           fetchStreak().catch(() => null),
           fetchStats().catch(() => null),
-          fetchActivity(90).catch(() => ({ activity: [] })),
+          fetchActivity(365).catch(() => ({ activity: [] })),
           fetchDailyInsights().catch(() => ({ insights: [] })),
-          fetchDiaryDates(90).catch(() => ({ dates: [] })),
+          fetchDiaryDates(365).catch(() => ({ dates: [] })),
         ])
         return {
           briefing: briefingData,
@@ -173,6 +174,7 @@ export default function CalendarView() {
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem(ONBOARDING_KEY) && !localStorage.getItem(LEGACY_ONBOARDING_KEY),
   )
+  const [showInteractiveWizard, setShowInteractiveWizard] = useState(false)
   const [slideIndex, setSlideIndex] = useState(0)
   const [neverShow, setNeverShow] = useState(true)
 
@@ -186,11 +188,14 @@ export default function CalendarView() {
     return () => window.removeEventListener('memoir:show-onboarding', handler)
   }, [])
 
-  const dismissOnboarding = useCallback(() => {
+  const dismissOnboarding = useCallback((startWizard = false) => {
     if (neverShow) {
       localStorage.setItem(ONBOARDING_KEY, '1')
     }
     setShowOnboarding(false)
+    if (startWizard) {
+      setShowInteractiveWizard(true)
+    }
   }, [neverShow])
 
   const isLastSlide = slideIndex === ONBOARDING_SLIDES.length - 1
@@ -240,11 +245,11 @@ export default function CalendarView() {
               <span>다시 보지 않기</span>
             </label>
             <div className="ob-actions">
-              <button className="ob-btn-skip" onClick={dismissOnboarding}>
+              <button className="ob-btn-skip" onClick={() => dismissOnboarding(false)}>
                 건너뛰기
               </button>
               {isLastSlide ? (
-                <button className="ob-btn-start" onClick={dismissOnboarding}>
+                <button className="ob-btn-start" onClick={() => dismissOnboarding(true)}>
                   시작하기
                 </button>
               ) : (
@@ -255,6 +260,14 @@ export default function CalendarView() {
             </div>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  if (showInteractiveWizard) {
+    return (
+      <div className="calendar-view">
+        <OnboardingWizard onComplete={() => setShowInteractiveWizard(false)} />
       </div>
     )
   }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useResizePanel } from '../hooks/useResizePanel'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useLocation } from 'react-router-dom'
 import { Plus, X, Check, Copy, MoreVertical, Bot } from 'lucide-react'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import { useToast } from '../contexts/ToastContext'
@@ -46,8 +46,12 @@ export default function ScrapView() {
     fetchUserTags().then(setAvailableTags).catch(() => {})
   }, [])
 
+  const location = useLocation()
+
   // ── 모달 상태 ──
-  const [selectedScrapId, setSelectedScrapId] = useState<string | null>(null)
+  const [selectedScrapId, setSelectedScrapId] = useState<string | null>(
+    () => (location.state as { openMemoryId?: string } | null)?.openMemoryId ?? null,
+  )
   const [showAddModal, setShowAddModal] = useState(false)
   const [showDuplicateModal, setShowDuplicateModal] = useState(false)
   const [showTagModal, setShowTagModal] = useState(false)

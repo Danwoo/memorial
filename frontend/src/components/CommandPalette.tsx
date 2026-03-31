@@ -114,7 +114,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
     (item: ResultItem) => {
       onClose()
       if (item.kind === 'scrap') {
-        navigate(demoPath('/scraps'))
+        navigate(demoPath('/scraps'), { state: { openMemoryId: item.data.id } })
       } else if (item.kind === 'diary') {
         const dateStr = item.data.created_at?.slice(0, 10)
         navigate(demoPath('/diary'), { state: { date: dateStr } })
