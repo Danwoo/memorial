@@ -323,7 +323,8 @@
   .nav-label,
   .session-section,
   .user-details,
-  .new-socrates-btn span {
+  .new-socrates-btn span,
+  .sidebar-shortcut-hint {
     display: none;
   }
 

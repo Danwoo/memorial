@@ -142,7 +142,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
   if (!isOpen) return null
 
   return (
-    <div className="cmd-palette-overlay" onClick={onClose}>
+    <div className="cmd-palette-overlay" onClick={onClose} aria-label="검색 닫기" role="presentation">
       <div
         className="cmd-palette"
         role="dialog"
@@ -170,7 +170,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
 
         {/* 결과 목록 */}
         {results.length > 0 && (
-          <div className="cmd-palette__results">
+          <div className="cmd-palette__results" role="listbox" aria-label="검색 결과" aria-live="polite">
             {results.map((item, idx) => (
               <button
                 key={item.kind === 'scrap' ? `sc-${item.data.id}` : item.kind === 'diary' ? `d-${item.data.id}` : `s-${item.data.id}`}

@@ -15,7 +15,7 @@
   /* Text */
   --text-primary: #1A1628;
   --text-secondary: #4B4668;
-  --text-muted: #7B7899;
+  --text-muted: #6E6A8C;
   --text-inverse: #FFFFFF;
 
   /* Accent */
@@ -102,7 +102,7 @@
 
     --text-primary: #EDE9F8;
     --text-secondary: #A89EC8;
-    --text-muted: #706A8A;
+    --text-muted: #9490AF;
     --text-inverse: #111018;
 
     --accent-primary: #9B7FFF;
@@ -140,7 +140,7 @@
 
   --text-primary: #EDE9F8;
   --text-secondary: #A89EC8;
-  --text-muted: #706A8A;
+  --text-muted: #9490AF;
   --text-inverse: #111018;
 
   --accent-primary: #9B7FFF;
@@ -483,6 +483,7 @@ select:focus-visible {
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
+  /* 모바일 탭 바 위에 표시 */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -550,6 +551,12 @@ select:focus-visible {
 @keyframes toastIn {
   from { opacity: 0; transform: translateY(0.5rem); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 767px) {
+  .toast-container {
+    bottom: calc(3.5rem + env(safe-area-inset-bottom, 0) + var(--space-3));
+  }
 }
 
 /* ─── S7-5: 스켈레톤 로딩 ──────────────────────────────── */

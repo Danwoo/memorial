@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Calendar, BookOpen, PenLine, Network, Search, MoreHorizontal,
@@ -17,6 +17,8 @@ interface MobileTabBarProps {
 export default function MobileTabBar({ user, onLogout, prefix = '', onOpenSearch }: MobileTabBarProps) {
   const navigate = useNavigate()
   const [moreOpen, setMoreOpen] = useState(false)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   /** 더보기 시트 토글 */
   const toggleMore = useCallback(() => {
@@ -40,11 +42,32 @@ export default function MobileTabBar({ user, onLogout, prefix = '', onOpenSearch
     onLogout?.()
   }, [closeMore, onLogout])
 
-  // Escape 키로 시트 닫기
+  // 시트 열릴 때 닫기 버튼에 포커스
+  useEffect(() => {
+    if (moreOpen) {
+      setTimeout(() => closeButtonRef.current?.focus(), 50)
+    }
+  }, [moreOpen])
+
+  // Escape 키 + 포커스 트랩
   useEffect(() => {
     if (!moreOpen) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeMore()
+      if (e.key === 'Escape') {
+        closeMore()
+        return
+      }
+      if (e.key === 'Tab' && sheetRef.current) {
+        const focusable = sheetRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
+          e.preventDefault();
+          (e.shiftKey ? last : first).focus()
+        }
+      }
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
@@ -76,7 +99,7 @@ export default function MobileTabBar({ user, onLogout, prefix = '', onOpenSearch
         {onOpenSearch && (
           <button
             type="button"
-            className="mobile-tab"
+            className="mobile-tab mobile-tab--search"
             onClick={onOpenSearch}
             aria-label="검색"
           >
@@ -101,7 +124,7 @@ export default function MobileTabBar({ user, onLogout, prefix = '', onOpenSearch
       {moreOpen && (
         <>
           <div className="mobile-more-backdrop" onClick={closeMore} />
-          <div className="mobile-more-sheet" role="dialog" aria-label="더보기 메뉴">
+          <div className="mobile-more-sheet" role="dialog" aria-modal="true" aria-label="더보기 메뉴" ref={sheetRef}>
             <div className="mobile-more-header">
               <h3>더보기</h3>
               <button
@@ -109,6 +132,7 @@ export default function MobileTabBar({ user, onLogout, prefix = '', onOpenSearch
                 className="mobile-more-close"
                 onClick={closeMore}
                 aria-label="닫기"
+                ref={closeButtonRef}
               >
                 <X size={20} />
               </button>

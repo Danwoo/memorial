@@ -701,7 +701,7 @@ export default function DiaryView() {
               />
               {isSearching && <Loader2 size={14} className="spin" />}
               {diarySearchResults.length > 0 && (
-                <div className="diary-search-results">
+                <div className="diary-search-results" role="listbox" aria-label="다이어리 검색 결과" aria-live="polite">
                   {diarySearchResults.slice(0, 10).map(r => (
                     <button
                       key={r.id}

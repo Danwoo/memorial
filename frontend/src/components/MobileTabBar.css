@@ -38,6 +38,11 @@
   color: var(--accent-primary);
 }
 
+.mobile-tab--search {
+  color: var(--accent-primary);
+  opacity: 0.85;
+}
+
 .mobile-tab__label {
   line-height: 1;
   white-space: nowrap;
@@ -84,8 +89,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border: none;
   background: none;
   color: var(--text-secondary);
