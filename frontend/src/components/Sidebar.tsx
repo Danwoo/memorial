@@ -6,10 +6,11 @@ import { useDemoMode } from '../contexts/DemoContext'
 import {
   Calendar, BookOpen, PenLine, Network,
   Settings as SettingsIcon,
-  LogOut,
+  LogOut, HelpCircle,
 } from 'lucide-react'
 import type { User } from '../types'
 import './Sidebar.css'
+
 
 interface NavItem {
   to: string
@@ -35,9 +36,10 @@ interface SidebarProps {
   user?: User | null
   mobileOpen?: boolean
   onMobileClose?: () => void
+  onOpenHelp?: () => void
 }
 
-export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: SidebarProps) {
+export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose, onOpenHelp }: SidebarProps) {
   const { isDemoMode: isDemo } = useDemoMode()
   const prefix = isDemo ? '/demo' : ''
   const { vw: sidebarVw, onMouseDown: onSidebarResize } = useResizePanel(16, 10, 28, 'right', 'memoir-sidebar-vw')
@@ -99,6 +101,16 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose }: S
 
       <div className="sidebar-shortcut-hint">
         <kbd>Ctrl+K</kbd> 검색
+        {onOpenHelp && (
+          <button
+            className="sidebar-help-btn"
+            onClick={onOpenHelp}
+            title="사용 가이드"
+            aria-label="사용 가이드 열기"
+          >
+            <HelpCircle size={14} />
+          </button>
+        )}
       </div>
       <div className="sidebar-footer">
         {user && (

@@ -92,6 +92,11 @@
   color: var(--accent-primary);
 }
 
+.day-panel__close:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
 /* ── 로딩 ── */
 .day-panel__loading {
   display: flex;

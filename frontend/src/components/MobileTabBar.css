@@ -104,6 +104,11 @@
   background-color: var(--bg-tertiary);
 }
 
+.mobile-more-close:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
 .mobile-more-nav {
   display: flex;
   flex-direction: column;

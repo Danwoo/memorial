@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import MobileTabBar from './MobileTabBar'
@@ -6,6 +6,8 @@ import CommandPalette from './CommandPalette'
 import { useAuth } from '../contexts/AuthContext'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import '../App.css'
+
+const ONBOARDING_KEY = 'memoir:onboarded'
 
 // 인증된 라우트의 공통 레이아웃 (사이드바 + 메인 콘텐츠)
 export default function AppLayout() {
@@ -25,11 +27,16 @@ export default function AppLayout() {
     return () => document.removeEventListener('keydown', handler)
   }, [])
 
+  const handleOpenHelp = useCallback(() => {
+    localStorage.removeItem(ONBOARDING_KEY)
+    window.location.reload()
+  }, [])
+
   return (
     <div className={`app-container ${isMobile ? 'app-container--mobile' : ''}`}>
       <a href="#main-content" className="skip-link">본문으로 건너뛰기</a>
       {!isMobile && (
-        <Sidebar onLogout={signOut} user={user} />
+        <Sidebar onLogout={signOut} user={user} onOpenHelp={handleOpenHelp} />
       )}
       <main className="main-content" id="main-content">
         <Outlet />

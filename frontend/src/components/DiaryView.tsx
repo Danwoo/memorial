@@ -544,7 +544,8 @@ export default function DiaryView() {
         e.preventDefault()
         const d = new Date(selectedDateRef.current + 'T00:00:00')
         d.setDate(d.getDate() - 1)
-        setSelectedDate(d.toISOString().slice(0, 10))
+        const prev = d.toISOString().slice(0, 10)
+        if (prev >= '2020-01-01') setSelectedDate(prev)
       } else if ((e.metaKey || e.ctrlKey) && e.key === ']') {
         e.preventDefault()
         const d = new Date(selectedDateRef.current + 'T00:00:00')

@@ -55,6 +55,12 @@
   background: var(--bg-tertiary);
 }
 
+.modal-close-btn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  background: var(--bg-tertiary);
+}
+
 /* ── 로딩 ── */
 
 .scrap-detail-loading {

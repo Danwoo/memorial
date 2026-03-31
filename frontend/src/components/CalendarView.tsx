@@ -20,6 +20,17 @@ import './CalendarView.css'
 
 const ONBOARDING_KEY = 'memoir:onboarded'
 const LEGACY_ONBOARDING_KEY = 'onboarding_completed'
+const FIRST_USE_KEY = 'memoir:first-use'
+
+function isFirstWeek(): boolean {
+  let first = localStorage.getItem(FIRST_USE_KEY)
+  if (!first) {
+    first = new Date().toISOString()
+    localStorage.setItem(FIRST_USE_KEY, first)
+  }
+  const days = (Date.now() - new Date(first).getTime()) / (1000 * 60 * 60 * 24)
+  return days < 7
+}
 
 const ONBOARDING_SLIDES = [
   {
@@ -270,8 +281,8 @@ export default function CalendarView() {
         )}
       </div>
 
-      {/* 퀵 액션 카드 (활동 적을 때) */}
-      {(!dashData?.stats || (dashData.stats.overview?.total_scraps ?? 0) < 10) && (
+      {/* 퀵 액션 카드 (첫 주 또는 활동 적을 때) */}
+      {(isFirstWeek() || !dashData?.stats || (dashData.stats.overview?.total_scraps ?? 0) < 10) && (
         <div className="calendar-quick-actions">
           <button className="quick-action-card" onClick={() => navigate(demoPath('/diary'))}>
             <Pencil size={20} />
