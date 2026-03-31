@@ -166,7 +166,7 @@ export default function DiaryView() {
   const { vw: leftVw, onMouseDown: onLeftResize } = useResizePanel(15, 8, 30, 'right', 'diary-left-panel-vw')
   const { vw: rightVw, onMouseDown: onRightResize } = useResizePanel(30, 15, 45, 'left', 'diary-right-panel-vw')
 
-  // 좌/우 패널 collapse 상태
+  // 좌/우 패널 collapse 상태 (신규 사용자는 우측 패널 기본 닫힘)
   const [leftCollapsed, setLeftCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem('memoir-diary-panels')
@@ -176,7 +176,8 @@ export default function DiaryView() {
   const [rightCollapsed, setRightCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem('memoir-diary-panels')
-      return saved ? JSON.parse(saved).right ?? false : false
+      if (!saved) return true  // 신규 사용자: 우측 패널 닫힘으로 시작
+      return JSON.parse(saved).right ?? false
     } catch { return false }
   })
 
@@ -703,7 +704,7 @@ export default function DiaryView() {
         tipKey="diary-shortcuts"
         message={isMobile
           ? "스와이프로 날짜를 이동하고, 상단 탭으로 AI/메모리를 확인하세요."
-          : "Ctrl+S로 저장, Ctrl+[ / Ctrl+]로 날짜 이동이 가능합니다. ? 키로 모든 단축키를 확인하세요."}
+          : "글은 자동으로 저장됩니다. 우상단 버튼으로 AI 분석 패널을 열 수 있어요. 단축키는 ? 키로 확인하세요."}
       />
 
       {/* 모바일 탭 바 */}

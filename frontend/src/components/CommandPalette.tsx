@@ -65,7 +65,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
 
         const scrapSearchParams: { q: string; limit?: number; source_type?: string; tags?: string } = {
           q: cleanQuery || query,
-          limit: 8,
+          limit: 15,
         }
         if (searchParams.source) scrapSearchParams.source_type = searchParams.source.toUpperCase()
         if (searchParams.tag) scrapSearchParams.tags = searchParams.tag
@@ -73,7 +73,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
         const [scrapRes, sessionRes, diaryRes] = await Promise.allSettled([
           searchScraps(scrapSearchParams),
           fetchSocratesSessions(),
-          searchDiaries(cleanQuery || query, 5),
+          searchDiaries(cleanQuery || query, 10),
         ])
 
         const items: ResultItem[] = []

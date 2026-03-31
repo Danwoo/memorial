@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useResizePanel } from '../hooks/useResizePanel'
 import { useNavigate } from 'react-router-dom'
 import { demoPath } from '../utils/demoPath'
@@ -200,6 +200,22 @@ export default function CalendarView() {
 
   const isLastSlide = slideIndex === ONBOARDING_SLIDES.length - 1
 
+  // 이번 주 요약 (일정 관리자용) — hooks must be before any conditional return
+  const thisWeekSummary = useMemo(() => {
+    const today = new Date()
+    const dayOfWeek = today.getDay()
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
+    monday.setHours(0, 0, 0, 0)
+    const mondayStr = monday.toISOString().slice(0, 10)
+    const todayStr = today.toISOString().slice(0, 10)
+    const diaryData = dashData?.journalDates ?? []
+    const activityData = dashData?.activity ?? []
+    const diaryCount = diaryData.filter(d => d.date >= mondayStr && d.date <= todayStr).length
+    const activityCount = activityData.filter(a => a.date >= mondayStr && a.date <= todayStr && a.count > 0).length
+    return { diaryCount, activityCount, daysElapsed: dayOfWeek === 0 ? 7 : dayOfWeek }
+  }, [dashData])
+
   if (showOnboarding) {
     const slide = ONBOARDING_SLIDES[slideIndex]
     return (
@@ -325,10 +341,23 @@ export default function CalendarView() {
           <button className="quick-action-card" onClick={() => navigate(demoPath('/diary'), { state: { openSocrates: true } })}>
             <Bot size={20} />
             <div className="quick-action-text">
-              <span className="quick-action-title">Socrates 대화</span>
-              <span className="quick-action-desc">AI와 지식을 탐색하세요</span>
+              <span className="quick-action-title">AI 대화 (Socrates)</span>
+              <span className="quick-action-desc">AI와 오늘 하루를 돌아보세요</span>
             </div>
           </button>
+        </div>
+      )}
+
+      {/* 이번 주 요약 (활동이 있을 때만 표시) */}
+      {journalDates.length > 0 && (
+        <div className="calendar-week-summary">
+          <span className="week-summary-label">이번 주</span>
+          <span className="week-summary-item">
+            📝 다이어리 <strong>{thisWeekSummary.diaryCount}</strong>/{thisWeekSummary.daysElapsed}일
+          </span>
+          <span className="week-summary-item">
+            📌 활동 <strong>{thisWeekSummary.activityCount}</strong>일
+          </span>
         </div>
       )}
 

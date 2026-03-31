@@ -194,6 +194,30 @@
 
 /* ── 캘린더 슬림 배너 ── */
 /* ── 퀵 액션 카드 ── */
+.calendar-week-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-surface-raised);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.75rem;
+  font-size: var(--fs-body-sm);
+  color: var(--text-secondary);
+}
+
+.week-summary-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.week-summary-item strong {
+  color: var(--accent-primary);
+}
+
 .calendar-quick-actions {
   display: flex;
   gap: var(--space-3);
