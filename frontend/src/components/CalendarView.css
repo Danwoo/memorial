@@ -218,6 +218,29 @@
   color: var(--accent-primary);
 }
 
+.calendar-keyboard-hint {
+  margin-top: 0.5rem;
+  text-align: right;
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+
+.calendar-keyboard-hint kbd {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.3rem;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  font-family: inherit;
+}
+
+@media (max-width: 767px) {
+  .calendar-keyboard-hint {
+    display: none;
+  }
+}
+
 .calendar-quick-actions {
   display: flex;
   gap: var(--space-3);

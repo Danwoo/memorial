@@ -172,6 +172,8 @@ export default function CalendarView() {
   const handleKeyNav = useCallback((e: KeyboardEvent) => {
     const tag = (e.target as HTMLElement).tagName
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+    // 모달/오버레이가 열려있으면 무시
+    if (document.querySelector('[role="dialog"]')) return
     if (e.key === 'ArrowLeft') {
       e.preventDefault()
       setCalYear(y => calMonth === 0 ? y - 1 : y)
@@ -423,6 +425,9 @@ export default function CalendarView() {
             selectedDate={selectedDate}
             streakBadge={streak ? <StreakBadge streak={streak} /> : undefined}
           />
+          <div className="calendar-keyboard-hint">
+            <kbd>←</kbd><kbd>→</kbd> 월 이동 &nbsp;·&nbsp; <kbd>T</kbd> 오늘
+          </div>
         </div>
         {selectedDate && (
           <DayDetailPanel

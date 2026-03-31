@@ -22,6 +22,7 @@ interface ActionItem {
   label: string
   path: string
   icon: React.ReactNode
+  state?: Record<string, unknown>
 }
 
 const ACTION_COMMANDS: ActionItem[] = [
@@ -29,7 +30,7 @@ const ACTION_COMMANDS: ActionItem[] = [
   { kind: 'action', label: '스크랩 열기', path: '/scraps', icon: <BookOpen size={16} /> },
   { kind: 'action', label: '캘린더 열기', path: '/calendar', icon: <Calendar size={16} /> },
   { kind: 'action', label: '마인드맵 열기', path: '/mindmap', icon: <Network size={16} /> },
-  { kind: 'action', label: 'Socrates 대화', path: '/diary', icon: <Bot size={16} /> },
+  { kind: 'action', label: 'Socrates 대화', path: '/diary', state: { openSocrates: true }, icon: <Bot size={16} /> },
   { kind: 'action', label: '설정 열기', path: '/settings', icon: <Settings size={16} /> },
 ]
 
@@ -148,7 +149,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
     (item: AnyItem) => {
       onClose()
       if (item.kind === 'action') {
-        navigate(demoPath(item.path))
+        navigate(demoPath(item.path), item.state ? { state: item.state } : undefined)
       } else if (item.kind === 'scrap') {
         navigate(demoPath('/scraps'), { state: { openMemoryId: item.data.id } })
       } else if (item.kind === 'diary') {
