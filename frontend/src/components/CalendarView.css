@@ -192,31 +192,7 @@
   opacity: 0.9;
 }
 
-/* ── 캘린더 슬림 배너 ── */
-/* ── 퀵 액션 카드 ── */
-.calendar-week-summary {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: 0.5rem 0.75rem;
-  background: var(--bg-surface-raised);
-  border-radius: var(--radius-md);
-  margin-bottom: 0.75rem;
-  font-size: var(--fs-body-sm);
-  color: var(--text-secondary);
-}
-
-.week-summary-label {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.week-summary-item strong {
-  color: var(--accent-primary);
-}
+/* ── 컴팩트 배너 ── */
 
 .calendar-keyboard-hint {
   margin-top: 0.5rem;
@@ -241,87 +217,36 @@
   }
 }
 
-.calendar-quick-actions {
-  display: flex;
-  gap: var(--space-3);
-  margin-bottom: 1rem;
-}
-
-.quick-action-card {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  background: var(--bg-card);
-  border: 1px solid var(--border-secondary);
-  border-radius: var(--radius-lg);
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.15s;
-}
-
-.quick-action-card:hover {
-  border-color: var(--accent-primary);
-  background: var(--accent-bg);
-  color: var(--accent-primary);
-}
-
-.quick-action-text {
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-}
-
-.quick-action-title {
-  font-weight: 600;
-}
-
-.quick-action-desc {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 400;
-}
-
-@media (max-width: 767px) {
-  .calendar-quick-actions {
-    flex-direction: column;
-  }
-}
-
 .calendar-banner {
-  background: var(--bg-card);
-  border: 1px solid var(--border-secondary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3) var(--space-6);
-  margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
+  margin-bottom: 0.5rem;
   flex-wrap: wrap;
 }
 
-.banner-greeting {
+.banner-left {
   display: flex;
   align-items: baseline;
   gap: var(--space-3);
   flex-wrap: wrap;
+  min-width: 0;
 }
 
-.banner-greeting h1 {
-  font-size: 1.125rem;
-  font-weight: 700;
+.banner-name {
+  font-size: 1rem;
+  font-weight: 600;
   color: var(--text-primary);
-  margin: 0;
   white-space: nowrap;
 }
 
 .banner-insight {
   font-size: 0.8rem;
   color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .banner-diary-cta {
@@ -345,38 +270,34 @@
   opacity: 0.85;
 }
 
-.banner-question {
+/* ── 빠른 이동 필 ── */
+.calendar-quick-pills {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: 0.75rem;
+}
+
+.quick-pill {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: 0.375rem 0.875rem;
-  background: var(--accent-bg);
-  border: 1px solid transparent;
-  border-radius: var(--space-2);
+  gap: var(--space-1);
+  padding: 0.25rem 0.75rem;
+  height: 2rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-size: var(--fs-body-sm);
+  font-weight: 500;
   cursor: pointer;
-  text-align: left;
   transition: all var(--transition-fast);
-  max-width: 25rem;
-}
-
-.banner-question:hover {
-  border-color: var(--accent-primary);
-  background: var(--accent-bg-hover);
-}
-
-.banner-question-icon {
-  flex-shrink: 0;
-  color: var(--accent-primary);
-}
-
-.banner-question-text {
-  font-size: 0.8rem;
-  color: var(--text-primary);
-  line-height: 1.4;
-  font-style: italic;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.quick-pill:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--accent-bg);
 }
 
 /* ── 캘린더 컨테이너 + 패널 레이아웃 ── */

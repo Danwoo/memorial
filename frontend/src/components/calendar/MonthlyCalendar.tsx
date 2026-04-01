@@ -15,6 +15,7 @@ interface MonthlyCalendarProps {
   onMonthChange: (year: number, month: number) => void
   selectedDate?: string | null
   streakBadge?: React.ReactNode
+  weekSummary?: React.ReactNode
 }
 
 /** 해당 월의 달력 데이터 생성 */
@@ -61,7 +62,7 @@ const MONTH_NAMES = [
 
 export default function MonthlyCalendar({
   year, month, journalDates, activityData, onDateClick, onMonthChange,
-  selectedDate, streakBadge,
+  selectedDate, streakBadge, weekSummary,
 }: MonthlyCalendarProps) {
   const cells = useMemo(() => buildMonthGrid(year, month), [year, month])
   const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), [])
@@ -123,6 +124,7 @@ export default function MonthlyCalendar({
             {year}년 {MONTH_NAMES[month]}
           </h2>
           {streakBadge}
+          {weekSummary}
         </div>
         <button
           className="monthly-calendar__arrow"

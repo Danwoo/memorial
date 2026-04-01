@@ -10,13 +10,12 @@ import { useToast } from '../contexts/ToastContext'
 import { useViewCache } from '../hooks/useViewCache'
 import { CACHE_KEYS } from '../utils/viewCache'
 import {
-  BookOpen, Lightbulb, Pencil, Sparkles, Network, Bot,
+  BookOpen, Pencil, Sparkles, Network, Bot,
   ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import MonthlyCalendar from './calendar/MonthlyCalendar'
 import StreakBadge from './calendar/StreakBadge'
 import DayDetailPanel from './calendar/DayDetailPanel'
-import EmptyState from './EmptyState'
 import OnboardingWizard from './OnboardingWizard'
 import './CalendarView.css'
 
@@ -329,15 +328,21 @@ export default function CalendarView() {
 
   const bannerMsg = getBannerMessage(briefing)
 
+  // 이번 주 요약 노드 (MonthlyCalendar 헤더용)
+  const weekSummaryNode = journalDates.length > 0 ? (
+    <span className="monthly-calendar__week-info">
+      <span>📝 {thisWeekSummary.diaryCount}/{thisWeekSummary.daysElapsed}일</span>
+      <span>📌 {thisWeekSummary.activityCount}일</span>
+    </span>
+  ) : undefined
+
   return (
     <div className="calendar-view">
-      {/* 슬림 배너 */}
+      {/* 컴팩트 배너: 인사말 + CTA */}
       <div className="calendar-banner">
-        <div className="banner-greeting">
-          <h1>{getGreeting()}{displayName ? `, ${displayName}님` : ''}</h1>
-          {bannerMsg && (
-            <span className="banner-insight">{bannerMsg}</span>
-          )}
+        <div className="banner-left">
+          <span className="banner-name">{getGreeting()}{displayName ? `, ${displayName}님` : ''}</span>
+          {bannerMsg && <span className="banner-insight">{bannerMsg}</span>}
         </div>
         <button
           className="banner-diary-cta"
@@ -347,66 +352,20 @@ export default function CalendarView() {
           <Pencil size={14} />
           오늘 다이어리 쓰기
         </button>
-        {briefing?.suggested_question && (
-          <button
-            className="banner-question"
-            onClick={() => navigate(demoPath('/diary'), { state: { prefillQuestion: briefing.suggested_question } })}
-          >
-            <Lightbulb size={16} className="banner-question-icon" />
-            <span className="banner-question-text">{briefing.suggested_question}</span>
-          </button>
-        )}
       </div>
 
-      {/* 퀵 액션 카드 (첫 주 또는 활동/기록 적을 때) */}
+      {/* 빠른 이동 필 (신규/저활동 유저만 표시) */}
       {(isFirstWeek() || journalDates.length < 3 || !dashData?.stats || (dashData.stats.overview?.total_scraps ?? 0) < 10) && (
-        <div className="calendar-quick-actions">
-          <button className="quick-action-card" onClick={() => navigate(demoPath('/diary'))}>
-            <Pencil size={20} />
-            <div className="quick-action-text">
-              <span className="quick-action-title">다이어리 쓰기</span>
-              <span className="quick-action-desc">오늘의 생각을 기록하세요</span>
-            </div>
+        <div className="calendar-quick-pills">
+          <button className="quick-pill" onClick={() => navigate(demoPath('/scraps'))}>
+            <BookOpen size={14} />
+            스크랩 추가
           </button>
-          <button className="quick-action-card" onClick={() => navigate(demoPath('/scraps'))}>
-            <BookOpen size={20} />
-            <div className="quick-action-text">
-              <span className="quick-action-title">스크랩 추가</span>
-              <span className="quick-action-desc">웹 글이나 메모를 저장하세요</span>
-            </div>
-          </button>
-          <button className="quick-action-card" onClick={() => navigate(demoPath('/diary'), { state: { openSocrates: true } })}>
-            <Bot size={20} />
-            <div className="quick-action-text">
-              <span className="quick-action-title">AI 대화 (Socrates)</span>
-              <span className="quick-action-desc">AI와 오늘 하루를 돌아보세요</span>
-            </div>
+          <button className="quick-pill" onClick={() => navigate(demoPath('/diary'), { state: { openSocrates: true } })}>
+            <Bot size={14} />
+            Socrates 대화
           </button>
         </div>
-      )}
-
-      {/* 이번 주 요약 (활동이 있을 때만 표시) */}
-      {journalDates.length > 0 && (
-        <div className="calendar-week-summary">
-          <span className="week-summary-label">이번 주</span>
-          <span className="week-summary-item">
-            📝 다이어리 <strong>{thisWeekSummary.diaryCount}</strong>/{thisWeekSummary.daysElapsed}일
-          </span>
-          <span className="week-summary-item">
-            📌 기록한 날 <strong>{thisWeekSummary.activityCount}</strong>일
-          </span>
-        </div>
-      )}
-
-      {/* 빈 상태: 기록이 전혀 없을 때 */}
-      {!loading && journalDates.length === 0 && activity.length === 0 && (
-        <EmptyState
-          icon={<Pencil size={32} />}
-          title="아직 기록이 없습니다"
-          description="첫 다이어리를 작성하거나 스크랩을 저장하면 여기에 활동이 나타납니다."
-          ctaLabel="첫 다이어리 쓰기"
-          onCtaClick={() => navigate(demoPath('/diary'))}
-        />
       )}
 
       {/* 캘린더 + DayDetailPanel */}
@@ -424,6 +383,7 @@ export default function CalendarView() {
             onMonthChange={handleMonthChange}
             selectedDate={selectedDate}
             streakBadge={streak ? <StreakBadge streak={streak} /> : undefined}
+            weekSummary={weekSummaryNode}
           />
           <div className="calendar-keyboard-hint">
             <kbd>←</kbd><kbd>→</kbd> 월 이동 &nbsp;·&nbsp; <kbd>T</kbd> 오늘

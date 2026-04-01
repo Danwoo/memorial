@@ -22,6 +22,15 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.monthly-calendar__week-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
 
 .monthly-calendar__title {
