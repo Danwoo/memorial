@@ -9,7 +9,6 @@ import ProtectedRoute from './components/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 import AppLayout from './components/AppLayout'
 import DemoLayout from './components/DemoLayout'
-import AuthView from './components/AuthView'
 // SocratesView는 더 이상 독립 라우트로 사용하지 않음 (다이어리/스크랩에 통합)
 import KakaoLinkPage from './components/KakaoLinkPage'
 import LandingPage from './components/LandingPage'
@@ -45,7 +44,7 @@ function AppRoutes() {
     <Routes>
       {/* 공개 라우트 */}
       <Route path="/" element={<RootRoute />} />
-      <Route path="/login" element={<AuthView />} />
+      <Route path="/login" element={<Navigate to="/" replace />} />
       <Route path="/kakao-link" element={<KakaoLinkPage />} />
 
       {/* 데모 모드 — 인증 불필요, API 목 데이터 사용 */}
