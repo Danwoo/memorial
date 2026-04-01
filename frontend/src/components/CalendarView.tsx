@@ -331,8 +331,8 @@ export default function CalendarView() {
   // 이번 주 요약 노드 (MonthlyCalendar 헤더용)
   const weekSummaryNode = journalDates.length > 0 ? (
     <span className="monthly-calendar__week-info">
-      <span>📝 {thisWeekSummary.diaryCount}/{thisWeekSummary.daysElapsed}일</span>
-      <span>📌 {thisWeekSummary.activityCount}일</span>
+      <span>다이어리 {thisWeekSummary.diaryCount}일</span>
+      <span>활동 {thisWeekSummary.activityCount}일</span>
     </span>
   ) : undefined
 
@@ -363,7 +363,7 @@ export default function CalendarView() {
           </button>
           <button className="quick-pill" onClick={() => navigate(demoPath('/diary'), { state: { openSocrates: true } })}>
             <Bot size={14} />
-            Socrates 대화
+            AI 대화
           </button>
         </div>
       )}
@@ -385,9 +385,11 @@ export default function CalendarView() {
             streakBadge={streak ? <StreakBadge streak={streak} /> : undefined}
             weekSummary={weekSummaryNode}
           />
-          <div className="calendar-keyboard-hint">
-            <kbd>←</kbd><kbd>→</kbd> 월 이동 &nbsp;·&nbsp; <kbd>T</kbd> 오늘
-          </div>
+          {!isFirstWeek() && (
+            <div className="calendar-keyboard-hint">
+              <kbd>←</kbd><kbd>→</kbd> 월 이동 &nbsp;·&nbsp; <kbd>T</kbd> 오늘
+            </div>
+          )}
         </div>
         {selectedDate && (
           <DayDetailPanel

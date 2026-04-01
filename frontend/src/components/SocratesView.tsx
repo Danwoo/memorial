@@ -22,8 +22,8 @@ export default function SocratesView() {
       />
       <div className="socrates-header">
         <div>
-          <h1>Socrates</h1>
-          <p className="socrates-subtitle">당신의 지적 동반자</p>
+          <h1>AI 대화</h1>
+          <p className="socrates-subtitle">AI와 함께 하루를 돌아보세요</p>
         </div>
         {isMobile && (
           <button

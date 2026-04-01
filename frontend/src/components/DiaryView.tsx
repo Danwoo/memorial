@@ -119,7 +119,7 @@ export default function DiaryView() {
   const [showDatePicker, setShowDatePicker] = useState(false)
   const isToday = selectedDate === todayStr
 
-  const defaultContent = `# ${todayLabel} 회고\n\n오늘은...\n\n`
+  const defaultContent = `# ${todayLabel}\n\n오늘은...\n\n`
   const normalize = (s: string) => s.replace(/\s+/g, ' ').trim()
 
   const [markdownContent, setMarkdownContent] = useState(() => {
@@ -193,23 +193,23 @@ export default function DiaryView() {
     () => [
       {
         id: 'til',
-        label: '오늘의 TIL',
-        content: `# ${todayLabel} TIL\n\n## 오늘 배운 것\n\n\n\n## 느낀 점\n\n\n\n## 적용할 것\n\n`,
+        label: '오늘 배운 것',
+        content: `# ${todayLabel} 오늘 배운 것\n\n## 배운 내용\n\n\n\n## 느낀 점\n\n\n\n## 적용할 것\n\n`,
       },
       {
         id: 'weekly',
-        label: '주간 회고',
-        content: `# 이번 주 회고\n\n## 잘한 점\n\n\n\n## 아쉬운 점\n\n\n\n## 다음 주 계획\n\n`,
+        label: '이번 주 돌아보기',
+        content: `# 이번 주 돌아보기\n\n## 잘한 점\n\n\n\n## 아쉬운 점\n\n\n\n## 다음 주 계획\n\n`,
       },
       {
         id: 'project',
-        label: '프로젝트 회고',
-        content: `# ${todayLabel} 프로젝트 회고\n\n## 프로젝트 개요\n\n\n\n## 잘된 점\n\n\n\n## 개선할 점\n\n\n\n## 다음 단계\n\n`,
+        label: '프로젝트 정리',
+        content: `# ${todayLabel} 프로젝트 정리\n\n## 프로젝트 개요\n\n\n\n## 잘된 점\n\n\n\n## 개선할 점\n\n\n\n## 다음 단계\n\n`,
       },
       {
         id: 'free',
-        label: '자유 회고',
-        content: `# ${todayLabel} 회고\n\n`,
+        label: '자유롭게 쓰기',
+        content: `# ${todayLabel}\n\n`,
       },
     ],
     [todayLabel],
@@ -495,11 +495,11 @@ export default function DiaryView() {
     const escaped = content.replace(/</g, '&lt;').replace(/>/g, '&gt;')
     if (editorMode === 'wysiwyg' && editorRef.current) {
       editorRef.current.setContent(
-        editorRef.current.getHTML() + `<blockquote><p>${escaped}</p><p><em>— Socrates 대화에서</em></p></blockquote><p></p>`,
+        editorRef.current.getHTML() + `<blockquote><p>${escaped}</p><p><em>— AI 대화에서</em></p></blockquote><p></p>`,
       )
     } else {
       const quoted = content.split('\n').map(line => `> ${line}`).join('\n')
-      setMarkdownContent((prev) => prev + `\n${quoted}\n> *— Socrates 대화에서*\n\n`)
+      setMarkdownContent((prev) => prev + `\n${quoted}\n> *— AI 대화에서*\n\n`)
     }
     toast.success('일기에 삽입했습니다')
   }, [editorMode, toast])
@@ -603,7 +603,7 @@ export default function DiaryView() {
       }
 
       // 메모리 기반 템플릿 폴백
-      const template = `# ${todayLabel} 회고\n\n## 오늘의 스크랩\n\n${digest.scraps
+      const template = `# ${todayLabel}\n\n## 오늘의 스크랩\n\n${digest.scraps
         .map((m) => `- **[${m.type}]** ${m.title}: ${m.summary}`)
         .join('\n')}\n\n## 하루를 돌아보며\n\n`
       setMarkdownContent(template)
@@ -732,6 +732,8 @@ export default function DiaryView() {
             onDailySummary={handleDailySummary}
             onSessionDraft={handleSessionDraft}
             isGenerating={isGenerating}
+            hasScraps={(digest?.scraps?.length ?? 0) > 0}
+            hasSessions={sessions.length > 0}
             collapsed={isMobile ? false : leftCollapsed}
             onToggleCollapse={() => setLeftCollapsed(!leftCollapsed)}
           />
@@ -996,6 +998,13 @@ export default function DiaryView() {
           )}
         </div>
 
+        {/* 글자수 카운터 */}
+        {(editorMode === 'wysiwyg' || editorMode === 'markdown') && markdownContent.trim() && (
+          <div className="diary-status-bar">
+            <span>{markdownContent.trim().split(/\s+/).filter(Boolean).length}단어 · {markdownContent.length}자</span>
+          </div>
+        )}
+
         {isGenerating && (
           <div className="diary-generating-overlay">
             <Loader2 size={24} className="spin" />
@@ -1025,7 +1034,7 @@ export default function DiaryView() {
               type="button"
             >
               <Bot size={14} />
-              Socrates
+              AI 대화
             </button>
           </div>
           <div className="diary-right-panel__content">

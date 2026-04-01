@@ -416,6 +416,17 @@
 }
 
 /* AI 초안 생성 오버레이 */
+.diary-status-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--text-muted, #9ca3af);
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-surface, #fff);
+  gap: 8px;
+}
+
 .diary-generating-overlay {
   position: absolute;
   inset: 0;

@@ -30,7 +30,7 @@ const ACTION_COMMANDS: ActionItem[] = [
   { kind: 'action', label: '스크랩 열기', path: '/scraps', icon: <BookOpen size={16} /> },
   { kind: 'action', label: '캘린더 열기', path: '/calendar', icon: <Calendar size={16} /> },
   { kind: 'action', label: '마인드맵 열기', path: '/mindmap', icon: <Network size={16} /> },
-  { kind: 'action', label: 'Socrates 대화', path: '/diary', state: { openSocrates: true }, icon: <Bot size={16} /> },
+  { kind: 'action', label: 'AI 대화', path: '/diary', state: { openSocrates: true }, icon: <Bot size={16} /> },
   { kind: 'action', label: '설정 열기', path: '/settings', icon: <Settings size={16} /> },
 ]
 

@@ -162,9 +162,9 @@ export default function ScrapView() {
                 <button
                   className={`btn ${showChat ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setShowChat(!showChat)}
-                  title="Socrates 대화"
+                  title="AI 대화"
                 >
-                  <Bot size={16} /> Socrates
+                  <Bot size={16} /> AI 대화
                 </button>
               )}
             </>
@@ -276,7 +276,7 @@ export default function ScrapView() {
         isMobile ? (
           <div className="scrap-socrates-overlay">
             <div className="scrap-socrates-overlay__header">
-              <h3>Socrates</h3>
+              <h3>AI 대화</h3>
               <button
                 className="scrap-socrates-overlay__close"
                 onClick={() => setShowChat(false)}
@@ -299,7 +299,7 @@ export default function ScrapView() {
             <div className="resize-handle resize-handle--left" onMouseDown={onSocratesResize} />
             <div className="scrap-socrates-side__header">
               <Bot size={16} />
-              <span>Socrates</span>
+              <span>AI 대화</span>
               <button
                 className="scrap-socrates-side__close"
                 onClick={() => setShowChat(false)}

@@ -104,7 +104,7 @@ export default function BriefingTab({ displayName, briefing, streak, stats, acti
             <MessageSquare size={22} />
           </div>
           <div className="quick-action-body">
-            <span className="quick-action-title">Socrates 대화</span>
+            <span className="quick-action-title">AI 대화</span>
             <span className="quick-action-sub">AI와 함께 성찰</span>
           </div>
         </button>

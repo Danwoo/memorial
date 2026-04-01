@@ -15,6 +15,8 @@ interface ScrapSidebarProps {
   onDailySummary: () => void
   onSessionDraft: () => void
   isGenerating: boolean
+  hasScraps?: boolean
+  hasSessions?: boolean
   collapsed?: boolean
   onToggleCollapse?: () => void
 }
@@ -28,6 +30,8 @@ export function MemorySidebar({
   onDailySummary,
   onSessionDraft,
   isGenerating,
+  hasScraps = true,
+  hasSessions = true,
   collapsed,
   onToggleCollapse,
 }: ScrapSidebarProps) {
@@ -122,7 +126,8 @@ export function MemorySidebar({
         <button
           className="sidebar-action-btn"
           onClick={onDailySummary}
-          disabled={isGenerating}
+          disabled={isGenerating || !hasScraps}
+          title={!hasScraps ? '스크랩을 먼저 저장하면 AI가 하루를 정리해줍니다' : '오늘 스크랩 기반으로 일기 초안 생성'}
           type="button"
         >
           <FileText size={14} />
@@ -131,11 +136,12 @@ export function MemorySidebar({
         <button
           className="sidebar-action-btn"
           onClick={onSessionDraft}
-          disabled={isGenerating}
+          disabled={isGenerating || !hasSessions}
+          title={!hasSessions ? 'AI 대화 후 사용할 수 있습니다' : '대화 내용 기반으로 일기 초안 생성'}
           type="button"
         >
           <Zap size={14} />
-          세션 기반 초안
+          대화 기반 초안
         </button>
       </div>
     </div>

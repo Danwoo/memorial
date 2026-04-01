@@ -13,16 +13,23 @@ const SHORTCUTS = [
     { keys: ['?'],         desc: '단축키 목록 보기' },
     { keys: ['Esc'],       desc: '현재 팝업 닫기' },
   ]},
+  { section: '캘린더', items: [
+    { keys: ['←', '→'],  desc: '이전/다음 달 이동' },
+    { keys: ['T'],        desc: '오늘로 이동' },
+  ]},
   { section: '다이어리', items: [
     { keys: ['Ctrl', 'S'],  desc: '저장' },
     { keys: ['Ctrl', '['],  desc: '이전 날짜로' },
     { keys: ['Ctrl', ']'],  desc: '다음 날짜로' },
   ]},
-  { section: '검색 결과', items: [
+  { section: '검색 팔레트', items: [
     { keys: ['↑', '↓'],        desc: '항목 이동' },
     { keys: ['Tab'],            desc: '다음 항목' },
     { keys: ['Shift', 'Tab'],   desc: '이전 항목' },
     { keys: ['Enter'],          desc: '선택' },
+    { keys: ['>'],              desc: '화면 이동 명령어 모드' },
+    { keys: ['tag:키워드'],     desc: '태그로 검색 (예: tag:AI)' },
+    { keys: ['source:web'],     desc: '소스로 검색 (web/pdf/note)' },
   ]},
 ]
 

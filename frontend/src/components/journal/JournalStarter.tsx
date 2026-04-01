@@ -48,7 +48,7 @@ export function JournalStarter({
         </div>
       ) : starterQuestions.length > 0 ? (
         <div className="diary-starter__section">
-          <span className="diary-starter__label">오늘의 회고 질문</span>
+          <span className="diary-starter__label">오늘의 성찰 질문</span>
           <div className="diary-starter-questions">
             {starterQuestions.map((q, i) => (
               <button

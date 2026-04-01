@@ -32,8 +32,8 @@ export default function SocratesPanel({ chat, showHeader = false, className = ''
     <div className={`socrates-panel ${className}`} data-agent={agentType}>
       {showHeader && (
         <div className="socrates-panel__header">
-          <h3>Socrates</h3>
-          <p>당신의 지적 동반자</p>
+          <h3>AI 대화</h3>
+          <p>AI와 함께 하루를 돌아보세요</p>
         </div>
       )}
 
