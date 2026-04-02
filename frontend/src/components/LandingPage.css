@@ -81,6 +81,24 @@
   color: var(--text-primary);
 }
 
+.landing-feature-mini-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.landing-feature-mini-title {
+  font-size: var(--fs-body-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.landing-feature-mini-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
 .landing-feature-mini-icon {
   display: flex;
   align-items: center;

@@ -43,20 +43,20 @@ export const AGENT_CONFIG: Record<AgentType, {
   color: string
 }> = {
   socrates: {
-    label: 'Socrates',
-    tagline: '감정 코치 · 소크라테스식 반문',
+    label: 'AI 코치',
+    tagline: '감정 탐색 · 소크라테스식 성찰',
     icon: '🧠',
     color: 'var(--color-warning)',
   },
   librarian: {
-    label: 'Librarian',
+    label: 'AI 스크랩 도우미',
     tagline: '지식 큐레이터 · 스크랩 탐색',
     icon: '📚',
     color: 'var(--accent-primary)',
   },
   oracle: {
-    label: 'Oracle',
-    tagline: '범용 대화 · 지식 동반자',
+    label: 'AI 지식 동반자',
+    tagline: '범용 대화 · 지식 탐색',
     icon: '🔮',
     color: 'var(--color-text-secondary)',
   },

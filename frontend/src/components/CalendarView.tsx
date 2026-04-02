@@ -225,6 +225,13 @@ export default function CalendarView() {
 
   const isLastSlide = slideIndex === ONBOARDING_SLIDES.length - 1
 
+  // 현재 표시 달에 데이터가 있는지 (early return 전 hooks)
+  const currentMonthHasData = useMemo(() => {
+    const monthStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`
+    return (dashData?.journalDates ?? []).some(d => d.date.startsWith(monthStr)) ||
+      (dashData?.activity ?? []).some(d => d.date.startsWith(monthStr))
+  }, [calYear, calMonth, dashData])
+
   // 이번 주 요약 (일정 관리자용) — hooks must be before any conditional return
   const thisWeekSummary = useMemo(() => {
     const today = new Date()
@@ -328,13 +335,29 @@ export default function CalendarView() {
 
   const bannerMsg = getBannerMessage(briefing)
 
+  // 현재 보고 있는 달이 오늘 달인지 여부
+  const isCurrentMonth = calYear === now.getFullYear() && calMonth === now.getMonth()
+
   // 이번 주 요약 노드 (MonthlyCalendar 헤더용)
-  const weekSummaryNode = journalDates.length > 0 ? (
+  const weekSummaryNode = (
     <span className="monthly-calendar__week-info">
-      <span>다이어리 {thisWeekSummary.diaryCount}일</span>
-      <span>활동 {thisWeekSummary.activityCount}일</span>
+      {!isCurrentMonth && (
+        <button
+          className="calendar-today-btn"
+          onClick={() => { setCalYear(now.getFullYear()); setCalMonth(now.getMonth()) }}
+          type="button"
+        >
+          오늘
+        </button>
+      )}
+      {journalDates.length > 0 && (
+        <>
+          <span>다이어리 {thisWeekSummary.diaryCount}일</span>
+          <span>활동 {thisWeekSummary.activityCount}일</span>
+        </>
+      )}
     </span>
-  ) : undefined
+  )
 
   return (
     <div className="calendar-view">
@@ -388,6 +411,18 @@ export default function CalendarView() {
           {!isFirstWeek() && (
             <div className="calendar-keyboard-hint">
               <kbd>←</kbd><kbd>→</kbd> 월 이동 &nbsp;·&nbsp; <kbd>T</kbd> 오늘
+            </div>
+          )}
+          {!loading && !currentMonthHasData && (
+            <div className="calendar-empty-state">
+              <p>이 달에는 아직 기록이 없어요</p>
+              <button
+                className="calendar-empty-cta"
+                onClick={() => navigate(demoPath('/diary'))}
+                type="button"
+              >
+                오늘 다이어리 쓰기
+              </button>
             </div>
           )}
         </div>

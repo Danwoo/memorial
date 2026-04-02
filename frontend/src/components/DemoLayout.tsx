@@ -8,6 +8,7 @@ import { useIsMobile } from '../hooks/useMediaQuery'
 import Sidebar from './Sidebar'
 import MobileTabBar from './MobileTabBar'
 import CommandPalette from './CommandPalette'
+import ShortcutsModal from './ShortcutsModal'
 import '../App.css'
 import './DemoLayout.css'
 
@@ -18,13 +19,19 @@ export default function DemoLayout() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const [showCmdPalette, setShowCmdPalette] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
 
-  // Ctrl+K / Cmd+K 글로벌 단축키 (데모 모드)
+  // Ctrl+K / Cmd+K + ? 글로벌 단축키 (데모 모드)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         setShowCmdPalette((v) => !v)
+      }
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const tag = (e.target as HTMLElement).tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return
+        setShowShortcuts((v) => !v)
       }
     }
     document.addEventListener('keydown', handler)
@@ -60,6 +67,7 @@ export default function DemoLayout() {
             </main>
             {isMobile && <MobileTabBar user={DEMO_USER} prefix="/demo" />}
             <CommandPalette isOpen={showCmdPalette} onClose={() => setShowCmdPalette(false)} />
+            {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
           </div>
         </SocratesSessionProvider>
       </AuthContext.Provider>

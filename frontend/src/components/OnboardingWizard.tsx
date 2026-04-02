@@ -226,7 +226,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                 type="button"
               >
                 <MessageCircle size={18} />
-                <span>Socrates에게 활용법 물어보기</span>
+                <span>AI에게 활용법 물어보기</span>
                 <ChevronRight size={14} />
               </button>
               <button

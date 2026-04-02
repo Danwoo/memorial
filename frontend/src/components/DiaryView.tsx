@@ -170,7 +170,7 @@ export default function DiaryView() {
   const [leftCollapsed, setLeftCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem('memoir-diary-panels')
-      if (!saved) return true  // 신규 사용자: 좌측 패널도 닫힘으로 시작
+      if (!saved) return false  // 신규 사용자: 좌측 스크랩 패널 기본 열림
       return JSON.parse(saved).left ?? false
     } catch { return false }
   })

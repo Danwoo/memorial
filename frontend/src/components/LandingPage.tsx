@@ -5,10 +5,10 @@ import { useAuth } from '../contexts/AuthContext'
 import './LandingPage.css'
 
 const FEATURES = [
-  { icon: BookOpen, title: '읽은 것, 바로 저장' },
-  { icon: MessageCircle, title: '내 기억과 대화' },
-  { icon: PenTool, title: '하루 돌아보기' },
-  { icon: Network, title: '연결된 지식 발견' },
+  { icon: BookOpen, title: '읽은 것, 바로 저장', subtitle: 'URL·PDF·메모를 한 곳에' },
+  { icon: MessageCircle, title: '내 기억과 대화', subtitle: 'AI가 내 스크랩을 기억해요' },
+  { icon: PenTool, title: '하루 돌아보기', subtitle: '성찰 질문으로 쉽게 시작' },
+  { icon: Network, title: '연결된 지식 발견', subtitle: '기억이 쌓이면 패턴이 보여요' },
 ]
 
 export default function LandingPage() {
@@ -52,7 +52,10 @@ export default function LandingPage() {
                 <div className="landing-feature-mini-icon">
                   <f.icon size={18} />
                 </div>
-                <span>{f.title}</span>
+                <div className="landing-feature-mini-text">
+                  <span className="landing-feature-mini-title">{f.title}</span>
+                  <span className="landing-feature-mini-sub">{f.subtitle}</span>
+                </div>
               </div>
             ))}
           </div>
