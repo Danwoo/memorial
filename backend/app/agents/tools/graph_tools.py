@@ -132,7 +132,7 @@ async def extract_entities(
         logger.warning("extract_entities JSON 파싱 실패: %s", e)
         return []
     except Exception as e:
-        logger.error("extract_entities 오류: %s", e)
+        logger.exception("extract_entities 오류: %s", e)
         return []
 
 
@@ -182,7 +182,7 @@ async def extract_relations(
         logger.warning("extract_relations JSON 파싱 실패: %s", e)
         return []
     except Exception as e:
-        logger.error("extract_relations 오류: %s", e)
+        logger.exception("extract_relations 오류: %s", e)
         return []
 
 
@@ -244,7 +244,7 @@ async def save_to_graph(
             relations_saved,
         )
     except Exception as e:
-        logger.error("save_to_graph 오류: %s", e)
+        logger.exception("save_to_graph 오류: %s", e)
 
     return {"entities_saved": entities_saved, "relations_saved": relations_saved}
 
@@ -279,7 +279,7 @@ async def get_ego_graph(
         edges = result.get("links", result.get("edges", []))
         return {"nodes": nodes, "edges": edges}
     except Exception as e:
-        logger.error("get_ego_graph 오류: entity=%s, %s", entity_name, e)
+        logger.exception("get_ego_graph 오류: entity=%s, %s", entity_name, e)
         return {"nodes": [], "edges": []}
 
 
@@ -316,7 +316,7 @@ async def get_hub_entities(
             if r.get("name")
         ]
     except Exception as e:
-        logger.error("get_hub_entities 오류: %s", e)
+        logger.exception("get_hub_entities 오류: %s", e)
         return []
 
 
@@ -352,7 +352,7 @@ async def get_orphan_entities(
             if r.get("name")
         ]
     except Exception as e:
-        logger.error("get_orphan_entities 오류: %s", e)
+        logger.exception("get_orphan_entities 오류: %s", e)
         return []
 
 
@@ -404,5 +404,5 @@ async def suggest_connections(
         logger.warning("suggest_connections JSON 파싱 실패: %s", e)
         return []
     except Exception as e:
-        logger.error("suggest_connections 오류: %s", e)
+        logger.exception("suggest_connections 오류: %s", e)
         return []

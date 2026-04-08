@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react'
 import { useResizePanel } from '../hooks/useResizePanel'
 import { useLocation } from 'react-router-dom'
 import { Save, Loader2, Check, PanelLeftClose, PanelRightClose, PanelLeftOpen, PanelRightOpen, Bot, Brain, Pencil, Focus } from 'lucide-react'
@@ -72,7 +72,9 @@ function markdownToHtml(md: string): string {
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/~~(.+?)~~/g, '<s>$1</s>')
     .replace(/`(.+?)`/g, '<code>$1</code>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) =>
+      /^(https?:|mailto:)/i.test(url) ? `<a href="${url}">${text}</a>` : text
+    )
     .replace(/^> (.+)$/gm, '<blockquote><p>$1</p></blockquote>')
     .replace(/^---$/gm, '<hr>')
     .replace(/^- (.+)$/gm, '<li>$1</li>')
@@ -104,6 +106,18 @@ function toDateStr(d: Date): string {
 function formatDateKo(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
   return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+/** 검색 쿼리 하이라이팅 — dangerouslySetInnerHTML 없이 안전하게 React 노드 생성 */
+function highlightText(text: string, query: string): ReactNode {
+  if (!query) return text
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'))
+  return parts.map((part, i) =>
+    part.toLowerCase() === query.toLowerCase()
+      ? <mark key={i}>{part}</mark>
+      : part
+  )
 }
 
 export default function DiaryView() {
@@ -796,10 +810,6 @@ export default function DiaryView() {
                   {diarySearchResults.slice(0, 10).map(r => {
                     const plain = r.content.replace(/<[^>]*>/g, '')
                     const preview = plain.slice(0, 80)
-                    const escapedQuery = diarySearchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-                    const highlighted = escapedQuery
-                      ? preview.replace(new RegExp(`(${escapedQuery})`, 'gi'), '<mark>$1</mark>')
-                      : preview
                     return (
                       <button
                         key={r.id}
@@ -813,10 +823,9 @@ export default function DiaryView() {
                         type="button"
                       >
                         <span className="diary-search-result-date">{r.created_at.slice(0, 10)}</span>
-                        <span
-                          className="diary-search-result-preview"
-                          dangerouslySetInnerHTML={{ __html: highlighted + '...' }}
-                        />
+                        <span className="diary-search-result-preview">
+                          {highlightText(preview, diarySearchQuery)}{'...'}
+                        </span>
                       </button>
                     )
                   })}

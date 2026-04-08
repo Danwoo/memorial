@@ -74,13 +74,12 @@ async def search_graph_entities(
     user_id = get_user_id(config)
     container = get_agent_container()
 
-    results = await container.mindmap_repo.search_entities(
+    return await container.mindmap_repo.search_entities(
         keyword=keyword,
         user_id=user_id,
         entity_type=entity_type,
         limit=limit,
     )
-    return results
 
 
 @tool

@@ -39,5 +39,5 @@ def send_push_notification(
         )
         return True
     except WebPushException as e:
-        logger.error("푸시 전송 실패: %s", e)
+        logger.exception("푸시 전송 실패: %s", e)
         return False

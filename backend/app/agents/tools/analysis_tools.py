@@ -133,8 +133,7 @@ async def compare_content(
         # JSON 블록 추출
         if "```" in text:
             text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
+            text = text.removeprefix("json")
         result = json.loads(text)
         return {
             "similarities": result.get("similarities", []),

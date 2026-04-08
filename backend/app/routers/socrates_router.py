@@ -67,7 +67,7 @@ async def update_session(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    await socrates_service.update_session_title(session_id, data.title)
+    await socrates_service.update_session_title(session_id, data.title, user_id)
     session["title"] = data.title
 
     return SocratesSessionResponse(

@@ -1,20 +1,20 @@
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DiaryCreate(BaseModel):
     """일기 항목 생성 요청."""
 
-    content: str
+    content: str = Field(max_length=100_000)
     scrap_ids: list[str] | None = None
 
 
 class DiaryUpdate(BaseModel):
     """일기 항목 수정 요청."""
 
-    content: str
+    content: str = Field(max_length=100_000)
     scrap_ids: list[str] | None = None
 
 
@@ -31,7 +31,7 @@ class DiaryResponse(BaseModel):
 class ReviewRequest(BaseModel):
     """성찰 질문 및 인사이트 분석 요청."""
 
-    content: str
+    content: str = Field(max_length=100_000)
 
 
 class ReviewQuestionsResponse(BaseModel):

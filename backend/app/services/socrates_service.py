@@ -290,9 +290,9 @@ class SocratesService:
 
         yield f"data: {json.dumps(done_data)}\n\n"
 
-    async def update_session_title(self, session_id: UUID, title: str) -> bool:
+    async def update_session_title(self, session_id: UUID, title: str, user_id: UUID | None = None) -> bool:
         """세션 제목 수동 업데이트."""
-        return await self.socrates_repo.update_session_title(session_id, title)
+        return await self.socrates_repo.update_session_title(session_id, title, user_id)
 
     async def get_history(self, session_id: UUID) -> list[dict]:
         """세션의 채팅 이력 조회 (DB 타임스탬프 포함)."""

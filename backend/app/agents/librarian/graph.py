@@ -14,10 +14,9 @@ def route_after_curator(state: AgentState) -> str:
 
     if next_step == "ontologist":
         return "ontologist"
-    elif next_step == "end":
+    if next_step == "end":
         return "end"
-    else:
-        return "save"
+    return "save"
 
 
 def create_librarian_graph() -> StateGraph:

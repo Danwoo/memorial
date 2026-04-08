@@ -45,8 +45,7 @@ async def _detect_cognitive_distortion(message: str) -> dict:
         llm_with_json = llm.bind(response_format={"type": "json_object"})
         prompt = COGNITIVE_DISTORTION_PROMPT.format(message=message[:500])
         response = await llm_with_json.ainvoke([HumanMessage(content=prompt)])
-        result = json.loads(response.content.strip())
-        return result
+        return json.loads(response.content.strip())
     except Exception:
         logger.warning("인지 왜곡 감지 실패, 스킵")
         return {"detected": False, "type": None, "hint": None}

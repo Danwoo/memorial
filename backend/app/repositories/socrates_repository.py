@@ -134,10 +134,10 @@ class SocratesRepository:
             for msg in result.data
         ]
 
-    async def update_session_title(self, session_id: UUID, title: str) -> bool:
+    async def update_session_title(self, session_id: UUID, title: str, user_id: UUID | None = None) -> bool:
         """세션 제목 업데이트."""
         try:
-            await asyncio.to_thread(self._update_title, str(session_id), title)
+            await asyncio.to_thread(self._update_title, str(session_id), title, str(user_id) if user_id else "")
             return True
         except Exception:
             logger.exception("Error updating session title")
@@ -148,10 +148,10 @@ class SocratesRepository:
         result = await asyncio.to_thread(self._count_messages, str(session_id))
         return len(result.data) if result.data else 0
 
-    async def delete_session(self, session_id: UUID) -> bool:
-        """세션과 소속 메시지 삭제."""
+    async def delete_session(self, session_id: UUID, user_id: UUID) -> bool:
+        """세션과 소속 메시지 삭제 (user_id 소유권 검증 포함)."""
         try:
-            await asyncio.to_thread(self._delete_session, str(session_id))
+            await asyncio.to_thread(self._delete_session, str(session_id), str(user_id))
             return True
         except Exception:
             logger.exception("Error deleting session from Supabase")
@@ -300,20 +300,22 @@ class SocratesRepository:
             .execute()
         )
 
-    def _update_title(self, session_id: str, title: str):
-        return (
+    def _update_title(self, session_id: str, title: str, user_id: str = ""):
+        query = (
             self.db.table("socrates_sessions")
             .update({"title": title, "updated_at": datetime.now(UTC).isoformat()})
             .eq("id", session_id)
-            .execute()
         )
+        if user_id:
+            query = query.eq("user_id", user_id)
+        return query.execute()
 
     def _count_messages(self, session_id: str):
         return self.db.table("socrates_messages").select("id").eq("session_id", session_id).execute()
 
-    def _delete_session(self, session_id: str):
-        # DB CASCADE로 메시지도 함께 삭제
-        return self.db.table("socrates_sessions").delete().eq("id", session_id).execute()
+    def _delete_session(self, session_id: str, user_id: str):
+        # DB CASCADE로 메시지도 함께 삭제 (user_id 필터로 IDOR 방어)
+        return self.db.table("socrates_sessions").delete().eq("id", session_id).eq("user_id", user_id).execute()
 
     def _update_summary(self, session_id: str, summary: str):
         return (

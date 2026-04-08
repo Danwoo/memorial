@@ -113,7 +113,7 @@ class ScrapRepository:
         )
 
         items = [self._row_to_model(row) for row in (result.data or [])]
-        total = result.count if result.count else 0
+        total = result.count or 0
         return items, total
 
     async def update_status(

@@ -85,10 +85,9 @@ def create_chat_graph(
         plan = state.get("retrieval_plan", "full_rag")
         if plan == "no_retrieval":
             return no_retrieval_dest
-        elif include_diary:
+        if include_diary:
             return [actual_retrieval_name, "context_retrieval", "diary_deep_retrieval"]
-        else:
-            return [actual_retrieval_name, "context_retrieval"]
+        return [actual_retrieval_name, "context_retrieval"]
 
     def route_after_grading(state: ChatPipelineState):
         """grading → retry 또는 enrichment 분기."""

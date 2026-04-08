@@ -1,11 +1,14 @@
 import asyncio
+import hashlib
+import hmac
+import json
 import logging
 import time
 from datetime import UTC, datetime
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
 from supabase import Client
 
 from app.config.auth import get_user_id
@@ -21,6 +24,7 @@ from app.schemas.integration_schema import (
     IntegrationStatusResponse,
     KakaoSkillResponse,
     KakaoWebhookRequest,
+    LinkByTokenRequest,
     ProviderInfo,
     StoreProviderTokenRequest,
 )
@@ -63,7 +67,7 @@ async def get_integration_status(
             )
 
             if response.status_code != 200:
-                logger.error("Supabase admin API error: %s", response.text)
+                logger.error("Supabase admin API error: status=%s", response.status_code)
                 raise HTTPException(status_code=502, detail="Failed to fetch user info")
 
             user_data = response.json()
@@ -226,18 +230,41 @@ async def update_bot_settings(
 # --- 카카오 OpenBuilder 웹훅 ---
 
 
+def _verify_kakao_signature(raw_body: bytes, secret: str, received_sig: str) -> bool:
+    """카카오 OpenBuilder 요청 서명 검증 (HMAC-SHA256)."""
+    expected = hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, received_sig)
+
+
 @router.post("/kakao/webhook")
 async def kakao_webhook(
-    request: KakaoWebhookRequest,
+    raw_request: Request,
     background_tasks: BackgroundTasks,
+    x_kakao_skill_signature: str | None = Header(None, alias="X-Kakao-Skill-Signature"),
     channel_service: KakaoChannelService = Depends(get_kakao_channel_service),
 ):
-    """카카오 OpenBuilder 스킬 웹훅. 인증 불필요 (카카오 서버에서 직접 호출).
+    """카카오 OpenBuilder 스킬 웹훅.
 
+    KAKAO_SKILL_SECRET 설정 시 HMAC-SHA256 서명 검증.
     카카오 OpenBuilder 타임아웃은 5초이므로 응답을 최대한 빠르게 반환해야 한다.
     텍스트/URL 저장은 LLM 호출이 필요해 5초를 초과하므로
     즉시 확인 응답을 반환하고 실제 저장은 BackgroundTasks로 처리한다.
     """
+    settings = get_settings()
+    raw_body = await raw_request.body()
+
+    # KAKAO_SKILL_SECRET 설정된 경우 서명 검증
+    if settings.KAKAO_SKILL_SECRET:
+        if not x_kakao_skill_signature:
+            raise HTTPException(status_code=401, detail="Missing signature")
+        if not _verify_kakao_signature(raw_body, settings.KAKAO_SKILL_SECRET, x_kakao_skill_signature):
+            raise HTTPException(status_code=401, detail="Invalid signature")
+
+    try:
+        payload = json.loads(raw_body)
+        request = KakaoWebhookRequest.model_validate(payload)
+    except Exception:
+        raise HTTPException(status_code=422, detail="Invalid request body") from None
     try:
         utterance = request.userRequest.utterance.strip()
         bot_user_key = request.userRequest.user.id
@@ -380,14 +407,12 @@ async def get_channel_status(
 
 @router.post("/kakao/channel/link-by-token")
 async def complete_link_by_token(
-    body: dict,
+    body: LinkByTokenRequest,
     user_id: UUID = Depends(get_user_id),
     channel_service: KakaoChannelService = Depends(get_kakao_channel_service),
 ):
     """카카오 채널 토큰 기반 연결 완료. 카카오톡에서 받은 링크로 웹에서 호출."""
-    token = body.get("token")
-    if not token:
-        raise HTTPException(status_code=400, detail="token is required")
+    token = body.token
     try:
         result = await asyncio.to_thread(channel_service.complete_link_by_token, token, str(user_id))
         if not result["success"]:

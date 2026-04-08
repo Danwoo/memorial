@@ -153,8 +153,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (supabase) {
       await supabase.auth.signOut()
     }
-    // 로그아웃 시 뷰 캐시 동기 초기화 (계정 전환 시 이전 데이터 노출 방지)
+    // 로그아웃 시 뷰 캐시 및 memoir 관련 localStorage 전체 초기화 (계정 전환 시 이전 데이터 노출 방지)
     clearAllViewCache()
+    // memoir prefix 키 전체 삭제 (드래프트, UI 상태, 온보딩 등)
+    const memoirKeys = Object.keys(localStorage).filter(k => k.startsWith('memoir'))
+    memoirKeys.forEach(k => localStorage.removeItem(k))
     syncTokenToStorage(null)
     setUser(null)
     setSession(null)

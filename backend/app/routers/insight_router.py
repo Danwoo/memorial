@@ -18,5 +18,5 @@ async def get_daily_insights(
     """일일 AI 인사이트 조회 (패턴/연결/행동 제안)."""
     try:
         return await insight_service.get_daily_insights(str(user_id))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to get insights") from None

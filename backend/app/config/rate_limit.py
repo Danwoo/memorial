@@ -1,3 +1,4 @@
+import hashlib
 import logging
 from collections import defaultdict
 from time import monotonic
@@ -57,7 +58,8 @@ def get_user_key(request: Request) -> str:
     """요청에서 사용자 식별 키 추출 (인증 토큰 기반, 없으면 IP)."""
     auth = request.headers.get("authorization", "")
     if auth.startswith("Bearer "):
-        return f"user:{auth[7:20]}"
+        token_hash = hashlib.sha256(auth[7:].encode()).hexdigest()[:16]
+        return f"user:{token_hash}"
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
         return f"ip:{forwarded.split(',')[0].strip()}"

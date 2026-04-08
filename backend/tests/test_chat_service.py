@@ -171,4 +171,4 @@ class TestSocratesService:
         result = await chat_service.update_session_title(SESSION_ID_1, "새 제목")
 
         assert result is True
-        mock_chat_repo.update_session_title.assert_called_once_with(SESSION_ID_1, "새 제목")
+        mock_chat_repo.update_session_title.assert_called_once_with(SESSION_ID_1, "새 제목", None)

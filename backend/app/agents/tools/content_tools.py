@@ -104,7 +104,7 @@ async def classify_content(
         logger.warning("classify_content JSON 파싱 실패: %s", e)
         return {"category": "FACT", "confidence": 0.5}
     except Exception as e:
-        logger.error("classify_content 오류: %s", e)
+        logger.exception("classify_content 오류: %s", e)
         return {"category": "FACT", "confidence": 0.0}
 
 
@@ -133,7 +133,7 @@ async def summarize_content(
         response = await base_llm.ainvoke(messages)
         return response.content.strip()
     except Exception as e:
-        logger.error("summarize_content 오류: %s", e)
+        logger.exception("summarize_content 오류: %s", e)
         return ""
 
 
@@ -173,7 +173,7 @@ async def extract_tags(
         logger.warning("extract_tags JSON 파싱 실패: %s", e)
         return []
     except Exception as e:
-        logger.error("extract_tags 오류: %s", e)
+        logger.exception("extract_tags 오류: %s", e)
         return []
 
 
@@ -219,7 +219,7 @@ async def analyze_sentiment(
         logger.warning("analyze_sentiment JSON 파싱 실패: %s", e)
         return {"sentiment": "neutral", "mood": None, "intensity": 0.0}
     except Exception as e:
-        logger.error("analyze_sentiment 오류: %s", e)
+        logger.exception("analyze_sentiment 오류: %s", e)
         return {"sentiment": "neutral", "mood": None, "intensity": 0.0}
 
 
@@ -256,5 +256,5 @@ async def inline_edit(
         response = await base_llm.ainvoke(messages)
         return response.content.strip()
     except Exception as e:
-        logger.error("inline_edit 오류 (action=%s): %s", action, e)
+        logger.exception("inline_edit 오류 (action=%s): %s", action, e)
         return text

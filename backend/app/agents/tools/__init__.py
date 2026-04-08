@@ -167,67 +167,67 @@ ALL_TOOLS = list(
 )
 
 __all__ = [
-    # analysis_tools
-    "compare_content",
-    "find_connections",
-    "get_community_insights",
-    "get_content_timeline",
-    "get_entity_timeline",
+    "ALL_TOOLS",
+    "ANALYST_TOOLS",
+    "CURATOR_TOOLS",
+    "LIBRARIAN_TOOLS",
+    "REPORTER_TOOLS",
+    "SCRIBE_TOOLS",
+    # agent tool sets
+    "SOCRATES_TOOLS",
     # content_tools
     "analyze_sentiment",
     "classify_content",
-    "extract_tags",
-    "inline_edit",
-    "summarize_content",
+    # analysis_tools
+    "compare_content",
     # delegation_tools
     "delegate_to_analyst",
     "delegate_to_curator",
     "delegate_to_librarian",
-    # diary_tools
-    "get_diary_detail",
-    "get_diary_statistics",
-    "get_emotion_trend",
-    "list_diary_dates",
-    "search_diaries",
+    # reflection_tools
+    "detect_cognitive_distortions",
     # graph_tools
     "extract_entities",
     "extract_relations",
-    "get_ego_graph",
-    "get_hub_entities",
-    "get_orphan_entities",
-    "save_to_graph",
-    "suggest_connections",
-    # kb_tools
-    "get_scrap_detail",
-    "list_recent_scraps",
-    "list_scraps_by_tag",
-    "update_scrap_metadata",
-    # reflection_tools
-    "detect_cognitive_distortions",
-    "generate_diary_draft",
-    "generate_reflection_questions",
+    "extract_tags",
+    "find_connections",
     # report_tools
     "generate_daily_digest",
     "generate_daily_insights",
+    "generate_diary_draft",
     "generate_monthly_report",
+    "generate_reflection_questions",
     "generate_weekly_report",
-    # retrieval_tools
-    "get_graph_context",
-    "search_graph_entities",
-    "search_scraps",
-    # session_tools
-    "get_user_profile",
-    "search_past_conversations",
     # stats_tools
     "get_activity_streak",
+    "get_community_insights",
+    "get_content_timeline",
+    # diary_tools
+    "get_diary_detail",
+    "get_diary_statistics",
+    "get_ego_graph",
+    "get_emotion_trend",
+    "get_entity_timeline",
+    # retrieval_tools
+    "get_graph_context",
+    "get_hub_entities",
     "get_knowledge_stats",
+    "get_orphan_entities",
+    # kb_tools
+    "get_scrap_detail",
     "get_topic_distribution",
-    # agent tool sets
-    "SOCRATES_TOOLS",
-    "LIBRARIAN_TOOLS",
-    "ANALYST_TOOLS",
-    "SCRIBE_TOOLS",
-    "CURATOR_TOOLS",
-    "REPORTER_TOOLS",
-    "ALL_TOOLS",
+    # session_tools
+    "get_user_profile",
+    "inline_edit",
+    "list_diary_dates",
+    "list_recent_scraps",
+    "list_scraps_by_tag",
+    "save_to_graph",
+    "search_diaries",
+    "search_graph_entities",
+    "search_past_conversations",
+    "search_scraps",
+    "suggest_connections",
+    "summarize_content",
+    "update_scrap_metadata",
 ]

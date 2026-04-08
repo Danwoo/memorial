@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ClusterInfo(BaseModel):
@@ -46,6 +46,6 @@ class MindmapInsightsResponse(BaseModel):
 class CreateRelationRequest(BaseModel):
     """수동 관계 생성 요청."""
 
-    source: str
-    target: str
-    rel_type: str = "RELATED_TO"
+    source: str = Field(max_length=500)
+    target: str = Field(max_length=500)
+    rel_type: str = Field("RELATED_TO", max_length=100)

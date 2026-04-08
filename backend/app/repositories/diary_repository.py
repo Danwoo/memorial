@@ -54,8 +54,9 @@ class DiaryRepository:
         content: str,
         mood: str | None = None,
         tags: list[str] | None = None,
+        user_id: UUID | None = None,
     ) -> dict[str, Any] | None:
-        """다이어리 항목 수정."""
+        """다이어리 항목 수정. user_id가 제공되면 소유권 검증."""
         data: dict[str, Any] = {
             "content": content,
             "updated_at": datetime.now(UTC).isoformat(),
@@ -65,7 +66,7 @@ class DiaryRepository:
         if tags is not None:
             data["tags"] = tags
 
-        response = await asyncio.to_thread(self._update, str(diary_id), data)
+        response = await asyncio.to_thread(self._update, str(diary_id), data, str(user_id) if user_id else None)
         return response.data[0] if response.data else None
 
     async def get_diary_dates(
@@ -204,18 +205,25 @@ class DiaryRepository:
             .execute()
         )
 
-    def _update(self, diary_id: str, data: dict):
-        return self.db.table("diaries").update(data).eq("id", diary_id).execute()
+    def _update(self, diary_id: str, data: dict, user_id: str | None = None):
+        query = self.db.table("diaries").update(data).eq("id", diary_id)
+        if user_id:
+            query = query.eq("user_id", user_id)
+        return query.execute()
 
     def _select_by_id(self, diary_id: str, user_id: str):
         return self.db.table("diaries").select("*").eq("id", diary_id).eq("user_id", user_id).execute()
 
     def _search_text(self, query: str, user_id: str, limit: int):
+        # PostgREST ilike 와일드카드 문자 이스케이프 (%, _, *, ?)
+        escaped = (
+            query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_").replace("*", "\\*").replace("?", "\\?")
+        )
         return (
             self.db.table("diaries")
             .select("id, title, content, mood, tags, created_at")
             .eq("user_id", user_id)
-            .or_(f"title.ilike.%{query}%,content.ilike.%{query}%")
+            .or_(f"title.ilike.%{escaped}%,content.ilike.%{escaped}%")
             .order("created_at", desc=True)
             .limit(limit)
             .execute()

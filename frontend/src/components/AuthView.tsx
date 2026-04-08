@@ -10,8 +10,9 @@ export default function AuthView() {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // 이미 인증된 경우 원래 페이지로 리다이렉트
-  const redirectTo = (location.state as { from?: string })?.from ?? '/'
+  // 이미 인증된 경우 원래 페이지로 리다이렉트 (open redirect 방어: /로 시작하고 //가 아닌 경로만 허용)
+  const raw = (location.state as { from?: string })?.from ?? '/'
+  const redirectTo = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/'
   if (!isLoading && user) {
     return <Navigate to={redirectTo} replace />
   }

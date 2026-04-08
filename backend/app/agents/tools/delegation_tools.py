@@ -137,7 +137,7 @@ async def delegate_to_analyst(
     # 커뮤니티 인사이트
     try:
         communities: list[dict[str, Any]] = await get_community_insights.ainvoke(  # type: ignore[arg-type]
-            {"keyword": query if query else None, "limit": 5},
+            {"keyword": query or None, "limit": 5},
             config=config,
         )
         if communities:

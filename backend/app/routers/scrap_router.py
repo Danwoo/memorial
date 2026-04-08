@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile
@@ -102,8 +103,9 @@ async def create_scrap(
 
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception:
+        logger.exception("스크랩 생성 실패")
+        raise HTTPException(status_code=500, detail="Failed to create scrap") from None
 
 
 @router.post("/upload-pdf", response_model=ScrapCreateResponse, status_code=201)
@@ -143,8 +145,9 @@ async def upload_pdf(
 
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception:
+        logger.exception("PDF 업로드 실패")
+        raise HTTPException(status_code=500, detail="Failed to upload PDF") from None
 
 
 @router.post("/backfill", status_code=200)
@@ -230,8 +233,8 @@ async def list_scraps(
     source_type: str | None = Query(None, description="소스 타입 필터 (WEB, PDF, NOTE 등)"),
     date_from: str | None = Query(None, description="시작일 (YYYY-MM-DD)"),
     date_to: str | None = Query(None, description="종료일 (YYYY-MM-DD)"),
-    sort_by: str = Query("created_at", description="정렬 기준 (created_at, updated_at, title)"),
-    sort_order: str = Query("desc", description="정렬 방향 (asc, desc)"),
+    sort_by: Literal["created_at", "updated_at", "title"] = Query("created_at"),
+    sort_order: Literal["asc", "desc"] = Query("desc"),
     user_id: UUID = Depends(get_user_id),
     scrap_service: ScrapService = Depends(get_scrap_service),
 ):
@@ -285,7 +288,7 @@ async def get_scrap_diaries(
 ):
     """해당 스크랩을 참조한 다이어리 목록 역참조 조회."""
     try:
-        rows = await link_repo.get_diaries_by_scrap(scrap_id)
+        rows = await link_repo.get_diaries_by_scrap(scrap_id, user_id)
         items = []
         for row in rows:
             diary_data = row.get("diaries")
@@ -379,5 +382,3 @@ async def delete_scrap(
 
     if not success:
         raise HTTPException(status_code=404, detail="Scrap not found")
-
-    return None

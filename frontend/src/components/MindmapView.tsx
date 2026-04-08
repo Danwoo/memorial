@@ -315,7 +315,6 @@ export default function MindmapView() {
     fgRef.current.d3Force('charge')?.strength(chargeStrength).distanceMax(chargeDistanceMax)
     fgRef.current.d3Force('link')?.distance(linkDistance)
     fgRef.current.d3ReheatSimulation()
-    console.log('[Layout]', { chargeStrength, chargeDistanceMax, linkDistance, velocityDecay })
   }, [chargeStrength, chargeDistanceMax, linkDistance, velocityDecay, data])
 
   // 선택 노드 변경 시 관련 스크랩 조회

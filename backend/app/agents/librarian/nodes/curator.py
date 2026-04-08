@@ -53,7 +53,7 @@ async def curator_node(state: AgentState) -> dict:
 
     # URL 입력 감지 시 웹 콘텐츠 스크래핑
     source_url = None
-    if target_text.startswith("http://") or target_text.startswith("https://"):
+    if target_text.startswith(("http://", "https://")):
         from app.services.ingest_service import process_web_content
 
         logger.info("Curator detected URL: %s", target_text)
@@ -96,7 +96,7 @@ async def curator_node(state: AgentState) -> dict:
             "tags": [],
             "summary": "Failed to parse classification",
             "next_step": "save",
-            "error": f"JSON parse error: {str(e)}",
+            "error": f"JSON parse error: {e!s}",
         }
     except Exception as e:
         return {

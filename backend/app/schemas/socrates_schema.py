@@ -8,8 +8,8 @@ from pydantic import BaseModel, Field
 class SocratesSessionCreate(BaseModel):
     """소크라테스 세션 생성 요청."""
 
-    title: str | None = None
-    agent_type: str = "oracle"  # 'socrates' | 'librarian' | 'oracle'
+    title: str | None = Field(None, max_length=200)
+    agent_type: Literal["socrates", "librarian", "oracle"] = "oracle"
 
 
 class SocratesSessionResponse(BaseModel):
@@ -24,7 +24,7 @@ class SocratesSessionResponse(BaseModel):
 class SocratesSessionUpdate(BaseModel):
     """소크라테스 세션 수정 요청."""
 
-    title: str
+    title: str = Field(max_length=200)
 
 
 class GraphNeighbor(BaseModel):
@@ -39,8 +39,8 @@ class SourceContext(BaseModel):
     """소크라테스 대화의 소스 컨텍스트."""
 
     type: str  # "diary", "scrap", "mindmap"
-    title: str | None = None
-    content_preview: str | None = None  # 최대 500자
+    title: str | None = Field(None, max_length=500)
+    content_preview: str | None = Field(None, max_length=2000)
     tags: list[str] | None = None
     graph_neighbors: list[GraphNeighbor] | None = None
 
@@ -48,10 +48,10 @@ class SourceContext(BaseModel):
 class SocratesMessageRequest(BaseModel):
     """소크라테스 메시지 전송 요청."""
 
-    content: str
+    content: str = Field(max_length=50_000)
     mode: str | None = None  # insight, counter, summary, evening
     source_context: SourceContext | None = None
-    agent_type: str | None = None  # 'socrates' | 'librarian' | 'oracle' (없으면 세션 기본값)
+    agent_type: Literal["socrates", "librarian", "oracle"] | None = None
 
 
 class SocratesMessageResponse(BaseModel):

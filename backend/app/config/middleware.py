@@ -18,6 +18,8 @@ LLM_PATHS = {
     "/api/v1/diaries/insights",
     "/api/v1/reports/weekly",
     "/api/v1/reports/monthly",
+    "/api/v1/scraps/backfill",
+    "/api/v1/scraps/reprocess-all",
 }
 # 스크랩 생성 (30req/min)
 WRITE_PATHS = {"/api/v1/scraps"}
@@ -60,8 +62,6 @@ def register_middleware(app: FastAPI) -> None:
     # ALLOWED_ORIGINS 환경변수가 설정되면 우선 적용
     if settings.ALLOWED_ORIGINS:
         origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
-    elif settings.DEBUG:
-        origins = ["*"]
     else:
         origins = settings.CORS_ORIGINS
 
@@ -70,7 +70,7 @@ def register_middleware(app: FastAPI) -> None:
         allow_origins=origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
+        allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
         max_age=600,
     )
 

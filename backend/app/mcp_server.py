@@ -810,7 +810,7 @@ async def delegate_to_curator(
 # ===========================================================================
 
 
-def run_mcp_server(host: str = "0.0.0.0", port: int = 8001) -> None:
+def run_mcp_server(host: str = "127.0.0.1", port: int = 8001) -> None:
     """MCP 서버를 HTTP transport로 실행한다.
 
     MCP transport 종류:

@@ -53,11 +53,10 @@ async def generate_daily_digest(
     )
 
     try:
-        result = await service.get_today_digest(
+        return await service.get_today_digest(
             user_id=UUID(user_id),
             target_date=target_date,
         )
-        return result
     except Exception:
         logger.exception("generate_daily_digest 오류: user_id=%s, date=%s", user_id, date)
         return {

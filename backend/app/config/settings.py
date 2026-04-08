@@ -1,6 +1,9 @@
+import logging
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -54,4 +57,13 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     """캐시된 Settings 싱글톤 인스턴스 반환."""
-    return Settings()
+    settings = Settings()
+    # 프로덕션 권고 경고
+    if not settings.SUPABASE_JWT_SECRET:
+        logger.warning(
+            "SUPABASE_JWT_SECRET 미설정: JWT 검증이 Supabase HTTP 폴백으로 동작합니다. "
+            "Supabase 대시보드 → Settings → API → JWT Secret을 .env에 추가하세요."
+        )
+    if settings.DEBUG:
+        logger.warning("DEBUG 모드가 활성화되어 있습니다. 프로덕션에서는 DEBUG=false로 설정하세요.")
+    return settings

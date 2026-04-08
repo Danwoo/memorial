@@ -176,9 +176,9 @@ class ScrapService:
                     with contextlib.suppress(Exception):
                         await self.mindmap_repo.delete_memory_node(str(mid))
             return count
-        elif action == "add_tags" and tags:
+        if action == "add_tags" and tags:
             return await self.scrap_repo.add_tags_bulk(scrap_ids, user_id, tags)
-        elif action == "remove_tags" and tags:
+        if action == "remove_tags" and tags:
             return await self.scrap_repo.remove_tags_bulk(scrap_ids, user_id, tags)
         return 0
 

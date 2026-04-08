@@ -35,6 +35,6 @@ async def merge_scraps(
         return MergeResponse(kept_id=data.keep_id, merged_tags=merged_tags)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
+    except Exception:
         logger.exception("스크랩 병합 실패")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Failed to merge scraps") from None

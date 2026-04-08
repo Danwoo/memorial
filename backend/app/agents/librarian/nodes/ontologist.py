@@ -117,7 +117,7 @@ async def ontologist_node(state: AgentState) -> dict:
             "extracted_entities": [],
             "extracted_relations": [],
             "next_step": "save",
-            "error": f"JSON parse error: {str(e)}",
+            "error": f"JSON parse error: {e!s}",
         }
     except Exception as e:
         return {"extracted_entities": [], "extracted_relations": [], "next_step": "save", "error": str(e)}

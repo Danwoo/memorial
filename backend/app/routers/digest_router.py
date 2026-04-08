@@ -1,8 +1,7 @@
-import asyncio
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
 from app.config.auth import get_user_id
 from app.config.dependencies import get_digest_service
@@ -38,8 +37,13 @@ async def get_digest_by_date(
 
 @router.post("/trigger-delivery")
 async def trigger_digest_delivery(
+    background_tasks: BackgroundTasks,
     user_id: UUID = Depends(get_user_id),
 ):
-    """다이제스트 배달 작업 수동 트리거 (관리용)."""
-    asyncio.create_task(digest_delivery_job())
+    """다이제스트 배달 작업 수동 트리거 (관리용 — DEBUG 모드에서만 허용)."""
+    from app.config.settings import get_settings
+
+    if not get_settings().DEBUG:
+        raise HTTPException(status_code=403, detail="Not available in production")
+    background_tasks.add_task(digest_delivery_job)
     return {"status": "triggered"}

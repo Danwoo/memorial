@@ -1,12 +1,18 @@
 import logging
+import re
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 
 from app.agents.librarian.graph import librarian_graph
 from app.agents.state import build_librarian_initial_state
 from app.config.auth import get_user_id
-from app.config.dependencies import get_diary_analysis_service, get_diary_service, get_scrap_service
+from app.config.dependencies import (
+    get_diary_analysis_service,
+    get_diary_service,
+    get_scrap_service,
+    get_socrates_service,
+)
 from app.schemas.diary_schema import (
     DiaryCreate,
     DiaryDateInfo,
@@ -23,6 +29,7 @@ from app.schemas.diary_schema import (
 from app.services.diary_analysis_service import DiaryAnalysisService
 from app.services.diary_service import DiaryService
 from app.services.scrap_service import ScrapService
+from app.services.socrates_service import SocratesService
 
 logger = logging.getLogger(__name__)
 
@@ -121,14 +128,14 @@ async def update_diary(
 
 @router.get("/search")
 async def search_diaries(
-    q: str,
-    limit: int = 20,
+    q: str = Query(max_length=200),
+    limit: int = Query(20, ge=1, le=100),
     user_id: UUID = Depends(get_user_id),
     diary_service: DiaryService = Depends(get_diary_service),
 ):
     """다이어리 내용 검색."""
     try:
-        entries = await diary_service.get_entries(user_id, limit=100)
+        entries = await diary_service.get_entries(user_id, limit=limit)
         q_lower = q.lower()
         results = [e for e in entries if q_lower in (e.get("content", "")).lower()]
         return results[:limit]
@@ -158,6 +165,9 @@ async def get_diary_dates(
     return DiaryDatesResponse(dates=[DiaryDateInfo(**d) for d in dates])
 
 
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
 @router.get("/by-date/{date}")
 async def get_diaries_by_date(
     date: str,
@@ -165,6 +175,8 @@ async def get_diaries_by_date(
     diary_service: DiaryService = Depends(get_diary_service),
 ):
     """특정 날짜(YYYY-MM-DD)의 다이어리 목록 조회."""
+    if not _DATE_RE.match(date):
+        raise HTTPException(status_code=400, detail="날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)")
     return await diary_service.get_diaries_by_date(user_id, date)
 
 
@@ -203,8 +215,13 @@ async def generate_draft(
     request: GenerateDraftRequest,
     user_id: UUID = Depends(get_user_id),
     analysis_service: DiaryAnalysisService = Depends(get_diary_analysis_service),
+    socrates_service: SocratesService = Depends(get_socrates_service),
 ):
     """저녁 대화 세션에서 다이어리 초안 생성."""
+    # 세션 소유권 검증 (IDOR 방어)
+    session = await socrates_service.get_session(request.session_id, user_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
     try:
         draft = await analysis_service.generate_draft_from_conversation(request.session_id)
         return GenerateDraftResponse(draft=draft, session_id=request.session_id)

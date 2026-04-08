@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from app.config.database import get_supabase_client
 from app.config.error_handler import register_error_handlers
 from app.config.middleware import register_middleware
+from app.config.settings import get_settings
 from app.repositories.mindmap_repository import MindmapRepository
 from app.repositories.scrap_repository import ScrapRepository
 from app.routers.router import api_router
@@ -57,11 +58,16 @@ def _register_all_agents() -> None:
     logger.info("에이전트 등록 완료")
 
 
+_settings = get_settings()
 app = FastAPI(
     title="Memoir AI",
     description="지능형 인지 장부 - Backend API",
     version="0.1.0",
     lifespan=lifespan,
+    # 프로덕션에서 OpenAPI 문서 비활성화 (정보 노출 방지)
+    docs_url="/docs" if _settings.DEBUG else None,
+    redoc_url="/redoc" if _settings.DEBUG else None,
+    openapi_url="/openapi.json" if _settings.DEBUG else None,
 )
 
 register_middleware(app)

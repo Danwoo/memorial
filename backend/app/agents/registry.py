@@ -1,4 +1,5 @@
 import logging
+from typing import ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +10,7 @@ class AgentRegistry:
     get_agent_container()를 통해 서비스 계층에서 agent_type 기반 그래프를 선택할 때 사용한다.
     """
 
-    _agents: dict = {}
+    _agents: ClassVar[dict] = {}
 
     @classmethod
     def register(cls, agent_type: str, graph) -> None:

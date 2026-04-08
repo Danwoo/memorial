@@ -36,9 +36,9 @@ class DiaryScrapLinkRepository:
 
         return len(response.data) if response.data else 0
 
-    async def get_diaries_by_scrap(self, scrap_id: UUID) -> list[dict]:
-        """특정 스크랩을 참조한 일기 목록 조회 (역참조)."""
-        response = await asyncio.to_thread(self._select_by_scrap, str(scrap_id))
+    async def get_diaries_by_scrap(self, scrap_id: UUID, user_id: UUID) -> list[dict]:
+        """특정 스크랩을 참조한 일기 목록 조회 (역참조, user_id 소유권 검증 포함)."""
+        response = await asyncio.to_thread(self._select_by_scrap, str(scrap_id), str(user_id))
         return response.data or []
 
     async def get_scrap_ids_by_diary(self, diary_id: UUID) -> list[str]:
@@ -62,11 +62,12 @@ class DiaryScrapLinkRepository:
     def _upsert_links(self, rows: list[dict]):
         return self.db.table("diary_scrap_links").upsert(rows, on_conflict="diary_id,scrap_id").execute()
 
-    def _select_by_scrap(self, scrap_id: str):
+    def _select_by_scrap(self, scrap_id: str, user_id: str):
         return (
             self.db.table("diary_scrap_links")
-            .select("diary_id, link_type, created_at, diaries(id, content, mood, created_at)")
+            .select("diary_id, link_type, created_at, diaries!inner(id, content, mood, created_at, user_id)")
             .eq("scrap_id", scrap_id)
+            .eq("diaries.user_id", user_id)
             .order("created_at", desc=True)
             .limit(10)
             .execute()

@@ -33,7 +33,7 @@ class VectorRepository:
                 api_key=settings.OPENAI_API_KEY,
             )
 
-        elif provider == "gemini":
+        if provider == "gemini":
             if not settings.GOOGLE_API_KEY:
                 logger.warning("GOOGLE_API_KEY 미설정 — 임베딩 비활성화")
                 return None
@@ -46,9 +46,8 @@ class VectorRepository:
                 google_api_key=settings.GOOGLE_API_KEY,
             )
 
-        else:
-            logger.warning("알 수 없는 EMBEDDING_PROVIDER=%r — 임베딩 비활성화", provider)
-            return None
+        logger.warning("알 수 없는 EMBEDDING_PROVIDER=%r — 임베딩 비활성화", provider)
+        return None
 
     # ------------------------------------------------------------------
     # 공개 비동기 인터페이스
@@ -79,7 +78,7 @@ class VectorRepository:
             if embedding is not None:
                 await asyncio.to_thread(self._update_embedding, scrap_id, embedding)
         except Exception as e:
-            logger.error("임베딩 저장 실패 (scrap_id=%s): %s", scrap_id, e)
+            logger.exception("임베딩 저장 실패 (scrap_id=%s): %s", scrap_id, e)
 
     async def similarity_search(
         self,
@@ -125,7 +124,7 @@ class VectorRepository:
             "match_count": limit,
         }
         response = await asyncio.to_thread(self._rpc_sparse, rpc_params)
-        return response.data if response.data else []
+        return response.data or []
 
     # ------------------------------------------------------------------
     # 동기 헬퍼 (스레드에서 실행)

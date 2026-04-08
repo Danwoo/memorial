@@ -90,9 +90,7 @@ class HybridSearchService:
         fused = self._rrf_fusion(dense_results, sparse_results, graph_results)
 
         # 5. 메모리 상세 정보 보강 (graph 결과는 ID만 있으므로)
-        enriched = await self._enrich_results(fused, user_id_str, limit)
-
-        return enriched
+        return await self._enrich_results(fused, user_id_str, limit)
 
     async def _dense_search(self, query: str, user_id: str, threshold: float) -> list[dict[str, Any]]:
         """Dense vector search 실행."""

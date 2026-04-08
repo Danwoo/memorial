@@ -36,8 +36,9 @@ async def get_mindmap(
 
     try:
         return await mindmap_service.get_visualization_data(limit, str(user_id))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception:
+        logger.exception("마인드맵 데이터 조회 실패")
+        raise HTTPException(status_code=500, detail="Failed to get mindmap data") from None
 
 
 @router.get("/ego/default", response_model=dict[str, Any])
@@ -51,8 +52,9 @@ async def get_ego_default(
 
     try:
         return await mindmap_service.get_ego_default(str(user_id))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception:
+        logger.exception("Ego 그래프 조회 실패")
+        raise HTTPException(status_code=500, detail="Failed to get ego graph") from None
 
 
 @router.get("/ego", response_model=dict[str, Any])
@@ -68,8 +70,9 @@ async def get_ego_graph(
 
     try:
         return await mindmap_service.get_ego_data(node_name, depth, str(user_id))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception:
+        logger.exception("Ego 서브그래프 조회 실패")
+        raise HTTPException(status_code=500, detail="Failed to get ego subgraph") from None
 
 
 @router.get("/insights", response_model=MindmapInsightsResponse)
@@ -80,8 +83,9 @@ async def get_mindmap_insights(
     """마인드맵 인사이트 분석 결과 조회 (클러스터/트렌드/허브/고립 노드)."""
     try:
         return await insight_service.get_insights(str(user_id))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception:
+        logger.exception("마인드맵 인사이트 조회 실패")
+        raise HTTPException(status_code=500, detail="Failed to get mindmap insights") from None
 
 
 @router.post("/rebuild-graph")
@@ -129,9 +133,9 @@ async def rebuild_graph(
             "skipped": skipped,
             "message": f"{processed}개 스크랩의 그래프 데이터가 재구축되었습니다.",
         }
-    except Exception as e:
+    except Exception:
         logger.exception("그래프 재구축 실패: user=%s", user_id)
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Failed to rebuild graph") from None
 
 
 @router.post("/relations")

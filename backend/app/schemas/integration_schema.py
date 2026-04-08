@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Any
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class ProviderInfo(BaseModel):
@@ -27,8 +27,8 @@ class IntegrationStatusResponse(BaseModel):
 class StoreProviderTokenRequest(BaseModel):
     """프로바이더 토큰 저장 요청."""
 
-    provider_token: str
-    provider_refresh_token: str | None = None
+    provider_token: str = Field(max_length=2000)
+    provider_refresh_token: str | None = Field(None, max_length=2000)
 
 
 # --- 봇 설정 ---
@@ -85,7 +85,7 @@ class KakaoWebhookUser(BaseModel):
 class KakaoUserRequest(BaseModel):
     """카카오 웹훅 사용자 요청."""
 
-    utterance: str
+    utterance: str = Field(max_length=10_000)
     user: KakaoWebhookUser
 
 
@@ -127,3 +127,9 @@ class ChannelStatusResponse(BaseModel):
     connected: bool
     bot_user_key: str | None = None
     linked_at: datetime | None = None
+
+
+class LinkByTokenRequest(BaseModel):
+    """토큰 기반 채널 연결 요청."""
+
+    token: str = Field(max_length=500)

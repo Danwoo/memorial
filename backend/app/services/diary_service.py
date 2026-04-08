@@ -122,7 +122,7 @@ class DiaryService:
             self._analyze_sentiment(content),
             self._extract_tags_ai(content),
         )
-        diary = await self.diary_repo.update_diary(diary_id, content, mood=mood, tags=tags)
+        diary = await self.diary_repo.update_diary(diary_id, content, mood=mood, tags=tags, user_id=user_id)
 
         # 스크랩 링크 재동기화
         if diary and scrap_ids is not None and self.link_repo:

@@ -26,6 +26,6 @@ class NotificationSettingUpdate(BaseModel):
 class PushSubscriptionRequest(BaseModel):
     """웹 푸시 구독 등록 요청."""
 
-    endpoint: str
-    p256dh: str
-    auth: str
+    endpoint: str = Field(max_length=2000)
+    p256dh: str = Field(max_length=500)
+    auth: str = Field(max_length=500)

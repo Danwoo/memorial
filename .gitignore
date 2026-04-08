@@ -63,8 +63,18 @@ backend/scripts/
 *_SPEC*.md
 CLAUDE.md
 
+# Data generation scripts (contain hardcoded user UUIDs)
+gen_data.py
+
 # Alpha/integration tests (contain hardcoded credentials)
 backend/tests/alpha_test_*.py
+
+# Private keys & cloud credentials
+*.pem
+*.key
+*.p12
+credentials.json
+serviceAccountKey*.json
 
 # Chrome Extension (contains hardcoded API keys)
 extension/

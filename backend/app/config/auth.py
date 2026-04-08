@@ -47,12 +47,16 @@ async def get_current_user(
 
     token = credentials.credentials
 
-    # 로컬 JWT 검증 시도 (설정된 경우)
+    # 로컬 JWT 검증 (secret이 설정된 경우): 실패 시 즉시 거부 (HTTP 폴백 없음)
+    # 이유: secret이 있으면 완전한 검증이 가능하므로 실패한 토큰에 두 번째 기회를 주면 안 됨
     if settings.SUPABASE_JWT_SECRET:
         result = _verify_jwt_local(token, settings.SUPABASE_JWT_SECRET)
         if result:
             return result
-        logger.debug("로컬 JWT 검증 실패, HTTP 폴백")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
 
     # HTTP 폴백: Supabase /auth/v1/user 호출
     try:

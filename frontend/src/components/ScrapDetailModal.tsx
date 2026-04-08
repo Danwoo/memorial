@@ -275,7 +275,7 @@ export default function ScrapDetailModal({ scrapId, onClose, onDeleted, onUpdate
               </div>
             ) : null}
 
-            {detail.source_url && (
+            {detail.source_url && /^https?:\/\//i.test(detail.source_url) && (
               <a className="scrap-detail-url" href={detail.source_url} target="_blank" rel="noopener noreferrer">
                 <ExternalLink size={14} />
                 <span>{detail.source_url}</span>
