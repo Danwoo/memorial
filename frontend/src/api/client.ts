@@ -61,9 +61,10 @@ async function handleErrorResponse(res: Response): Promise<never> {
   throw new ApiResponseError(res.status, detail)
 }
 
-// Fly.io 콜드 스타트 등 일시적 네트워크 오류 재시도
+// 일시적 네트워크 오류 재시도
 const MAX_RETRIES = 2
 const RETRY_DELAY_MS = 1500
+const REQUEST_TIMEOUT_MS = 12000
 
 async function fetchWithRetry(
   url: string,
@@ -71,8 +72,11 @@ async function fetchWithRetry(
   retries = MAX_RETRIES,
 ): Promise<Response> {
   for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
     try {
-      const res = await fetch(url, options)
+      const res = await fetch(url, { ...options, signal: options.signal ?? controller.signal })
+      clearTimeout(timer)
       // 502/503/504는 서버 깨어나는 중 — 재시도
       if (res.status >= 502 && res.status <= 504 && attempt < retries) {
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)))
@@ -80,6 +84,7 @@ async function fetchWithRetry(
       }
       return res
     } catch (err) {
+      clearTimeout(timer)
       // 네트워크 에러 (서버 다운 등) — 재시도
       if (attempt < retries) {
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)))
