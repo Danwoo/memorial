@@ -36,13 +36,11 @@ GLOBAL_QUERY_SIGNALS = frozenset(
         "주요",
         "전체적으로",
         "대체로",
-        "어떤",
         "관계",
         "패턴",
         "경향",
         "어떻게",
         "왜",
-        "어떤식",
         "연결",
         "흐름",
         "구조",
@@ -177,8 +175,12 @@ class GraphRAGRetrievalService:
         - 쿼리가 길거나 전체/개요 키워드 포함 → global
         - 짧고 구체적 → local
         """
-        words = set(query.lower().split())
-        if words & GLOBAL_QUERY_SIGNALS:
+        q_lower = query.lower()
+        words = set(q_lower.split())
+        # 1자 신호(다/총/왜)는 exact word match로 오탐 방지, 나머지는 활용형 포함 substring match
+        short_signals = {s for s in GLOBAL_QUERY_SIGNALS if len(s) <= 1}
+        long_signals = {s for s in GLOBAL_QUERY_SIGNALS if len(s) >= 2}
+        if (words & short_signals) or any(sig in q_lower for sig in long_signals):
             return "global"
         if len(query) > 60:
             return "global"
