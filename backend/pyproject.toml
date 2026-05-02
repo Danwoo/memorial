@@ -26,6 +26,8 @@ dependencies = [
     "apscheduler>=3.10.0",
     "pywebpush>=2.0.0",
     "upstash-redis>=1.0.0",
+    "networkx>=3.0",
+    "python-louvain>=0.16",
 ]
 
 [project.optional-dependencies]
