@@ -9,7 +9,7 @@
 ## 🎯 5분 요약
 
 현재 상황:
-- AWS EC2에서 backend가 **이미 운영 중** (15.165.17.222:8000)
+- AWS EC2에서 backend가 **이미 운영 중** (memoir-api.duckdns.org)
 - Frontend는 **Vercel에 배포할 준비** (main 브랜치 미병합)
 - **CSP 업데이트는 완료** (AWS 백엔드 포함)
 
@@ -67,7 +67,7 @@ git status | grep "\.env"
 
 ```bash
 # 1. AWS EC2 헬스체크
-curl -v http://15.165.17.222:8000/health
+curl -v https://memoir-api.duckdns.org/health
 
 # 예상 응답:
 # HTTP/1.1 200 OK
@@ -89,7 +89,7 @@ python ../scripts/validate-db.py
 curl -i -X OPTIONS \
   -H "Origin: https://memoir-knowledge.vercel.app" \
   -H "Access-Control-Request-Method: GET" \
-  http://15.165.17.222:8000/api/v1/scraps
+  https://memoir-api.duckdns.org/api/v1/scraps
 
 # 출력에 다음이 포함되어야 함:
 # Access-Control-Allow-Origin: https://memoir-knowledge.vercel.app
@@ -102,10 +102,10 @@ curl -i -X OPTIONS \
 
 ```bash
 # API 검증 스크립트 실행
-bash scripts/validate-api.sh http://15.165.17.222:8000
+bash scripts/validate-api.sh https://memoir-api.duckdns.org
 
 # 또는 Postman/REST Client 사용:
-# 1. GET http://15.165.17.222:8000/health → 200 OK
+# 1. GET https://memoir-api.duckdns.org/health → 200 OK
 # 2. POST /api/v1/auth/google → 200 (또는 요청 형식 에러)
 # 3. GET /api/v1/scraps → 401 (토큰 필요) 또는 200 (데이터)
 
@@ -172,7 +172,7 @@ ERROR: No 'Access-Control-Allow-Origin' header
 
 ### API 응답 없음 (curl timeout)
 ```bash
-ssh -i key.pem ubuntu@15.165.17.222
+ssh ubuntu@memoir-api.duckdns.org
 docker ps
 docker logs memoir-backend --tail 20
 docker restart memoir-backend
@@ -184,7 +184,7 @@ docker restart memoir-backend
 # Frontend에서 Google 로그인 후 Authorization 헤더에 토큰 추가
 
 curl -H "Authorization: Bearer <token>" \
-  http://15.165.17.222:8000/api/v1/scraps
+  https://memoir-api.duckdns.org/api/v1/scraps
 ```
 
 ### 502 Bad Gateway (Vercel)
@@ -247,7 +247,7 @@ curl -H "Authorization: Bearer <token>" \
 
 📄 **scripts/validate-api.sh** (API 자동 검증)
 ```bash
-bash scripts/validate-api.sh http://15.165.17.222:8000
+bash scripts/validate-api.sh https://memoir-api.duckdns.org
 ```
 
 📄 **scripts/validate-db.py** (DB 연결 검증)
@@ -303,3 +303,4 @@ A: 모든 Phase 1-5 ✓ 완료 후 main 브랜치 머지
 
 시간: `2026-03-08 작성`
 상태: `검증 준비 완료`
+

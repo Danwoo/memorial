@@ -15,7 +15,7 @@
 ### 단계 2: 백엔드 로그 확인
 - [ ] EC2 서버 접속
   ```bash
-  ssh -i <키_파일> ubuntu@15.165.17.222
+  ssh -i <키_파일> ubuntu@memoir-api.duckdns.org
   ```
 - [ ] Docker 로그 확인
   ```bash
@@ -73,7 +73,7 @@
   ```
 - [ ] EC2 서버 배포
   ```bash
-  ssh ubuntu@15.165.17.222
+  ssh ubuntu@memoir-api.duckdns.org
   cd /home/ubuntu/memorial
   git pull origin dev
   docker compose up -d --build
@@ -226,3 +226,4 @@ Issue #6: RESOLVED
 ---
 
 **체크리스트 업데이트: 2026-03-17**
+

@@ -95,6 +95,9 @@ async def trigger_nudge(
     user_id: UUID = Depends(get_user_id),
 ):
     """넛지 수동 트리거 (테스트/디버그용)."""
+    if not get_settings().DEBUG:
+        raise HTTPException(status_code=403, detail="Not available in production")
+
     from app.services.nudge_service import (
         _get_repos,
         _send_nudge_to_user,

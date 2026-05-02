@@ -7,7 +7,7 @@
 
 set -e
 
-API_URL="${1:-http://15.165.17.222:8000}"
+API_URL="${1:-https://memoir-api.duckdns.org}"
 VERCEL_URL="https://memoir-knowledge.vercel.app"
 
 echo "============================================================"
@@ -21,7 +21,7 @@ if curl -s -f "$API_URL/health" > /dev/null; then
     echo "✓ API 응답: OK"
 else
     echo "✗ API 응답: FAILED (응답 없음)"
-    echo "  → EC2 인스턴스 상태 확인: http://15.165.17.222"
+    echo "  → EC2 인스턴스 상태 확인: https://memoir-api.duckdns.org"
     exit 1
 fi
 
@@ -43,7 +43,7 @@ fi
 # Phase 3: DB 연결 상태 체크
 echo -e "\n[Phase 3] DB 연결 상태..."
 echo "  (실시간 모니터링은 아래 명령어 사용)"
-echo "  - EC2 접속: ssh -i key.pem ubuntu@15.165.17.222"
+echo "  - EC2 접속: ssh ubuntu@memoir-api.duckdns.org"
 echo "  - Docker 상태: docker ps"
 echo "  - 로그 확인: docker logs memoir-backend --tail 20"
 

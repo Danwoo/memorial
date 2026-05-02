@@ -183,7 +183,7 @@ git add backend/app/services/digest_service.py
 git commit -m "fix: add timeout to LLM call in digest generation (3s limit)"
 
 # 6. 部署到 EC2
-ssh ubuntu@15.165.17.222
+ssh ubuntu@memoir-api.duckdns.org
 cd /home/ubuntu/memorial
 git pull origin dev
 docker compose up -d --build
@@ -369,7 +369,7 @@ git commit -m "fix: correct Supabase search query syntax for scrap filtering"
 git push origin dev
 
 # 2. EC2 部署
-ssh ubuntu@15.165.17.222
+ssh ubuntu@memoir-api.duckdns.org
 cd /home/ubuntu/memorial
 git pull origin dev
 docker compose up -d --build
@@ -439,3 +439,4 @@ docker compose up -d --build
 ---
 
 *最后更新: 2026-03-17*
+

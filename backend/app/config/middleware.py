@@ -21,6 +21,12 @@ LLM_PATHS = {
     "/api/v1/scraps/backfill",
     "/api/v1/scraps/reprocess-all",
 }
+# 내보내기 경로 (5req/min) — DB 직렬화 + ZIP 압축으로 CPU/메모리 부하
+EXPORT_PATHS = {
+    "/api/v1/export/scraps",
+    "/api/v1/export/diaries",
+    "/api/v1/export/all",
+}
 # 스크랩 생성 (30req/min)
 WRITE_PATHS = {"/api/v1/scraps"}
 
@@ -38,6 +44,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             # LLM 엔드포인트: 10req/min
             if method == "POST" and any(path.startswith(p) or path.endswith("/messages") for p in LLM_PATHS):
                 rate_limiter.check(f"{key}:llm", max_requests=10, window_seconds=60)
+            # 내보내기: 5req/min (DB 직렬화 + ZIP 압축)
+            elif method == "GET" and path.rstrip("/") in EXPORT_PATHS:
+                rate_limiter.check(f"{key}:export", max_requests=5, window_seconds=60)
             # 메모리 생성: 30req/min
             elif method == "POST" and path.rstrip("/") in WRITE_PATHS:
                 rate_limiter.check(f"{key}:write", max_requests=30, window_seconds=60)

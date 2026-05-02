@@ -115,7 +115,7 @@ echo ""
 echo "[6] 배포 준비 상태"
 
 echo "  Backend:"
-echo "    URL: http://15.165.17.222:8000"
+echo "    URL: https://memoir-api.duckdns.org"
 echo "    상태: AWS EC2 운영 중"
 
 echo "  Frontend:"

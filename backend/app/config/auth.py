@@ -13,14 +13,19 @@ logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=False)
 
 
-def _verify_jwt_local(token: str, secret: str) -> dict | None:
+def _verify_jwt_local(token: str, secret: str, issuer: str | None = None) -> dict | None:
     """PyJWT로 로컬 검증. 성공 시 사용자 dict, 실패 시 None 반환."""
     try:
+        options = {}
+        if issuer is None:
+            options["verify_iss"] = False
         payload = pyjwt.decode(
             token,
             secret,
             algorithms=["HS256"],
             audience="authenticated",
+            issuer=issuer,
+            options=options,
         )
         return {
             "id": UUID(payload["sub"]),
@@ -50,7 +55,8 @@ async def get_current_user(
     # 로컬 JWT 검증 (secret이 설정된 경우): 실패 시 즉시 거부 (HTTP 폴백 없음)
     # 이유: secret이 있으면 완전한 검증이 가능하므로 실패한 토큰에 두 번째 기회를 주면 안 됨
     if settings.SUPABASE_JWT_SECRET:
-        result = _verify_jwt_local(token, settings.SUPABASE_JWT_SECRET)
+        issuer = f"{settings.SUPABASE_URL}/auth/v1"
+        result = _verify_jwt_local(token, settings.SUPABASE_JWT_SECRET, issuer)
         if result:
             return result
         raise HTTPException(

@@ -32,7 +32,7 @@
 **Step 1: 백엔드 로그 확인**
 ```bash
 # EC2 서버 접속
-ssh -i <key_file> ubuntu@15.165.17.222
+ssh -i <key_file> ubuntu@memoir-api.duckdns.org
 
 # Docker 컨테이너 로그 확인
 cd /home/ubuntu/memorial
@@ -142,7 +142,8 @@ curl -s "https://memoir-api.duckdns.org/api/v1/scraps?search=API" \
 
 ## 참고 자료
 
-- **EC2 IP**: 15.165.17.222
+- **EC2 IP**: memoir-api.duckdns.org
 - **백엔드 Docker**: `/home/ubuntu/memorial/docker-compose.yml`
 - **데이터베이스**: Supabase (otzqnucgfrlbqyyhksgo)
 - **테스트 데이터**: 다이어리 99개, 스크랩 117개 (March 1-17, 2026)
+

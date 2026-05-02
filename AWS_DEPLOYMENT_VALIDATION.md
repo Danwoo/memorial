@@ -1,7 +1,7 @@
 # AWS EC2 배포 전 완전 검증 계획
 
 **작성일**: 2026-03-08
-**상태**: AWS EC2 운영 중 (15.165.17.222:8000)
+**상태**: AWS EC2 운영 중 (memoir-api.duckdns.org)
 **목표**: 안정적인 배포 + 서비스 무중단 전환
 
 ---
@@ -25,7 +25,7 @@
                   │ CSP: AWS 백엔드 포함 ✓
                   ▼
         ┌─────────────────────────────┐
-        │   AWS EC2 (15.165.17.222)   │
+        │   AWS EC2 (memoir-api.duckdns.org)   │
         │   Backend (FastAPI)         │  ← 이미 운영 중
         │   + KuzuDB (로컬)           │     Docker 컨테이너
         │   :8000                     │     main 브랜치 자동 배포
@@ -49,7 +49,7 @@
 
 | 항목 | 상태 | 완료 | 비고 |
 |------|------|------|------|
-| AWS EC2 인스턴스 | ✓ 운영 중 | YES | 15.165.17.222:8000 |
+| AWS EC2 인스턴스 | ✓ 운영 중 | YES | memoir-api.duckdns.org |
 | Docker 컨테이너 | ? 미확인 | 필수 | 헬스체크 필요 |
 | Supabase 연결 | ? 미확인 | 필수 | 데이터 무결성 확인 |
 | KuzuDB 상태 | ? 미확인 | 필수 | 그래프 노드 동기화 |
@@ -132,7 +132,7 @@ grep "^ALLOWED_ORIGINS=" backend/.env
 #### 1-1. AWS EC2 헬스체크
 ```bash
 # EC2 인스턴스 응답 확인
-curl -v http://15.165.17.222:8000/health
+curl -v https://memoir-api.duckdns.org/health
 
 # 예상 응답:
 # HTTP/1.1 200 OK
@@ -143,7 +143,7 @@ curl -v http://15.165.17.222:8000/health
 **문제 해결**:
 ```bash
 # EC2 접속
-ssh -i ~/memoir-backend.pem ubuntu@15.165.17.222
+ssh -i ~/memoir-backend.pem ubuntu@memoir-api.duckdns.org
 
 # Docker 상태 확인
 docker ps | grep memoir-backend
@@ -226,7 +226,7 @@ curl -i -X OPTIONS \
   -H "Origin: https://memoir-knowledge.vercel.app" \
   -H "Access-Control-Request-Method: GET" \
   -H "Access-Control-Request-Headers: Authorization" \
-  http://15.165.17.222:8000/api/v1/scraps
+  https://memoir-api.duckdns.org/api/v1/scraps
 
 # 예상 응답 헤더:
 # Access-Control-Allow-Origin: https://memoir-knowledge.vercel.app
@@ -238,7 +238,7 @@ curl -i -X OPTIONS \
 #### 2-2. CSP 헤더 검증
 ```bash
 # Backend CSP 헤더 확인
-curl -i http://15.165.17.222:8000/health | grep -i "content-security-policy"
+curl -i https://memoir-api.duckdns.org/health | grep -i "content-security-policy"
 
 # 예상: AWS 백엔드가 포함된 CSP
 # (또는 CSP 미설정 = 기본값 사용)
@@ -253,7 +253,7 @@ cat frontend/vercel.json | grep -A 10 "headers"
 # "headers": [
 #   {
 #     "key": "Content-Security-Policy",
-#     "value": "connect-src 'self' http://15.165.17.222:8000 https://otzqnucgfrlbqyyhksgo.supabase.co ..."
+#     "value": "connect-src 'self' https://memoir-api.duckdns.org https://otzqnucgfrlbqyyhksgo.supabase.co ..."
 #   }
 # ]
 ```
@@ -271,7 +271,7 @@ cat frontend/vercel.json | grep -A 10 "headers"
 
 #### 3-1. 헬스체크
 ```bash
-curl http://15.165.17.222:8000/health
+curl https://memoir-api.duckdns.org/health
 # → {"status": "ok"}
 ```
 
@@ -281,7 +281,7 @@ curl http://15.165.17.222:8000/health
 # Frontend에서 Google 로그인 후 authorization code 수령
 
 # Backend에서 토큰 교환
-curl -X POST http://15.165.17.222:8000/api/v1/auth/google \
+curl -X POST https://memoir-api.duckdns.org/api/v1/auth/google \
   -H "Content-Type: application/json" \
   -d '{
     "code": "<google_auth_code_from_frontend>",
@@ -305,7 +305,7 @@ TOKEN="<access_token_from_above>"
 
 # 스크랩 조회
 curl -H "Authorization: Bearer $TOKEN" \
-  http://15.165.17.222:8000/api/v1/scraps
+  https://memoir-api.duckdns.org/api/v1/scraps
 
 # 예상 응답:
 # {
@@ -322,7 +322,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 #### 3-4. 스크랩 생성
 ```bash
-curl -X POST http://15.165.17.222:8000/api/v1/scraps \
+curl -X POST https://memoir-api.duckdns.org/api/v1/scraps \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -336,7 +336,7 @@ curl -X POST http://15.165.17.222:8000/api/v1/scraps \
 #### 3-5. Socrates 채팅 (LLM 통합)
 ```bash
 # 1. 세션 생성
-curl -X POST http://15.165.17.222:8000/api/v1/socrates/sessions \
+curl -X POST https://memoir-api.duckdns.org/api/v1/socrates/sessions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -346,7 +346,7 @@ curl -X POST http://15.165.17.222:8000/api/v1/socrates/sessions \
 # 2. 메시지 전송
 SESSION_ID="<session_id_from_above>"
 
-curl -X POST http://15.165.17.222:8000/api/v1/socrates/sessions/$SESSION_ID/messages \
+curl -X POST https://memoir-api.duckdns.org/api/v1/socrates/sessions/$SESSION_ID/messages \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -384,11 +384,11 @@ curl -X POST http://15.165.17.222:8000/api/v1/socrates/sessions/$SESSION_ID/mess
 # Frontend API URL 설정
 # frontend/src/config.ts (또는 환경변수)
 
-const API_BASE_URL = 'http://15.165.17.222:8000';
+const API_BASE_URL = 'https://memoir-api.duckdns.org';
 // 또는 VITE_API_URL 환경변수
 
 # 또는 .env.local
-VITE_API_URL=http://15.165.17.222:8000
+VITE_API_URL=https://memoir-api.duckdns.org
 ```
 
 #### 4-2. 개발 서버 실행
@@ -435,7 +435,7 @@ npm run dev
 // F12 > Console 탭
 
 // 예상 메시지:
-// - "API connected: http://15.165.17.222:8000"
+// - "API connected: https://memoir-api.duckdns.org"
 // - 네트워크 요청 성공 (200, 201)
 
 // 경고 (주의):
@@ -473,14 +473,14 @@ F12 > Performance 탭
 #### 5-1. 입력 검증
 ```bash
 # SQL Injection 시도
-curl -X GET "http://15.165.17.222:8000/api/v1/scraps?search='; DROP TABLE scraps; --" \
+curl -X GET "https://memoir-api.duckdns.org/api/v1/scraps?search='; DROP TABLE scraps; --" \
   -H "Authorization: Bearer $TOKEN"
 
 # 예상: 쿼리가 파라미터화되어 있어 안전함
 # (에러 없음, 정상 응답 또는 empty result)
 
 # XSS 시도
-curl -X POST http://15.165.17.222:8000/api/v1/scraps \
+curl -X POST https://memoir-api.duckdns.org/api/v1/scraps \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -498,12 +498,12 @@ TOKEN_USER_B="<user_b_token>"
 
 # User A의 스크랩 조회
 curl -H "Authorization: Bearer $TOKEN_USER_A" \
-  http://15.165.17.222:8000/api/v1/scraps | jq '.data[0].user_id'
+  https://memoir-api.duckdns.org/api/v1/scraps | jq '.data[0].user_id'
 # → "user_a_id"
 
 # User B로 같은 엔드포인트 접근
 curl -H "Authorization: Bearer $TOKEN_USER_B" \
-  http://15.165.17.222:8000/api/v1/scraps | jq '.data[0].user_id'
+  https://memoir-api.duckdns.org/api/v1/scraps | jq '.data[0].user_id'
 # → "user_b_id" (User A 데이터 노출 안 됨)
 ```
 
@@ -646,7 +646,7 @@ app.add_middleware(
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "http://15.165.17.222:8000"
+          "value": "https://memoir-api.duckdns.org"
         }
       ]
     }
@@ -756,7 +756,7 @@ git push origin main
 # https://render.com/dashboard > memoir-backend-danwoo
 
 # AWS EC2 Docker 로그
-ssh -i key.pem ubuntu@15.165.17.222
+ssh ubuntu@memoir-api.duckdns.org
 docker logs memoir-backend --tail 100
 ```
 
@@ -821,3 +821,4 @@ python scripts/validate-db.py
 **작성**: Claude Code
 **마지막 업데이트**: 2026-03-08
 **상태**: 활성
+
