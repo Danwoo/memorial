@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.config.auth import get_user_id
 from app.config.dependencies import (
+    get_graphrag_indexing_service,
     get_mindmap_insight_service,
     get_mindmap_service,
     get_scrap_repository,
@@ -16,6 +17,7 @@ from app.schemas.mindmap_insight_schema import (
     CreateRelationRequest,
     MindmapInsightsResponse,
 )
+from app.services.graphrag_indexing_service import GraphRAGIndexingService
 from app.services.mindmap_insight_service import MindmapInsightService
 from app.services.mindmap_service import MindmapService
 
@@ -136,6 +138,24 @@ async def rebuild_graph(
     except Exception:
         logger.exception("그래프 재구축 실패: user=%s", user_id)
         raise HTTPException(status_code=500, detail="Failed to rebuild graph") from None
+
+
+@router.post("/reindex")
+async def reindex_graphrag(
+    user_id: UUID = Depends(get_user_id),
+    indexing_service: GraphRAGIndexingService = Depends(get_graphrag_indexing_service),
+):
+    """GraphRAG 재인덱싱 — Louvain 커뮤니티 감지 + LLM 요약 + 임베딩 → Supabase 저장.
+
+    스크랩 대규모 추가 후 또는 커뮤니티 구조가 크게 변경된 경우 호출.
+    소요 시간: 수십 초 ~ 수 분 (그래프 크기에 따라 다름).
+    """
+    try:
+        result = await indexing_service.reindex(str(user_id))
+        return result
+    except Exception:
+        logger.exception("GraphRAG 재인덱싱 실패: user=%s", user_id)
+        raise HTTPException(status_code=500, detail="GraphRAG reindex failed") from None
 
 
 @router.post("/relations")

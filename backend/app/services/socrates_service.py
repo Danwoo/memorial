@@ -130,6 +130,7 @@ class SocratesService:
                 diary_repo=container.diary_repo,
                 socrates_repo=self.socrates_repo,
                 community_summary=container.community_summary,
+                graphrag_retrieval=container.graphrag_retrieval,
             )
 
             # agent_type별 초기 상태 빌더 선택

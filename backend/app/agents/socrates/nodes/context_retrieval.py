@@ -9,47 +9,21 @@ from app.agents.socrates.state import SocratesState
 
 logger = logging.getLogger(__name__)
 
-# 그래프/다이어리 설정
-GRAPH_CONTEXT_LIMIT = 8
-GRAPH_KEYWORD_MIN_LENGTH = 2
-GRAPH_MAX_KEYWORDS = 3
 DIARY_CONTEXT_LIMIT = 3
 DIARY_PREVIEW_LENGTH = 400
 
 
-async def _fetch_graph_context(query: str, limit: int = GRAPH_CONTEXT_LIMIT) -> str:
-    """지식 그래프에서 관련 엔티티 조회. 포맷된 텍스트 반환."""
+async def _fetch_graphrag_context(query: str, user_id: str, context: AgentContext) -> str:
+    """GraphRAGRetrievalService로 Global/Local 검색 후 포맷된 컨텍스트 반환."""
     try:
-        from app.config.dependencies import get_mindmap_repository
-
-        graph_repo = get_mindmap_repository()
-        keywords = [word for word in query.split() if len(word) >= GRAPH_KEYWORD_MIN_LENGTH][:GRAPH_MAX_KEYWORDS]
-        graph_results = []
-        for keyword in keywords:
-            related = await graph_repo.get_related_context(keyword, depth=2)
-            graph_results.extend(related)
-
-        if not graph_results:
-            return ""
-
-        seen: set[str] = set()
-        unique_results = []
-        for entity in graph_results:
-            name = entity.get("name", "")
-            if name and name not in seen:
-                seen.add(name)
-                unique_results.append(entity)
-
-        graph_lines = []
-        for entity in unique_results[:limit]:
-            name = entity.get("name", "")
-            label = entity.get("label", "")
-            rel = entity.get("rel_type", "RELATED_TO")
-            dist = entity.get("distance", 1)
-            graph_lines.append(f"- {name} ({label}) -- {rel} (depth: {dist})")
-        return "\n".join(graph_lines)
+        result = await context.graphrag_retrieval.retrieve(query, user_id)
+        ctx = result.get("context", "")
+        mode = result.get("mode", "local")
+        if ctx:
+            return f"[GraphRAG/{mode}]\n{ctx}"
+        return ""
     except Exception:
-        logger.exception("Graph context fetch 실패")
+        logger.exception("GraphRAG context fetch 실패")
         return ""
 
 
@@ -71,7 +45,7 @@ async def _fetch_diary_context(user_id: str, diary_repo, limit: int = DIARY_CONT
 
 
 async def _fetch_community_context(user_id: str, query: str, community_summary) -> str:
-    """커뮤니티 요약 중 쿼리와 관련된 것만 필터링하여 반환."""
+    """커뮤니티 요약 중 쿼리와 관련된 것만 필터링하여 반환 (GraphRAG 인덱싱 없을 때 보완)."""
     try:
         summaries = await community_summary.get_community_summaries(user_id)
         if not summaries:
@@ -84,9 +58,6 @@ async def _fetch_community_context(user_id: str, query: str, community_summary) 
             if query_keywords & entity_words:
                 relevant.append(s["summary"])
 
-        if not relevant:
-            return ""
-
         return "\n".join(f"- {s}" for s in relevant[:3])
     except Exception:
         logger.warning("Community context fetch 실패")
@@ -94,15 +65,11 @@ async def _fetch_community_context(user_id: str, query: str, community_summary) 
 
 
 async def context_retrieval_node(state: SocratesState, runtime: Runtime[AgentContext]) -> dict:
-    """보조 컨텍스트 3축 병렬 수집 노드 (Runtime DI + CachePolicy 적용).
+    """보조 컨텍스트 수집 노드 — GraphRAG + Diary + Community 병렬 수집.
 
-    graph + diary + community를 asyncio.gather로 내부 병렬화한다.
-    CachePolicy(ttl=60)에 의해 같은 사용자가 60초 내 연속 메시지 시 결과를 재활용한다.
-
-    memory_retrieval과 병렬로 실행되며, grading 노드(defer=True)가 둘 다 완료 후 실행된다.
-    retrieval_plan이 no_retrieval 또는 simple_search이면 실행을 건너뛴다 (pass-through).
+    GraphRAGRetrievalService가 쿼리를 global/local로 분류하여
+    커뮤니티 map-reduce 또는 엔티티 2-hop 탐색을 실행한다.
     """
-    # pass-through: no_retrieval / simple_search는 graph+diary 검색 불필요
     retrieval_plan = state.get("retrieval_plan", "full_rag")
     if retrieval_plan in ("no_retrieval", "simple_search"):
         return {"graph_context": "", "diary_context": "", "community_context": ""}
@@ -114,18 +81,18 @@ async def context_retrieval_node(state: SocratesState, runtime: Runtime[AgentCon
     search_query = state.get("search_query", state["user_query"])
     diary_repo = runtime.context.diary_repo
     community_summary = runtime.context.community_summary
+    agent_context = runtime.context
 
-    graph_ctx, diary_ctx, community_ctx = await asyncio.gather(
-        _fetch_graph_context(search_query),
+    graphrag_ctx, diary_ctx, community_ctx = await asyncio.gather(
+        _fetch_graphrag_context(search_query, user_id, agent_context),
         _fetch_diary_context(user_id, diary_repo),
         _fetch_community_context(user_id, search_query, community_summary),
         return_exceptions=True,
     )
 
-    # gather 예외 처리
-    if isinstance(graph_ctx, Exception):
-        logger.warning("graph_context fetch 예외: %s", graph_ctx)
-        graph_ctx = ""
+    if isinstance(graphrag_ctx, Exception):
+        logger.warning("graphrag_context fetch 예외: %s", graphrag_ctx)
+        graphrag_ctx = ""
     if isinstance(diary_ctx, Exception):
         logger.warning("diary_context fetch 예외: %s", diary_ctx)
         diary_ctx = ""
@@ -135,16 +102,14 @@ async def context_retrieval_node(state: SocratesState, runtime: Runtime[AgentCon
 
     writer({"node": "context_retrieval", "status": "done"})
 
-    # deep_diary 플랜에서는 diary_deep_retrieval이 diary_context를 담당하므로
-    # 이 노드는 diary_context를 write하지 않음 (fan-out 동시 write 충돌 방지).
     if retrieval_plan == "deep_diary":
         return {
-            "graph_context": graph_ctx,
+            "graph_context": graphrag_ctx,
             "community_context": community_ctx,
         }
 
     return {
-        "graph_context": graph_ctx,
+        "graph_context": graphrag_ctx,
         "diary_context": diary_ctx,
         "community_context": community_ctx,
     }

@@ -19,3 +19,5 @@ PyJWT>=2.8.0
 tenacity>=8.2.0
 fastmcp>=3.0.0
 langchain-mcp-adapters>=0.1.0
+python-louvain>=0.16
+networkx>=3.0

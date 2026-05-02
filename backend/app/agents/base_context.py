@@ -4,6 +4,7 @@ from app.repositories.diary_repository import DiaryRepository
 from app.repositories.socrates_repository import SocratesRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.community_summary_service import CommunitySummaryService
+from app.services.graphrag_retrieval_service import GraphRAGRetrievalService
 from app.services.hybrid_search_service import HybridSearchService
 
 
@@ -20,3 +21,4 @@ class AgentContext:
     diary_repo: DiaryRepository
     socrates_repo: SocratesRepository
     community_summary: CommunitySummaryService
+    graphrag_retrieval: GraphRAGRetrievalService

@@ -25,11 +25,14 @@ from app.repositories.scrap_repository import ScrapRepository
 from app.repositories.socrates_repository import SocratesRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.calendar_service import CalendarService
+from app.services.community_summary_service import CommunitySummaryService
 from app.services.diary_analysis_service import DiaryAnalysisService
 from app.services.diary_service import DiaryService
 from app.services.digest_service import DigestService
 from app.services.duplicate_service import DuplicateService
 from app.services.export_service import ExportService
+from app.services.graphrag_indexing_service import GraphRAGIndexingService
+from app.services.graphrag_retrieval_service import GraphRAGRetrievalService
 from app.services.hybrid_search_service import HybridSearchService
 from app.services.insight_service import InsightService
 from app.services.kakao_channel_service import KakaoChannelService
@@ -217,3 +220,29 @@ def get_notification_repository(
 ) -> NotificationRepository:
     """NotificationRepository 인스턴스 생성."""
     return NotificationRepository(db)
+
+
+def get_community_summary_service(
+    mindmap_repo: MindmapRepository = Depends(get_mindmap_repository),
+    db: Client = Depends(get_db),
+) -> CommunitySummaryService:
+    """CommunitySummaryService 인스턴스 생성."""
+    return CommunitySummaryService(mindmap_repo, db)
+
+
+def get_graphrag_retrieval_service(
+    mindmap_repo: MindmapRepository = Depends(get_mindmap_repository),
+    vector_repo: VectorRepository = Depends(get_vector_repository),
+    db: Client = Depends(get_db),
+) -> GraphRAGRetrievalService:
+    """GraphRAGRetrievalService 인스턴스 생성."""
+    return GraphRAGRetrievalService(mindmap_repo, vector_repo, db)
+
+
+def get_graphrag_indexing_service(
+    mindmap_repo: MindmapRepository = Depends(get_mindmap_repository),
+    vector_repo: VectorRepository = Depends(get_vector_repository),
+    db: Client = Depends(get_db),
+) -> GraphRAGIndexingService:
+    """GraphRAGIndexingService 인스턴스 생성."""
+    return GraphRAGIndexingService(mindmap_repo, vector_repo, db)

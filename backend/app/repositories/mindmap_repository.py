@@ -723,6 +723,96 @@ class MindmapRepository:
             logger.exception("그래프 기반 메모리 검색 실패: query='%s'", query)
             return []
 
+    # ------------------------------------------------------------------
+    # GraphRAG — 엔티티 이웃 + 스크랩 ID 조회
+    # ------------------------------------------------------------------
+    def _sync_get_entity_neighborhood(self, entity_names: list[str], user_id: str, hops: int = 2) -> list[dict]:
+        """엔티티 목록에서 N-hop 이내 관련 엔티티-관계 목록 조회 (동기).
+
+        1-hop: rel_type 포함, 2-hop: rel_type 없음 (KuzuDB 가변 경로 제약).
+        """
+        if not entity_names:
+            return []
+        conn = self._get_conn()
+        result: list[dict] = []
+        seen_pairs: set[tuple[str, str]] = set()
+
+        for name in entity_names[:8]:
+            # 1-hop: rel_type 포함
+            q1 = """
+            MATCH (start:Entity {name: $name})-[r:ENTITY_REL]->(related:Entity)
+            WHERE EXISTS { MATCH (mem:Memory {user_id: $user_id})-[:MENTIONS]->(related) }
+            RETURN DISTINCT related.name AS name, related.type AS entity_type,
+                   r.rel_type AS rel_type, 1 AS hop
+            LIMIT 10
+            """
+            rows = self._result_to_dicts(conn.execute(q1, {"name": name, "user_id": user_id}))
+            for r in rows:
+                pair = (name, r.get("name", ""))
+                if pair not in seen_pairs and r.get("name"):
+                    seen_pairs.add(pair)
+                    result.append(r)
+
+            if hops >= 2:
+                # 2-hop: 1-hop 이웃에서 다시 1-hop
+                hop1_names = [r["name"] for r in rows if r.get("name")]
+                for h1 in hop1_names[:4]:
+                    q2 = """
+                    MATCH (start:Entity {name: $name})-[r:ENTITY_REL]->(related:Entity)
+                    WHERE EXISTS { MATCH (mem:Memory {user_id: $user_id})-[:MENTIONS]->(related) }
+                    RETURN DISTINCT related.name AS name, related.type AS entity_type,
+                           r.rel_type AS rel_type, 2 AS hop
+                    LIMIT 5
+                    """
+                    rows2 = self._result_to_dicts(conn.execute(q2, {"name": h1, "user_id": user_id}))
+                    for r in rows2:
+                        pair = (h1, r.get("name", ""))
+                        if pair not in seen_pairs and r.get("name"):
+                            seen_pairs.add(pair)
+                            result.append(r)
+
+        return result
+
+    async def get_entity_neighborhood(self, entity_names: list[str], user_id: str, hops: int = 2) -> list[dict]:
+        """엔티티 목록에서 N-hop 이내 관련 엔티티-관계 조회."""
+        if not self.db or not entity_names:
+            return []
+        try:
+            return await asyncio.to_thread(self._sync_get_entity_neighborhood, entity_names, user_id, hops)
+        except Exception:
+            logger.exception("엔티티 이웃 조회 실패: entities=%s", entity_names[:3])
+            return []
+
+    def _sync_get_scrap_ids_for_entities(self, entity_names: list[str], user_id: str, limit: int = 20) -> list[dict]:
+        """엔티티 이름 목록으로 연결된 스크랩 ID 조회 (동기). 빈도순 정렬."""
+        if not entity_names:
+            return []
+        conn = self._get_conn()
+        id_counts: dict[str, int] = {}
+        for name in entity_names[:15]:
+            q = """
+            MATCH (mem:Memory {user_id: $user_id})-[:MENTIONS]->(e:Entity {name: $name})
+            RETURN DISTINCT mem.id AS scrap_id
+            LIMIT 10
+            """
+            rows = self._result_to_dicts(conn.execute(q, {"user_id": user_id, "name": name}))
+            for r in rows:
+                sid = r.get("scrap_id", "")
+                if sid:
+                    id_counts[sid] = id_counts.get(sid, 0) + 1
+        sorted_ids = sorted(id_counts.items(), key=lambda x: x[1], reverse=True)
+        return [{"scrap_id": sid, "graph_score": cnt} for sid, cnt in sorted_ids[:limit]]
+
+    async def get_scrap_ids_for_entities(self, entity_names: list[str], user_id: str, limit: int = 20) -> list[dict]:
+        """엔티티 이름 목록으로 연결된 스크랩 ID 조회. graph_score = 매칭 엔티티 수."""
+        if not self.db or not entity_names:
+            return []
+        try:
+            return await asyncio.to_thread(self._sync_get_scrap_ids_for_entities, entity_names, user_id, limit)
+        except Exception:
+            logger.exception("스크랩 ID 조회 실패: entities=%s", entity_names[:3])
+            return []
+
     async def get_graph_data(self, limit: int = 100, user_id: str | None = None) -> dict[str, list]:
         """시각화용 그래프 데이터 조회. D3 호환 {nodes, links} 포맷 반환.
 
