@@ -96,7 +96,7 @@ export default function KakaoLinkPage() {
     <div className="auth-view">
       <div className="auth-container">
         <div className="auth-header">
-          <img src="/favicon.png" alt="Memoir" width={64} height={64} className="auth-logo" />
+          <img src="/logos/logo-final.svg" alt="Memoir" width={64} height={64} className="auth-logo" />
           <h1>Memoir AI</h1>
           <p>카카오톡 채널 연결</p>
         </div>

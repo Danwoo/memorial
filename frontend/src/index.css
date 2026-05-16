@@ -197,6 +197,13 @@
   --feature-mindmap-bg: rgba(127, 186, 154, 0.12);
 }
 
+/* 손글씨 디스플레이 유틸리티 — 화면당 1~2 단어 강조용 (Caveat + Gowun Dodum) */
+.handwritten {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
 /* Reset */
 *, *::before, *::after {
   box-sizing: border-box;
