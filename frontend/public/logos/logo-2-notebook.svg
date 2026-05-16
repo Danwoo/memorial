@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Memoir">
+  
+  <rect x="6" y="6" width="88" height="88" rx="20" fill="#6D4FE8"></rect>
+  
+  <line x1="22" y1="32" x2="78" y2="32" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" opacity="0.85"></line>
+  <line x1="22" y1="50" x2="64" y2="50" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" opacity="0.65"></line>
+  <line x1="22" y1="68" x2="72" y2="68" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" opacity="0.45"></line>
+  
+  <circle cx="15" cy="32" r="2" fill="#FFFFFF" opacity="0.6"></circle>
+  <circle cx="15" cy="50" r="2" fill="#FFFFFF" opacity="0.6"></circle>
+  <circle cx="15" cy="68" r="2" fill="#FFFFFF" opacity="0.6"></circle>
+</svg>

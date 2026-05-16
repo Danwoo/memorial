@@ -3,6 +3,8 @@
  * sidebar 100, modal-overlay 500, modal-content 501, tab-bar 900, more-sheet 951, toast 9999, cmd-palette 2000
  */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Caveat:wght@500;600;700&family=Gowun+Dodum&display=swap');
+
 :root {
   /* Surfaces */
   --bg-primary: #F9F8FC;
@@ -24,6 +26,18 @@
   --accent-bg: rgba(109, 79, 232, 0.07);
   --accent-bg-hover: rgba(109, 79, 232, 0.15);
   --accent-gradient: linear-gradient(135deg, #7C5CFC 0%, #A855F7 100%);
+
+  /* Feature accents (per-surface tints, used sparingly)
+   * Diary  = warm amber → reflective, personal
+   * Scrap  = cool blue  → calm, archival
+   * Mindmap = sage green → growth, connection
+   * Calendar inherits the brand accent (violet) as the "home" surface. */
+  --feature-diary:      #D97757;
+  --feature-diary-bg:   rgba(217, 119, 87, 0.08);
+  --feature-scrap:      #4F86DB;
+  --feature-scrap-bg:   rgba(79, 134, 219, 0.08);
+  --feature-mindmap:    #5B9F7E;
+  --feature-mindmap-bg: rgba(91, 159, 126, 0.08);
 
   /* Borders */
   --border-primary: #C8C3E0;
@@ -47,6 +61,7 @@
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --font-display: 'Caveat', 'Gowun Dodum', 'Noto Sans KR', cursive;
   --fs-display: 1.75rem;
   --fs-headline: 1.375rem;
   --fs-title: 1rem;
@@ -126,6 +141,14 @@
     --shadow-md: 0 1px 3px rgba(0,0,0,0.50), 0 4px 8px rgba(0,0,0,0.30);
     --shadow-lg: 0 4px 6px rgba(0,0,0,0.35), 0 10px 24px rgba(0,0,0,0.45);
     --shadow-focus: 0 0 0 3px rgba(155,127,255,0.30);
+
+    /* Feature accents — dark variant (slightly lifted for legibility) */
+    --feature-diary:      #E8997B;
+    --feature-diary-bg:   rgba(232, 153, 123, 0.12);
+    --feature-scrap:      #7BA8E8;
+    --feature-scrap-bg:   rgba(123, 168, 232, 0.12);
+    --feature-mindmap:    #7FBA9A;
+    --feature-mindmap-bg: rgba(127, 186, 154, 0.12);
   }
 }
 
@@ -164,6 +187,14 @@
   --shadow-md: 0 1px 3px rgba(0,0,0,0.50), 0 4px 8px rgba(0,0,0,0.30);
   --shadow-lg: 0 4px 6px rgba(0,0,0,0.35), 0 10px 24px rgba(0,0,0,0.45);
   --shadow-focus: 0 0 0 3px rgba(155,127,255,0.30);
+
+  /* Feature accents — dark variant (slightly lifted for legibility) */
+  --feature-diary:      #E8997B;
+  --feature-diary-bg:   rgba(232, 153, 123, 0.12);
+  --feature-scrap:      #7BA8E8;
+  --feature-scrap-bg:   rgba(123, 168, 232, 0.12);
+  --feature-mindmap:    #7FBA9A;
+  --feature-mindmap-bg: rgba(127, 186, 154, 0.12);
 }
 
 /* Reset */
