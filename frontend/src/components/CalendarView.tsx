@@ -16,8 +16,32 @@ import {
 import MonthlyCalendar from './calendar/MonthlyCalendar'
 import StreakBadge from './calendar/StreakBadge'
 import DayDetailPanel from './calendar/DayDetailPanel'
+import MonthlyRecap from './calendar/MonthlyRecap'
+import AnniversaryCard from './calendar/AnniversaryCard'
 import OnboardingWizard from './OnboardingWizard'
 import './CalendarView.css'
+
+/** 망각 곡선: 오늘 기준 3일 / 1주 / 1개월 / 3개월 / 1년 전 날짜 셋 반환 */
+function computeRecallDates(): Set<string> {
+  const result = new Set<string>()
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const offsets: Array<[number, 'day' | 'month' | 'year']> = [
+    [3, 'day'],
+    [7, 'day'],
+    [1, 'month'],
+    [3, 'month'],
+    [1, 'year'],
+  ]
+  for (const [n, unit] of offsets) {
+    const d = new Date(today)
+    if (unit === 'day') d.setDate(d.getDate() - n)
+    else if (unit === 'month') d.setMonth(d.getMonth() - n)
+    else d.setFullYear(d.getFullYear() - n)
+    result.add(d.toISOString().slice(0, 10))
+  }
+  return result
+}
 
 const ONBOARDING_KEY = 'memoir:onboarded'
 const LEGACY_ONBOARDING_KEY = 'onboarding_completed'
@@ -137,6 +161,9 @@ export default function CalendarView() {
   const now = new Date()
   const [calYear, setCalYear] = useState(now.getFullYear())
   const [calMonth, setCalMonth] = useState(now.getMonth())
+
+  // 망각 곡선: 다시 만나볼 날짜들 (오늘 기준 고정값이라 한 번만 계산)
+  const recallDates = useMemo(() => computeRecallDates(), [])
 
   // 선택된 날짜 (DayDetailPanel 토글)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -391,6 +418,19 @@ export default function CalendarView() {
         </div>
       )}
 
+      {/* 월간 리캡 스트립: 이번 달 다이어리/스크랩/자주 쓰는 태그 */}
+      <MonthlyRecap
+        year={calYear}
+        month={calMonth}
+        journalDates={journalDates}
+        activityData={activity}
+      />
+
+      {/* 1년 전 오늘 — 다이어리가 있을 때만 표시 */}
+      {!selectedDate && (
+        <AnniversaryCard journalDates={journalDates} onOpen={handleNavigateJournal} />
+      )}
+
       {/* 캘린더 + DayDetailPanel */}
       <div className={`calendar-main-container${selectedDate ? ' calendar-main-container--panel-open' : ''}`}>
         <div
@@ -407,10 +447,19 @@ export default function CalendarView() {
             selectedDate={selectedDate}
             streakBadge={streak ? <StreakBadge streak={streak} /> : undefined}
             weekSummary={weekSummaryNode}
+            recallDates={recallDates}
           />
           {!isFirstWeek() && (
             <div className="calendar-keyboard-hint">
               <kbd>←</kbd><kbd>→</kbd> 월 이동 &nbsp;·&nbsp; <kbd>T</kbd> 오늘
+            </div>
+          )}
+          {recallDates.size > 0 && (
+            <div className="calendar-recall-hint">
+              <span className="calendar-recall-hint__dot" aria-hidden="true" />
+              <span>
+                보라색 점이 켜진 날은 <strong>다시 만나볼 시간</strong>이에요. 잊기 전에 한 번 더 펼쳐보세요.
+              </span>
             </div>
           )}
           {!loading && !currentMonthHasData && (

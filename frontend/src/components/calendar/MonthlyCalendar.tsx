@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import type { ActivityData } from '../../types'
 import type { DiaryDateInfo } from '../../types/diary'
 import './MonthlyCalendar.css'
@@ -16,6 +16,8 @@ interface MonthlyCalendarProps {
   selectedDate?: string | null
   streakBadge?: React.ReactNode
   weekSummary?: React.ReactNode
+  /** 망각 곡선 — 다시 만나볼 만한 날짜들 (3d / 1w / 1m / 3m / 1y 전) */
+  recallDates?: Set<string>
 }
 
 /** 해당 월의 달력 데이터 생성 */
@@ -62,7 +64,7 @@ const MONTH_NAMES = [
 
 export default function MonthlyCalendar({
   year, month, journalDates, activityData, onDateClick, onMonthChange,
-  selectedDate, streakBadge, weekSummary,
+  selectedDate, streakBadge, weekSummary, recallDates,
 }: MonthlyCalendarProps) {
   const cells = useMemo(() => buildMonthGrid(year, month), [year, month])
   const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), [])
@@ -162,7 +164,12 @@ export default function MonthlyCalendar({
           const activity = activityMap.get(dateStr)
 
           const score = (activity?.count ?? 0) + (journal ? 1 : 0)
-          const actLevel = score === 0 ? 0 : (Math.ceil((score / monthlyMax) * 3) as 1 | 2 | 3)
+          const actLevel = score === 0 ? 0 : (Math.ceil((score / monthlyMax) * 4) as 1 | 2 | 3 | 4)
+
+          // AI 인사이트 별: 활동이 풍부한 날 (다이어리 + 스크랩 2개 이상)
+          const hasInsight = score >= 3
+          // 망각 곡선: 3일/1주/1개월/3개월/1년 전 — 다시 만나볼 시간
+          const hasRecall = recallDates?.has(dateStr) ?? false
 
           return (
             <button
@@ -172,7 +179,27 @@ export default function MonthlyCalendar({
               onClick={() => onDateClick(dateStr)}
               type="button"
             >
-              <span className="monthly-calendar__day">{day}</span>
+              <div className="monthly-calendar__cell-top">
+                <div className="monthly-calendar__cell-top-left">
+                  {hasRecall && (
+                    <span
+                      className="monthly-calendar__recall-dot"
+                      aria-hidden="true"
+                      title="다시 만나볼 시간이에요"
+                    />
+                  )}
+                  <span className="monthly-calendar__day">{day}</span>
+                </div>
+                {hasInsight && (
+                  <span
+                    className="monthly-calendar__insight-star"
+                    aria-hidden="true"
+                    title="이 날의 인사이트"
+                  >
+                    <Sparkles size={11} strokeWidth={2} />
+                  </span>
+                )}
+              </div>
               <div className="monthly-calendar__chips">
                 {journal?.tags?.slice(0, 2).map(tag => (
                   <span
