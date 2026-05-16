@@ -72,6 +72,19 @@
   flex-shrink: 0;
 }
 
+/* 페이지 헤더 점 액센트 — 다이어리 = warm amber */
+.diary-editor-header::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--feature-diary);
+  box-shadow: 0 0 0 3px var(--feature-diary-bg);
+  margin-right: var(--space-3);
+  flex-shrink: 0;
+  align-self: center;
+}
+
 /* ─── 날짜 네비게이션 ──────────────────────────────────── */
 .diary-date-nav {
   display: flex;

@@ -131,6 +131,20 @@
 .scrap-header h1 {
   font-size: clamp(1.15rem, 1.8vw, 1.75rem);
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 페이지 헤더 점 액센트 — 스크랩 = cool blue */
+.scrap-header h1::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--feature-scrap);
+  box-shadow: 0 0 0 3px var(--feature-scrap-bg);
+  flex-shrink: 0;
 }
 
 .scrap-subtitle {

@@ -16,17 +16,19 @@ interface NavItem {
   to: string
   icon: ReactNode
   label: string
+  /** 라우트별 feature 컬러를 CSS에서 매칭하기 위한 토큰 */
+  route: 'calendar' | 'diary' | 'scraps' | 'mindmap' | 'settings'
 }
 
 function getNavItems(prefix: string): NavItem[] {
   const items: NavItem[] = [
-    { to: `${prefix}/calendar`,  icon: <Calendar size={20} />,  label: '캘린더' },
-    { to: `${prefix}/diary`,     icon: <PenLine size={20} />,   label: '다이어리' },
-    { to: `${prefix}/scraps`,    icon: <BookOpen size={20} />,  label: '스크랩' },
-    { to: `${prefix}/mindmap`,   icon: <Network size={20} />,   label: '마인드맵' },
+    { to: `${prefix}/calendar`,  icon: <Calendar size={20} />,  label: '캘린더',   route: 'calendar' },
+    { to: `${prefix}/diary`,     icon: <PenLine size={20} />,   label: '다이어리', route: 'diary' },
+    { to: `${prefix}/scraps`,    icon: <BookOpen size={20} />,  label: '스크랩',   route: 'scraps' },
+    { to: `${prefix}/mindmap`,   icon: <Network size={20} />,   label: '마인드맵', route: 'mindmap' },
   ]
   if (!prefix) {
-    items.push({ to: '/settings', icon: <SettingsIcon size={20} />, label: '설정' })
+    items.push({ to: '/settings', icon: <SettingsIcon size={20} />, label: '설정', route: 'settings' })
   }
   return items
 }
@@ -78,16 +80,17 @@ export default function Sidebar({ onLogout, user, mobileOpen, onMobileClose, onO
       <div className="resize-handle resize-handle--right" onMouseDown={onSidebarResize} />
       <div className="sidebar-header">
         <NavLink to={`${prefix}/calendar`} className="logo" onClick={handleNavClick} aria-label="Memoir 홈">
-          <img src="/favicon.png" alt="" width={24} height={24} className="logo-icon" />
+          <img src="/logos/logo-final.svg" alt="" width={24} height={24} className="logo-icon" />
           <span className="logo-text">Memoir</span>
         </NavLink>
       </div>
 
       <nav className="sidebar-nav">
-        {navItems.map(({ to, icon, label }) => (
+        {navItems.map(({ to, icon, label, route }) => (
           <NavLink
             key={to}
             to={to}
+            data-route={route}
             className={({ isActive }) =>
               `nav-item ${isActive ? 'active' : ''}`
             }
