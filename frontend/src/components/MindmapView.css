@@ -14,6 +14,20 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 페이지 헤더 점 액센트 — 마인드맵 = sage green */
+.mindmap-search::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--feature-mindmap);
+  box-shadow: 0 0 0 3px var(--feature-mindmap-bg);
+  flex-shrink: 0;
 }
 
 .search-input-wrapper {

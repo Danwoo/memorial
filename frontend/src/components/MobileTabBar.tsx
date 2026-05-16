@@ -74,19 +74,20 @@ export default function MobileTabBar({ user, onLogout, prefix = '', onOpenSearch
   }, [moreOpen, closeMore])
 
   const tabs = [
-    { to: `${prefix}/calendar`,  icon: Calendar, label: '캘린더' },
-    { to: `${prefix}/diary`,     icon: PenLine,  label: '다이어리' },
-    { to: `${prefix}/scraps`,    icon: BookOpen,  label: '스크랩' },
-    { to: `${prefix}/mindmap`,   icon: Network,   label: '마인드맵' },
+    { to: `${prefix}/calendar`,  icon: Calendar, label: '캘린더',   route: 'calendar' },
+    { to: `${prefix}/diary`,     icon: PenLine,  label: '다이어리', route: 'diary' },
+    { to: `${prefix}/scraps`,    icon: BookOpen,  label: '스크랩',   route: 'scraps' },
+    { to: `${prefix}/mindmap`,   icon: Network,   label: '마인드맵', route: 'mindmap' },
   ] as const
 
   return (
     <>
       <nav className="mobile-tab-bar" aria-label="모바일 하단 탭">
-        {tabs.map(({ to, icon: Icon, label }) => (
+        {tabs.map(({ to, icon: Icon, label, route }) => (
           <NavLink
             key={to}
             to={to}
+            data-route={route}
             className={({ isActive }) =>
               `mobile-tab${isActive ? ' mobile-tab--active' : ''}`
             }

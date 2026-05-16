@@ -39,6 +39,19 @@
   color: var(--accent-primary);
 }
 
+/* 라우트별 active 컬러 분기 — 다이어리/스크랩/마인드맵 */
+.mobile-tab[data-route="diary"].mobile-tab--active {
+  color: var(--feature-diary);
+}
+
+.mobile-tab[data-route="scraps"].mobile-tab--active {
+  color: var(--feature-scrap);
+}
+
+.mobile-tab[data-route="mindmap"].mobile-tab--active {
+  color: var(--feature-mindmap);
+}
+
 .mobile-tab--search {
   color: white;
   background: var(--accent-primary);

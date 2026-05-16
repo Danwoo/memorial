@@ -70,6 +70,22 @@
   font-weight: 500;
 }
 
+/* 라우트별 active 컬러 — 다이어리/스크랩/마인드맵은 feature 토큰 사용 */
+.nav-item[data-route="diary"].active {
+  background: var(--feature-diary-bg);
+  color: var(--feature-diary);
+}
+
+.nav-item[data-route="scraps"].active {
+  background: var(--feature-scrap-bg);
+  color: var(--feature-scrap);
+}
+
+.nav-item[data-route="mindmap"].active {
+  background: var(--feature-mindmap-bg);
+  color: var(--feature-mindmap);
+}
+
 .nav-icon {
   display: flex;
   align-items: center;
