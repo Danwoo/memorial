@@ -1,4 +1,4 @@
-const CACHE_NAME = 'memoir-v2';
+const CACHE_NAME = 'memoir-v3';
 const OFFLINE_URL = '/offline.html';
 
 // ─── Install: offline.html만 프리캐시 ─────────────────────
@@ -42,8 +42,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: '/favicon.png',
-      badge: '/favicon.png',
+      icon: '/logos/logo-192.png',
+      badge: '/logos/logo-192.png',
       data: { url: data.url || '/' },
     })
   );

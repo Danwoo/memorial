@@ -79,3 +79,6 @@ serviceAccountKey*.json
 # Chrome Extension (contains hardcoded API keys)
 extension/
 .vercel
+
+# Design system 참고 자산 (assets은 frontend/public/logos·screenshots로 복사됨)
+Memoir Design System/
