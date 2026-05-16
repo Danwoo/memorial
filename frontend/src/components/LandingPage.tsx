@@ -1,123 +1,392 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, MessageCircle, PenTool, Network } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
+import {
+  BookOpen,
+  Pencil,
+  Network,
+  Bot,
+  Sparkles,
+  Check,
+  ChevronRight,
+  Link as LinkIcon,
+  FileText,
+} from 'lucide-react'
+import AuthModal from './AuthModal'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import './LandingPage.css'
 
-const FEATURES = [
-  { icon: BookOpen, title: '읽은 것, 바로 저장', subtitle: 'URL·PDF·메모를 한 곳에' },
-  { icon: MessageCircle, title: '내 기억과 대화', subtitle: 'AI가 내 스크랩을 기억해요' },
-  { icon: PenTool, title: '하루 돌아보기', subtitle: '성찰 질문으로 쉽게 시작' },
-  { icon: Network, title: '연결된 지식 발견', subtitle: '기억이 쌓이면 패턴이 보여요' },
+interface Feature {
+  icon: typeof BookOpen
+  title: string
+  body: string
+  accent: string
+  accentBg: string
+}
+
+const FEATURES: Feature[] = [
+  {
+    icon: BookOpen,
+    title: '읽은 것, 바로 저장',
+    body: 'URL · PDF · 메모를 한 곳에 모아두세요. AI가 핵심을 추출하고 자동으로 태그를 달아드려요.',
+    accent: 'var(--feature-scrap)',
+    accentBg: 'var(--feature-scrap-bg)',
+  },
+  {
+    icon: Pencil,
+    title: '하루를 짧게 적기',
+    body: '리치 텍스트 에디터에 한 줄이면 충분해요. 매일 다른 성찰 질문이 글쓰기를 도와줘요.',
+    accent: 'var(--feature-diary)',
+    accentBg: 'var(--feature-diary-bg)',
+  },
+  {
+    icon: Network,
+    title: '연결된 지식 발견',
+    body: '다이어리와 스크랩이 어떻게 이어지는지 마인드맵으로 한눈에. AI가 클러스터를 찾아드려요.',
+    accent: 'var(--feature-mindmap)',
+    accentBg: 'var(--feature-mindmap-bg)',
+  },
+  {
+    icon: Bot,
+    title: '내 기억과 대화',
+    body: 'Socrates에게 질문하세요. 내가 저장한 글만 검색해서 맥락 있는 답변을 만들어줘요.',
+    accent: 'var(--accent-primary)',
+    accentBg: 'var(--accent-bg)',
+  },
+]
+
+const STEPS = [
+  { n: '01', title: '저장하세요', body: '읽은 글, 떠오른 생각, 책 한 페이지. 한 번 클릭이면 끝나요.' },
+  { n: '02', title: '연결됩니다', body: 'AI가 엔티티와 관계를 자동으로 추출해서 지식 그래프를 만들어요.' },
+  { n: '03', title: '꺼내 쓰세요', body: 'Socrates에게 물어보면, 내 노트만 검색해서 맥락 있는 답변을 드려요.' },
+]
+
+const MINDMAP_BULLETS = [
+  '엔티티와 관계를 자동 추출',
+  '클러스터 색상 모드로 주제별 보기',
+  '허브 노드 · 외로운 노트 인사이트',
 ]
 
 export default function LandingPage() {
-  const navigate = useNavigate()
-  const { signInWithGoogle, signInWithKakao } = useAuth()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
-
-  const handleOAuth = async (provider: 'google' | 'kakao') => {
-    setError('')
-    setIsSubmitting(true)
-    try {
-      if (provider === 'google') {
-        await signInWithGoogle()
-      } else {
-        await signInWithKakao()
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '로그인 중 오류가 발생했습니다.')
-      setIsSubmitting(false)
-    }
-  }
+  const [authOpen, setAuthOpen] = useState(false)
+  const openAuth = () => setAuthOpen(true)
+  const closeAuth = () => setAuthOpen(false)
 
   return (
     <div className="landing-page">
-      {/* 좌측: 브랜드 + 피처 */}
-      <div className="landing-left">
-        <div className="landing-left-glow" />
-        <div className="landing-left-content">
-          <img src="/favicon.png" alt="Memoir" className="landing-logo-img" />
-          <h1 className="landing-headline">
-            기억을 모으면,<br />나만의 지식이 됩니다
-          </h1>
-          <p className="landing-subtext">
-            매일 읽고, 생각하고, 느낀 것들 — 그냥 흘려보내지 마세요.<br />
-            Memoir가 당신의 기억을 지키고, 연결하고, 되살려 드려요.
-          </p>
-          <div className="landing-features-mini">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="landing-feature-mini-card">
-                <div className="landing-feature-mini-icon">
-                  <f.icon size={18} />
-                </div>
-                <div className="landing-feature-mini-text">
-                  <span className="landing-feature-mini-title">{f.title}</span>
-                  <span className="landing-feature-mini-sub">{f.subtitle}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <TopNav onSignIn={openAuth} />
+      <Hero onSignIn={openAuth} />
+      <FeatureGrid />
+      <HowItWorks />
+      <MindmapShowcase />
+      <FinalCta onSignIn={openAuth} />
+      <Footer />
+      <AuthModal open={authOpen} onClose={closeAuth} />
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Top nav
+// ─────────────────────────────────────────────────────────────────────
+function TopNav({ onSignIn }: { onSignIn: () => void }) {
+  const navigate = useNavigate()
+  const isMobile = useIsMobile()
+  return (
+    <nav className="landing-nav">
+      <a href="#top" className="landing-nav-brand">
+        <img src="/logos/logo-final.svg" width={28} height={28} alt="" />
+        <span>Memoir</span>
+      </a>
+      <div className="landing-nav-actions">
+        {!isMobile && (
+          <>
+            <a className="landing-nav-link" href="#features">기능</a>
+            <a className="landing-nav-link" href="#how">어떻게 작동하나요</a>
+            <button type="button" className="landing-nav-ghost" onClick={() => navigate('/demo')}>
+              둘러보기
+            </button>
+          </>
+        )}
+        <button type="button" className="landing-nav-primary" onClick={onSignIn}>
+          로그인
+        </button>
       </div>
+    </nav>
+  )
+}
 
-      {/* 우측: 로그인 */}
-      <div className="landing-right">
-        <div className="landing-auth-card">
-          <div className="landing-auth-header">
-            <h2>시작하기</h2>
-            <p>30초면 충분해요</p>
-          </div>
+// ─────────────────────────────────────────────────────────────────────
+// Hero
+// ─────────────────────────────────────────────────────────────────────
+function Hero({ onSignIn }: { onSignIn: () => void }) {
+  const navigate = useNavigate()
+  return (
+    <section className="landing-hero" id="top">
+      <div className="landing-hero-glow" aria-hidden="true" />
 
-          <div className="landing-oauth-section">
-            <button
-              type="button"
-              className="landing-oauth-btn landing-google-btn"
-              onClick={() => handleOAuth('google')}
-              disabled={isSubmitting}
+      <div className="landing-hero-inner">
+        <a href="#how" className="landing-hero-eyebrow">
+          <span className="landing-hero-eyebrow-tag">새 기능</span>
+          <span>마인드맵에서 클러스터를 자동으로 찾아드려요</span>
+          <ChevronRight size={12} />
+        </a>
+
+        <h1 className="landing-hero-headline">
+          기억을 모으면,<br />
+          <span className="landing-hero-accent-wrap">
+            <span className="landing-hero-accent">나만의 지식</span>
+            <svg
+              className="landing-hero-underline"
+              viewBox="0 0 200 12"
+              preserveAspectRatio="none"
+              aria-hidden="true"
             >
-              <svg viewBox="0 0 24 24" width="18" height="18">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-              Google로 시작하기
-            </button>
+              <path
+                d="M 4 8 Q 50 2, 100 6 T 196 5"
+                fill="none"
+                stroke="var(--accent-primary)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                opacity="0.6"
+              />
+            </svg>
+          </span>이 됩니다
+        </h1>
 
-            <button
-              type="button"
-              className="landing-oauth-btn landing-kakao-btn"
-              onClick={() => handleOAuth('kakao')}
-              disabled={isSubmitting}
-            >
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="#3c1e1e">
-                <path d="M12 3C6.477 3 2 6.463 2 10.691c0 2.724 1.8 5.113 4.508 6.458-.199.748-.72 2.713-.826 3.132-.13.525.192.518.405.377.167-.11 2.665-1.81 3.747-2.545.7.1 1.42.152 2.166.152 5.523 0 10-3.463 10-7.574C22 6.463 17.523 3 12 3z"/>
-              </svg>
-              카카오로 시작하기
-            </button>
-          </div>
+        <p className="landing-hero-subtext">
+          매일 읽고, 생각하고, 느낀 것들을 그냥 흘려보내지 마세요.<br />
+          Memoir가 당신의 기억을 지키고, 연결하고, 되살려 드려요.
+        </p>
 
-          {error && <div className="landing-auth-error">{error}</div>}
-
-          <div className="landing-divider">
-            <span>또는</span>
-          </div>
-
-          <button
-            type="button"
-            className="landing-demo-btn"
-            onClick={() => navigate('/demo')}
-          >
-            먼저 둘러보기 →
+        <div className="landing-hero-ctas">
+          <button type="button" className="landing-cta-primary" onClick={onSignIn}>
+            30초 만에 시작하기
+            <ChevronRight size={16} />
+          </button>
+          <button type="button" className="landing-cta-secondary" onClick={() => navigate('/demo')}>
+            <Sparkles size={15} />
+            데모 둘러보기
           </button>
         </div>
 
-        <footer className="landing-footer">
-          &copy; 2026 Memoir
-        </footer>
+        <div className="landing-hero-trust">
+          <span><Check size={12} color="var(--color-success)" /> 카드 없이 시작</span>
+          <span className="landing-hero-trust-dot" />
+          <span><Check size={12} color="var(--color-success)" /> 카카오·구글 로그인</span>
+          <span className="landing-hero-trust-dot" />
+          <span><Check size={12} color="var(--color-success)" /> 한국 서버에 저장</span>
+        </div>
       </div>
+
+      <div className="landing-hero-screenshot">
+        <div className="landing-hero-browser-chrome">
+          <span className="landing-hero-browser-dot" style={{ background: '#FF5F57' }} />
+          <span className="landing-hero-browser-dot" style={{ background: '#FEBC2E' }} />
+          <span className="landing-hero-browser-dot" style={{ background: '#28C840' }} />
+          <div className="landing-hero-browser-url">memoir-knowledge.vercel.app</div>
+        </div>
+        <img
+          src="/screenshots/calendar-screenshot.png"
+          alt="Memoir 캘린더 뷰"
+          loading="lazy"
+        />
+      </div>
+    </section>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Feature grid
+// ─────────────────────────────────────────────────────────────────────
+function FeatureGrid() {
+  return (
+    <section className="landing-section" id="features">
+      <SectionHeader
+        eyebrow="기능"
+        title="당신의 기억, 정리되고 살아납니다"
+        sub="네 가지 도구가 매끄럽게 연결돼요. 따로 쓰지 않아도 자연스럽게 흐름이 만들어져요."
+      />
+      <div className="landing-feature-grid">
+        {FEATURES.map((f) => (
+          <article key={f.title} className="landing-feature-card">
+            <div
+              className="landing-feature-icon"
+              style={{ background: f.accentBg, color: f.accent }}
+            >
+              <f.icon size={22} />
+            </div>
+            <h3>{f.title}</h3>
+            <p>{f.body}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// How it works
+// ─────────────────────────────────────────────────────────────────────
+function HowItWorks() {
+  return (
+    <section className="landing-section landing-section-tinted" id="how">
+      <SectionHeader
+        eyebrow="작동 방식"
+        title="저장 → 연결 → 꺼내쓰기"
+        sub="복잡한 정리 규칙은 필요 없어요. Memoir가 알아서 구조를 만들어드려요."
+      />
+      <div className="landing-steps-grid">
+        {STEPS.map((s, i) => (
+          <article key={s.n} className="landing-step-card">
+            <div className="landing-step-tag">STEP {s.n}</div>
+            <StepIllustration index={i} />
+            <h3>{s.title}</h3>
+            <p>{s.body}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function StepIllustration({ index }: { index: number }) {
+  if (index === 0) {
+    const chips = [
+      { icon: LinkIcon, label: '도둑맞은 집중력 — 핵심 정리', meta: 'brunch.co.kr' },
+      { icon: FileText, label: '교토 가을 단풍 명소 8곳.pdf', meta: 'PDF · 4쪽' },
+      { icon: Pencil, label: '오랜만에 산책하니 좋네', meta: '다이어리' },
+    ]
+    return (
+      <div className="landing-step-chips">
+        {chips.map((c, i) => (
+          <div key={i} className="landing-step-chip">
+            <c.icon size={14} color="var(--accent-primary)" />
+            <div className="landing-step-chip-text">
+              <span className="landing-step-chip-label">{c.label}</span>
+              <span className="landing-step-chip-meta">{c.meta}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (index === 1) {
+    return (
+      <svg className="landing-step-network" viewBox="0 0 240 140" aria-hidden="true">
+        <g stroke="var(--border-primary)" strokeWidth="1" fill="none" opacity="0.6">
+          <line x1="60" y1="40" x2="120" y2="80" />
+          <line x1="180" y1="40" x2="120" y2="80" />
+          <line x1="60" y1="110" x2="120" y2="80" />
+          <line x1="180" y1="110" x2="120" y2="80" />
+          <line x1="60" y1="40" x2="180" y2="40" />
+          <line x1="60" y1="110" x2="180" y2="110" />
+        </g>
+        <circle cx="120" cy="80" r="12" fill="var(--accent-primary)" opacity="0.95" />
+        <circle cx="60" cy="40" r="8" fill="var(--feature-mindmap)" />
+        <circle cx="180" cy="40" r="8" fill="var(--feature-scrap)" />
+        <circle cx="60" cy="110" r="8" fill="var(--feature-diary)" />
+        <circle cx="180" cy="110" r="8" fill="var(--accent-primary)" />
+      </svg>
+    )
+  }
+
+  return (
+    <div className="landing-step-chat">
+      <div className="landing-step-chat-user">오늘 읽은 글 중 기억남는 한 줄?</div>
+      <div className="landing-step-chat-ai">
+        "집중은 시간 관리가 아니라 주의 관리"라는 문장이 가장 기억에 남으셨어요.
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Mindmap showcase
+// ─────────────────────────────────────────────────────────────────────
+function MindmapShowcase() {
+  return (
+    <section className="landing-section landing-showcase">
+      <div className="landing-showcase-text">
+        <div className="landing-eyebrow">마인드맵</div>
+        <h2 className="landing-showcase-title">내 머릿속이 한눈에 보입니다</h2>
+        <p className="landing-showcase-body">
+          다이어리와 스크랩에서 사람·개념·도구를 자동으로 추출해서, 서로 어떻게 이어지는지 3D 그래프로 보여줘요.
+          AI가 비슷한 주제를 묶어주고, 외로운 노트를 다시 찾아드려요.
+        </p>
+        <ul className="landing-showcase-list">
+          {MINDMAP_BULLETS.map((t) => (
+            <li key={t}>
+              <span className="landing-showcase-check">
+                <Check size={12} />
+              </span>
+              {t}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="landing-showcase-image">
+        <img src="/screenshots/mindmap-screenshot.png" alt="Memoir 마인드맵" loading="lazy" />
+      </div>
+    </section>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Final CTA
+// ─────────────────────────────────────────────────────────────────────
+function FinalCta({ onSignIn }: { onSignIn: () => void }) {
+  const navigate = useNavigate()
+  return (
+    <section className="landing-final-section">
+      <div className="landing-final-card">
+        <h2>오늘의 기억부터 모아볼까요?</h2>
+        <p>30초면 충분해요. 카드 없이, 카카오나 구글로 바로 시작하세요.</p>
+        <div className="landing-final-ctas">
+          <button type="button" className="landing-final-primary" onClick={onSignIn}>
+            지금 시작하기
+          </button>
+          <button type="button" className="landing-final-secondary" onClick={() => navigate('/demo')}>
+            먼저 둘러보기
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Footer
+// ─────────────────────────────────────────────────────────────────────
+function Footer() {
+  return (
+    <footer className="landing-footer">
+      <div className="landing-footer-inner">
+        <div className="landing-footer-brand">
+          <img src="/logos/logo-final.svg" width={20} height={20} alt="" />
+          <span>Memoir</span>
+          <span className="landing-footer-copy">· © 2026</span>
+        </div>
+        <div className="landing-footer-links">
+          <a href="#">이용약관</a>
+          <a href="#">개인정보처리방침</a>
+          <a href="#">도움말</a>
+          <a href="mailto:hello@memoir.app">문의</a>
+        </div>
+      </div>
+    </footer>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Shared
+// ─────────────────────────────────────────────────────────────────────
+function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
+  return (
+    <div className="landing-section-header">
+      <div className="landing-eyebrow">{eyebrow.toUpperCase()}</div>
+      <h2>{title}</h2>
+      {sub && <p>{sub}</p>}
     </div>
   )
 }
