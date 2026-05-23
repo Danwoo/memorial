@@ -448,8 +448,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  background: color-mix(in srgb, var(--bg-primary) 85%, transparent);
-  backdrop-filter: blur(2px);
+  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
   font-size: var(--fs-body-sm);
