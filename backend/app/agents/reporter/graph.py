@@ -18,14 +18,9 @@ def build_reporter_react_graph():
     )
 
 
-def register_reporter_graph(registry) -> None:
-    """Reporter 에이전트를 레지스트리에 등록한다."""
-    graph = build_reporter_react_graph()
-    registry.register("reporter", graph)
-
-
-# AgentRegistry 등록 (fallback import 방식에서 호출)
 def _register_reporter():
     from app.agents.registry import AgentRegistry
+    from app.agents.streaming import ReactStreaming
 
-    register_reporter_graph(AgentRegistry)
+    graph = build_reporter_react_graph()
+    AgentRegistry.register("reporter", graph=graph, streaming=ReactStreaming())

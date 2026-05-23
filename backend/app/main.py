@@ -39,16 +39,22 @@ async def lifespan(_app: FastAPI):
 
 
 def _register_all_agents() -> None:
-    """모든 에이전트를 AgentRegistry에 등록한다."""
+    """모든 에이전트를 AgentRegistry에 등록한다.
+
+    부팅 시점에 명시적으로 호출되어야 한다. 모듈 import-side-effect로 등록하는 패턴은
+    테스트 격리성을 깨기 때문에 제거되었다.
+    """
     from app.agents.analyst.graph import _register_analyst
     from app.agents.curator.graph import _register_curator
     from app.agents.librarian.graph import _register_librarian
+    from app.agents.oracle.graph import _register_oracle
     from app.agents.reporter.graph import _register_reporter
     from app.agents.scribe.graph import _register_scribe
     from app.agents.socrates.graph import _register_socrates
     from app.agents.supervisor.graph import _register_supervisor
 
     _register_socrates()
+    _register_oracle()
     _register_librarian()
     _register_analyst()
     _register_scribe()

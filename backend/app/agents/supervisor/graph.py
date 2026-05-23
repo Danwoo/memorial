@@ -67,17 +67,10 @@ def parse_supervisor_result(result: dict) -> tuple[str, str]:
     return "socrates", "기본 라우팅"
 
 
-def register_supervisor_graph(registry) -> None:
-    """Supervisor 에이전트를 레지스트리에 등록한다."""
-    graph = build_supervisor_graph()
-    registry.register("supervisor", graph)
-
-
 # AgentRegistry 등록
 def _register_supervisor():
     from app.agents.registry import AgentRegistry
+    from app.agents.streaming import ReactStreaming
 
-    register_supervisor_graph(AgentRegistry)
-
-
-_register_supervisor()
+    graph = build_supervisor_graph()
+    AgentRegistry.register("supervisor", graph=graph, streaming=ReactStreaming())

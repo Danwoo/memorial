@@ -18,14 +18,9 @@ def build_scribe_react_graph():
     )
 
 
-def register_scribe_graph(registry) -> None:
-    """Scribe 에이전트를 레지스트리에 등록한다."""
-    graph = build_scribe_react_graph()
-    registry.register("scribe", graph)
-
-
-# AgentRegistry 등록 (fallback import 방식에서 호출)
 def _register_scribe():
     from app.agents.registry import AgentRegistry
+    from app.agents.streaming import ReactStreaming
 
-    register_scribe_graph(AgentRegistry)
+    graph = build_scribe_react_graph()
+    AgentRegistry.register("scribe", graph=graph, streaming=ReactStreaming())
