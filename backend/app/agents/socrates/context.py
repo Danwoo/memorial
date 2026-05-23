@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
+from app.repositories.chat_repository import ChatRepository
 from app.repositories.diary_repository import DiaryRepository
-from app.repositories.socrates_repository import SocratesRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.community_summary_service import CommunitySummaryService
 from app.services.hybrid_search_service import HybridSearchService
@@ -18,5 +18,5 @@ class SocratesContext:
     hybrid_search: HybridSearchService
     vector_repo: VectorRepository
     diary_repo: DiaryRepository
-    socrates_repo: SocratesRepository
+    chat_repo: ChatRepository
     community_summary: CommunitySummaryService

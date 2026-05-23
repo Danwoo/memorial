@@ -14,7 +14,7 @@ from app.agents.oracle.state import build_oracle_initial_state
 from app.agents.registry import AgentRegistry
 from app.agents.socrates.state import build_socrates_initial_state
 from app.config.llm import get_analytical_llm, get_streaming_llm
-from app.repositories.socrates_repository import SocratesRepository
+from app.repositories.chat_repository import ChatRepository
 
 # ReAct 에이전트 astream_events 사용 여부 (socrates agent_type에 적용)
 USE_REACT_STREAM = True
@@ -42,8 +42,8 @@ logger = logging.getLogger(__name__)
 class SocratesService:
     """소크라테스 대화 비즈니스 로직."""
 
-    def __init__(self, socrates_repo: SocratesRepository):
-        self.socrates_repo = socrates_repo
+    def __init__(self, chat_repo: ChatRepository):
+        self.chat_repo = chat_repo
 
     async def create_session(
         self,
@@ -52,15 +52,15 @@ class SocratesService:
         agent_type: str = "oracle",
     ) -> dict:
         """새 채팅 세션 생성."""
-        return await self.socrates_repo.create_session(user_id, title, agent_type)
+        return await self.chat_repo.create_session(user_id, title, agent_type)
 
     async def get_session(self, session_id: UUID, user_id: UUID | None = None) -> dict | None:
         """ID로 세션 조회. user_id 지정 시 소유권도 함께 검증."""
-        return await self.socrates_repo.get_session(session_id, user_id)
+        return await self.chat_repo.get_session(session_id, user_id)
 
     async def list_sessions(self, user_id: UUID) -> list[dict]:
         """사용자의 전체 세션 목록 조회 (최신순)."""
-        sessions = await self.socrates_repo.get_sessions_by_user(user_id)
+        sessions = await self.chat_repo.get_sessions_by_user(user_id)
         return sorted(sessions, key=lambda x: x["created_at"], reverse=True)
 
     async def send_message(
@@ -77,7 +77,7 @@ class SocratesService:
         AgentRegistry에서 agent_type 기반으로 적절한 그래프를 선택하여 실행한다.
         agent_type이 None이면 세션에 저장된 agent_type을 사용한다.
         """
-        session = await self.socrates_repo.get_session(session_id)
+        session = await self.chat_repo.get_session(session_id)
         if not session:
             yield f"data: {json.dumps({'error': 'Session not found'})}\n\n"
             return
@@ -87,11 +87,11 @@ class SocratesService:
 
         # 사용자 메시지 저장
         user_message = HumanMessage(content=content)
-        await self.socrates_repo.add_message(session_id, user_message)
+        await self.chat_repo.add_message(session_id, user_message)
 
         try:
             # 대화 이력 조회
-            messages = await self.socrates_repo.get_messages(session_id)
+            messages = await self.chat_repo.get_messages(session_id)
 
             # 턴 수 계산 (HumanMessage 개수 기준)
             turn_count = sum(1 for m in messages if isinstance(m, HumanMessage))
@@ -128,7 +128,7 @@ class SocratesService:
                 hybrid_search=container.hybrid_search,
                 vector_repo=container.vector_repo,
                 diary_repo=container.diary_repo,
-                socrates_repo=self.socrates_repo,
+                chat_repo=self.chat_repo,
                 community_summary=container.community_summary,
                 graphrag_retrieval=container.graphrag_retrieval,
             )
@@ -178,7 +178,7 @@ class SocratesService:
 
             # 완성된 응답 저장
             if full_response:
-                await self.socrates_repo.add_message(session_id, AIMessage(content=full_response))
+                await self.chat_repo.add_message(session_id, AIMessage(content=full_response))
 
             # 참조 메모리 이벤트
             if references:
@@ -277,7 +277,7 @@ class SocratesService:
 
         # 완성된 응답 저장
         if full_response:
-            await self.socrates_repo.add_message(session_id, AIMessage(content=full_response))
+            await self.chat_repo.add_message(session_id, AIMessage(content=full_response))
 
         # 첫 대화 완료 시 세션 제목 자동 생성
         title = await self._maybe_generate_title(session_id, content, full_response)
@@ -293,24 +293,24 @@ class SocratesService:
 
     async def update_session_title(self, session_id: UUID, title: str, user_id: UUID | None = None) -> bool:
         """세션 제목 수동 업데이트."""
-        return await self.socrates_repo.update_session_title(session_id, title, user_id)
+        return await self.chat_repo.update_session_title(session_id, title, user_id)
 
     async def get_history(self, session_id: UUID) -> list[dict]:
         """세션의 채팅 이력 조회 (DB 타임스탬프 포함)."""
-        return await self.socrates_repo.get_messages_raw(session_id)
+        return await self.chat_repo.get_messages_raw(session_id)
 
     async def add_feedback(self, session_id: UUID, message_index: int, user_id: UUID, rating: str) -> bool:
         """메시지 피드백 저장."""
-        return await self.socrates_repo.add_feedback(session_id, message_index, user_id, rating)
+        return await self.chat_repo.add_feedback(session_id, message_index, user_id, rating)
 
     async def get_feedbacks(self, session_id: UUID) -> list[dict]:
         """세션의 전체 피드백 조회."""
-        return await self.socrates_repo.get_feedbacks(session_id)
+        return await self.chat_repo.get_feedbacks(session_id)
 
     async def generate_session_summary(self, session_id: UUID) -> str | None:
         """세션의 대화를 LLM으로 요약하여 저장."""
         try:
-            messages = await self.socrates_repo.get_messages_raw(session_id)
+            messages = await self.chat_repo.get_messages_raw(session_id)
             if len(messages) < SESSION_SUMMARY_MSG_THRESHOLD:
                 return None
 
@@ -324,7 +324,7 @@ class SocratesService:
             summary = result.content.strip()[:500]
 
             if summary:
-                await self.socrates_repo.update_session_summary(session_id, summary)
+                await self.chat_repo.update_session_summary(session_id, summary)
                 return summary
         except Exception:
             logger.exception("세션 요약 생성 실패 (session_id=%s)", session_id)
@@ -333,14 +333,14 @@ class SocratesService:
     async def _save_topic_tags(self, session_id: UUID, tags: list[str]) -> None:
         """세션에 topic_tags 저장."""
         try:
-            await self.socrates_repo.update_session_topic_tags(session_id, tags)
+            await self.chat_repo.update_session_topic_tags(session_id, tags)
         except Exception:
             logger.exception("topic_tags 저장 실패 (session_id=%s)", session_id)
 
     async def _maybe_generate_title(self, session_id: UUID, user_msg: str, ai_msg: str) -> str | None:
         """첫 대화 완료 시 LLM으로 세션 제목 생성. 이미 제목이 있으면 스킵."""
         try:
-            msg_count = await self.socrates_repo.get_message_count(session_id)
+            msg_count = await self.chat_repo.get_message_count(session_id)
             if msg_count != 2:
                 return None
 
@@ -353,7 +353,7 @@ class SocratesService:
             title = result.content.strip().strip('"').strip("'")[:MAX_TITLE_LENGTH]
 
             if title:
-                await self.socrates_repo.update_session_title(session_id, title)
+                await self.chat_repo.update_session_title(session_id, title)
                 return title
         except Exception:
             logger.exception("세션 제목 자동 생성 실패 (session_id=%s)", session_id)

@@ -7,9 +7,9 @@ from uuid import UUID
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.config.llm import get_creative_llm
+from app.repositories.chat_repository import ChatRepository
 from app.repositories.diary_repository import DiaryRepository
 from app.repositories.scrap_repository import ScrapRepository
-from app.repositories.socrates_repository import SocratesRepository
 from app.utils import parse_iso_datetime
 
 logger = logging.getLogger(__name__)
@@ -52,11 +52,11 @@ class DigestService:
         self,
         scrap_repo: ScrapRepository,
         diary_repo: DiaryRepository,
-        socrates_repo: SocratesRepository | None = None,
+        chat_repo: ChatRepository | None = None,
     ):
         self.scrap_repo = scrap_repo
         self.diary_repo = diary_repo
-        self.socrates_repo = socrates_repo
+        self.chat_repo = chat_repo
 
     async def get_today_digest(self, user_id: UUID, target_date: datetime | None = None) -> dict[str, Any]:
         """하루 활동 종합 다이제스트 조회.
@@ -123,17 +123,17 @@ class DigestService:
             return []
 
     async def _get_today_chats(self, start: datetime, end: datetime, user_id: UUID) -> list[dict]:
-        """오늘 생성된 소크라테스 세션 조회."""
-        if not self.socrates_repo:
+        """오늘 생성된 채팅 세션 조회."""
+        if not self.chat_repo:
             return []
         try:
-            return await self.socrates_repo.get_sessions_by_date_range(
+            return await self.chat_repo.get_sessions_by_date_range(
                 user_id=user_id,
                 start_iso=start.isoformat(),
                 end_iso=end.isoformat(),
             )
         except Exception:
-            logger.exception("오늘 소크라테스 세션 조회 실패")
+            logger.exception("오늘 채팅 세션 조회 실패")
             return []
 
     async def _get_today_diaries(self, user_id: UUID, today: datetime) -> list[dict]:

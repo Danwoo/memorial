@@ -43,7 +43,7 @@ async def enrichment_node(state: SocratesState, runtime: Runtime[AgentContext]) 
     source_context = state.get("source_context")
 
     vector_repo = runtime.context.vector_repo
-    socrates_repo = runtime.context.socrates_repo
+    chat_repo = runtime.context.chat_repo
 
     # 1. 메모리 포맷팅
     formatted_memories = format_memories_with_budget(graded_memories)
@@ -67,14 +67,14 @@ async def enrichment_node(state: SocratesState, runtime: Runtime[AgentContext]) 
     topic_session_context = ""
     if turn_count == 1:
         user_uuid = UUID(user_id)
-        previous_session_context = await get_previous_session_context(user_uuid, socrates_repo)
+        previous_session_context = await get_previous_session_context(user_uuid, chat_repo)
 
         if source_context and source_context.get("tags"):
             topic_session_context = await get_topic_session_context(
                 user_uuid,
                 source_context["tags"],
                 session_id,
-                socrates_repo,
+                chat_repo,
             )
 
     # 5. 사용자 프로필

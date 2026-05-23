@@ -114,7 +114,7 @@ async def search_connection_suggestion(
 
 async def get_previous_session_context(
     user_id: UUID,
-    socrates_repo,
+    chat_repo,
     limit: int = DEFAULT_SESSION_CONTEXT_LIMIT,
     section_title: str = "이전 대화 요약",
 ) -> str:
@@ -122,12 +122,12 @@ async def get_previous_session_context(
 
     Args:
         user_id: 사용자 UUID
-        socrates_repo: Socrates 저장소
+        chat_repo: 채팅 세션 저장소
         limit: 조회할 세션 수
         section_title: 섹션 제목 (에이전트별 커스터마이징 가능)
     """
     try:
-        summaries = await socrates_repo.get_recent_session_summaries(
+        summaries = await chat_repo.get_recent_session_summaries(
             user_id,
             limit=limit,
         )
@@ -150,11 +150,11 @@ async def get_topic_session_context(
     user_id: UUID,
     tags: list[str],
     session_id: str,
-    socrates_repo,
+    chat_repo,
 ) -> str:
     """같은 주제 태그를 가진 과거 세션 요약을 컨텍스트 문자열로 반환."""
     try:
-        past_sessions = await socrates_repo.search_sessions_by_topic(
+        past_sessions = await chat_repo.search_sessions_by_topic(
             user_id,
             tags,
             exclude_session_id=UUID(session_id),

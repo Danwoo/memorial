@@ -7,9 +7,9 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
+from app.repositories.chat_repository import ChatRepository
 from app.repositories.diary_repository import DiaryRepository
 from app.repositories.scrap_repository import ScrapRepository
-from app.repositories.socrates_repository import SocratesRepository
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +23,11 @@ class ExportService:
         self,
         scrap_repo: ScrapRepository,
         diary_repo: DiaryRepository,
-        socrates_repo: SocratesRepository,
+        chat_repo: ChatRepository,
     ):
         self.scrap_repo = scrap_repo
         self.diary_repo = diary_repo
-        self.socrates_repo = socrates_repo
+        self.chat_repo = chat_repo
 
     async def export_scraps(self, user_id: UUID) -> list[dict[str, Any]]:
         """사용자의 전체 스크랩을 JSON 직렬화 가능한 리스트로 반환."""
@@ -62,7 +62,7 @@ class ExportService:
         scraps, diaries, sessions = await asyncio.gather(
             self.scrap_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT),
             self.diary_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT),
-            self.socrates_repo.get_sessions_for_export(user_id, MAX_EXPORT_LIMIT),
+            self.chat_repo.get_sessions_for_export(user_id, MAX_EXPORT_LIMIT),
         )
 
         return {

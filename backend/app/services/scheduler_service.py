@@ -5,9 +5,9 @@ from uuid import UUID
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config.database import get_supabase_client
+from app.repositories.chat_repository import ChatRepository
 from app.repositories.diary_repository import DiaryRepository
 from app.repositories.scrap_repository import ScrapRepository
-from app.repositories.socrates_repository import SocratesRepository
 from app.services.digest_service import DigestService
 from app.services.nudge_service import (
     connection_discovery_job,
@@ -26,7 +26,7 @@ def _build_digest_service() -> DigestService:
     return DigestService(
         scrap_repo=ScrapRepository(db),
         diary_repo=DiaryRepository(db),
-        socrates_repo=SocratesRepository(db),
+        chat_repo=ChatRepository(db),
     )
 
 

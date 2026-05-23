@@ -37,8 +37,8 @@ async def get_knowledge_stats(
     diary_stats = await container.diary_repo.get_diary_statistics(user_id=user_id)
     total_diaries = diary_stats.get("total_count", 0)
 
-    # 소크라테스 세션 수
-    sessions = await container.socrates_repo.get_sessions_by_user(user_id=UUID(user_id))
+    # 채팅 세션 수
+    sessions = await container.chat_repo.get_sessions_by_user(user_id=UUID(user_id))
     total_sessions = len(sessions)
 
     # 그래프 엔티티/관계 수

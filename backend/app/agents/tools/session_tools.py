@@ -35,7 +35,7 @@ async def search_past_conversations(
     if not tags:
         tags = [query.strip()]
 
-    sessions = await container.socrates_repo.search_sessions_by_topic(
+    sessions = await container.chat_repo.search_sessions_by_topic(
         user_id=UUID(user_id),
         tags=tags,
         limit=limit,
@@ -43,7 +43,7 @@ async def search_past_conversations(
 
     if not sessions:
         # topic_tags 검색 결과가 없으면 최근 세션 fallback
-        all_sessions = await container.socrates_repo.get_sessions_by_user(
+        all_sessions = await container.chat_repo.get_sessions_by_user(
             user_id=UUID(user_id),
         )
         sessions = all_sessions[:limit]

@@ -49,7 +49,7 @@ async def generate_daily_digest(
     service = DigestService(
         scrap_repo=container.scrap_repo,
         diary_repo=container.diary_repo,
-        socrates_repo=container.socrates_repo,
+        chat_repo=container.chat_repo,
     )
 
     try:

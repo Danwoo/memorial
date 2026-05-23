@@ -99,10 +99,10 @@ def make_context():
     ctx.diary_repo = MagicMock()
     ctx.diary_repo.get_diaries = AsyncMock(return_value=MOCK_DIARIES)
     ctx.diary_repo.get_diaries_by_date_range = AsyncMock(return_value=MOCK_DIARIES)
-    ctx.socrates_repo = MagicMock()
-    ctx.socrates_repo.get_previous_sessions = AsyncMock(return_value=[])
-    ctx.socrates_repo.get_recent_session_summaries = AsyncMock(return_value=[])
-    ctx.socrates_repo.get_sessions_by_topic = AsyncMock(return_value=[])
+    ctx.chat_repo = MagicMock()
+    ctx.chat_repo.get_previous_sessions = AsyncMock(return_value=[])
+    ctx.chat_repo.get_recent_session_summaries = AsyncMock(return_value=[])
+    ctx.chat_repo.get_sessions_by_topic = AsyncMock(return_value=[])
     ctx.community_summary = MagicMock()
     ctx.community_summary.get_community_summaries = AsyncMock(
         return_value=[

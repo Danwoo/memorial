@@ -9,8 +9,14 @@ from supabase import Client
 logger = logging.getLogger(__name__)
 
 
-class SocratesRepository:
-    """소크라테스 세션 데이터 접근 계층 (Supabase)."""
+class ChatRepository:
+    """채팅 세션/메시지/피드백 데이터 접근 계층 (Supabase).
+
+    Note:
+        DB 테이블명은 `socrates_sessions`, `socrates_messages`, `socrates_feedback`로
+        historical naming을 유지한다. 운영 데이터 마이그레이션 비용을 피하기 위함이며,
+        의미상으로는 모든 agent_type의 채팅 데이터를 다룬다.
+    """
 
     def __init__(self, db: Client):
         self.db = db
