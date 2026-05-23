@@ -9,9 +9,15 @@ interface AnniversaryCardProps {
 }
 
 function oneYearAgoToday(): string {
-  const d = new Date()
-  d.setFullYear(d.getFullYear() - 1)
-  return d.toISOString().slice(0, 10)
+  const now = new Date()
+  // 윤년 안전화: 2/29 → year-1 시 JS Date가 3/1로 정규화하는 문제를 피하기 위해
+  // 같은 월/일을 직접 조립하고, 해당 년도에 그 날이 없으면 마지막 날로 클램프.
+  const y = now.getFullYear() - 1
+  const m = now.getMonth()
+  const day = now.getDate()
+  const lastDayOfMonth = new Date(y, m + 1, 0).getDate()
+  const safeDay = Math.min(day, lastDayOfMonth)
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`
 }
 
 function formatKoreanDate(dateStr: string): string {
