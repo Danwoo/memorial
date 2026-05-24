@@ -23,6 +23,7 @@ from app.agents.container import get_agent_container
 from app.agents.registry import AgentRegistry
 from app.agents.streaming import StreamEvent, StreamingContext
 from app.config.llm import get_analytical_llm
+from app.exceptions import LLMError
 from app.repositories.chat_repository import ChatRepository
 
 TITLE_GEN_PROMPT = (
@@ -163,9 +164,16 @@ class ChatService:
             yield _sse(done_payload)
 
         except asyncio.CancelledError:
+            # SSE 클라이언트 연결 해제 — 정상 흐름, 리소스 누수 없이 종료
             logger.info("SSE client disconnected for session %s", session_id)
+        except LLMError as e:
+            # 알려진 LLM 실패 (parse/call) — 사용자에게 명확한 메시지
+            logger.warning("LLM 실패로 응답 생성 불가 (session=%s): %s", session_id, e)
+            yield _sse({"error": "AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요."})
         except Exception:
-            logger.exception("send_message 처리 중 오류 (session=%s)", session_id)
+            # Boundary 레이어 fail-safe — 예상치 못한 시스템 예외는 일반화된 메시지로 graceful degradation.
+            # 외부에 stack trace 노출하지 않고 logger.exception으로 보존만 한다.
+            logger.exception("send_message 처리 중 예상치 못한 오류 (session=%s)", session_id)
             yield _sse({"error": "An internal error occurred"})
 
     # ------------------------------------------------------------------

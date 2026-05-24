@@ -5,6 +5,7 @@ from langgraph.config import get_stream_writer
 
 from app.agents.socrates.state import SocratesState
 from app.config.llm import get_analytical_llm
+from app.exceptions import LLMParseError
 from app.utils import parse_llm_json_response
 
 logger = logging.getLogger(__name__)
@@ -120,8 +121,15 @@ async def query_understanding_node(state: SocratesState) -> dict:
         if not rewritten_queries:
             rewritten_queries = [user_query]
 
+    except LLMParseError:
+        # 모델이 spec과 다른 형식으로 응답 — full_rag로 안전 폴백
+        logger.warning("query_understanding: LLM 응답 파싱 실패, full_rag 폴백")
+        mode = None
+        plan = "full_rag"
+        rewritten_queries = [user_query]
     except Exception:
-        logger.warning("query_understanding: LLM 분석 실패, 안전 폴백 사용")
+        # LLM 호출 자체 실패 — 같은 폴백 (graceful degradation)
+        logger.warning("query_understanding: LLM 호출 실패, full_rag 폴백")
         mode = None
         plan = "full_rag"
         rewritten_queries = [user_query]
