@@ -8,10 +8,10 @@ from app.agents.librarian.graph import librarian_graph
 from app.agents.state import build_librarian_initial_state
 from app.config.auth import get_user_id
 from app.config.dependencies import (
+    get_chat_service,
     get_diary_analysis_service,
     get_diary_service,
     get_scrap_service,
-    get_socrates_service,
 )
 from app.schemas.diary_schema import (
     DiaryCreate,
@@ -26,10 +26,10 @@ from app.schemas.diary_schema import (
     ReviewQuestionsResponse,
     ReviewRequest,
 )
+from app.services.chat_service import ChatService
 from app.services.diary_analysis_service import DiaryAnalysisService
 from app.services.diary_service import DiaryService
 from app.services.scrap_service import ScrapService
-from app.services.socrates_service import SocratesService
 
 logger = logging.getLogger(__name__)
 
@@ -215,11 +215,11 @@ async def generate_draft(
     request: GenerateDraftRequest,
     user_id: UUID = Depends(get_user_id),
     analysis_service: DiaryAnalysisService = Depends(get_diary_analysis_service),
-    socrates_service: SocratesService = Depends(get_socrates_service),
+    chat_service: ChatService = Depends(get_chat_service),
 ):
     """저녁 대화 세션에서 다이어리 초안 생성."""
     # 세션 소유권 검증 (IDOR 방어)
-    session = await socrates_service.get_session(request.session_id, user_id)
+    session = await chat_service.get_session(request.session_id, user_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     try:

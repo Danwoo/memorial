@@ -25,6 +25,9 @@ from app.repositories.notification_repository import NotificationRepository
 from app.repositories.scrap_repository import ScrapRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.calendar_service import CalendarService
+
+# --- Services ---
+from app.services.chat_service import ChatService
 from app.services.community_summary_service import CommunitySummaryService
 from app.services.diary_analysis_service import DiaryAnalysisService
 from app.services.diary_service import DiaryService
@@ -41,9 +44,6 @@ from app.services.mindmap_service import MindmapService
 from app.services.report_service import ReportService
 from app.services.scrap_service import ScrapService
 from app.services.search_service import SearchService
-
-# --- Services ---
-from app.services.socrates_service import SocratesService
 
 
 # --- DB Client ---
@@ -99,11 +99,11 @@ def get_scrap_service(
     return ScrapService(scrap_repo, vector_repo, mindmap_repo)
 
 
-def get_socrates_service(
+def get_chat_service(
     chat_repo: ChatRepository = Depends(get_chat_repository),
-) -> SocratesService:
-    """SocratesService 인스턴스 생성."""
-    return SocratesService(chat_repo)
+) -> ChatService:
+    """ChatService 인스턴스 생성."""
+    return ChatService(chat_repo)
 
 
 def get_hybrid_search_service(
