@@ -7,11 +7,15 @@ from app.config.database import get_supabase_client
 from app.config.error_handler import register_error_handlers
 from app.config.middleware import register_middleware
 from app.config.settings import get_settings
+from app.observability.logging_config import configure_logging
 from app.repositories.mindmap_repository import MindmapRepository
 from app.repositories.scrap_repository import ScrapRepository
 from app.routers.router import api_router
 from app.services.mindmap_service import MindmapService
 from app.services.scheduler_service import start_scheduler, stop_scheduler
+
+# 로깅을 모든 logger 생성 전에 구성해야 filter/포맷이 일관 적용됨
+configure_logging(level="DEBUG" if get_settings().DEBUG else "INFO")
 
 logger = logging.getLogger(__name__)
 
