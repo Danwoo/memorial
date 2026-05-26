@@ -136,9 +136,8 @@ async def get_previous_session_context(
 
         lines = []
         for s in reversed(summaries):
-            date = str(s["created_at"])[:10]
-            title = s.get("title", "")
-            lines.append(f"- [{date}] {title}: {s['summary']}")
+            date = s.created_at.date().isoformat()
+            lines.append(f"- [{date}] {s.title}: {s.summary}")
 
         return f"\n\n**{section_title}:**\n" + "\n".join(lines)
     except Exception:
@@ -165,10 +164,9 @@ async def get_topic_session_context(
 
         lines = []
         for s in past_sessions:
-            date = str(s["created_at"])[:10]
-            title = s.get("title", "")
-            summary = s.get("summary") or "(요약 없음)"
-            lines.append(f"- [{date}] {title}: {summary}")
+            date = s.created_at.date().isoformat()
+            summary = s.summary or "(요약 없음)"
+            lines.append(f"- [{date}] {s.title}: {summary}")
 
         return (
             "\n\n**이 주제에 대한 과거 대화:**\n"

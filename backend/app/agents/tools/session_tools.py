@@ -48,18 +48,15 @@ async def search_past_conversations(
         )
         sessions = all_sessions[:limit]
 
-    results: list[dict[str, Any]] = []
-    for s in sessions:
-        summary = s.get("summary") or ""
-        results.append(
-            {
-                "session_id": s.get("id", ""),
-                "title": s.get("title", ""),
-                "summary_preview": summary[:200],
-                "created_at": s.get("created_at", ""),
-            }
-        )
-    return results
+    return [
+        {
+            "session_id": str(s.id),
+            "title": s.title,
+            "summary_preview": (s.summary or "")[:200],
+            "created_at": s.created_at.isoformat(),
+        }
+        for s in sessions
+    ]
 
 
 @tool

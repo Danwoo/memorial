@@ -6,11 +6,16 @@ from uuid import UUID, uuid4
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from supabase import Client
 
+from app.domain.chat import ChatMessageRecord, ChatSession, ChatSessionSummary
+from app.utils import parse_iso_datetime
+
 logger = logging.getLogger(__name__)
 
 
 class ChatRepository:
     """채팅 세션/메시지/피드백 데이터 접근 계층 (Supabase).
+
+    `ChatRepositoryProtocol`을 만족한다 (duck typing).
 
     Note:
         DB 테이블명은 `socrates_sessions`, `socrates_messages`, `socrates_feedback`로
@@ -22,7 +27,7 @@ class ChatRepository:
         self.db = db
 
     # ------------------------------------------------------------------
-    # 공개 비동기 인터페이스
+    # 세션 — CRUD
     # ------------------------------------------------------------------
 
     async def create_session(
@@ -30,137 +35,57 @@ class ChatRepository:
         user_id: UUID,
         title: str | None = None,
         agent_type: str = "oracle",
-    ) -> dict:
+    ) -> ChatSession:
         """새 채팅 세션 생성."""
-        title = title or f"Chat {datetime.now(UTC).strftime('%Y-%m-%d %H:%M')}"
-
-        data = {"user_id": str(user_id), "title": title, "agent_type": agent_type}
+        resolved_title = title or f"Chat {datetime.now(UTC).strftime('%Y-%m-%d %H:%M')}"
+        data = {"user_id": str(user_id), "title": resolved_title, "agent_type": agent_type}
 
         result = await asyncio.to_thread(self._insert_session, data)
 
         if result.data:
-            session = result.data[0]
-            return {
-                "id": session["id"],
-                "user_id": session["user_id"],
-                "title": session["title"],
-                "created_at": session["created_at"],
-                "agent_type": session.get("agent_type", agent_type),
-            }
+            return _row_to_session(result.data[0])
 
         # 폴백 (정상적으로는 도달하지 않음)
-        session_id = str(uuid4())
-        return {
-            "id": session_id,
-            "user_id": str(user_id),
-            "title": title,
-            "created_at": datetime.now(UTC).isoformat(),
-            "agent_type": agent_type,
-        }
-
-    async def get_session(self, session_id: UUID, user_id: UUID | None = None) -> dict | None:
-        """ID로 세션 조회. user_id 지정 시 소유권도 함께 검증."""
-        result = await asyncio.to_thread(self._select_session, str(session_id), str(user_id) if user_id else None)
-
-        if result.data and len(result.data) > 0:
-            session = result.data[0]
-            return {
-                "id": session["id"],
-                "user_id": session["user_id"],
-                "title": session["title"],
-                "created_at": session["created_at"],
-                "agent_type": session.get("agent_type", "oracle"),
-            }
-        return None
-
-    async def get_sessions_by_user(self, user_id: UUID, agent_type: str | None = None) -> list[dict]:
-        """사용자의 전체 세션 목록 조회. agent_type 지정 시 필터링."""
-        result = await asyncio.to_thread(self._select_sessions_by_user, str(user_id), agent_type)
-
-        return (
-            [
-                {
-                    "id": s["id"],
-                    "user_id": s["user_id"],
-                    "title": s["title"],
-                    "created_at": s["created_at"],
-                    "agent_type": s.get("agent_type", "oracle"),
-                }
-                for s in result.data
-            ]
-            if result.data
-            else []
+        return ChatSession(
+            id=uuid4(),
+            user_id=user_id,
+            title=resolved_title,
+            agent_type=agent_type,
+            created_at=datetime.now(UTC),
         )
 
-    async def add_message(self, session_id: UUID, message: BaseMessage) -> bool:
-        """세션에 메시지 추가."""
-        role = "user" if isinstance(message, HumanMessage) else "assistant"
-        content = message.content if hasattr(message, "content") else str(message)
-
-        data = {
-            "session_id": str(session_id),
-            "role": role,
-            "content": content,
-        }
-
-        try:
-            await asyncio.to_thread(self._insert_message, data)
-            return True
-        except Exception:
-            logger.exception("Error adding message to Supabase")
-            return False
-
-    async def get_messages(self, session_id: UUID) -> list[BaseMessage]:
-        """세션의 전체 메시지를 LangChain 메시지 형태로 조회."""
-        result = await asyncio.to_thread(self._select_messages, str(session_id))
-
-        messages: list[BaseMessage] = []
+    async def get_session(self, session_id: UUID, user_id: UUID | None = None) -> ChatSession | None:
+        """ID로 세션 조회. user_id 지정 시 소유권도 함께 검증."""
+        result = await asyncio.to_thread(
+            self._select_session, str(session_id), str(user_id) if user_id else None
+        )
         if result.data:
-            for msg in result.data:
-                if msg["role"] == "user":
-                    messages.append(HumanMessage(content=msg["content"]))
-                elif msg["role"] == "assistant":
-                    messages.append(AIMessage(content=msg["content"]))
+            return _row_to_session(result.data[0])
+        return None
 
-        return messages
+    async def get_sessions_by_user(
+        self,
+        user_id: UUID,
+        agent_type: str | None = None,
+    ) -> list[ChatSession]:
+        """사용자의 전체 세션 목록 조회. agent_type 지정 시 필터링."""
+        result = await asyncio.to_thread(self._select_sessions_by_user, str(user_id), agent_type)
+        return [_row_to_session(s) for s in (result.data or [])]
 
-    async def get_messages_raw(self, session_id: UUID) -> list[dict]:
-        """세션의 전체 메시지를 타임스탬프 포함 raw dict로 조회."""
-        result = await asyncio.to_thread(self._select_messages, str(session_id))
-
-        if not result.data:
-            return []
-
-        return [
-            {
-                "role": msg["role"],
-                "content": msg["content"],
-                "created_at": msg["created_at"],
-            }
-            for msg in result.data
-        ]
-
-    async def update_session_title(self, session_id: UUID, title: str, user_id: UUID | None = None) -> bool:
+    async def update_session_title(
+        self,
+        session_id: UUID,
+        title: str,
+        user_id: UUID | None = None,
+    ) -> bool:
         """세션 제목 업데이트."""
         try:
-            await asyncio.to_thread(self._update_title, str(session_id), title, str(user_id) if user_id else "")
+            await asyncio.to_thread(
+                self._update_title, str(session_id), title, str(user_id) if user_id else ""
+            )
             return True
         except Exception:
             logger.exception("Error updating session title")
-            return False
-
-    async def get_message_count(self, session_id: UUID) -> int:
-        """세션의 메시지 수 조회."""
-        result = await asyncio.to_thread(self._count_messages, str(session_id))
-        return len(result.data) if result.data else 0
-
-    async def delete_session(self, session_id: UUID, user_id: UUID) -> bool:
-        """세션과 소속 메시지 삭제 (user_id 소유권 검증 포함)."""
-        try:
-            await asyncio.to_thread(self._delete_session, str(session_id), str(user_id))
-            return True
-        except Exception:
-            logger.exception("Error deleting session from Supabase")
             return False
 
     async def update_session_summary(self, session_id: UUID, summary: str) -> bool:
@@ -172,21 +97,6 @@ class ChatRepository:
             logger.exception("세션 요약 업데이트 실패 (session_id=%s)", session_id)
             return False
 
-    async def get_recent_session_summaries(self, user_id: UUID, limit: int = 3) -> list[dict]:
-        """사용자의 최근 세션 요약 조회 (요약이 있는 세션만)."""
-        result = await asyncio.to_thread(self._select_recent_summaries, str(user_id), limit)
-        if not result.data:
-            return []
-        return [
-            {
-                "id": s["id"],
-                "title": s["title"],
-                "summary": s["summary"],
-                "created_at": s["created_at"],
-            }
-            for s in result.data
-        ]
-
     async def update_session_topic_tags(self, session_id: UUID, tags: list[str]) -> bool:
         """세션의 topic_tags를 업데이트."""
         try:
@@ -196,9 +106,39 @@ class ChatRepository:
             logger.exception("topic_tags 업데이트 실패 (session_id=%s)", session_id)
             return False
 
+    async def delete_session(self, session_id: UUID, user_id: UUID) -> bool:
+        """세션과 소속 메시지 삭제 (user_id 소유권 검증 포함)."""
+        try:
+            await asyncio.to_thread(self._delete_session, str(session_id), str(user_id))
+            return True
+        except Exception:
+            logger.exception("Error deleting session from Supabase")
+            return False
+
+    async def get_recent_session_summaries(
+        self,
+        user_id: UUID,
+        limit: int = 3,
+    ) -> list[ChatSessionSummary]:
+        """사용자의 최근 세션 요약 조회 (요약이 있는 세션만)."""
+        result = await asyncio.to_thread(self._select_recent_summaries, str(user_id), limit)
+        return [
+            ChatSessionSummary(
+                id=UUID(s["id"]),
+                title=s["title"],
+                summary=s["summary"],
+                created_at=parse_iso_datetime(s["created_at"]),
+            )
+            for s in (result.data or [])
+        ]
+
     async def search_sessions_by_topic(
-        self, user_id: UUID, tags: list[str], exclude_session_id: UUID | None = None, limit: int = 3
-    ) -> list[dict]:
+        self,
+        user_id: UUID,
+        tags: list[str],
+        exclude_session_id: UUID | None = None,
+        limit: int = 3,
+    ) -> list[ChatSession]:
         """topic_tags 배열과 겹치는 과거 세션 검색."""
         result = await asyncio.to_thread(
             self._select_sessions_by_topic,
@@ -207,28 +147,21 @@ class ChatRepository:
             str(exclude_session_id) if exclude_session_id else None,
             limit,
         )
-        if not result.data:
-            return []
-        return [
-            {
-                "id": s["id"],
-                "title": s["title"],
-                "topic_tags": s.get("topic_tags", []),
-                "summary": s.get("summary"),
-                "created_at": s["created_at"],
-            }
-            for s in result.data
-        ]
+        return [_row_to_session(s, default_user_id=user_id) for s in (result.data or [])]
 
-    async def get_sessions_for_export(self, user_id: UUID, limit: int = 10000) -> list[dict]:
+    async def get_sessions_for_export(self, user_id: UUID, limit: int = 10000) -> list[ChatSession]:
         """내보내기용 세션 목록 조회."""
         result = await asyncio.to_thread(self._select_sessions_for_export, str(user_id), limit)
-        return result.data or []
+        return [_row_to_session(s, default_user_id=user_id) for s in (result.data or [])]
 
     async def get_sessions_by_date_range(
-        self, user_id: UUID, start_iso: str, end_iso: str, limit: int = 100
-    ) -> list[dict]:
-        """날짜 범위 내 생성된 소크라테스 세션 목록 조회."""
+        self,
+        user_id: UUID,
+        start_iso: str,
+        end_iso: str,
+        limit: int = 100,
+    ) -> list[ChatSession]:
+        """날짜 범위 내 생성된 채팅 세션 목록 조회."""
         result = await asyncio.to_thread(
             self._select_sessions_by_date_range,
             str(user_id),
@@ -236,18 +169,65 @@ class ChatRepository:
             end_iso,
             limit,
         )
-        if not result.data:
-            return []
+        return [_row_to_session(s, default_user_id=user_id) for s in (result.data or [])]
+
+    # ------------------------------------------------------------------
+    # 메시지
+    # ------------------------------------------------------------------
+
+    async def add_message(self, session_id: UUID, message: BaseMessage) -> bool:
+        """세션에 메시지 추가."""
+        role = "user" if isinstance(message, HumanMessage) else "assistant"
+        content = message.content if hasattr(message, "content") else str(message)
+
+        data = {"session_id": str(session_id), "role": role, "content": content}
+        try:
+            await asyncio.to_thread(self._insert_message, data)
+            return True
+        except Exception:
+            logger.exception("Error adding message to Supabase")
+            return False
+
+    async def get_messages(self, session_id: UUID) -> list[BaseMessage]:
+        """세션의 전체 메시지를 LangChain 메시지 형태로 조회."""
+        result = await asyncio.to_thread(self._select_messages, str(session_id))
+        messages: list[BaseMessage] = []
+        if result.data:
+            for msg in result.data:
+                if msg["role"] == "user":
+                    messages.append(HumanMessage(content=msg["content"]))
+                elif msg["role"] == "assistant":
+                    messages.append(AIMessage(content=msg["content"]))
+        return messages
+
+    async def get_messages_raw(self, session_id: UUID) -> list[ChatMessageRecord]:
+        """세션의 전체 메시지를 타임스탬프 포함 도메인 모델로 조회."""
+        result = await asyncio.to_thread(self._select_messages, str(session_id))
         return [
-            {
-                "id": s["id"],
-                "title": s["title"],
-                "created_at": s["created_at"],
-            }
-            for s in result.data
+            ChatMessageRecord(
+                role=msg["role"],
+                content=msg["content"],
+                created_at=parse_iso_datetime(msg["created_at"]),
+            )
+            for msg in (result.data or [])
         ]
 
-    async def add_feedback(self, session_id: UUID, message_index: int, user_id: UUID, rating: str) -> bool:
+    async def get_message_count(self, session_id: UUID) -> int:
+        """세션의 메시지 수 조회."""
+        result = await asyncio.to_thread(self._count_messages, str(session_id))
+        return len(result.data) if result.data else 0
+
+    # ------------------------------------------------------------------
+    # 피드백
+    # ------------------------------------------------------------------
+
+    async def add_feedback(
+        self,
+        session_id: UUID,
+        message_index: int,
+        user_id: UUID,
+        rating: str,
+    ) -> bool:
         """메시지에 대한 피드백 저장 (upsert)."""
         try:
             await asyncio.to_thread(
@@ -263,16 +243,11 @@ class ChatRepository:
             return False
 
     async def get_feedbacks(self, session_id: UUID) -> list[dict]:
-        """세션의 전체 피드백 조회."""
+        """세션의 전체 피드백 조회 (간단한 매핑이라 dict 그대로)."""
         result = await asyncio.to_thread(self._select_feedbacks, str(session_id))
-        if not result.data:
-            return []
         return [
-            {
-                "message_index": f["message_index"],
-                "rating": f["rating"],
-            }
-            for f in result.data
+            {"message_index": f["message_index"], "rating": f["rating"]}
+            for f in (result.data or [])
         ]
 
     # ------------------------------------------------------------------
@@ -320,7 +295,6 @@ class ChatRepository:
         return self.db.table("socrates_messages").select("id").eq("session_id", session_id).execute()
 
     def _delete_session(self, session_id: str, user_id: str):
-        # DB CASCADE로 메시지도 함께 삭제 (user_id 필터로 IDOR 방어)
         return self.db.table("socrates_sessions").delete().eq("id", session_id).eq("user_id", user_id).execute()
 
     def _update_summary(self, session_id: str, summary: str):
@@ -360,7 +334,7 @@ class ChatRepository:
     def _select_sessions_for_export(self, user_id: str, limit: int):
         return (
             self.db.table("socrates_sessions")
-            .select("id, title, created_at")
+            .select("id, title, created_at, agent_type")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
             .limit(limit)
@@ -370,7 +344,7 @@ class ChatRepository:
     def _select_sessions_by_date_range(self, user_id: str, start_iso: str, end_iso: str, limit: int = 100):
         return (
             self.db.table("socrates_sessions")
-            .select("id, title, created_at")
+            .select("id, title, created_at, agent_type")
             .eq("user_id", user_id)
             .gte("created_at", start_iso)
             .lte("created_at", end_iso)
@@ -390,7 +364,7 @@ class ChatRepository:
     def _select_sessions_by_topic(self, user_id: str, tags: list[str], exclude_session_id: str | None, limit: int):
         query = (
             self.db.table("socrates_sessions")
-            .select("id, title, topic_tags, summary, created_at")
+            .select("id, title, topic_tags, summary, created_at, agent_type")
             .eq("user_id", user_id)
             .overlaps("topic_tags", tags)
             .order("created_at", desc=True)
@@ -401,4 +375,35 @@ class ChatRepository:
         return query.execute()
 
     def _select_feedbacks(self, session_id: str):
-        return self.db.table("socrates_feedback").select("message_index, rating").eq("session_id", session_id).execute()
+        return (
+            self.db.table("socrates_feedback")
+            .select("message_index, rating")
+            .eq("session_id", session_id)
+            .execute()
+        )
+
+
+# ----------------------------------------------------------------------
+# Row → 도메인 모델 변환
+# ----------------------------------------------------------------------
+
+
+def _row_to_session(row: dict, default_user_id: UUID | None = None) -> ChatSession:
+    """Supabase row를 ChatSession 도메인 모델로 변환.
+
+    Args:
+        row: DB row (dict)
+        default_user_id: select 결과에 user_id 컬럼이 없는 쿼리(예: by_date_range)일 때 폴백
+    """
+    raw_user_id = row.get("user_id")
+    user_id = UUID(raw_user_id) if raw_user_id else (default_user_id or UUID(int=0))
+
+    return ChatSession(
+        id=UUID(row["id"]),
+        user_id=user_id,
+        title=row["title"],
+        agent_type=row.get("agent_type", "oracle"),
+        created_at=parse_iso_datetime(row["created_at"]),
+        summary=row.get("summary"),
+        topic_tags=row.get("topic_tags"),
+    )

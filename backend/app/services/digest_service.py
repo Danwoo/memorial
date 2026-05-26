@@ -123,15 +123,23 @@ class DigestService:
             return []
 
     async def _get_today_chats(self, start: datetime, end: datetime, user_id: UUID) -> list[dict]:
-        """오늘 생성된 채팅 세션 조회."""
+        """오늘 생성된 채팅 세션 조회 (다이제스트 응답에 포함될 dict 형태)."""
         if not self.chat_repo:
             return []
         try:
-            return await self.chat_repo.get_sessions_by_date_range(
+            sessions = await self.chat_repo.get_sessions_by_date_range(
                 user_id=user_id,
                 start_iso=start.isoformat(),
                 end_iso=end.isoformat(),
             )
+            return [
+                {
+                    "id": str(s.id),
+                    "title": s.title,
+                    "created_at": s.created_at.isoformat(),
+                }
+                for s in sessions
+            ]
         except Exception:
             logger.exception("오늘 채팅 세션 조회 실패")
             return []

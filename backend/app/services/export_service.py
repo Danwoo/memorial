@@ -58,7 +58,7 @@ class ExportService:
         return buf.getvalue()
 
     async def export_all(self, user_id: UUID) -> dict[str, Any]:
-        """전체 데이터 통합 내보내기 (scraps + diaries + socrates_sessions)."""
+        """전체 데이터 통합 내보내기 (scraps + diaries + chat sessions)."""
         scraps, diaries, sessions = await asyncio.gather(
             self.scrap_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT),
             self.diary_repo.get_all_for_export(user_id, MAX_EXPORT_LIMIT),
@@ -69,7 +69,7 @@ class ExportService:
             "exported_at": datetime.now(UTC).isoformat(),
             "scraps": scraps,
             "diaries": diaries,
-            "socrates_sessions": sessions,
+            "chat_sessions": [s.model_dump(mode="json") for s in sessions],
         }
 
     async def get_export_counts(self, user_id: UUID) -> dict[str, int]:

@@ -8,6 +8,10 @@
 
 스트리밍 변환(SSE 와이어 포맷)은 _event_to_sse에서만 일어나고,
 그래프 실행/이벤트 추출은 StreamingStrategy(ReactStreaming/DagStreaming)에 위임된다.
+
+타입:
+- Repository로부터 `ChatSession`/`ChatMessageRecord` 도메인 모델을 받아 사용한다.
+- 외부(router)에는 도메인 모델 그대로 반환하고, router가 DTO로 매핑한다.
 """
 
 import asyncio
@@ -23,8 +27,9 @@ from app.agents.container import get_agent_container
 from app.agents.registry import AgentRegistry
 from app.agents.streaming import StreamEvent, StreamingContext
 from app.config.llm import get_analytical_llm
+from app.domain.chat import ChatMessageRecord, ChatSession
 from app.exceptions import LLMError
-from app.repositories.chat_repository import ChatRepository
+from app.repositories.protocols.chat_repository_protocol import ChatRepositoryProtocol
 
 TITLE_GEN_PROMPT = (
     "다음 대화의 핵심 주제를 한국어 15자 이내 명사구로 요약하세요. "
@@ -40,16 +45,21 @@ SESSION_SUMMARY_PROMPT = (
 )
 
 MAX_TITLE_LENGTH = 50
+SESSION_SUMMARY_MAX_CHARS = 500
 SESSION_SUMMARY_MSG_THRESHOLD = 4
 CONVERSATION_PREVIEW_LENGTH = 2000
+INITIAL_MESSAGE_COUNT_FOR_TITLE = 2  # 첫 user + 첫 AI 응답 직후
 
 logger = logging.getLogger(__name__)
 
 
 class ChatService:
-    """채팅 비즈니스 로직 — 모든 agent_type의 세션을 다룬다."""
+    """채팅 비즈니스 로직 — 모든 agent_type의 세션을 다룬다.
 
-    def __init__(self, chat_repo: ChatRepository):
+    의존성: `ChatRepositoryProtocol` (의존성 역전 — 구현체는 모름)
+    """
+
+    def __init__(self, chat_repo: ChatRepositoryProtocol):
         self.chat_repo = chat_repo
 
     # ------------------------------------------------------------------
@@ -61,24 +71,26 @@ class ChatService:
         user_id: UUID,
         title: str | None = None,
         agent_type: str = "oracle",
-    ) -> dict:
+    ) -> ChatSession:
         """새 채팅 세션 생성."""
         return await self.chat_repo.create_session(user_id, title, agent_type)
 
-    async def get_session(self, session_id: UUID, user_id: UUID | None = None) -> dict | None:
+    async def get_session(self, session_id: UUID, user_id: UUID | None = None) -> ChatSession | None:
         """ID로 세션 조회. user_id 지정 시 소유권도 함께 검증."""
         return await self.chat_repo.get_session(session_id, user_id)
 
-    async def list_sessions(self, user_id: UUID) -> list[dict]:
+    async def list_sessions(self, user_id: UUID) -> list[ChatSession]:
         """사용자의 전체 세션 목록 조회 (최신순)."""
         sessions = await self.chat_repo.get_sessions_by_user(user_id)
-        return sorted(sessions, key=lambda x: x["created_at"], reverse=True)
+        return sorted(sessions, key=lambda s: s.created_at, reverse=True)
 
-    async def update_session_title(self, session_id: UUID, title: str, user_id: UUID | None = None) -> bool:
+    async def update_session_title(
+        self, session_id: UUID, title: str, user_id: UUID | None = None
+    ) -> bool:
         """세션 제목 수동 업데이트."""
         return await self.chat_repo.update_session_title(session_id, title, user_id)
 
-    async def get_history(self, session_id: UUID) -> list[dict]:
+    async def get_history(self, session_id: UUID) -> list[ChatMessageRecord]:
         """세션의 채팅 이력 조회 (DB 타임스탬프 포함)."""
         return await self.chat_repo.get_messages_raw(session_id)
 
@@ -86,7 +98,9 @@ class ChatService:
     # 피드백
     # ------------------------------------------------------------------
 
-    async def add_feedback(self, session_id: UUID, message_index: int, user_id: UUID, rating: str) -> bool:
+    async def add_feedback(
+        self, session_id: UUID, message_index: int, user_id: UUID, rating: str
+    ) -> bool:
         """메시지 피드백 저장."""
         return await self.chat_repo.add_feedback(session_id, message_index, user_id, rating)
 
@@ -113,11 +127,11 @@ class ChatService:
         전략이 흘려보내는 StreamEvent를 SSE 와이어 포맷으로 변환한다.
         """
         session = await self.chat_repo.get_session(session_id)
-        if not session:
+        if session is None:
             yield _sse({"error": "Session not found"})
             return
 
-        effective_agent_type = agent_type or session.get("agent_type", "oracle")
+        effective_agent_type = agent_type or session.agent_type
 
         # 사용자 메시지 저장
         await self.chat_repo.add_message(session_id, HumanMessage(content=content))
@@ -152,7 +166,7 @@ class ChatService:
             if full_response:
                 await self.chat_repo.add_message(session_id, AIMessage(content=full_response))
 
-            # 메타데이터 후처리 (제목, 토픽 태그)
+            # 메타데이터 후처리
             done_payload: dict = {"done": True}
             title = await self._maybe_generate_title(session_id, content, full_response)
             if title:
@@ -188,13 +202,13 @@ class ChatService:
                 return None
 
             conversation = "\n".join(
-                f"{'사용자' if m['role'] == 'user' else 'AI'}: {m['content']}" for m in messages
+                f"{'사용자' if m.role == 'user' else 'AI'}: {m.content}" for m in messages
             )[:CONVERSATION_PREVIEW_LENGTH]
 
             llm = get_analytical_llm()
             prompt = SESSION_SUMMARY_PROMPT.format(conversation=conversation)
             result = await llm.ainvoke([SystemMessage(content=prompt)])
-            summary = result.content.strip()[:500]
+            summary = result.content.strip()[:SESSION_SUMMARY_MAX_CHARS]
 
             if summary:
                 await self.chat_repo.update_session_summary(session_id, summary)
@@ -230,11 +244,13 @@ class ChatService:
         except Exception:
             logger.exception("topic_tags 저장 실패 (session_id=%s)", session_id)
 
-    async def _maybe_generate_title(self, session_id: UUID, user_msg: str, ai_msg: str) -> str | None:
+    async def _maybe_generate_title(
+        self, session_id: UUID, user_msg: str, ai_msg: str
+    ) -> str | None:
         """첫 대화 완료 시 LLM으로 세션 제목 생성. 이미 제목이 있으면 스킵."""
         try:
             msg_count = await self.chat_repo.get_message_count(session_id)
-            if msg_count != 2:
+            if msg_count != INITIAL_MESSAGE_COUNT_FOR_TITLE:
                 return None
 
             llm = get_analytical_llm()

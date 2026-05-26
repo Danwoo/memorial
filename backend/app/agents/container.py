@@ -5,6 +5,7 @@ from app.config.database import get_supabase_client
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.diary_repository import DiaryRepository
 from app.repositories.mindmap_repository import MindmapRepository
+from app.repositories.protocols.chat_repository_protocol import ChatRepositoryProtocol
 from app.repositories.scrap_repository import ScrapRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.community_summary_service import CommunitySummaryService
@@ -26,7 +27,7 @@ class AgentServiceContainer:
     hybrid_search: HybridSearchService
     scrap_service: ScrapService
     community_summary: CommunitySummaryService
-    chat_repo: ChatRepository
+    chat_repo: ChatRepositoryProtocol
     graphrag_retrieval: GraphRAGRetrievalService
 
 

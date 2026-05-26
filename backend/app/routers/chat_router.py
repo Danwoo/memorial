@@ -5,6 +5,7 @@ from fastapi.responses import StreamingResponse
 
 from app.config.auth import get_user_id
 from app.config.dependencies import get_chat_service
+from app.domain.chat import ChatMessageRecord, ChatSession
 from app.schemas.chat_schema import (
     ChatFeedbackRequest,
     ChatFeedbackResponse,
@@ -19,6 +20,25 @@ from app.services.chat_service import ChatService
 router = APIRouter(prefix="/socrates", tags=["chat"])
 
 
+def _session_to_response(session: ChatSession) -> ChatSessionResponse:
+    """도메인 모델 → API DTO 변환."""
+    return ChatSessionResponse(
+        id=session.id,
+        title=session.title,
+        created_at=session.created_at,
+        agent_type=session.agent_type,
+    )
+
+
+def _message_to_response(message: ChatMessageRecord) -> ChatMessageResponse:
+    """도메인 모델 → API DTO 변환."""
+    return ChatMessageResponse(
+        role=message.role,
+        content=message.content,
+        created_at=message.created_at,
+    )
+
+
 @router.post("/sessions", response_model=ChatSessionResponse, status_code=201)
 async def create_session(
     data: ChatSessionCreate,
@@ -27,13 +47,7 @@ async def create_session(
 ):
     """새 채팅 세션 생성."""
     session = await chat_service.create_session(user_id, data.title, data.agent_type)
-
-    return ChatSessionResponse(
-        id=UUID(session["id"]),
-        title=session["title"],
-        created_at=session["created_at"],
-        agent_type=session.get("agent_type", "oracle"),
-    )
+    return _session_to_response(session)
 
 
 @router.get("/sessions", response_model=list[ChatSessionResponse])
@@ -43,16 +57,7 @@ async def list_sessions(
 ):
     """현재 사용자의 채팅 세션 목록 조회."""
     sessions = await chat_service.list_sessions(user_id)
-
-    return [
-        ChatSessionResponse(
-            id=UUID(s["id"]),
-            title=s["title"],
-            created_at=s["created_at"],
-            agent_type=s.get("agent_type", "oracle"),
-        )
-        for s in sessions
-    ]
+    return [_session_to_response(s) for s in sessions]
 
 
 @router.patch("/sessions/{session_id}", response_model=ChatSessionResponse)
@@ -64,18 +69,13 @@ async def update_session(
 ):
     """세션 제목 업데이트."""
     session = await chat_service.get_session(session_id, user_id)
-    if not session:
+    if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
     await chat_service.update_session_title(session_id, data.title, user_id)
-    session["title"] = data.title
-
-    return ChatSessionResponse(
-        id=UUID(session["id"]),
-        title=session["title"],
-        created_at=session["created_at"],
-        agent_type=session.get("agent_type", "oracle"),
-    )
+    # 도메인 모델이 frozen이 아니므로 직접 수정 — 또는 model_copy(update=...)
+    updated = session.model_copy(update={"title": data.title})
+    return _session_to_response(updated)
 
 
 @router.post("/sessions/{session_id}/messages")
@@ -87,12 +87,14 @@ async def send_message(
 ):
     """메시지 전송 후 SSE 스트리밍으로 AI 응답 반환."""
     session = await chat_service.get_session(session_id, user_id)
-    if not session:
+    if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
     source_ctx = data.source_context.model_dump() if data.source_context else None
     return StreamingResponse(
-        chat_service.send_message(session_id, user_id, data.content, data.mode, source_ctx, data.agent_type),
+        chat_service.send_message(
+            session_id, user_id, data.content, data.mode, source_ctx, data.agent_type
+        ),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -113,19 +115,11 @@ async def get_history(
 ):
     """특정 세션의 채팅 이력 조회."""
     session = await chat_service.get_session(session_id, user_id)
-    if not session:
+    if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
     history = await chat_service.get_history(session_id)
-
-    return [
-        ChatMessageResponse(
-            role=h["role"],
-            content=h["content"],
-            created_at=h["created_at"],
-        )
-        for h in history
-    ]
+    return [_message_to_response(h) for h in history]
 
 
 @router.post(
@@ -140,7 +134,7 @@ async def add_feedback(
 ):
     """메시지 피드백 저장 (thumbs up/down)."""
     session = await chat_service.get_session(session_id, user_id)
-    if not session:
+    if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
     success = await chat_service.add_feedback(session_id, data.message_index, user_id, data.rating)
@@ -155,7 +149,7 @@ async def get_feedbacks(
 ):
     """세션의 전체 피드백 조회."""
     session = await chat_service.get_session(session_id, user_id)
-    if not session:
+    if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
     return await chat_service.get_feedbacks(session_id)
@@ -169,7 +163,7 @@ async def summarize_session(
 ):
     """세션 대화를 요약하여 저장."""
     session = await chat_service.get_session(session_id, user_id)
-    if not session:
+    if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
     summary = await chat_service.generate_session_summary(session_id)
