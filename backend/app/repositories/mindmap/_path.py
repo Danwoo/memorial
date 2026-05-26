@@ -22,24 +22,25 @@ class _PathMixin:
     ) -> MindmapShortestPath | None:
         """두 엔티티 사이 최단 경로 동기 구현.
 
+        KuzuDB 0.11의 native `* SHORTEST` 키워드 + `list_transform` 사용.
+        (Neo4j 표준 `[n IN nodes(p) | n.name]` 리스트 컴프리헨션은 KuzuDB에서 미지원)
+
         - 양 끝 엔티티 모두 사용자의 Memory에 mention되어야 한다 (소유권 검증).
         - max_hops 이내 path가 없으면 None.
         """
         conn = self._get_conn()
         safe_hops = max(1, min(int(max_hops), MAX_GRAPH_TRAVERSAL_DEPTH))
 
-        # variable-length path 후 길이 정렬로 최단 경로 1개 추출.
-        # (KuzuDB의 SHORTEST 키워드 버전별 차이가 있어 portable한 방식 사용)
+        # KuzuDB native shortest path — 단일 path 반환, 길이 정렬 불필요
         query = f"""
         MATCH (a:Entity {{name: $source}}), (b:Entity {{name: $target}})
         WHERE EXISTS {{ MATCH (ma:Memory {{user_id: $user_id}})-[:MENTIONS]->(a) }}
           AND EXISTS {{ MATCH (mb:Memory {{user_id: $user_id}})-[:MENTIONS]->(b) }}
-        MATCH p = (a)-[r:ENTITY_REL*1..{safe_hops}]-(b)
+        MATCH p = (a)-[r:ENTITY_REL* SHORTEST 1..{safe_hops}]-(b)
         RETURN
-            [n IN nodes(p) | n.name] AS names,
-            [rel IN rels(p) | rel.rel_type] AS rel_types,
+            list_transform(nodes(p), x -> x.name) AS names,
+            list_transform(rels(p), x -> x.rel_type) AS rel_types,
             length(p) AS hops
-        ORDER BY hops ASC
         LIMIT 1
         """
         try:

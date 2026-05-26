@@ -273,8 +273,11 @@ class ChatService:
 
 
 def _sse(payload: dict) -> str:
-    """dict → SSE 데이터 청크."""
-    return f"data: {json.dumps(payload)}\n\n"
+    """dict → SSE 데이터 청크.
+
+    한국어를 unicode escape하지 않고 그대로 전송 (전송량 절감 + 디버깅 가독성).
+    """
+    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
 
 def _event_to_sse(event: StreamEvent) -> str:
