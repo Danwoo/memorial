@@ -406,3 +406,62 @@ async def suggest_connections(
     except Exception as e:
         logger.exception("suggest_connections 오류: %s", e)
         return []
+
+
+@tool
+async def find_path_between_entities(
+    source_entity: str,
+    target_entity: str,
+    max_hops: int = 3,
+    *,
+    config: RunnableConfig,
+) -> dict[str, Any]:
+    """두 엔티티 사이의 최단 그래프 경로(shortest path)를 찾아 reasoning trace를 제공한다.
+
+    추천 설명(explainability)이나 두 개념의 연결 분석에 사용한다.
+    예: "왜 이 스크랩이 추천됐어요?" → 경로로 답변 가능.
+
+    Args:
+        source_entity: 시작 엔티티 이름 (정확한 이름)
+        target_entity: 목표 엔티티 이름 (정확한 이름)
+        max_hops: 최대 경로 길이 (1-3, 기본 3)
+
+    Returns:
+        found: 경로 발견 여부
+        path: 엔티티 시퀀스 (예: ["React", "JavaScript", "Frontend"])
+        rel_types: 관계 타입 시퀀스 (예: ["USES", "PART_OF"])
+        hops: 경로 길이
+        explanation: 한국어 설명 문자열
+    """
+    user_id = get_user_id(config)
+    container = get_agent_container()
+
+    result = await container.mindmap_repo.find_shortest_path(
+        source=source_entity,
+        target=target_entity,
+        user_id=user_id,
+        max_hops=min(max(max_hops, 1), 3),
+    )
+
+    if result is None:
+        return {
+            "found": False,
+            "message": f"'{source_entity}'와 '{target_entity}' 사이 경로를 찾을 수 없습니다.",
+        }
+
+    names: list[str] = result.get("names", []) or []
+    rel_types: list[str] = result.get("rel_types", []) or []
+
+    # 사람이 읽기 좋은 설명 조립 (A →(USES)→ B →(PART_OF)→ C)
+    segments = []
+    for i, rel in enumerate(rel_types):
+        if i + 1 < len(names):
+            segments.append(f"{names[i]} →({rel})→ {names[i + 1]}")
+
+    return {
+        "found": True,
+        "path": names,
+        "rel_types": rel_types,
+        "hops": result.get("hops", len(rel_types)),
+        "explanation": " ".join(segments) if segments else " → ".join(names),
+    }

@@ -146,23 +146,32 @@ class MindmapRepository:
         return rows
 
     # ------------------------------------------------------------------
-    # 엔티티 저장
+    # 엔티티 저장 (배치 UNWIND — 1개씩 INSERT 대비 N배 성능)
     # ------------------------------------------------------------------
     def _sync_save_entities(self, entities: list[dict], source_id: str, user_id: str | None = None) -> None:
-        """엔티티 저장 동기 구현."""
+        """엔티티 저장 — UNWIND 배치로 단일 쿼리 실행."""
         conn = self._get_conn()
 
-        for entity in entities:
-            label = _validate_label(entity.get("type", "Concept"))
-            name = entity.get("name")
-            if not name:
-                continue
-            conn.execute(
-                "MERGE (e:Entity {name: $name}) SET e.type = $type",
-                {"name": name, "type": label},
-            )
+        # 유효한 엔티티만 normalize (label 화이트리스트 적용)
+        normalized = [
+            {"name": e["name"], "type": _validate_label(e.get("type", "Concept"))}
+            for e in entities
+            if e.get("name")
+        ]
+        if not normalized:
+            return
 
-        # 엔티티를 출처 Memory 노드에 연결 (user_id로 필터링용)
+        # 1) 엔티티 일괄 MERGE (단일 Cypher, 단일 plan 컴파일)
+        conn.execute(
+            """
+            UNWIND $entities AS e
+            MERGE (n:Entity {name: e.name})
+            SET n.type = e.type
+            """,
+            {"entities": normalized},
+        )
+
+        # 2) Memory 노드 보장
         if user_id:
             conn.execute(
                 "MERGE (m:Memory {id: $id}) SET m.user_id = $user_id",
@@ -171,63 +180,57 @@ class MindmapRepository:
         else:
             conn.execute("MERGE (m:Memory {id: $id})", {"id": str(source_id)})
 
-        for entity in entities:
-            name = entity.get("name")
-            if not name:
-                continue
-            conn.execute(
-                """
-                MATCH (m:Memory {id: $id}), (e:Entity {name: $name})
-                WHERE NOT EXISTS { MATCH (m)-[:MENTIONS]->(e) }
-                CREATE (m)-[:MENTIONS]->(e)
-                """,
-                {"id": str(source_id), "name": name},
-            )
+        # 3) MENTIONS 관계 일괄 생성 (중복은 NOT EXISTS로 회피)
+        conn.execute(
+            """
+            UNWIND $names AS n
+            MATCH (m:Memory {id: $id}), (e:Entity {name: n})
+            WHERE NOT EXISTS { MATCH (m)-[:MENTIONS]->(e) }
+            CREATE (m)-[:MENTIONS]->(e)
+            """,
+            {"id": str(source_id), "names": [e["name"] for e in normalized]},
+        )
 
     async def save_entities(self, entities: list[dict], source_id: str, user_id: str | None = None) -> None:
-        """엔티티를 Knowledge Graph에 저장.
-
-        Args:
-            entities: 저장할 엔티티 목록 ({name, type} dict)
-            source_id: 출처 Memory ID
-            user_id: 소유 사용자 ID (필터링용)
-        """
+        """엔티티를 Knowledge Graph에 저장 (배치)."""
         if not self.db:
             return
         await asyncio.to_thread(self._sync_save_entities, entities, source_id, user_id)
 
     # ------------------------------------------------------------------
-    # 관계 저장
+    # 관계 저장 (배치 UNWIND)
     # ------------------------------------------------------------------
     def _sync_save_relations(self, relations: list[dict]) -> None:
-        """관계 저장 동기 구현."""
+        """관계 저장 — UNWIND 배치로 단일 쿼리 실행."""
         conn = self._get_conn()
-        for rel in relations:
-            source = rel.get("source")
-            target = rel.get("target")
-            rel_type = _validate_rel_type(rel.get("type", "RELATED_TO"))
 
-            if not source or not target:
-                continue
+        normalized = [
+            {
+                "source": r["source"],
+                "target": r["target"],
+                "rel_type": _validate_rel_type(r.get("type", "RELATED_TO")),
+            }
+            for r in relations
+            if r.get("source") and r.get("target")
+        ]
+        if not normalized:
+            return
 
-            conn.execute(
-                """
-                MATCH (a:Entity {name: $source}), (b:Entity {name: $target})
-                WHERE NOT EXISTS {
-                    MATCH (a)-[r:ENTITY_REL]->(b)
-                    WHERE r.rel_type = $rel_type
-                }
-                CREATE (a)-[:ENTITY_REL {rel_type: $rel_type}]->(b)
-                """,
-                {"source": source, "target": target, "rel_type": rel_type},
-            )
+        conn.execute(
+            """
+            UNWIND $relations AS rel
+            MATCH (a:Entity {name: rel.source}), (b:Entity {name: rel.target})
+            WHERE NOT EXISTS {
+                MATCH (a)-[existing:ENTITY_REL]->(b)
+                WHERE existing.rel_type = rel.rel_type
+            }
+            CREATE (a)-[:ENTITY_REL {rel_type: rel.rel_type}]->(b)
+            """,
+            {"relations": normalized},
+        )
 
     async def save_relations(self, relations: list[dict]) -> None:
-        """관계를 Knowledge Graph에 저장.
-
-        Args:
-            relations: 관계 목록 ({source, target, type} dict)
-        """
+        """관계를 Knowledge Graph에 저장 (배치)."""
         if not self.db:
             return
         await asyncio.to_thread(self._sync_save_relations, relations)
@@ -828,3 +831,67 @@ class MindmapRepository:
         except Exception:
             logger.exception("Error fetching graph data")
             return {"nodes": [], "links": []}
+
+    # ------------------------------------------------------------------
+    # 최단 경로 탐색 (추천 explainability)
+    # ------------------------------------------------------------------
+    def _sync_find_shortest_path(
+        self,
+        source: str,
+        target: str,
+        user_id: str,
+        max_hops: int,
+    ) -> dict | None:
+        """두 엔티티 사이 최단 경로 동기 구현.
+
+        - 양 끝 엔티티 모두 사용자의 Memory에 mention되어야 한다 (소유권 검증).
+        - max_hops 이내 path가 없으면 None.
+        """
+        conn = self._get_conn()
+        safe_hops = max(1, min(int(max_hops), MAX_GRAPH_TRAVERSAL_DEPTH))
+
+        # variable-length path 후 길이 정렬로 최단 경로 1개 추출.
+        # (KuzuDB의 SHORTEST 키워드 버전별 차이가 있어 portable한 방식 사용)
+        query = f"""
+        MATCH (a:Entity {{name: $source}}), (b:Entity {{name: $target}})
+        WHERE EXISTS {{ MATCH (ma:Memory {{user_id: $user_id}})-[:MENTIONS]->(a) }}
+          AND EXISTS {{ MATCH (mb:Memory {{user_id: $user_id}})-[:MENTIONS]->(b) }}
+        MATCH p = (a)-[r:ENTITY_REL*1..{safe_hops}]-(b)
+        RETURN
+            [n IN nodes(p) | n.name] AS names,
+            [rel IN rels(p) | rel.rel_type] AS rel_types,
+            length(p) AS hops
+        ORDER BY hops ASC
+        LIMIT 1
+        """
+        try:
+            result = conn.execute(query, {"source": source, "target": target, "user_id": user_id})
+            rows = self._result_to_dicts(result)
+            return rows[0] if rows else None
+        except Exception:
+            logger.exception("Shortest path 쿼리 실패: %s → %s", source, target)
+            return None
+
+    async def find_shortest_path(
+        self,
+        source: str,
+        target: str,
+        user_id: str,
+        max_hops: int = 3,
+    ) -> dict | None:
+        """두 엔티티 사이 최단 경로 탐색 (사용자 KB 한정).
+
+        Returns:
+            dict with keys `names` (경로상 엔티티 이름 시퀀스),
+            `rel_types` (간선 타입 시퀀스), `hops` (경로 길이).
+            연결되지 않거나 KB에 없으면 None.
+
+        Use case:
+            - 추천 explainability: "왜 이 스크랩을 추천?" → 경로 시각화
+            - 분석 에이전트: 두 개념의 잠재적 관계 발견
+        """
+        if not self.db or not source or not target:
+            return None
+        return await asyncio.to_thread(
+            self._sync_find_shortest_path, source, target, user_id, max_hops
+        )
