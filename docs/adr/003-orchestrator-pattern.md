@@ -51,14 +51,14 @@ class DiaryOrchestrator:
 ### 1. "Saga" 패턴까지는 안 감
 
 - 단계별 실패 시 보상 트랜잭션(rollback) 없음.
-- **답변**: 현 flow는 **graceful degradation으로 충분**. 스크랩 적재 실패해도 다이어리는
+- **대응**: 현 flow는 **graceful degradation으로 충분**. 스크랩 적재 실패해도 다이어리는
   이미 저장됐고, librarian은 향후 backfill로 재처리 가능. 진짜 Saga는 결제/송금처럼
   강한 일관성 요구되는 곳에 필요.
 
 ### 2. Orchestrator가 자라면 결국 비대해짐
 
 - 향후 더 많은 cross-domain 흐름이 추가되면 한 Orchestrator에 메서드 N개.
-- **답변**: 흐름 단위로 분할 (`DiaryOrchestrator`, `ScrapIngestOrchestrator` 등).
+- **대응**: 흐름 단위로 분할 (`DiaryOrchestrator`, `ScrapIngestOrchestrator` 등).
   지금은 1개 — 명확.
 
 ### 3. Background task vs sync
@@ -66,4 +66,4 @@ class DiaryOrchestrator:
 - `process_diary_with_librarian`은 FastAPI `BackgroundTasks`로 fire-and-forget.
 - 사용자에게 즉시 응답하되 librarian 결과는 비동기로 적재.
 - **약점**: 백그라운드 실패 시 사용자가 모름. 모니터링 필요.
-- **답변**: `logger.exception`으로 보존. 운영 환경에서는 Sentry 같은 alerting 추가.
+- **대응**: `logger.exception`으로 보존. 운영 환경에서는 Sentry 같은 alerting 추가.

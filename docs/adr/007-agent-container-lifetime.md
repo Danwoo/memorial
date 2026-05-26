@@ -35,7 +35,7 @@ LangGraph는 FastAPI 요청 컨텍스트 **밖에서** 실행되므로 (스트�
 ### 1. 매 호출마다 5+개 Repository instance 생성
 
 - `ChatRepository(db)` 등의 `__init__`은 `self.db = db` 한 줄 — 비용 무시 가능.
-- **답변**: 측정 결과 컨테이너 생성 < 0.5ms. 한 사용자 요청 전체 응답이 수백 ms ~ 수 초인
+- **대응**: 측정 결과 컨테이너 생성 < 0.5ms. 한 사용자 요청 전체 응답이 수백 ms ~ 수 초인
   RAG 시스템에서 무시 가능한 비율.
 
 ### 2. `lru_cache` 적용 시 잠재적 위험
@@ -43,14 +43,14 @@ LangGraph는 FastAPI 요청 컨텍스트 **밖에서** 실행되므로 (스트�
 - `@lru_cache` 적용했다고 가정: 첫 요청에서 user_X의 컨테이너가 캐시되면 다음 사용자가
   같은 컨테이너 사용 → user 격리는 Repository 레벨이라 영향 없지만, 모듈 reload 시 캐시
   stale.
-- **답변**: stateless이므로 user 격리 영향 없음. 다만 캐시 invalidation 부담 없이 그냥
+- **대응**: stateless이므로 user 격리 영향 없음. 다만 캐시 invalidation 부담 없이 그냥
   매번 새로 만드는 게 명확.
 
 ### 3. MindmapRepository 싱글톤이 thread-safe?
 
 - KuzuDB `Database` 객체는 스레드 안전. `Connection`만 호출별로 생성.
 - 코드 확인: `_get_conn()`이 매 호출 `kuzu.Connection(self.db)` 생성 — OK.
-- **답변**: `MindmapRepository`는 thread-safe. `Database` 공유 + `Connection` 호출별 = 표준 패턴.
+- **대응**: `MindmapRepository`는 thread-safe. `Database` 공유 + `Connection` 호출별 = 표준 패턴.
 
 ## 검증
 

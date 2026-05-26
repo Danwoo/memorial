@@ -52,28 +52,28 @@ def _make_llm(temperature, streaming, label):
 ### 1. 무료 티어 의존 — 운영 SLA 없음
 
 - OpenRouter free tier는 rate limit + 가용성 보장 없음.
-- **답변**: **이 프로젝트는 프로토타입 단계**. 실 사용자 0~수십 명. SLA 필요 없음.
+- **대응**: **이 프로젝트는 프로토타입 단계**. 실 사용자 0~수십 명. SLA 필요 없음.
   운영 트래픽이 늘면 즉시 OpenAI/Claude 유료 모델로 전환 가능 — `_USE_OPENROUTER = False`
   한 줄 변경. 인터페이스 위에서 흡수됨.
 
 ### 2. 모델 품질 변동
 
 - `upstage/solar-pro-3:free`는 한국어 특화지만 GPT-4 수준은 아님.
-- **답변**: 분석/추출 작업(structured output)은 `with_structured_output(Schema)` +
+- **대응**: 분석/추출 작업(structured output)은 `with_structured_output(Schema)` +
   few-shot으로 형식 강제 → 모델 품질 영향 최소화 ([ADR 없음 — `graph_schemas.py` 참고]).
   대화형 작업(소크라테스식 질문)은 한국어 자연스러움이 더 중요 — solar가 강점.
 
 ### 3. Fallback 동작 추적 어려움
 
 - LangChain `with_fallbacks`가 primary 실패를 silent하게 처리.
-- **답변**: `TokenUsageLogger` callback이 양쪽에 모두 등록되어 로그에 label로 구분
+- **대응**: `TokenUsageLogger` callback이 양쪽에 모두 등록되어 로그에 label로 구분
   가능 (`creative` / `analytical` / `tagger` / `streaming`). 운영 시 fallback hit률
   메트릭으로 노출 검토.
 
 ### 4. Token 비용 추적 자동화 0
 
 - 무료 티어라 현재 비용 추적 불필요.
-- **답변**: `TokenUsageLogger`가 input/output/total tokens INFO 로깅. 유료 전환 시
+- **대응**: `TokenUsageLogger`가 input/output/total tokens INFO 로깅. 유료 전환 시
   log aggregation(CloudWatch/Datadog) + 비용 환산 dashboard 추가하면 됨.
 
 ## 재평가 트리거

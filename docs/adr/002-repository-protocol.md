@@ -55,7 +55,7 @@ def get_chat_service(
 
 - `MindmapRepositoryProtocol.is_connected`가 `@property`인데 Protocol의 runtime check가
   property를 확인하지 않음 (Python 3.11 기준).
-- **답변**: 컴파일 타임 mypy 체크는 정상 동작. runtime `isinstance()`는
+- **대응**: 컴파일 타임 mypy 체크는 정상 동작. runtime `isinstance()`는
   duck typing fallback. 실제 코드에서 `isinstance(repo, MindmapRepositoryProtocol)`
   검증을 안 함 — 타입 힌트로만 활용.
 
@@ -63,11 +63,11 @@ def get_chat_service(
 
 - `app/config/dependencies.py`와 `app/agents/container.py`는 구체 Repository를
   인스턴스화. 의존성 역전이 100% 완성 아님.
-- **답변**: 의존성 역전 원칙은 **상위 모듈이 하위 모듈에 의존하지 않는다**가 핵심.
+- **대응**: 의존성 역전 원칙은 **상위 모듈이 하위 모듈에 의존하지 않는다**가 핵심.
   DI factory는 **구성(composition root)** 으로서 구체를 알아도 됨 — 다른 layer는 Protocol만.
   이는 표준 패턴 (Mark Seemann, "Dependency Injection in .NET").
 
 ### 3. Protocol 시그니처 ↔ 구현체 drift 위험
 
 - Protocol에 정의한 메서드 시그니처가 구현체와 어긋나도 컴파일 에러 안 남.
-- **답변**: mypy strict 모드에서 검증 가능. 현재는 ruff만 적용. 다음 단계 mypy 추가 검토.
+- **대응**: mypy strict 모드에서 검증 가능. 현재는 ruff만 적용. 다음 단계 mypy 추가 검토.

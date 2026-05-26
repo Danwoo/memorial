@@ -38,26 +38,28 @@ Memoir AI는 사용자가 저장한 스크랩/다이어리에서 엔티티·관�
    Supabase의 `extracted_entities/relations` 컬럼으로 rebuild ([ADR-006](006-graph-multi-tenancy.md)).
 4. **Python 바인딩 first-class**: `pip install kuzu` 하나로 시작.
 
-## 트레이드오프 (면접관이 짚을 수 있는 약점)
+## 트레이드오프 / 알려진 한계
 
 ### 1. KuzuDB 0.11 — 성숙도
 
 - secondary B-tree 인덱스 미지원 (FTS만 지원, `_base.py:_ensure_schema`).
 - 운영 베스트 프랙티스가 Neo4j만큼 정립 안 됨.
-- **답변**: 현 데이터 규모(개인 사용자 ~수천 노드)에서는 단일 PK 인덱스로 충분. FTS는
+- **대응**: 현 데이터 규모(개인 사용자 ~수천 노드)에서는 단일 PK 인덱스로 충분. FTS는
   엔티티 이름 lookup 가속용으로 등록. 운영 데이터가 10만+ 노드 넘어가면 Neo4j 이전 검토.
 
-### 2. *SHORTEST 키워드 portability
+### 2. KuzuDB Cypher dialect 차이
 
-- KuzuDB 버전별로 `*SHORTEST` 문법이 미묘하게 다르거나 미지원.
-- **답변**: variable-length path + `length(p)` 정렬로 portable하게 구현
-  (`mindmap/_path.py`). 성능은 [bench/bench_shortest_path.py](../../backend/scripts/bench/)에서 측정.
-  현 데이터 규모에서 native vs portable 차이 < 5ms.
+- KuzuDB Cypher가 Neo4j 표준과 미묘하게 다른 부분이 있다.
+  예: 리스트 컴프리헨션 `[n IN nodes(p) | n.name]`은 KuzuDB 0.11에서 binder 에러 —
+  `list_transform(nodes(p), x -> x.name)`이 정답.
+- **대응**: 모든 path/list 변환 쿼리를 KuzuDB 문법으로 통일. `tests/test_shortest_path.py`로
+  실제 KuzuDB 인스턴스에서 통합 검증. native `MATCH p = ... * SHORTEST 1..N`도 정상 동작
+  → 운영 코드 채택.
 
 ### 3. 부팅 시 rebuild 비용
 
 - ephemeral 환경에서 매 재시작 시 Supabase에서 5000 스크랩 재처리는 비용.
-- **답변**: `MindmapService.rebuild_from_supabase(force=False)` + `count_memory_nodes()`
+- **대응**: `MindmapService.rebuild_from_supabase(force=False)` + `count_memory_nodes()`
   체크로 idempotent. 영구 디스크 환경(EC2 EBS)에서는 1회만 실행.
   ephemeral 환경에서는 부팅 N초 비용 vs 운영 단순함 trade-off 수용.
 

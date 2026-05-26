@@ -43,12 +43,12 @@ MATCH (mem:Memory {user_id: $user_id})-[:MENTIONS]->(e:Entity)
   관계는 보이지 않음 (`MATCH ... WHERE EXISTS { ... user_id = $user }`).
 - Repository 모든 쿼리가 user_id 필수.
 
-## 트레이드오프 (면접관이 짚을 약점)
+## 트레이드오프 / 알려진 한계
 
 ### 1. ENTITY_REL이 user 격리 안 됨
 
 - 사용자 A가 만든 `(React)-[USES]->(JSX)` 관계가 B의 그래프 시각화에도 보일 수 있음.
-- **답변**: 이미 코드에 user 격리 적용. `mindmap/_visualization.py`의 `_query_entity_relations`
+- **대응**: 이미 코드에 user 격리 적용. `mindmap/_visualization.py`의 `_query_entity_relations`
   가 양쪽 끝점 모두 `user_id` Memory의 mention 경로로 제한:
   ```cypher
   MATCH (mem:Memory {user_id})-[:MENTIONS]->(n:Entity)-[r:ENTITY_REL]->(m:Entity)
@@ -59,7 +59,7 @@ MATCH (mem:Memory {user_id: $user_id})-[:MENTIONS]->(e:Entity)
 ### 2. Entity 노드는 user_id가 없어 단독 인덱스 불가
 
 - "user A가 다룬 Entity 목록"은 항상 Memory join 필요 — 인덱스 추가 못 함.
-- **답변**: KuzuDB 0.11에서 secondary index 미지원 ([ADR-001 참고]). FTS로
+- **대응**: KuzuDB 0.11에서 secondary index 미지원 ([ADR-001 참고]). FTS로
   엔티티 이름 검색은 가속됨. 운영 데이터 노드 100,000+ 가면 옵션 (A) 재검토.
 
 ### 3. 글로벌 Entity가 다른 user의 데이터를 reveal하나?
