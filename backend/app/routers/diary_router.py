@@ -4,14 +4,16 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 
-from app.agents.librarian.graph import librarian_graph
-from app.agents.state import build_librarian_initial_state
 from app.config.auth import get_user_id
 from app.config.dependencies import (
     get_chat_service,
     get_diary_analysis_service,
+    get_diary_orchestrator,
     get_diary_service,
-    get_scrap_service,
+)
+from app.orchestrators.diary_orchestrator import (
+    MIN_DIARY_LENGTH_FOR_EXTRACTION,
+    DiaryOrchestrator,
 )
 from app.schemas.diary_schema import (
     DiaryCreate,
@@ -29,42 +31,10 @@ from app.schemas.diary_schema import (
 from app.services.chat_service import ChatService
 from app.services.diary_analysis_service import DiaryAnalysisService
 from app.services.diary_service import DiaryService
-from app.services.scrap_service import ScrapService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/diaries", tags=["diaries"])
-
-
-async def _process_diary_with_librarian(
-    diary_id: str,
-    content: str,
-    user_id: str,
-    scrap_service: ScrapService,
-) -> None:
-    """백그라운드: 다이어리 내용을 스크랩으로 저장 후 Librarian 엔티티 추출."""
-    try:
-        scrap = await scrap_service.create_scrap(
-            user_id=UUID(user_id),
-            title=f"다이어리 {diary_id[:8]}",
-            content=content[:6000],
-            source_type="DIARY",
-        )
-        if not scrap:
-            logger.warning("Failed to create scrap for diary %s", diary_id)
-            return
-
-        scrap_id = str(scrap.id)
-
-        initial_state = build_librarian_initial_state(scrap_id, content[:6000], user_id)
-        result = await librarian_graph.ainvoke(initial_state)
-        logger.info(
-            "Librarian processed diary %s: classification=%s",
-            diary_id,
-            result.get("classification"),
-        )
-    except Exception:
-        logger.exception("Librarian error for diary %s", diary_id)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -73,7 +43,7 @@ async def create_diary(
     background_tasks: BackgroundTasks,
     user_id: UUID = Depends(get_user_id),
     diary_service: DiaryService = Depends(get_diary_service),
-    scrap_service: ScrapService = Depends(get_scrap_service),
+    diary_orchestrator: DiaryOrchestrator = Depends(get_diary_orchestrator),
 ):
     """새 다이어리 항목 생성 (감정 분석 + 엔티티 추출)."""
     try:
@@ -84,15 +54,14 @@ async def create_diary(
                 detail="Failed to create diary entry - no result returned",
             )
 
-        # 충분한 길이의 다이어리는 Librarian으로 엔티티 추출
-        if len(diary.content.strip()) >= 50:
+        # 충분한 길이의 다이어리는 cross-domain orchestrator에 위임 (scrap 적재 + librarian 엔티티 추출)
+        if len(diary.content.strip()) >= MIN_DIARY_LENGTH_FOR_EXTRACTION:
             diary_id = result.get("id") or result.get("diary_id", "")
             background_tasks.add_task(
-                _process_diary_with_librarian,
+                diary_orchestrator.process_diary_with_librarian,
                 str(diary_id),
                 diary.content,
                 str(user_id),
-                scrap_service,
             )
 
         return result

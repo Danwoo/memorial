@@ -5,30 +5,30 @@ from fastapi.responses import StreamingResponse
 
 from app.config.auth import get_user_id
 from app.config.dependencies import get_chat_service
-from app.schemas.socrates_schema import (
-    SocratesFeedbackRequest,
-    SocratesFeedbackResponse,
-    SocratesMessageRequest,
-    SocratesMessageResponse,
-    SocratesSessionCreate,
-    SocratesSessionResponse,
-    SocratesSessionUpdate,
+from app.schemas.chat_schema import (
+    ChatFeedbackRequest,
+    ChatFeedbackResponse,
+    ChatMessageRequest,
+    ChatMessageResponse,
+    ChatSessionCreate,
+    ChatSessionResponse,
+    ChatSessionUpdate,
 )
 from app.services.chat_service import ChatService
 
-router = APIRouter(prefix="/socrates", tags=["socrates"])
+router = APIRouter(prefix="/socrates", tags=["chat"])
 
 
-@router.post("/sessions", response_model=SocratesSessionResponse, status_code=201)
+@router.post("/sessions", response_model=ChatSessionResponse, status_code=201)
 async def create_session(
-    data: SocratesSessionCreate,
+    data: ChatSessionCreate,
     user_id: UUID = Depends(get_user_id),
     chat_service: ChatService = Depends(get_chat_service),
 ):
     """새 채팅 세션 생성."""
     session = await chat_service.create_session(user_id, data.title, data.agent_type)
 
-    return SocratesSessionResponse(
+    return ChatSessionResponse(
         id=UUID(session["id"]),
         title=session["title"],
         created_at=session["created_at"],
@@ -36,7 +36,7 @@ async def create_session(
     )
 
 
-@router.get("/sessions", response_model=list[SocratesSessionResponse])
+@router.get("/sessions", response_model=list[ChatSessionResponse])
 async def list_sessions(
     user_id: UUID = Depends(get_user_id),
     chat_service: ChatService = Depends(get_chat_service),
@@ -45,7 +45,7 @@ async def list_sessions(
     sessions = await chat_service.list_sessions(user_id)
 
     return [
-        SocratesSessionResponse(
+        ChatSessionResponse(
             id=UUID(s["id"]),
             title=s["title"],
             created_at=s["created_at"],
@@ -55,10 +55,10 @@ async def list_sessions(
     ]
 
 
-@router.patch("/sessions/{session_id}", response_model=SocratesSessionResponse)
+@router.patch("/sessions/{session_id}", response_model=ChatSessionResponse)
 async def update_session(
     session_id: UUID,
-    data: SocratesSessionUpdate,
+    data: ChatSessionUpdate,
     user_id: UUID = Depends(get_user_id),
     chat_service: ChatService = Depends(get_chat_service),
 ):
@@ -70,7 +70,7 @@ async def update_session(
     await chat_service.update_session_title(session_id, data.title, user_id)
     session["title"] = data.title
 
-    return SocratesSessionResponse(
+    return ChatSessionResponse(
         id=UUID(session["id"]),
         title=session["title"],
         created_at=session["created_at"],
@@ -81,7 +81,7 @@ async def update_session(
 @router.post("/sessions/{session_id}/messages")
 async def send_message(
     session_id: UUID,
-    data: SocratesMessageRequest,
+    data: ChatMessageRequest,
     user_id: UUID = Depends(get_user_id),
     chat_service: ChatService = Depends(get_chat_service),
 ):
@@ -104,7 +104,7 @@ async def send_message(
 
 @router.get(
     "/sessions/{session_id}/history",
-    response_model=list[SocratesMessageResponse],
+    response_model=list[ChatMessageResponse],
 )
 async def get_history(
     session_id: UUID,
@@ -119,7 +119,7 @@ async def get_history(
     history = await chat_service.get_history(session_id)
 
     return [
-        SocratesMessageResponse(
+        ChatMessageResponse(
             role=h["role"],
             content=h["content"],
             created_at=h["created_at"],
@@ -130,11 +130,11 @@ async def get_history(
 
 @router.post(
     "/sessions/{session_id}/feedback",
-    response_model=SocratesFeedbackResponse,
+    response_model=ChatFeedbackResponse,
 )
 async def add_feedback(
     session_id: UUID,
-    data: SocratesFeedbackRequest,
+    data: ChatFeedbackRequest,
     user_id: UUID = Depends(get_user_id),
     chat_service: ChatService = Depends(get_chat_service),
 ):
@@ -144,7 +144,7 @@ async def add_feedback(
         raise HTTPException(status_code=404, detail="Session not found")
 
     success = await chat_service.add_feedback(session_id, data.message_index, user_id, data.rating)
-    return SocratesFeedbackResponse(success=success)
+    return ChatFeedbackResponse(success=success)
 
 
 @router.get("/sessions/{session_id}/feedbacks", response_model=list[dict])

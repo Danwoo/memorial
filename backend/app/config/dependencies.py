@@ -4,6 +4,9 @@ from fastapi import Depends
 from supabase import Client
 
 from app.config.database import get_supabase_client
+
+# --- Orchestrators (cross-domain 흐름) ---
+from app.orchestrators.diary_orchestrator import DiaryOrchestrator
 from app.repositories.calendar_repository import CalendarRepository
 
 # ─── DI 구조 설명 ──────────────────────────────────────────────────────────
@@ -246,3 +249,11 @@ def get_graphrag_indexing_service(
 ) -> GraphRAGIndexingService:
     """GraphRAGIndexingService 인스턴스 생성."""
     return GraphRAGIndexingService(mindmap_repo, vector_repo, db)
+
+
+# --- Orchestrator Factories (cross-domain 흐름) ---
+def get_diary_orchestrator(
+    scrap_service: ScrapService = Depends(get_scrap_service),
+) -> DiaryOrchestrator:
+    """DiaryOrchestrator 인스턴스 생성 — 다이어리 cross-domain 흐름."""
+    return DiaryOrchestrator(scrap_service)
