@@ -30,13 +30,16 @@ async def _fetch_graphrag_context(query: str, user_id: str, context: AgentContex
 async def _fetch_diary_context(user_id: str, diary_repo, limit: int = DIARY_CONTEXT_LIMIT) -> str:
     """최근 다이어리 항목 조회. 포맷된 텍스트 반환."""
     try:
-        recent_diaries = await diary_repo.get_diaries(user_id, limit=limit)
+        from uuid import UUID
+
+        uid = UUID(user_id) if isinstance(user_id, str) else user_id
+        recent_diaries = await diary_repo.get_diaries(uid, limit=limit)
         if recent_diaries:
             return "\n".join(
-                f"- [Diary {diary.get('created_at', '')[:10]}] "
-                f"Mood: {diary.get('mood', 'N/A')} | "
-                f"Tags: {', '.join(diary.get('tags', []) or [])} — "
-                f"{diary.get('content', '')[:DIARY_PREVIEW_LENGTH]}..."
+                f"- [Diary {diary.created_at.isoformat()[:10]}] "
+                f"Mood: {diary.mood or 'N/A'} | "
+                f"Tags: {', '.join(diary.tags or [])} — "
+                f"{(diary.content or '')[:DIARY_PREVIEW_LENGTH]}..."
                 for diary in recent_diaries
             )
     except Exception:

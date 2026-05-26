@@ -3,8 +3,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from app.repositories.mindmap_repository import MindmapRepository
-from app.repositories.scrap_repository import ScrapRepository
+from app.repositories.protocols.mindmap_repository_protocol import MindmapRepositoryProtocol
+from app.repositories.protocols.scrap_repository_protocol import ScrapRepositoryProtocol
 from app.repositories.vector_repository import VectorRepository
 from app.services.hybrid_search_service import HybridSearchService
 from app.utils import parse_iso_datetime
@@ -22,8 +22,8 @@ class SearchService:
     def __init__(
         self,
         vector_repo: VectorRepository,
-        scrap_repo: ScrapRepository | None = None,
-        mindmap_repo: MindmapRepository | None = None,
+        scrap_repo: ScrapRepositoryProtocol | None = None,
+        mindmap_repo: MindmapRepositoryProtocol | None = None,
         *,
         hybrid_search: HybridSearchService | None = None,
     ):

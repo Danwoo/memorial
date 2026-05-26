@@ -476,19 +476,11 @@ async def find_path_between_entities(
             "message": f"'{source_entity}'와 '{target_entity}' 사이 경로를 찾을 수 없습니다.",
         }
 
-    names: list[str] = result.get("names", []) or []
-    rel_types: list[str] = result.get("rel_types", []) or []
-
-    # 사람이 읽기 좋은 설명 조립 (A →(USES)→ B →(PART_OF)→ C)
-    segments = []
-    for i, rel in enumerate(rel_types):
-        if i + 1 < len(names):
-            segments.append(f"{names[i]} →({rel})→ {names[i + 1]}")
-
+    # MindmapShortestPath 도메인 모델 — explanation property로 사람이 읽기 좋은 trace 자동 조립
     return {
         "found": True,
-        "path": names,
-        "rel_types": rel_types,
-        "hops": result.get("hops", len(rel_types)),
-        "explanation": " ".join(segments) if segments else " → ".join(names),
+        "path": result.names,
+        "rel_types": result.rel_types,
+        "hops": result.hops,
+        "explanation": result.explanation,
     }

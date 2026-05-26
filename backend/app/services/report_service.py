@@ -5,7 +5,7 @@ from uuid import UUID
 
 from app.config.llm import get_analytical_llm
 from app.repositories.calendar_repository import CalendarRepository
-from app.repositories.scrap_repository import ScrapRepository
+from app.repositories.protocols.scrap_repository_protocol import ScrapRepositoryProtocol
 from app.schemas.report_schema import ReportResponse, SourceDistribution, TopicDistribution
 from app.utils.cache import report_cache
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class ReportService:
     """주간/월간 AI 리포트 생성 서비스."""
 
-    def __init__(self, calendar_repo: CalendarRepository, scrap_repo: ScrapRepository):
+    def __init__(self, calendar_repo: CalendarRepository, scrap_repo: ScrapRepositoryProtocol):
         self.calendar_repo = calendar_repo
         self.scrap_repo = scrap_repo
 

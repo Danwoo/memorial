@@ -9,7 +9,7 @@ from uuid import UUID
 
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.diary_repository import DiaryRepository
-from app.repositories.scrap_repository import ScrapRepository
+from app.repositories.protocols.scrap_repository_protocol import ScrapRepositoryProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class ExportService:
 
     def __init__(
         self,
-        scrap_repo: ScrapRepository,
+        scrap_repo: ScrapRepositoryProtocol,
         diary_repo: DiaryRepository,
         chat_repo: ChatRepository,
     ):

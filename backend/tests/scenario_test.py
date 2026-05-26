@@ -2,10 +2,14 @@
 
 import asyncio
 import sys
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
+from uuid import UUID, uuid4
 
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage
+
+from app.domain.diary import DiaryEntry
 
 sys.stdout.reconfigure(encoding="utf-8")
 load_dotenv()
@@ -64,29 +68,31 @@ MOCK_SCRAPS = [
 ]
 
 MOCK_DIARIES = [
-    {
-        "id": "diary-001",
-        "content": (
+    DiaryEntry(
+        id=uuid4(),
+        user_id=UUID(USER_ID),
+        content=(
             "오늘 팀 앞에서 스프린트 발표를 했는데 완전히 망쳤다. "
             "질문에 제대로 답을 못하고 말이 꼬였다. "
             "준비를 충분히 했다고 생각했는데 막상 앞에 서니까 머리가 하얘졌다. "
             "너무 창피하고 자책이 심하다. 동료들이 어떻게 볼지 신경 쓰인다."
         ),
-        "mood": "우울",
-        "tags": ["발표", "자책", "실패"],
-        "created_at": "2026-02-25T22:00:00",
-    },
-    {
-        "id": "diary-002",
-        "content": (
+        mood="우울",
+        tags=["발표", "자책", "실패"],
+        created_at=datetime.fromisoformat("2026-02-25T22:00:00+00:00"),
+    ),
+    DiaryEntry(
+        id=uuid4(),
+        user_id=UUID(USER_ID),
+        content=(
             "요즘 계속 피곤하다. 퇴근하고 나면 아무것도 하기 싫다. "
             "코딩도 예전만큼 재밌지 않다. 번아웃인가 싶기도 하고. "
             "주말에도 일 생각이 자꾸 난다."
         ),
-        "mood": "무기력",
-        "tags": ["번아웃", "피로", "무기력"],
-        "created_at": "2026-02-26T21:30:00",
-    },
+        mood="무기력",
+        tags=["번아웃", "피로", "무기력"],
+        created_at=datetime.fromisoformat("2026-02-26T21:30:00+00:00"),
+    ),
 ]
 
 
@@ -98,7 +104,7 @@ def make_context():
     ctx.vector_repo.similarity_search = AsyncMock(return_value=MOCK_SCRAPS[:2])
     ctx.diary_repo = MagicMock()
     ctx.diary_repo.get_diaries = AsyncMock(return_value=MOCK_DIARIES)
-    ctx.diary_repo.get_diaries_by_date_range = AsyncMock(return_value=MOCK_DIARIES)
+    ctx.diary_repo.get_diaries_in_range = AsyncMock(return_value=MOCK_DIARIES)
     ctx.chat_repo = MagicMock()
     ctx.chat_repo.get_previous_sessions = AsyncMock(return_value=[])
     ctx.chat_repo.get_recent_session_summaries = AsyncMock(return_value=[])

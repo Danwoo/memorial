@@ -14,7 +14,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from supabase import Client
 
 from app.config.llm import get_analytical_llm
-from app.repositories.mindmap_repository import MindmapRepository
+from app.repositories.protocols.mindmap_repository_protocol import MindmapRepositoryProtocol
 from app.repositories.vector_repository import VectorRepository
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class GraphRAGIndexingService:
 
     def __init__(
         self,
-        mindmap_repo: MindmapRepository,
+        mindmap_repo: MindmapRepositoryProtocol,
         vector_repo: VectorRepository,
         db: Client,
     ):

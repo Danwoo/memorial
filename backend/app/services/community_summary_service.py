@@ -12,7 +12,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from supabase import Client
 
 from app.config.llm import get_analytical_llm
-from app.repositories.mindmap_repository import MindmapRepository
+from app.repositories.protocols.mindmap_repository_protocol import MindmapRepositoryProtocol
 from app.utils.cache import community_cache
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ class CommunitySummaryService:
     인덱싱 데이터가 없을 때 BFS 폴백으로 온-디맨드 생성.
     """
 
-    def __init__(self, mindmap_repo: MindmapRepository, db: Client | None = None):
+    def __init__(self, mindmap_repo: MindmapRepositoryProtocol, db: Client | None = None):
         self.mindmap_repo = mindmap_repo
         self.db = db
 

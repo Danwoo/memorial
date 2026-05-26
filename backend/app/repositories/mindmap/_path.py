@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from app.domain.mindmap import MindmapShortestPath
 from app.repositories.mindmap._constants import MAX_GRAPH_TRAVERSAL_DEPTH
 
 logger = logging.getLogger(__name__)
@@ -10,7 +11,7 @@ class _PathMixin:
     """그래프 경로 탐색 책임 mixin."""
 
     # ------------------------------------------------------------------
-    # 최단 경로 탐색 (추천 explainability)
+    # 최단 경로 탐색 (추천 explainability) — 도메인 모델 반환
     # ------------------------------------------------------------------
     def _sync_find_shortest_path(
         self,
@@ -18,7 +19,7 @@ class _PathMixin:
         target: str,
         user_id: str,
         max_hops: int,
-    ) -> dict | None:
+    ) -> MindmapShortestPath | None:
         """두 엔티티 사이 최단 경로 동기 구현.
 
         - 양 끝 엔티티 모두 사용자의 Memory에 mention되어야 한다 (소유권 검증).
@@ -44,7 +45,14 @@ class _PathMixin:
         try:
             result = conn.execute(query, {"source": source, "target": target, "user_id": user_id})
             rows = self._result_to_dicts(result)
-            return rows[0] if rows else None
+            if not rows:
+                return None
+            row = rows[0]
+            return MindmapShortestPath(
+                names=row.get("names") or [],
+                rel_types=row.get("rel_types") or [],
+                hops=int(row.get("hops") or 0),
+            )
         except Exception:
             logger.exception("Shortest path 쿼리 실패: %s → %s", source, target)
             return None
@@ -55,12 +63,11 @@ class _PathMixin:
         target: str,
         user_id: str,
         max_hops: int = 3,
-    ) -> dict | None:
+    ) -> MindmapShortestPath | None:
         """두 엔티티 사이 최단 경로 탐색 (사용자 KB 한정).
 
         Returns:
-            dict with keys `names` (경로상 엔티티 이름 시퀀스),
-            `rel_types` (간선 타입 시퀀스), `hops` (경로 길이).
+            MindmapShortestPath 도메인 모델 (.names, .rel_types, .hops, .explanation).
             연결되지 않거나 KB에 없으면 None.
 
         Use case:

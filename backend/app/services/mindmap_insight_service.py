@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 
 from app.config.llm import get_analytical_llm
 from app.repositories.calendar_repository import CalendarRepository
-from app.repositories.mindmap_repository import MindmapRepository
+from app.repositories.protocols.mindmap_repository_protocol import MindmapRepositoryProtocol
 from app.schemas.mindmap_insight_schema import (
     ClusterInfo,
     HubNode,
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class MindmapInsightService:
     """마인드맵 인사이트 분석 서비스."""
 
-    def __init__(self, mindmap_repo: MindmapRepository, calendar_repo: CalendarRepository):
+    def __init__(self, mindmap_repo: MindmapRepositoryProtocol, calendar_repo: CalendarRepository):
         self.mindmap_repo = mindmap_repo
         self.calendar_repo = calendar_repo
 

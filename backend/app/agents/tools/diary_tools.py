@@ -39,15 +39,15 @@ async def search_diaries(
 
     output: list[dict[str, Any]] = []
     for r in rows:
-        content = r.get("content") or ""
+        content = r.content or ""
         output.append(
             {
-                "id": r.get("id", ""),
-                "title": r.get("title", ""),
+                "id": str(r.id),
+                "title": "",
                 "content_preview": content[:300],
-                "mood": r.get("mood", ""),
-                "tags": r.get("tags") or [],
-                "created_at": r.get("created_at", ""),
+                "mood": r.mood or "",
+                "tags": r.tags or [],
+                "created_at": r.created_at.isoformat() if r.created_at else "",
             }
         )
     return output
@@ -68,25 +68,27 @@ async def get_diary_detail(
         id, title, content, mood, tags, created_at, updated_at 필드를 가진 dict.
         해당 일기가 없으면 빈 dict 반환.
     """
+    from uuid import UUID
+
     user_id = get_user_id(config)
     container = get_agent_container()
 
     row = await container.diary_repo.get_diary_by_id(
         diary_id=diary_id,
-        user_id=user_id,
+        user_id=UUID(user_id),
     )
 
     if not row:
         return {}
 
     return {
-        "id": row.get("id", ""),
-        "title": row.get("title", ""),
-        "content": row.get("content", ""),
-        "mood": row.get("mood", ""),
-        "tags": row.get("tags") or [],
-        "created_at": row.get("created_at", ""),
-        "updated_at": row.get("updated_at", ""),
+        "id": str(row.id),
+        "title": "",
+        "content": row.content or "",
+        "mood": row.mood or "",
+        "tags": row.tags or [],
+        "created_at": row.created_at.isoformat() if row.created_at else "",
+        "updated_at": row.updated_at.isoformat() if row.updated_at else "",
     }
 
 

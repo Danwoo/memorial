@@ -1,8 +1,7 @@
 """DiaryRepository 인터페이스 (의존성 역전).
 
-현재는 dict 반환 — 다음 단계로 DiaryEntry 도메인 모델로 점진 마이그레이션.
-도메인 모델은 app/domain/diary.py에 이미 정의되어 있으니, 마이그레이션은
-한 메서드씩 안전하게 진행하면 된다.
+핵심 CRUD는 DiaryEntry 도메인 모델을 반환한다. 분석/통계/내보내기성 메서드는
+결과 형태가 다양해서 dict 그대로 유지.
 """
 
 from __future__ import annotations
@@ -10,6 +9,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 from uuid import UUID
+
+from app.domain.diary import DiaryEntry
 
 
 @runtime_checkable
@@ -22,16 +23,16 @@ class DiaryRepositoryProtocol(Protocol):
         content: str = "",
         mood: str | None = None,
         tags: list[str] | None = None,
-    ) -> dict[str, Any] | None: ...
+    ) -> DiaryEntry | None: ...
 
-    async def get_diary_by_id(self, diary_id: str, user_id: str) -> dict[str, Any] | None: ...
+    async def get_diary_by_id(self, diary_id: str, user_id: UUID) -> DiaryEntry | None: ...
 
     async def get_diaries(
         self,
         user_id: UUID,
         limit: int = 10,
         offset: int = 0,
-    ) -> list[dict[str, Any]]: ...
+    ) -> list[DiaryEntry]: ...
 
     async def update_diary(
         self,
@@ -40,11 +41,11 @@ class DiaryRepositoryProtocol(Protocol):
         mood: str | None = None,
         tags: list[str] | None = None,
         user_id: UUID | None = None,
-    ) -> dict[str, Any] | None: ...
+    ) -> DiaryEntry | None: ...
 
     async def get_diary_dates(self, user_id: UUID, limit: int = 90) -> list[dict[str, Any]]: ...
 
-    async def get_diaries_by_date(self, user_id: UUID, date_str: str) -> list[dict[str, Any]]: ...
+    async def get_diaries_by_date(self, user_id: UUID, date_str: str) -> list[DiaryEntry]: ...
 
     async def get_all_for_export(self, user_id: UUID, limit: int = 10000) -> list[dict]: ...
 
@@ -53,9 +54,10 @@ class DiaryRepositoryProtocol(Protocol):
         user_id: UUID,
         start: datetime,
         end: datetime,
-    ) -> list[dict[str, Any]]: ...
+        limit: int = 100,
+    ) -> list[DiaryEntry]: ...
 
-    async def search_diaries(self, query: str, user_id: str, limit: int = 5) -> list[dict[str, Any]]: ...
+    async def search_diaries(self, query: str, user_id: str, limit: int = 5) -> list[DiaryEntry]: ...
 
     async def get_emotion_trend(self, user_id: str, days: int = 7) -> list[dict[str, Any]]: ...
 

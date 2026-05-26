@@ -1,8 +1,8 @@
 import logging
 from typing import Any
 
-from app.repositories.mindmap_repository import MindmapRepository
-from app.repositories.scrap_repository import ScrapRepository
+from app.repositories.protocols.mindmap_repository_protocol import MindmapRepositoryProtocol
+from app.repositories.protocols.scrap_repository_protocol import ScrapRepositoryProtocol
 from app.utils.cache import graph_cache
 
 logger = logging.getLogger(__name__)
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class MindmapService:
     """Knowledge Mindmap 비즈니스 로직."""
 
-    def __init__(self, mindmap_repo: MindmapRepository, scrap_repo: ScrapRepository | None = None):
+    def __init__(self, mindmap_repo: MindmapRepositoryProtocol, scrap_repo: ScrapRepositoryProtocol | None = None):
         self.mindmap_repo = mindmap_repo
         self.scrap_repo = scrap_repo
 

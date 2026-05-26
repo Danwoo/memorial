@@ -4,9 +4,10 @@ from dataclasses import dataclass
 from app.config.database import get_supabase_client
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.diary_repository import DiaryRepository
-from app.repositories.mindmap_repository import MindmapRepository
 from app.repositories.protocols.chat_repository_protocol import ChatRepositoryProtocol
 from app.repositories.protocols.diary_repository_protocol import DiaryRepositoryProtocol
+from app.repositories.protocols.mindmap_repository_protocol import MindmapRepositoryProtocol
+from app.repositories.protocols.scrap_repository_protocol import ScrapRepositoryProtocol
 from app.repositories.scrap_repository import ScrapRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.community_summary_service import CommunitySummaryService
@@ -19,12 +20,16 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AgentServiceContainer:
-    """에이전트 노드에서 사용하는 서비스/리포지토리 의존성 컨테이너."""
+    """에이전트 노드에서 사용하는 서비스/리포지토리 의존성 컨테이너.
 
-    scrap_repo: ScrapRepository
+    Repository 필드는 모두 Protocol 의존(의존성 역전).
+    구현체는 get_agent_container 내부에서 결정.
+    """
+
+    scrap_repo: ScrapRepositoryProtocol
     vector_repo: VectorRepository
     diary_repo: DiaryRepositoryProtocol
-    mindmap_repo: MindmapRepository
+    mindmap_repo: MindmapRepositoryProtocol
     hybrid_search: HybridSearchService
     scrap_service: ScrapService
     community_summary: CommunitySummaryService

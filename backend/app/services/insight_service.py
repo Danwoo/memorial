@@ -5,7 +5,7 @@ from uuid import UUID
 
 from app.repositories.calendar_repository import CalendarRepository
 from app.repositories.diary_repository import DiaryRepository
-from app.repositories.mindmap_repository import MindmapRepository
+from app.repositories.protocols.mindmap_repository_protocol import MindmapRepositoryProtocol
 from app.schemas.insight_schema import DailyInsight, DailyInsightsResponse
 from app.utils.cache import insights_cache
 
@@ -18,7 +18,7 @@ class InsightService:
     def __init__(
         self,
         calendar_repo: CalendarRepository,
-        mindmap_repo: MindmapRepository,
+        mindmap_repo: MindmapRepositoryProtocol,
         diary_repo: DiaryRepository,
     ):
         self.calendar_repo = calendar_repo
