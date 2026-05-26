@@ -54,9 +54,17 @@ frontend/dist/
 # Vite temp files
 *.timestamp-*
 
-# Internal development docs (local only)
+# Internal development docs (local only) — 단, ADR / 면접 Q&A는 공개
 docs/
+!docs/adr/
+!docs/adr/**
+!docs/interview-qa.md
+
+# 내부 dev scripts는 ignore, 단 벤치마크는 공개 (성능 주장 검증용)
 backend/scripts/
+!backend/scripts/bench/
+!backend/scripts/bench/**
+
 *_REPORT*.md
 *_ROADMAP*.md
 *_REVIEW*.md
