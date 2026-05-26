@@ -4,6 +4,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.agents.state import AgentState
 from app.config.llm import get_analytical_llm
+from app.exceptions import LLMParseError
 from app.utils import parse_llm_json_response
 
 logger = logging.getLogger(__name__)
@@ -61,7 +62,6 @@ async def curator_node(state: AgentState) -> dict:
 
         source_url = target_text
         target_text = f"Title: {scraped_data['title']}\n\nContent:\n{scraped_data['content']}"
-        state["source_url"] = source_url
 
     # 토큰 절약을 위한 길이 제한
     if len(target_text) > CURATOR_MAX_INPUT_CHARS:
@@ -88,9 +88,20 @@ async def curator_node(state: AgentState) -> dict:
 
         next_step = "end" if category == "SPAM" else "ontologist"
 
-        return {"classification": category, "tags": tags, "summary": summary, "next_step": next_step}
+        result_dict: dict = {
+            "classification": category,
+            "tags": tags,
+            "summary": summary,
+            "next_step": next_step,
+        }
+        # 스크래핑으로 새 source_url을 얻은 경우만 state에 반영 (LangGraph reducer가 머지)
+        if source_url is not None:
+            result_dict["source_url"] = source_url
+        return result_dict
 
-    except (ValueError, KeyError) as e:
+    except LLMParseError as e:
+        # 모델이 spec과 다른 JSON으로 응답 — FACT로 안전 fallback
+        logger.warning("Curator LLM 응답 파싱 실패: %s", e)
         return {
             "classification": "FACT",
             "tags": [],
@@ -99,6 +110,8 @@ async def curator_node(state: AgentState) -> dict:
             "error": f"JSON parse error: {e!s}",
         }
     except Exception as e:
+        # LLM 호출 자체 실패 (rate limit / network / provider 오류) — graceful degradation
+        logger.exception("Curator LLM 호출 실패")
         return {
             "classification": "FACT",
             "tags": [],

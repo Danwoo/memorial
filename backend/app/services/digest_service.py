@@ -7,10 +7,10 @@ from uuid import UUID
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.config.llm import get_creative_llm
-from app.repositories.diary_repository import DiaryRepository
-from app.repositories.scrap_repository import ScrapRepository
-from app.repositories.socrates_repository import SocratesRepository
-from app.utils import parse_iso_datetime
+from app.domain.diary import DiaryEntry
+from app.repositories.protocols.chat_repository_protocol import ChatRepositoryProtocol
+from app.repositories.protocols.diary_repository_protocol import DiaryRepositoryProtocol
+from app.repositories.protocols.scrap_repository_protocol import ScrapRepositoryProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -50,13 +50,13 @@ class DigestService:
 
     def __init__(
         self,
-        scrap_repo: ScrapRepository,
-        diary_repo: DiaryRepository,
-        socrates_repo: SocratesRepository | None = None,
+        scrap_repo: ScrapRepositoryProtocol,
+        diary_repo: DiaryRepositoryProtocol,
+        chat_repo: ChatRepositoryProtocol | None = None,
     ):
         self.scrap_repo = scrap_repo
         self.diary_repo = diary_repo
-        self.socrates_repo = socrates_repo
+        self.chat_repo = chat_repo
 
     async def get_today_digest(self, user_id: UUID, target_date: datetime | None = None) -> dict[str, Any]:
         """하루 활동 종합 다이제스트 조회.
@@ -97,10 +97,12 @@ class DigestService:
             ],
             "diaries": [
                 {
-                    "id": str(diary.get("id", "")),
-                    "mood": diary.get("mood", "NEUTRAL"),
-                    "preview": diary.get("content", "")[:DIARY_PREVIEW_LENGTH],
-                    "created_at": diary.get("created_at", ""),
+                    "id": str(diary.id),
+                    "content": diary.content,
+                    "mood": diary.mood or "NEUTRAL",
+                    "tags": diary.tags,
+                    "preview": (diary.content or "")[:DIARY_PREVIEW_LENGTH],
+                    "created_at": diary.created_at.isoformat() if diary.created_at else "",
                 }
                 for diary in diaries[:MAX_DIARIES_IN_DIGEST]
             ],
@@ -123,20 +125,28 @@ class DigestService:
             return []
 
     async def _get_today_chats(self, start: datetime, end: datetime, user_id: UUID) -> list[dict]:
-        """오늘 생성된 소크라테스 세션 조회."""
-        if not self.socrates_repo:
+        """오늘 생성된 채팅 세션 조회 (다이제스트 응답에 포함될 dict 형태)."""
+        if not self.chat_repo:
             return []
         try:
-            return await self.socrates_repo.get_sessions_by_date_range(
+            sessions = await self.chat_repo.get_sessions_by_date_range(
                 user_id=user_id,
                 start_iso=start.isoformat(),
                 end_iso=end.isoformat(),
             )
+            return [
+                {
+                    "id": str(s.id),
+                    "title": s.title,
+                    "created_at": s.created_at.isoformat(),
+                }
+                for s in sessions
+            ]
         except Exception:
-            logger.exception("오늘 소크라테스 세션 조회 실패")
+            logger.exception("오늘 채팅 세션 조회 실패")
             return []
 
-    async def _get_today_diaries(self, user_id: UUID, today: datetime) -> list[dict]:
+    async def _get_today_diaries(self, user_id: UUID, today) -> list[DiaryEntry]:
         """오늘 생성된 다이어리 조회."""
         try:
             journals = await self.diary_repo.get_diaries(
@@ -144,16 +154,10 @@ class DigestService:
                 limit=MAX_JOURNAL_FETCH_LIMIT,
             )
 
-            today_journals = []
+            today_journals: list[DiaryEntry] = []
             for journal in journals:
-                created_at_str = journal.get("created_at", "")
-                if created_at_str:
-                    try:
-                        created_at = parse_iso_datetime(created_at_str)
-                        if created_at.date() == today:
-                            today_journals.append(journal)
-                    except (ValueError, TypeError) as e:
-                        logger.debug("Skipping journal with unparseable date: %s", e)
+                if journal.created_at and journal.created_at.date() == today:
+                    today_journals.append(journal)
 
             return today_journals
         except Exception:
@@ -170,7 +174,7 @@ class DigestService:
         sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
         return [tag for tag, _ in sorted_tags]
 
-    async def _generate_questions(self, scraps: list[dict], diaries: list[dict]) -> list[str]:
+    async def _generate_questions(self, scraps: list[dict], diaries: list[DiaryEntry]) -> list[str]:
         """오늘 콘텐츠 기반 AI 성찰 질문 생성."""
         if not scraps and not diaries:
             return ["오늘 하루는 어떠셨나요?"]
@@ -183,8 +187,8 @@ class DigestService:
             context_parts.append(f"- {title}: {summary}")
 
         for diary in diaries[:MAX_DIARY_CONTEXT_ITEMS]:
-            mood = diary.get("mood", "NEUTRAL")
-            preview = diary.get("content", "")[:QUESTION_CONTEXT_PREVIEW_LENGTH]
+            mood = diary.mood or "NEUTRAL"
+            preview = (diary.content or "")[:QUESTION_CONTEXT_PREVIEW_LENGTH]
             context_parts.append(f"- [Diary, Mood: {mood}] {preview}")
 
         if not context_parts:

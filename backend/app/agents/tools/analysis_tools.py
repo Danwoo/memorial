@@ -249,12 +249,12 @@ async def get_content_timeline(
         )
 
     for d in diary_results:
-        content = d.get("content") or ""
+        content = d.content or ""
         timeline.append(
             {
-                "date": d.get("created_at", ""),
+                "date": d.created_at.isoformat() if d.created_at else "",
                 "source_type": "diary",
-                "title": d.get("title") or content[:40],
+                "title": content[:40],
                 "preview": content[:200],
             }
         )

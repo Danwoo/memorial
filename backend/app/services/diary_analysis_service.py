@@ -5,8 +5,8 @@ from uuid import UUID
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from app.config.llm import get_analytical_llm, get_creative_llm
-from app.repositories.socrates_repository import SocratesRepository
-from app.repositories.vector_repository import VectorRepository
+from app.repositories.protocols.chat_repository_protocol import ChatRepositoryProtocol
+from app.repositories.protocols.vector_repository_protocol import VectorRepositoryProtocol
 from app.services.diary_service import MIN_CONTENT_LENGTH
 from app.utils import parse_llm_json_response
 
@@ -102,10 +102,10 @@ class DiaryAnalysisService:
 
     def __init__(
         self,
-        socrates_repo: SocratesRepository | None = None,
-        vector_repo: VectorRepository | None = None,
+        chat_repo: ChatRepositoryProtocol | None = None,
+        vector_repo: VectorRepositoryProtocol | None = None,
     ):
-        self.socrates_repo = socrates_repo
+        self.chat_repo = chat_repo
         self.vector_repo = vector_repo
 
     async def generate_review_questions(self, content: str) -> list[str]:
@@ -159,10 +159,10 @@ class DiaryAnalysisService:
 
     async def generate_draft_from_conversation(self, session_id: UUID) -> str:
         """저녁 대화 세션으로부터 다이어리 초안 생성 (LLM 활용)."""
-        if not self.socrates_repo:
-            raise ValueError("SocratesRepository not available")
+        if not self.chat_repo:
+            raise ValueError("ChatRepository not available")
 
-        messages = await self.socrates_repo.get_messages(session_id)
+        messages = await self.chat_repo.get_messages(session_id)
         if not messages:
             raise ValueError("No messages found in session")
 

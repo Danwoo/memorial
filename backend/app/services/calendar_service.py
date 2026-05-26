@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from app.repositories.calendar_repository import CalendarRepository
+from app.repositories.protocols.calendar_repository_protocol import CalendarRepositoryProtocol
 from app.schemas.calendar_schema import (
     ActivityData,
     CalendarOverview,
@@ -58,7 +58,7 @@ def _build_activity_series(
 class CalendarService:
     """대시보드 통계 비즈니스 로직."""
 
-    def __init__(self, calendar_repo: CalendarRepository):
+    def __init__(self, calendar_repo: CalendarRepositoryProtocol):
         self.calendar_repo = calendar_repo
 
     async def get_overview(self, user_id: UUID) -> CalendarOverviewResponse:

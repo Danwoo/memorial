@@ -34,6 +34,7 @@ from app.agents.tools.diary_tools import (
 from app.agents.tools.graph_tools import (
     extract_entities,
     extract_relations,
+    find_path_between_entities,
     get_ego_graph,
     get_hub_entities,
     get_orphan_entities,
@@ -107,6 +108,7 @@ ANALYST_TOOLS = [
     get_graph_context,
     get_community_insights,
     find_connections,
+    find_path_between_entities,
     get_emotion_trend,
     search_scraps,
     get_ego_graph,
@@ -191,6 +193,7 @@ __all__ = [
     "extract_relations",
     "extract_tags",
     "find_connections",
+    "find_path_between_entities",
     # report_tools
     "generate_daily_digest",
     "generate_daily_insights",

@@ -5,7 +5,8 @@ from urllib.parse import urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
-from fastapi import HTTPException
+
+from app.exceptions import InvalidUrlError, UnsupportedContentTypeError, UpstreamFetchError
 
 # HTTP 요청 타임아웃 (초)
 WEB_FETCH_TIMEOUT = 15.0
@@ -35,36 +36,32 @@ def validate_url(url: str) -> str:
 
     http/https만 허용하고, 내부 네트워크 IP로 해석되는 호스트를 차단한다.
     검증 통과 시 정규화된 URL을 반환한다.
+
+    Raises:
+        InvalidUrlError: 스킴/호스트명/SSRF 정책 위반. router에서 HTTPException으로 매핑.
     """
     parsed = urlparse(url)
 
     if parsed.scheme not in ("http", "https"):
-        raise HTTPException(
-            status_code=422,
-            detail=f"허용되지 않는 URL 스킴: {parsed.scheme}. http 또는 https만 지원합니다.",
+        raise InvalidUrlError(
+            f"허용되지 않는 URL 스킴: {parsed.scheme}. http 또는 https만 지원합니다."
         )
 
     hostname = parsed.hostname
     if not hostname:
-        raise HTTPException(status_code=422, detail="URL에서 호스트명을 추출할 수 없습니다.")
+        raise InvalidUrlError("URL에서 호스트명을 추출할 수 없습니다.")
 
     # DNS 해석 후 IP 주소가 내부 대역인지 검사
     try:
         addr_infos = socket.getaddrinfo(hostname, None)
     except socket.gaierror:
-        raise HTTPException(
-            status_code=422,
-            detail=f"호스트를 해석할 수 없습니다: {hostname}",
-        ) from None
+        raise InvalidUrlError(f"호스트를 해석할 수 없습니다: {hostname}") from None
 
     for addr_info in addr_infos:
         ip = ipaddress.ip_address(addr_info[4][0])
         for network in _BLOCKED_NETWORKS:
             if ip in network:
-                raise HTTPException(
-                    status_code=422,
-                    detail="내부 네트워크 주소에 대한 요청은 허용되지 않습니다.",
-                )
+                raise InvalidUrlError("내부 네트워크 주소에 대한 요청은 허용되지 않습니다.")
 
     return url
 
@@ -74,6 +71,10 @@ async def validate_content_type(url: str) -> None:
 
     text/html 또는 text/plain이 아닌 응답은 거부한다.
     HEAD를 지원하지 않는 서버는 조용히 통과시킨다.
+
+    Raises:
+        UnsupportedContentTypeError: text/html/plain 외 응답
+        UpstreamFetchError: 타임아웃/연결 실패 (수복 불가)
     """
     try:
         async with httpx.AsyncClient(timeout=HEAD_TIMEOUT) as client:
@@ -87,23 +88,17 @@ async def validate_content_type(url: str) -> None:
                 and "text/html" not in content_type
                 and "text/plain" not in content_type
             ):
-                raise HTTPException(
-                    status_code=415,
-                    detail=f"지원하지 않는 콘텐츠 타입: {content_type}. text/html 또는 text/plain만 지원합니다.",
+                raise UnsupportedContentTypeError(
+                    f"지원하지 않는 콘텐츠 타입: {content_type}. text/html 또는 text/plain만 지원합니다."
                 )
-    except HTTPException:
-        # validate_content_type이 직접 발생시킨 HTTPException은 그대로 전파
+    except UnsupportedContentTypeError:
         raise
     except httpx.TimeoutException:
-        raise HTTPException(
-            status_code=504,
-            detail="URL 접근 시 타임아웃이 발생했습니다. 잠시 후 다시 시도해주세요.",
+        raise UpstreamFetchError(
+            "URL 접근 시 타임아웃이 발생했습니다. 잠시 후 다시 시도해주세요."
         ) from None
     except httpx.ConnectError:
-        raise HTTPException(
-            status_code=422,
-            detail="URL에 연결할 수 없습니다. 주소를 확인해주세요.",
-        ) from None
+        raise UpstreamFetchError("URL에 연결할 수 없습니다. 주소를 확인해주세요.") from None
     except Exception:
         # HEAD를 지원하지 않는 서버 등 기타 오류는 무시하고 GET으로 진행
         pass
@@ -126,13 +121,13 @@ async def _fetch_with_redirect_validation(
 
         location = response.headers.get("location", "")
         if not location:
-            raise HTTPException(status_code=502, detail="리다이렉트 응답에 Location 헤더가 없습니다.")
+            raise UpstreamFetchError("리다이렉트 응답에 Location 헤더가 없습니다.")
 
         redirect_url = urljoin(url, location)
         validate_url(redirect_url)
         url = redirect_url
 
-    raise HTTPException(status_code=502, detail="리다이렉트가 너무 많습니다 (최대 5회).")
+    raise UpstreamFetchError("리다이렉트가 너무 많습니다 (최대 5회).")
 
 
 async def fetch_url_content(url: str) -> tuple[str, str]:

@@ -21,28 +21,30 @@ async def _fetch_recent_diary_emotions(user_id: str, diary_repo) -> str:
     """최근 7일 다이어리 감정 추이 포맷 문자열로 반환."""
     try:
         from datetime import UTC, datetime, timedelta
+        from uuid import UUID
 
         end_dt = datetime.now(UTC)
         start_dt = end_dt - timedelta(days=DIARY_EMOTION_DAYS)
-        diaries = await diary_repo.get_diaries_by_date_range(
-            user_id,
-            start_dt.isoformat(),
-            end_dt.isoformat(),
+        uid = UUID(user_id) if isinstance(user_id, str) else user_id
+        diaries = await diary_repo.get_diaries_in_range(
+            uid,
+            start_dt,
+            end_dt,
             limit=DIARY_RECENT_LIMIT,
         )
         if not diaries:
             # 날짜 범위 조회 실패 시 최근 N개로 폴백
-            diaries = await diary_repo.get_diaries(user_id, limit=DIARY_RECENT_LIMIT)
+            diaries = await diary_repo.get_diaries(uid, limit=DIARY_RECENT_LIMIT)
 
         if not diaries:
             return ""
 
         lines = []
         for d in diaries:
-            date = str(d.get("created_at", ""))[:10]
-            mood = d.get("mood", "")
-            tags = ", ".join(d.get("tags", []) or [])
-            content_preview = (d.get("content") or "")[:DIARY_PREVIEW_LENGTH]
+            date = d.created_at.isoformat()[:10] if d.created_at else ""
+            mood = d.mood or ""
+            tags = ", ".join(d.tags or [])
+            content_preview = (d.content or "")[:DIARY_PREVIEW_LENGTH]
             line = f"[{date}] 감정: {mood or '기록 없음'}"
             if tags:
                 line += f" | 태그: {tags}"

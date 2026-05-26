@@ -1,14 +1,14 @@
 import asyncio
 import logging
-from typing import Any
 from uuid import UUID
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import before_sleep_log, retry, stop_after_attempt, wait_exponential
 
 from app.config.llm import get_analytical_llm, get_tagger_llm
-from app.repositories.diary_repository import DiaryRepository
+from app.domain.diary import DiaryEntry
 from app.repositories.diary_scrap_link_repository import DiaryScrapLinkRepository
+from app.repositories.protocols.diary_repository_protocol import DiaryRepositoryProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class DiaryService:
 
     def __init__(
         self,
-        diary_repo: DiaryRepository,
+        diary_repo: DiaryRepositoryProtocol,
         link_repo: DiaryScrapLinkRepository | None = None,
     ):
         self.diary_repo = diary_repo
@@ -87,7 +87,7 @@ class DiaryService:
         user_id: UUID | None,
         content: str,
         scrap_ids: list[str] | None = None,
-    ) -> dict[str, Any] | None:
+    ) -> DiaryEntry | None:
         """다이어리 항목 생성 (감정 분석 + AI 태그 추출 + 스크랩 링크 동기화 포함)."""
         mood, tags = await asyncio.gather(
             self._analyze_sentiment(content),
@@ -98,10 +98,9 @@ class DiaryService:
         # 스크랩 링크 동기화
         if diary and scrap_ids and self.link_repo:
             try:
-                diary_id = UUID(diary["id"])
-                await self.link_repo.sync_links(diary_id, scrap_ids, link_type="manual")
+                await self.link_repo.sync_links(diary.id, scrap_ids, link_type="manual")
             except Exception:
-                logger.exception("다이어리-스크랩 링크 동기화 실패 (diary_id=%s)", diary.get("id"))
+                logger.exception("다이어리-스크랩 링크 동기화 실패 (diary_id=%s)", diary.id)
 
         return diary
 
@@ -111,10 +110,10 @@ class DiaryService:
         user_id: UUID,
         content: str,
         scrap_ids: list[str] | None = None,
-    ) -> dict[str, Any] | None:
+    ) -> DiaryEntry | None:
         """다이어리 항목 수정 (감정 재분석 + AI 태그 재추출)."""
         # 소유권 확인
-        existing = await self.diary_repo.get_diary_by_id(diary_id, user_id)
+        existing = await self.diary_repo.get_diary_by_id(str(diary_id), user_id)
         if not existing:
             return None
 
@@ -133,11 +132,11 @@ class DiaryService:
 
         return diary
 
-    async def get_entries(self, user_id: UUID, limit: int = 10) -> list[dict[str, Any]]:
+    async def get_entries(self, user_id: UUID, limit: int = 10) -> list[DiaryEntry]:
         """사용자의 다이어리 항목 목록 조회."""
         return await self.diary_repo.get_diaries(user_id, limit)
 
-    async def get_diary_dates(self, user_id: UUID, limit: int = 90) -> list[dict[str, Any]]:
+    async def get_diary_dates(self, user_id: UUID, limit: int = 90) -> list[dict]:
         """다이어리가 존재하는 날짜 목록 조회."""
         entries = await self.diary_repo.get_diary_dates(user_id, limit)
         date_map: dict[str, dict] = {}
@@ -159,6 +158,6 @@ class DiaryService:
             date_map[date_str]["count"] += 1
         return list(date_map.values())
 
-    async def get_diaries_by_date(self, user_id: UUID, date_str: str) -> list[dict[str, Any]]:
+    async def get_diaries_by_date(self, user_id: UUID, date_str: str) -> list[DiaryEntry]:
         """특정 날짜의 다이어리 목록 조회."""
         return await self.diary_repo.get_diaries_by_date(user_id, date_str)

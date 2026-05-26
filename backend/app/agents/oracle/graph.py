@@ -22,9 +22,16 @@ oracle_graph = _build_oracle_graph()
 
 # AgentRegistry 등록
 def _register_oracle():
+    from app.agents.oracle.state import build_oracle_initial_state
     from app.agents.registry import AgentRegistry
+    from app.agents.streaming import DagStreaming
+    from app.config.llm import get_streaming_llm
 
-    AgentRegistry.register("oracle", oracle_graph)
-
-
-_register_oracle()
+    AgentRegistry.register(
+        "oracle",
+        graph=oracle_graph,
+        streaming=DagStreaming(
+            state_builder=build_oracle_initial_state,
+            llm_factory=get_streaming_llm,
+        ),
+    )

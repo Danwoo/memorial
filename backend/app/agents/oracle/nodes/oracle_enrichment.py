@@ -43,7 +43,7 @@ async def oracle_enrichment_node(state: OracleState, runtime: Runtime[AgentConte
     retrieval_plan = state.get("retrieval_plan", "full_rag")
 
     vector_repo = runtime.context.vector_repo
-    socrates_repo = runtime.context.socrates_repo
+    chat_repo = runtime.context.chat_repo
 
     # 1. 메모리 포맷팅
     formatted_memories = format_memories_with_budget(graded_memories, item_label="자료")
@@ -66,7 +66,7 @@ async def oracle_enrichment_node(state: OracleState, runtime: Runtime[AgentConte
     # 4. 이전 세션 컨텍스트 (첫 턴)
     previous_session_context = ""
     if turn_count == 1:
-        previous_session_context = await get_previous_session_context(UUID(user_id), socrates_repo)
+        previous_session_context = await get_previous_session_context(UUID(user_id), chat_repo)
 
     # 5. 사용자 프로필
     user_profile = None

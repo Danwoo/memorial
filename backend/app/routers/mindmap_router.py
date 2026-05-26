@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from typing import Any
 from uuid import UUID
@@ -10,9 +9,7 @@ from app.config.dependencies import (
     get_graphrag_indexing_service,
     get_mindmap_insight_service,
     get_mindmap_service,
-    get_scrap_repository,
 )
-from app.repositories.scrap_repository import ScrapRepository
 from app.schemas.mindmap_insight_schema import (
     CreateRelationRequest,
     MindmapInsightsResponse,
@@ -94,46 +91,21 @@ async def get_mindmap_insights(
 async def rebuild_graph(
     user_id: UUID = Depends(get_user_id),
     mindmap_service: MindmapService = Depends(get_mindmap_service),
-    scrap_repo: ScrapRepository = Depends(get_scrap_repository),
 ):
-    """KuzuDB 그래프를 Supabase 스크랩 데이터로 재구축.
+    """KuzuDB 그래프를 Supabase 스크랩 데이터로 재구축 (LLM 재실행 없음).
 
     EC2 이전 등으로 kuzu_data가 비어있을 때 사용.
-    LLM 재실행 없이 DB에 저장된 entities/relations만 재인덱싱.
+    실제 재인덱싱 흐름은 MindmapService.rebuild_for_user에 위임.
     """
     if not mindmap_service.is_available:
         raise HTTPException(status_code=503, detail="마인드맵 서비스를 사용할 수 없습니다")
 
     try:
-        # Supabase에서 extracted_entities가 있는 모든 스크랩 조회
-        raw_scraps = await scrap_repo.get_all_with_entities(user_id, limit=10000)
-
-        processed = 0
-        skipped = 0
-        for scrap in raw_scraps:
-            scrap_id = scrap.get("id")
-            entities = scrap.get("extracted_entities") or []
-            relations = scrap.get("extracted_relations") or []
-
-            if not scrap_id or not entities:
-                skipped += 1
-                continue
-
-            await mindmap_service.mindmap_repo.save_entities(entities, str(scrap_id), str(user_id))
-            if relations:
-                await mindmap_service.mindmap_repo.save_relations(relations)
-
-            processed += 1
-            # CPU 블로킹 방지를 위해 10개마다 양보
-            if processed % 10 == 0:
-                await asyncio.sleep(0)
-
-        logger.info("그래프 재구축 완료: user=%s, processed=%d, skipped=%d", user_id, processed, skipped)
+        result = await mindmap_service.rebuild_for_user(user_id)
         return {
             "ok": True,
-            "processed": processed,
-            "skipped": skipped,
-            "message": f"{processed}개 스크랩의 그래프 데이터가 재구축되었습니다.",
+            **result,
+            "message": f"{result['processed']}개 스크랩의 그래프 데이터가 재구축되었습니다.",
         }
     except Exception:
         logger.exception("그래프 재구축 실패: user=%s", user_id)

@@ -108,5 +108,9 @@ async def require_auth(
 
 
 def get_user_id(user: dict = Depends(require_auth)) -> UUID:
-    """인증된 사용자에서 user_id 추출."""
-    return user["id"]
+    """인증된 사용자에서 user_id 추출 + 로그 컨텍스트에 부착."""
+    from app.observability.context import user_id_var
+
+    uid: UUID = user["id"]
+    user_id_var.set(str(uid))
+    return uid

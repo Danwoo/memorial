@@ -4,6 +4,7 @@ from app.routers import (
     auth_router,
     briefing_router,
     calendar_router,
+    chat_router,
     diary_router,
     digest_router,
     duplicate_router,
@@ -15,14 +16,13 @@ from app.routers import (
     report_router,
     scrap_router,
     search_router,
-    socrates_router,
 )
 
 api_router = APIRouter(prefix="/api/v1")
 
 api_router.include_router(duplicate_router.router)
 api_router.include_router(scrap_router.router)
-api_router.include_router(socrates_router.router)
+api_router.include_router(chat_router.router)
 api_router.include_router(mindmap_router.router)
 api_router.include_router(search_router.router)
 api_router.include_router(auth_router.router)

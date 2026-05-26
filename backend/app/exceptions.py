@@ -1,0 +1,80 @@
+"""애플리케이션 도메인 예외 계층.
+
+광범위한 `except Exception`을 의미 있게 좁힐 수 있도록 도메인 예외를 정의한다.
+
+설계 원칙:
+- **Boundary 레이어**(라우터, 최상위 서비스 메서드, 스케줄러 잡)는 광범위 except로 graceful
+  degradation을 수행한다 (사용자에게 500 에러를 던지지 않는다).
+- **Inner 레이어**(노드, 도구, 유틸)는 도메인 예외를 던지거나 명시적으로 잡는다.
+- LLM 호출, 외부 API, 파싱 등 알려진 실패 모드는 도메인 예외로 변환한다.
+"""
+
+from __future__ import annotations
+
+
+class MemoirError(Exception):
+    """Memoir AI 애플리케이션 도메인 베이스 예외."""
+
+
+# ---------------------------------------------------------------------------
+# LLM 관련
+# ---------------------------------------------------------------------------
+
+
+class LLMError(MemoirError):
+    """LLM 호출 또는 응답 처리 실패."""
+
+
+class LLMParseError(LLMError):
+    """LLM 응답 파싱 실패 (JSON, structured output 등).
+
+    원인: 모델이 spec과 다른 형식으로 응답하거나 응답이 잘림.
+    조치: 폴백 응답 사용, 재시도, 또는 유저에게 안전한 메시지.
+    """
+
+
+class LLMCallError(LLMError):
+    """LLM API 호출 자체가 실패 (rate limit, timeout, network, fallback 모두 실패 등).
+
+    원인: provider 장애, 쿼터 초과, 네트워크 단절.
+    조치: graceful degradation (빈 응답, 안전한 기본값).
+    """
+
+
+# ---------------------------------------------------------------------------
+# 검색 / 저장소
+# ---------------------------------------------------------------------------
+
+
+class RetrievalError(MemoirError):
+    """검색 또는 저장소 접근 실패."""
+
+
+# ---------------------------------------------------------------------------
+# 에이전트 / 그래프 실행
+# ---------------------------------------------------------------------------
+
+
+class AgentExecutionError(MemoirError):
+    """에이전트 그래프 실행 실패."""
+
+
+# ---------------------------------------------------------------------------
+# 외부 콘텐츠 인제스트 (URL fetch, PDF parse, SSRF 검증)
+# ---------------------------------------------------------------------------
+
+
+class IngestError(MemoirError):
+    """외부 콘텐츠 가져오기 실패의 베이스 예외."""
+
+
+class InvalidUrlError(IngestError):
+    """URL 형식·스킴이 잘못됐거나 SSRF 정책에 의해 차단된 경우."""
+
+
+class UnsupportedContentTypeError(IngestError):
+    """text/html / text/plain이 아닌 콘텐츠 (415 매핑 권장)."""
+
+
+class UpstreamFetchError(IngestError):
+    """업스트림 서버에서 fetch 실패 (timeout, connection error, redirect loop)."""

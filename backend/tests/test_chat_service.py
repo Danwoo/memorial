@@ -4,7 +4,8 @@ from uuid import UUID
 
 import pytest
 
-from app.services.socrates_service import SocratesService
+from app.domain.chat import ChatMessageRecord, ChatSession
+from app.services.chat_service import ChatService
 
 NOW = datetime.now(UTC)
 USER_ID = UUID("00000000-0000-0000-0000-000000000001")
@@ -12,12 +13,22 @@ SESSION_ID_1 = UUID("00000000-0000-0000-0000-000000000010")
 SESSION_ID_2 = UUID("00000000-0000-0000-0000-000000000020")
 
 
-class TestSocratesService:
-    """SocratesService 단위 테스트 — 세션 생성, 메시지 저장, 세션 목록 정렬, 피드백"""
+def _make_session(session_id: UUID, title: str, created_at: datetime, agent_type: str = "oracle") -> ChatSession:
+    return ChatSession(
+        id=session_id,
+        user_id=USER_ID,
+        title=title,
+        created_at=created_at,
+        agent_type=agent_type,
+    )
+
+
+class TestChatService:
+    """ChatService 단위 테스트 — 세션 생성, 메시지 저장, 세션 목록 정렬, 피드백"""
 
     @pytest.fixture
     def mock_chat_repo(self):
-        """ChatRepository 목 생성"""
+        """ChatRepository 목 생성 (ChatRepositoryProtocol 만족)"""
         repo = MagicMock()
         repo.create_session = AsyncMock()
         repo.get_session = AsyncMock()
@@ -35,36 +46,31 @@ class TestSocratesService:
 
     @pytest.fixture
     def chat_service(self, mock_chat_repo):
-        """목 의존성 주입된 SocratesService 생성"""
-        return SocratesService(mock_chat_repo)
+        """목 의존성 주입된 ChatService 생성"""
+        return ChatService(mock_chat_repo)
 
     # --- 세션 생성 테스트 ---
 
     @pytest.mark.asyncio
     async def test_create_session_default_title(self, chat_service, mock_chat_repo):
         """기본 제목 없이 세션 생성이 정상 동작하는지 확인"""
-        expected = {"id": str(SESSION_ID_1), "user_id": str(USER_ID), "title": None, "created_at": NOW.isoformat()}
+        expected = _make_session(SESSION_ID_1, "Auto title", NOW)
         mock_chat_repo.create_session.return_value = expected
 
         result = await chat_service.create_session(USER_ID)
 
-        assert result["id"] == str(SESSION_ID_1)
+        assert result.id == SESSION_ID_1
         mock_chat_repo.create_session.assert_called_once_with(USER_ID, None, "oracle")
 
     @pytest.mark.asyncio
     async def test_create_session_with_title(self, chat_service, mock_chat_repo):
         """사용자 지정 제목으로 세션 생성"""
-        expected = {
-            "id": str(SESSION_ID_1),
-            "user_id": str(USER_ID),
-            "title": "오늘의 회고",
-            "created_at": NOW.isoformat(),
-        }
+        expected = _make_session(SESSION_ID_1, "오늘의 회고", NOW)
         mock_chat_repo.create_session.return_value = expected
 
         result = await chat_service.create_session(USER_ID, title="오늘의 회고")
 
-        assert result["title"] == "오늘의 회고"
+        assert result.title == "오늘의 회고"
         mock_chat_repo.create_session.assert_called_once_with(USER_ID, "오늘의 회고", "oracle")
 
     # --- 세션 조회 테스트 ---
@@ -72,13 +78,13 @@ class TestSocratesService:
     @pytest.mark.asyncio
     async def test_get_session_found(self, chat_service, mock_chat_repo):
         """존재하는 세션 ID로 조회 시 정상 반환"""
-        expected = {"id": str(SESSION_ID_1), "title": "테스트 세션"}
+        expected = _make_session(SESSION_ID_1, "테스트 세션", NOW)
         mock_chat_repo.get_session.return_value = expected
 
         result = await chat_service.get_session(SESSION_ID_1)
 
         assert result is not None
-        assert result["id"] == str(SESSION_ID_1)
+        assert result.id == SESSION_ID_1
 
     @pytest.mark.asyncio
     async def test_get_session_not_found(self, chat_service, mock_chat_repo):
@@ -98,15 +104,15 @@ class TestSocratesService:
         newer = NOW
 
         mock_chat_repo.get_sessions_by_user.return_value = [
-            {"id": str(SESSION_ID_1), "title": "오래된 세션", "created_at": older},
-            {"id": str(SESSION_ID_2), "title": "최근 세션", "created_at": newer},
+            _make_session(SESSION_ID_1, "오래된 세션", older),
+            _make_session(SESSION_ID_2, "최근 세션", newer),
         ]
 
         result = await chat_service.list_sessions(USER_ID)
 
         # Assert — 최신 세션이 먼저
-        assert result[0]["id"] == str(SESSION_ID_2)
-        assert result[1]["id"] == str(SESSION_ID_1)
+        assert result[0].id == SESSION_ID_2
+        assert result[1].id == SESSION_ID_1
 
     @pytest.mark.asyncio
     async def test_list_sessions_empty(self, chat_service, mock_chat_repo):
@@ -121,18 +127,18 @@ class TestSocratesService:
 
     @pytest.mark.asyncio
     async def test_get_history(self, chat_service, mock_chat_repo):
-        """세션의 채팅 이력이 raw 메시지 형태로 반환되는지 확인"""
+        """세션의 채팅 이력이 도메인 모델 리스트로 반환되는지 확인"""
         expected_messages = [
-            {"role": "user", "content": "안녕하세요", "created_at": NOW.isoformat()},
-            {"role": "assistant", "content": "반갑습니다!", "created_at": NOW.isoformat()},
+            ChatMessageRecord(role="user", content="안녕하세요", created_at=NOW),
+            ChatMessageRecord(role="assistant", content="반갑습니다!", created_at=NOW),
         ]
         mock_chat_repo.get_messages_raw.return_value = expected_messages
 
         result = await chat_service.get_history(SESSION_ID_1)
 
         assert len(result) == 2
-        assert result[0]["role"] == "user"
-        assert result[1]["role"] == "assistant"
+        assert result[0].role == "user"
+        assert result[1].role == "assistant"
         mock_chat_repo.get_messages_raw.assert_called_once_with(SESSION_ID_1)
 
     # --- 피드백 저장/조회 테스트 ---

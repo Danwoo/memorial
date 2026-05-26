@@ -1,8 +1,8 @@
 import logging
 from uuid import UUID
 
-from app.repositories.scrap_repository import ScrapRepository
-from app.repositories.vector_repository import VectorRepository
+from app.repositories.protocols.scrap_repository_protocol import ScrapRepositoryProtocol
+from app.repositories.protocols.vector_repository_protocol import VectorRepositoryProtocol
 from app.schemas.duplicate_schema import DuplicatePair, DuplicatePairItem
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ VECTOR_SIMILARITY_THRESHOLD = 0.90
 class DuplicateService:
     """스크랩 중복 감지 및 병합 서비스."""
 
-    def __init__(self, scrap_repo: ScrapRepository, vector_repo: VectorRepository):
+    def __init__(self, scrap_repo: ScrapRepositoryProtocol, vector_repo: VectorRepositoryProtocol):
         self.scrap_repo = scrap_repo
         self.vector_repo = vector_repo
 

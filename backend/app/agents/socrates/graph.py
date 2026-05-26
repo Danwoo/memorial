@@ -39,6 +39,7 @@ def build_socrates_react_graph():
 # AgentRegistry 등록 (fallback import 방식에서 호출)
 def _register_socrates():
     from app.agents.registry import AgentRegistry
+    from app.agents.streaming import ReactStreaming
 
     graph = build_socrates_react_graph()
-    AgentRegistry.register("socrates", graph)
+    AgentRegistry.register("socrates", graph=graph, streaming=ReactStreaming())

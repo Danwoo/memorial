@@ -2,9 +2,9 @@ import logging
 from typing import Any
 from uuid import UUID
 
-from app.repositories.mindmap_repository import MindmapRepository
-from app.repositories.scrap_repository import ScrapRepository
-from app.repositories.vector_repository import VectorRepository
+from app.repositories.protocols.mindmap_repository_protocol import MindmapRepositoryProtocol
+from app.repositories.protocols.scrap_repository_protocol import ScrapRepositoryProtocol
+from app.repositories.protocols.vector_repository_protocol import VectorRepositoryProtocol
 from app.services.korean_tokenizer import tokenize, tokens_to_tsvector_input
 
 logger = logging.getLogger(__name__)
@@ -30,9 +30,9 @@ class HybridSearchService:
 
     def __init__(
         self,
-        vector_repo: VectorRepository,
-        mindmap_repo: MindmapRepository | None = None,
-        scrap_repo: ScrapRepository | None = None,
+        vector_repo: VectorRepositoryProtocol,
+        mindmap_repo: MindmapRepositoryProtocol | None = None,
+        scrap_repo: ScrapRepositoryProtocol | None = None,
     ):
         self.vector_repo = vector_repo
         self.mindmap_repo = mindmap_repo

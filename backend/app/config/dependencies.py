@@ -4,12 +4,10 @@ from fastapi import Depends
 from supabase import Client
 
 from app.config.database import get_supabase_client
+
+# --- Orchestrators (cross-domain 흐름) ---
+from app.orchestrators.diary_orchestrator import DiaryOrchestrator
 from app.repositories.calendar_repository import CalendarRepository
-from app.repositories.diary_repository import DiaryRepository
-from app.repositories.diary_scrap_link_repository import DiaryScrapLinkRepository
-from app.repositories.mindmap_repository import MindmapRepository
-from app.repositories.notification_repository import NotificationRepository
-from app.repositories.scrap_repository import ScrapRepository
 
 # ─── DI 구조 설명 ──────────────────────────────────────────────────────────
 # FastAPI의 Depends 시스템을 활용한 의존성 주입 컨테이너.
@@ -22,9 +20,17 @@ from app.repositories.scrap_repository import ScrapRepository
 # MindmapRepository만 @lru_cache로 싱글톤 관리 (KuzuDB 초기화 비용 절감).
 # ────────────────────────────────────────────────────────────────────────────
 # --- Repositories ---
-from app.repositories.socrates_repository import SocratesRepository
+from app.repositories.chat_repository import ChatRepository
+from app.repositories.diary_repository import DiaryRepository
+from app.repositories.diary_scrap_link_repository import DiaryScrapLinkRepository
+from app.repositories.mindmap_repository import MindmapRepository
+from app.repositories.notification_repository import NotificationRepository
+from app.repositories.scrap_repository import ScrapRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.calendar_service import CalendarService
+
+# --- Services ---
+from app.services.chat_service import ChatService
 from app.services.community_summary_service import CommunitySummaryService
 from app.services.diary_analysis_service import DiaryAnalysisService
 from app.services.diary_service import DiaryService
@@ -41,9 +47,6 @@ from app.services.mindmap_service import MindmapService
 from app.services.report_service import ReportService
 from app.services.scrap_service import ScrapService
 from app.services.search_service import SearchService
-
-# --- Services ---
-from app.services.socrates_service import SocratesService
 
 
 # --- DB Client ---
@@ -69,9 +72,9 @@ def get_mindmap_repository() -> MindmapRepository:
     return MindmapRepository()
 
 
-def get_socrates_repository(db: Client = Depends(get_db)) -> SocratesRepository:
-    """SocratesRepository 인스턴스 생성."""
-    return SocratesRepository(db)
+def get_chat_repository(db: Client = Depends(get_db)) -> ChatRepository:
+    """ChatRepository 인스턴스 생성."""
+    return ChatRepository(db)
 
 
 def get_calendar_repository(db: Client = Depends(get_db)) -> CalendarRepository:
@@ -99,11 +102,11 @@ def get_scrap_service(
     return ScrapService(scrap_repo, vector_repo, mindmap_repo)
 
 
-def get_socrates_service(
-    socrates_repo: SocratesRepository = Depends(get_socrates_repository),
-) -> SocratesService:
-    """SocratesService 인스턴스 생성."""
-    return SocratesService(socrates_repo)
+def get_chat_service(
+    chat_repo: ChatRepository = Depends(get_chat_repository),
+) -> ChatService:
+    """ChatService 인스턴스 생성."""
+    return ChatService(chat_repo)
 
 
 def get_hybrid_search_service(
@@ -157,20 +160,20 @@ def get_diary_service(
 
 
 def get_diary_analysis_service(
-    socrates_repo: SocratesRepository = Depends(get_socrates_repository),
+    chat_repo: ChatRepository = Depends(get_chat_repository),
     vector_repo: VectorRepository = Depends(get_vector_repository),
 ) -> DiaryAnalysisService:
     """DiaryAnalysisService 인스턴스 생성."""
-    return DiaryAnalysisService(socrates_repo, vector_repo)
+    return DiaryAnalysisService(chat_repo, vector_repo)
 
 
 def get_digest_service(
     scrap_repo: ScrapRepository = Depends(get_scrap_repository),
     diary_repo: DiaryRepository = Depends(get_diary_repository),
-    socrates_repo: SocratesRepository = Depends(get_socrates_repository),
+    chat_repo: ChatRepository = Depends(get_chat_repository),
 ) -> DigestService:
     """DigestService 인스턴스 생성."""
-    return DigestService(scrap_repo, diary_repo, socrates_repo)
+    return DigestService(scrap_repo, diary_repo, chat_repo)
 
 
 def get_kakao_channel_service(
@@ -184,10 +187,10 @@ def get_kakao_channel_service(
 def get_export_service(
     scrap_repo: ScrapRepository = Depends(get_scrap_repository),
     diary_repo: DiaryRepository = Depends(get_diary_repository),
-    socrates_repo: SocratesRepository = Depends(get_socrates_repository),
+    chat_repo: ChatRepository = Depends(get_chat_repository),
 ) -> ExportService:
     """ExportService 인스턴스 생성."""
-    return ExportService(scrap_repo, diary_repo, socrates_repo)
+    return ExportService(scrap_repo, diary_repo, chat_repo)
 
 
 def get_insight_service(
@@ -246,3 +249,11 @@ def get_graphrag_indexing_service(
 ) -> GraphRAGIndexingService:
     """GraphRAGIndexingService 인스턴스 생성."""
     return GraphRAGIndexingService(mindmap_repo, vector_repo, db)
+
+
+# --- Orchestrator Factories (cross-domain 흐름) ---
+def get_diary_orchestrator(
+    scrap_service: ScrapService = Depends(get_scrap_service),
+) -> DiaryOrchestrator:
+    """DiaryOrchestrator 인스턴스 생성 — 다이어리 cross-domain 흐름."""
+    return DiaryOrchestrator(scrap_service)

@@ -2,6 +2,8 @@ import json
 import logging
 from datetime import datetime
 
+from app.exceptions import LLMParseError
+
 logger = logging.getLogger(__name__)
 
 
@@ -11,7 +13,11 @@ def parse_iso_datetime(iso_str: str) -> datetime:
 
 
 def parse_llm_json_response(raw: str) -> dict:
-    """LLM 응답에서 JSON 파싱. 마크다운 코드 펜스 자동 제거."""
+    """LLM 응답에서 JSON 파싱. 마크다운 코드 펜스 자동 제거.
+
+    Raises:
+        LLMParseError: JSON 파싱 실패 (모델이 spec과 다른 형식으로 응답한 경우).
+    """
     content = raw.strip()
 
     if content.startswith("```"):
@@ -21,4 +27,7 @@ def parse_llm_json_response(raw: str) -> dict:
             content = content.removeprefix("json")
         content = content.strip()
 
-    return json.loads(content)
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError as e:
+        raise LLMParseError(f"LLM JSON 응답 파싱 실패: {e}") from e

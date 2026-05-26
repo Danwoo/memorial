@@ -47,7 +47,7 @@ async def analytical_enrichment_node(state: LibrarianChatState, runtime: Runtime
     turn_count = state.get("turn_count", 0)
 
     vector_repo = runtime.context.vector_repo
-    socrates_repo = runtime.context.socrates_repo
+    chat_repo = runtime.context.chat_repo
 
     # 1. 스크랩 포맷팅 (출처 URL 포함)
     formatted_memories = format_memories_with_budget(graded_memories, include_url=True, item_label="스크랩")
@@ -85,7 +85,7 @@ async def analytical_enrichment_node(state: LibrarianChatState, runtime: Runtime
     if turn_count == 1:
         previous_session_context = await get_previous_session_context(
             UUID(user_id),
-            socrates_repo,
+            chat_repo,
             limit=2,
             section_title="이전 탐색 요약",
         )

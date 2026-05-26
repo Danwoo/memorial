@@ -18,14 +18,9 @@ def build_curator_react_graph():
     )
 
 
-def register_curator_graph(registry) -> None:
-    """Curator 에이전트를 레지스트리에 등록한다."""
-    graph = build_curator_react_graph()
-    registry.register("curator", graph)
-
-
-# AgentRegistry 등록 (fallback import 방식에서 호출)
 def _register_curator():
     from app.agents.registry import AgentRegistry
+    from app.agents.streaming import ReactStreaming
 
-    register_curator_graph(AgentRegistry)
+    graph = build_curator_react_graph()
+    AgentRegistry.register("curator", graph=graph, streaming=ReactStreaming())

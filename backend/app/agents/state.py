@@ -50,6 +50,7 @@ def build_librarian_initial_state(
         "context": {},
         "target_scrap_id": scrap_id,
         "target_text": content,
+        "source_url": None,
         "classification": None,
         "summary": None,
         "tags": None,

@@ -7,8 +7,11 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config.rate_limit import get_user_key, rate_limiter
 from app.config.settings import get_settings
+from app.observability.context import new_request_id, request_id_var, user_id_var
 
 logger = logging.getLogger(__name__)
+
+REQUEST_ID_HEADER = "X-Request-ID"
 
 # LLM 호출 경로 (10req/min)
 LLM_PATHS = {
@@ -29,6 +32,30 @@ EXPORT_PATHS = {
 }
 # 스크랩 생성 (30req/min)
 WRITE_PATHS = {"/api/v1/scraps"}
+
+
+class RequestContextMiddleware(BaseHTTPMiddleware):
+    """request_id를 부여하고 응답 헤더로 echo하며, contextvars에 채워 로그 상관관계 가능하게 한다.
+
+    upstream에서 `X-Request-ID` 헤더로 trace ID를 넘기면 그대로 사용 (cross-service tracing).
+    없으면 새로 생성.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        incoming = request.headers.get(REQUEST_ID_HEADER)
+        request_id = incoming if incoming and len(incoming) <= 64 else new_request_id()
+
+        rid_token = request_id_var.set(request_id)
+        uid_token = user_id_var.set("-")  # 인증 이후 라우터/dep에서 채워질 수도 있음
+
+        try:
+            response = await call_next(request)
+        finally:
+            request_id_var.reset(rid_token)
+            user_id_var.reset(uid_token)
+
+        response.headers[REQUEST_ID_HEADER] = request_id
+        return response
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -85,3 +112,6 @@ def register_middleware(app: FastAPI) -> None:
 
     # 레이트 리미트 (CORS 이후 적용)
     app.add_middleware(RateLimitMiddleware)
+
+    # 요청 컨텍스트 (가장 바깥쪽 — 모든 후속 middleware/route에서 request_id 가시화)
+    app.add_middleware(RequestContextMiddleware)

@@ -7,11 +7,15 @@ from app.config.database import get_supabase_client
 from app.config.error_handler import register_error_handlers
 from app.config.middleware import register_middleware
 from app.config.settings import get_settings
+from app.observability.logging_config import configure_logging
 from app.repositories.mindmap_repository import MindmapRepository
 from app.repositories.scrap_repository import ScrapRepository
 from app.routers.router import api_router
 from app.services.mindmap_service import MindmapService
 from app.services.scheduler_service import start_scheduler, stop_scheduler
+
+# 로깅을 모든 logger 생성 전에 구성해야 filter/포맷이 일관 적용됨
+configure_logging(level="DEBUG" if get_settings().DEBUG else "INFO")
 
 logger = logging.getLogger(__name__)
 
@@ -39,16 +43,22 @@ async def lifespan(_app: FastAPI):
 
 
 def _register_all_agents() -> None:
-    """모든 에이전트를 AgentRegistry에 등록한다."""
+    """모든 에이전트를 AgentRegistry에 등록한다.
+
+    부팅 시점에 명시적으로 호출되어야 한다. 모듈 import-side-effect로 등록하는 패턴은
+    테스트 격리성을 깨기 때문에 제거되었다.
+    """
     from app.agents.analyst.graph import _register_analyst
     from app.agents.curator.graph import _register_curator
     from app.agents.librarian.graph import _register_librarian
+    from app.agents.oracle.graph import _register_oracle
     from app.agents.reporter.graph import _register_reporter
     from app.agents.scribe.graph import _register_scribe
     from app.agents.socrates.graph import _register_socrates
     from app.agents.supervisor.graph import _register_supervisor
 
     _register_socrates()
+    _register_oracle()
     _register_librarian()
     _register_analyst()
     _register_scribe()

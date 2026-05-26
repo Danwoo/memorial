@@ -26,14 +26,9 @@ def build_analyst_initial_state(query: str, context: str = "", config=None) -> d
     return {"messages": [HumanMessage(content=content)]}
 
 
-def register_analyst_graph(registry) -> None:
-    """Analyst 에이전트를 레지스트리에 등록한다."""
-    graph = build_analyst_react_graph()
-    registry.register("analyst", graph)
-
-
-# AgentRegistry 등록 (fallback import 방식에서 호출)
 def _register_analyst():
     from app.agents.registry import AgentRegistry
+    from app.agents.streaming import ReactStreaming
 
-    register_analyst_graph(AgentRegistry)
+    graph = build_analyst_react_graph()
+    AgentRegistry.register("analyst", graph=graph, streaming=ReactStreaming())

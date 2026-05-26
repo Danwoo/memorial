@@ -1,17 +1,21 @@
 import logging
 import re
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 
-from app.agents.librarian.graph import librarian_graph
-from app.agents.state import build_librarian_initial_state
 from app.config.auth import get_user_id
 from app.config.dependencies import (
+    get_chat_service,
     get_diary_analysis_service,
+    get_diary_orchestrator,
     get_diary_service,
-    get_scrap_service,
-    get_socrates_service,
+)
+from app.domain.diary import DiaryEntry
+from app.orchestrators.diary_orchestrator import (
+    MIN_DIARY_LENGTH_FOR_EXTRACTION,
+    DiaryOrchestrator,
 )
 from app.schemas.diary_schema import (
     DiaryCreate,
@@ -26,45 +30,29 @@ from app.schemas.diary_schema import (
     ReviewQuestionsResponse,
     ReviewRequest,
 )
+from app.services.chat_service import ChatService
 from app.services.diary_analysis_service import DiaryAnalysisService
 from app.services.diary_service import DiaryService
-from app.services.scrap_service import ScrapService
-from app.services.socrates_service import SocratesService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/diaries", tags=["diaries"])
 
 
-async def _process_diary_with_librarian(
-    diary_id: str,
-    content: str,
-    user_id: str,
-    scrap_service: ScrapService,
-) -> None:
-    """백그라운드: 다이어리 내용을 스크랩으로 저장 후 Librarian 엔티티 추출."""
-    try:
-        scrap = await scrap_service.create_scrap(
-            user_id=UUID(user_id),
-            title=f"다이어리 {diary_id[:8]}",
-            content=content[:6000],
-            source_type="DIARY",
-        )
-        if not scrap:
-            logger.warning("Failed to create scrap for diary %s", diary_id)
-            return
+def _diary_to_dict(d: DiaryEntry) -> dict[str, Any]:
+    """DiaryEntry 도메인 모델을 API 응답용 dict로 변환.
 
-        scrap_id = str(scrap.id)
-
-        initial_state = build_librarian_initial_state(scrap_id, content[:6000], user_id)
-        result = await librarian_graph.ainvoke(initial_state)
-        logger.info(
-            "Librarian processed diary %s: classification=%s",
-            diary_id,
-            result.get("classification"),
-        )
-    except Exception:
-        logger.exception("Librarian error for diary %s", diary_id)
+    프론트엔드 호환성을 위해 기존 JSON 키 유지.
+    """
+    return {
+        "id": str(d.id),
+        "user_id": str(d.user_id),
+        "content": d.content,
+        "mood": d.mood,
+        "tags": d.tags,
+        "created_at": d.created_at.isoformat() if d.created_at else "",
+        "updated_at": d.updated_at.isoformat() if d.updated_at else None,
+    }
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -73,7 +61,7 @@ async def create_diary(
     background_tasks: BackgroundTasks,
     user_id: UUID = Depends(get_user_id),
     diary_service: DiaryService = Depends(get_diary_service),
-    scrap_service: ScrapService = Depends(get_scrap_service),
+    diary_orchestrator: DiaryOrchestrator = Depends(get_diary_orchestrator),
 ):
     """새 다이어리 항목 생성 (감정 분석 + 엔티티 추출)."""
     try:
@@ -84,18 +72,16 @@ async def create_diary(
                 detail="Failed to create diary entry - no result returned",
             )
 
-        # 충분한 길이의 다이어리는 Librarian으로 엔티티 추출
-        if len(diary.content.strip()) >= 50:
-            diary_id = result.get("id") or result.get("diary_id", "")
+        # 충분한 길이의 다이어리는 cross-domain orchestrator에 위임 (scrap 적재 + librarian 엔티티 추출)
+        if len(diary.content.strip()) >= MIN_DIARY_LENGTH_FOR_EXTRACTION:
             background_tasks.add_task(
-                _process_diary_with_librarian,
-                str(diary_id),
+                diary_orchestrator.process_diary_with_librarian,
+                str(result.id),
                 diary.content,
                 str(user_id),
-                scrap_service,
             )
 
-        return result
+        return _diary_to_dict(result)
     except HTTPException:
         raise
     except Exception:
@@ -118,7 +104,7 @@ async def update_diary(
         result = await diary_service.update_entry(diary_id, user_id, body.content, body.scrap_ids)
         if not result:
             raise HTTPException(status_code=404, detail="Diary entry not found")
-        return result
+        return _diary_to_dict(result)
     except HTTPException:
         raise
     except Exception:
@@ -137,8 +123,8 @@ async def search_diaries(
     try:
         entries = await diary_service.get_entries(user_id, limit=limit)
         q_lower = q.lower()
-        results = [e for e in entries if q_lower in (e.get("content", "")).lower()]
-        return results[:limit]
+        results = [e for e in entries if q_lower in (e.content or "").lower()]
+        return [_diary_to_dict(e) for e in results[:limit]]
     except Exception:
         logger.exception("Failed to search diaries")
         raise HTTPException(status_code=500, detail="Search failed") from None
@@ -151,7 +137,8 @@ async def list_diaries(
     diary_service: DiaryService = Depends(get_diary_service),
 ):
     """현재 사용자의 다이어리 항목 목록 조회."""
-    return await diary_service.get_entries(user_id, limit)
+    entries = await diary_service.get_entries(user_id, limit)
+    return [_diary_to_dict(e) for e in entries]
 
 
 @router.get("/dates", response_model=DiaryDatesResponse)
@@ -177,7 +164,8 @@ async def get_diaries_by_date(
     """특정 날짜(YYYY-MM-DD)의 다이어리 목록 조회."""
     if not _DATE_RE.match(date):
         raise HTTPException(status_code=400, detail="날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)")
-    return await diary_service.get_diaries_by_date(user_id, date)
+    entries = await diary_service.get_diaries_by_date(user_id, date)
+    return [_diary_to_dict(e) for e in entries]
 
 
 @router.post("/review-questions", response_model=ReviewQuestionsResponse)
@@ -215,11 +203,11 @@ async def generate_draft(
     request: GenerateDraftRequest,
     user_id: UUID = Depends(get_user_id),
     analysis_service: DiaryAnalysisService = Depends(get_diary_analysis_service),
-    socrates_service: SocratesService = Depends(get_socrates_service),
+    chat_service: ChatService = Depends(get_chat_service),
 ):
     """저녁 대화 세션에서 다이어리 초안 생성."""
     # 세션 소유권 검증 (IDOR 방어)
-    session = await socrates_service.get_session(request.session_id, user_id)
+    session = await chat_service.get_session(request.session_id, user_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     try:

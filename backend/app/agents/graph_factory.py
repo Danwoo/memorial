@@ -7,6 +7,15 @@ from langgraph.types import CachePolicy, RetryPolicy
 from app.agents.base_context import AgentContext
 from app.agents.base_state import ChatPipelineState
 
+# 모든 채팅 그래프(Socrates/Oracle/Librarian-chat)가 공유하는 공통 노드.
+# 본디 Socrates를 위해 작성됐지만 chat DAG 파이프라인 전체가 재사용한다.
+# 의존성 방향을 모듈 top에 명시하여 lazy import의 design smell을 제거한다.
+from app.agents.socrates.nodes.context_retrieval import context_retrieval_node
+from app.agents.socrates.nodes.diary_deep_retrieval import diary_deep_retrieval_node
+from app.agents.socrates.nodes.grading import grading_node
+from app.agents.socrates.nodes.memory_retrieval import memory_retrieval_node
+from app.agents.socrates.nodes.query_understanding import query_understanding_node
+
 
 def create_chat_graph(
     state_class: type,
@@ -35,13 +44,6 @@ def create_chat_graph(
         include_diary: True면 diary_deep_retrieval 노드 포함 (Socrates 전용)
         no_retrieval_target: no_retrieval 플랜 시 라우팅 대상 노드 이름 (기본: enrichment_node_name)
     """
-    from app.agents.socrates.nodes.context_retrieval import context_retrieval_node
-    from app.agents.socrates.nodes.grading import grading_node
-    from app.agents.socrates.nodes.memory_retrieval import memory_retrieval_node
-    from app.agents.socrates.nodes.query_understanding import query_understanding_node
-
-    if include_diary:
-        from app.agents.socrates.nodes.diary_deep_retrieval import diary_deep_retrieval_node
 
     # 실제 사용할 검색 노드 결정
     actual_retrieval_node = retrieval_node if retrieval_node is not None else memory_retrieval_node

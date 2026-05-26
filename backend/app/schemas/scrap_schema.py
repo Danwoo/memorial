@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 SourceType = Literal["WEB", "PDF", "NOTE", "KAKAO", "CHAT_HISTORY", "JOURNAL"]
 ScrapStatus = Literal["pending", "processing", "completed", "failed"]
@@ -14,13 +14,12 @@ ScrapStatus = Literal["pending", "processing", "completed", "failed"]
 class ScrapCreate(BaseModel):
     """스크랩 생성 요청."""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     source_type: SourceType = Field(alias="sourceType")
     url: str | None = Field(None, max_length=2048)
     content: str | None = Field(None, max_length=50000)
     memo: str | None = Field(None, max_length=5000)
-
-    class Config:
-        populate_by_name = True
 
 
 class ScrapUpdate(BaseModel):
@@ -61,15 +60,14 @@ class ScrapCreateResponse(BaseModel):
 class ScrapListItem(BaseModel):
     """스크랩 목록 항목."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     title: str
     summary: str | None = None
     source_type: SourceType
     tags: list[str] = []
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class ScrapListResponse(BaseModel):
@@ -82,6 +80,8 @@ class ScrapListResponse(BaseModel):
 class ScrapDetail(BaseModel):
     """스크랩 상세 응답."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     title: str
     content: str
@@ -92,15 +92,14 @@ class ScrapDetail(BaseModel):
     created_at: datetime
     updated_at: datetime | None = None
 
-    class Config:
-        from_attributes = True
-
 
 # --- 내부 스키마 (서비스 레이어용) ---
 
 
 class ScrapInDB(BaseModel):
     """DB 행 표현."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     user_id: UUID
@@ -113,6 +112,3 @@ class ScrapInDB(BaseModel):
     tags: list[str] | None = None
     created_at: datetime
     updated_at: datetime | None = None
-
-    class Config:
-        from_attributes = True
