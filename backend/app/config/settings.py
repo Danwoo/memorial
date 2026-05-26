@@ -1,13 +1,19 @@
 import logging
 from functools import lru_cache
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
     """환경변수 기반 애플리케이션 설정."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     APP_NAME: str = "Memoir AI"
     DEBUG: bool = False
@@ -47,12 +53,6 @@ class Settings(BaseSettings):
     VAPID_PUBLIC_KEY: str | None = None
     VAPID_PRIVATE_KEY: str | None = None
     VAPID_MAILTO: str = "mailto:noreply@memoir.ai"
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        extra = "ignore"
-
 
 @lru_cache
 def get_settings() -> Settings:

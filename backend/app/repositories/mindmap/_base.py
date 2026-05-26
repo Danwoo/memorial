@@ -39,7 +39,16 @@ class _BaseRepo:
             self.db = None
 
     def _ensure_schema(self):
-        """노드/관계 테이블이 없으면 생성."""
+        """노드/관계 테이블 + FTS 인덱스 보장.
+
+        KuzuDB 0.11에서 일반 B-tree secondary index는 미지원이지만 FTS는 지원한다.
+        Entity.name에 FTS 인덱스를 두어 `search_entities_by_name`/엔티티 lookup이
+        선형 스캔이 아닌 inverted index lookup으로 동작하게 한다.
+
+        Memory.user_id 같은 일반 필터링은 PK로 끌어올리지 않는 한 KuzuDB에서
+        가속할 수 없다 (single-column PK 제약). 운영 데이터 규모가 커지면
+        그래프 multi-tenancy(user별 Memory 노드 분리)를 검토해야 한다.
+        """
         conn = kuzu.Connection(self.db)
         ddl_statements = [
             "CREATE NODE TABLE IF NOT EXISTS Entity(name STRING, type STRING, PRIMARY KEY(name))",
@@ -49,6 +58,20 @@ class _BaseRepo:
         ]
         for stmt in ddl_statements:
             conn.execute(stmt)
+
+        # FTS extension + 인덱스 등록 (CREATE_FTS_INDEX는 idempotent하지 않으므로 예외 무시)
+        try:
+            conn.execute("INSTALL FTS")
+            conn.execute("LOAD EXTENSION FTS")
+            conn.execute("CALL CREATE_FTS_INDEX('Entity', 'idx_entity_name', ['name'])")
+            logger.info("KuzuDB FTS index on Entity.name registered")
+        except Exception as exc:
+            # 이미 존재하는 경우 또는 extension 미지원 환경 — 운영상 graceful
+            msg = str(exc).lower()
+            if "already exists" in msg or "exists" in msg:
+                pass
+            else:
+                logger.warning("FTS index 등록 실패 (graceful): %s", exc)
 
     @property
     def is_connected(self) -> bool:
