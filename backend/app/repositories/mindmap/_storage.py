@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from app.repositories.mindmap._aliases import canonicalize_entity_name
 from app.repositories.mindmap._constants import _validate_label, _validate_rel_type
 
 logger = logging.getLogger(__name__)
@@ -10,15 +11,22 @@ class _StorageMixin:
     """엔티티/관계 저장 책임을 분리한 mixin."""
 
     # ------------------------------------------------------------------
-    # 엔티티 저장 (배치 UNWIND — 1개씩 INSERT 대비 N배 성능)
+    # 엔티티 저장 (배치 UNWIND + canonicalization)
     # ------------------------------------------------------------------
     def _sync_save_entities(self, entities: list[dict], source_id: str, user_id: str | None = None) -> None:
-        """엔티티 저장 — UNWIND 배치로 단일 쿼리 실행."""
+        """엔티티 저장 — UNWIND 배치로 단일 쿼리 실행 + 이름 canonicalize.
+
+        canonicalize_entity_name으로 "리액트"/"ReactJS"가 모두 "React"로 병합되어
+        그래프 중복 노드 발생을 방지한다.
+        """
         conn = self._get_conn()
 
-        # 유효한 엔티티만 normalize (label 화이트리스트 적용)
+        # 유효한 엔티티만 normalize (label 화이트리스트 + canonical name 적용)
         normalized = [
-            {"name": e["name"], "type": _validate_label(e.get("type", "Concept"))}
+            {
+                "name": canonicalize_entity_name(e["name"]),
+                "type": _validate_label(e.get("type", "Concept")),
+            }
             for e in entities
             if e.get("name")
         ]
@@ -70,8 +78,8 @@ class _StorageMixin:
 
         normalized = [
             {
-                "source": r["source"],
-                "target": r["target"],
+                "source": canonicalize_entity_name(r["source"]),
+                "target": canonicalize_entity_name(r["target"]),
                 "rel_type": _validate_rel_type(r.get("type", "RELATED_TO")),
             }
             for r in relations

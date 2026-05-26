@@ -62,13 +62,26 @@ class MindmapService:
             logger.exception("Error creating relation")
             return False
 
-    async def rebuild_from_supabase(self) -> dict[str, int]:
+    async def rebuild_from_supabase(self, force: bool = False) -> dict[str, int]:
         """Supabase에 저장된 마인드맵 데이터로 KuzuDB를 리빌드.
 
-        서버 시작 시 호출되어 영구 디스크 없이도 마인드맵을 복원한다.
+        부팅 시 호출. KuzuDB에 이미 데이터가 있으면 skip하여 영구 디스크
+        환경에서 매 부팅 5000개 스크랩 재처리하는 비용을 회피한다.
+
+        Args:
+            force: True면 기존 데이터 무시하고 강제 rebuild (운영자 명령)
         """
         if not self.is_available or not self.scrap_repo:
             return {"scraps": 0, "entities": 0, "relations": 0}
+
+        if not force:
+            existing = await self.mindmap_repo.count_memory_nodes()
+            if existing > 0:
+                logger.info(
+                    "KuzuDB rebuild skipped — %d Memory nodes already present (force=False)",
+                    existing,
+                )
+                return {"scraps": 0, "entities": 0, "relations": 0, "skipped": True}
 
         scraps = await self.scrap_repo.get_all(limit=5000)
         total_entities = 0
