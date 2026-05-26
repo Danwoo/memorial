@@ -11,9 +11,6 @@ from langchain_core.tools import tool
 
 from app.agents.container import get_agent_container
 from app.agents.tools._context import get_user_id
-from app.config.database import get_supabase_client
-from app.repositories.calendar_repository import CalendarRepository
-from app.repositories.scrap_repository import ScrapRepository
 from app.services.digest_service import DigestService
 from app.services.insight_service import InsightService
 from app.services.report_service import ReportService
@@ -86,11 +83,8 @@ async def generate_daily_insights(
     user_id = get_user_id(config)
     container = get_agent_container()
 
-    db = get_supabase_client()
-    calendar_repo = CalendarRepository(db)
-
     service = InsightService(
-        calendar_repo=calendar_repo,
+        calendar_repo=container.calendar_repo,
         mindmap_repo=container.mindmap_repo,
         diary_repo=container.diary_repo,
     )
@@ -119,14 +113,11 @@ async def generate_weekly_report(
         source_distribution, llm_summary, highlights 필드를 가진 dict
     """
     user_id = get_user_id(config)
-
-    db = get_supabase_client()
-    calendar_repo = CalendarRepository(db)
-    scrap_repo = ScrapRepository(db)
+    container = get_agent_container()
 
     service = ReportService(
-        calendar_repo=calendar_repo,
-        scrap_repo=scrap_repo,
+        calendar_repo=container.calendar_repo,
+        scrap_repo=container.scrap_repo,
     )
 
     try:
@@ -162,14 +153,11 @@ async def generate_monthly_report(
         source_distribution, llm_summary, highlights 필드를 가진 dict
     """
     user_id = get_user_id(config)
-
-    db = get_supabase_client()
-    calendar_repo = CalendarRepository(db)
-    scrap_repo = ScrapRepository(db)
+    container = get_agent_container()
 
     service = ReportService(
-        calendar_repo=calendar_repo,
-        scrap_repo=scrap_repo,
+        calendar_repo=container.calendar_repo,
+        scrap_repo=container.scrap_repo,
     )
 
     try:

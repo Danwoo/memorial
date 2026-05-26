@@ -21,7 +21,12 @@ scheduler = AsyncIOScheduler(timezone="Asia/Seoul")
 
 
 def _build_digest_service() -> DigestService:
-    """스케줄러 컨텍스트용 DigestService 인스턴스 생성."""
+    """스케줄러 컨텍스트용 DigestService 인스턴스 생성.
+
+    스케줄러는 FastAPI 요청 컨텍스트 밖에서 실행되므로 `Depends()` 체인을 쓸 수 없다.
+    여기서 수동 wiring하는 Repository들은 DigestService의 Protocol 시그니처를 만족하므로
+    의존성 역전 원칙은 유지된다 (구현체 선택만 이 함수가 담당).
+    """
     db = get_supabase_client()
     return DigestService(
         scrap_repo=ScrapRepository(db),

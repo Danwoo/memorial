@@ -8,6 +8,7 @@ from app.agents.librarian.graph import librarian_graph
 from app.agents.state import build_librarian_initial_state
 from app.config.auth import get_user_id
 from app.config.dependencies import get_diary_scrap_link_repository, get_scrap_service
+from app.exceptions import InvalidUrlError, UnsupportedContentTypeError, UpstreamFetchError
 from app.repositories.diary_scrap_link_repository import DiaryScrapLinkRepository
 from app.schemas.diary_schema import LinkedDiariesResponse, LinkedDiaryItem
 from app.schemas.scrap_schema import (
@@ -103,6 +104,13 @@ async def create_scrap(
 
     except HTTPException:
         raise
+    except InvalidUrlError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except UnsupportedContentTypeError as e:
+        raise HTTPException(status_code=415, detail=str(e)) from e
+    except UpstreamFetchError as e:
+        # 504(timeout)와 502(redirect 등)를 동일 카테고리로 504 통일 — 클라이언트는 재시도 신호로 받는다
+        raise HTTPException(status_code=504, detail=str(e)) from e
     except Exception:
         logger.exception("스크랩 생성 실패")
         raise HTTPException(status_code=500, detail="Failed to create scrap") from None

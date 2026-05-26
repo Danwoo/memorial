@@ -57,3 +57,24 @@ class RetrievalError(MemoirError):
 
 class AgentExecutionError(MemoirError):
     """에이전트 그래프 실행 실패."""
+
+
+# ---------------------------------------------------------------------------
+# 외부 콘텐츠 인제스트 (URL fetch, PDF parse, SSRF 검증)
+# ---------------------------------------------------------------------------
+
+
+class IngestError(MemoirError):
+    """외부 콘텐츠 가져오기 실패의 베이스 예외."""
+
+
+class InvalidUrlError(IngestError):
+    """URL 형식·스킴이 잘못됐거나 SSRF 정책에 의해 차단된 경우."""
+
+
+class UnsupportedContentTypeError(IngestError):
+    """text/html / text/plain이 아닌 콘텐츠 (415 매핑 권장)."""
+
+
+class UpstreamFetchError(IngestError):
+    """업스트림 서버에서 fetch 실패 (timeout, connection error, redirect loop)."""

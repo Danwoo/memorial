@@ -2,8 +2,10 @@ import logging
 from dataclasses import dataclass
 
 from app.config.database import get_supabase_client
+from app.repositories.calendar_repository import CalendarRepository
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.diary_repository import DiaryRepository
+from app.repositories.protocols.calendar_repository_protocol import CalendarRepositoryProtocol
 from app.repositories.protocols.chat_repository_protocol import ChatRepositoryProtocol
 from app.repositories.protocols.diary_repository_protocol import DiaryRepositoryProtocol
 from app.repositories.protocols.mindmap_repository_protocol import MindmapRepositoryProtocol
@@ -30,6 +32,7 @@ class AgentServiceContainer:
     vector_repo: VectorRepository
     diary_repo: DiaryRepositoryProtocol
     mindmap_repo: MindmapRepositoryProtocol
+    calendar_repo: CalendarRepositoryProtocol
     hybrid_search: HybridSearchService
     scrap_service: ScrapService
     community_summary: CommunitySummaryService
@@ -44,6 +47,7 @@ def get_agent_container() -> AgentServiceContainer:
     vector_repo = VectorRepository(db)
     diary_repo = DiaryRepository(db)
     chat_repo = ChatRepository(db)
+    calendar_repo = CalendarRepository(db)
     # 순환 import 방지: dependencies.py가 아닌 직접 lazy import
     from app.config.dependencies import get_mindmap_repository
 
@@ -58,6 +62,7 @@ def get_agent_container() -> AgentServiceContainer:
         vector_repo=vector_repo,
         diary_repo=diary_repo,
         mindmap_repo=mindmap_repo,
+        calendar_repo=calendar_repo,
         hybrid_search=hybrid_search,
         scrap_service=scrap_service,
         community_summary=community_summary,
