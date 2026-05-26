@@ -6,6 +6,7 @@ from app.repositories.chat_repository import ChatRepository
 from app.repositories.diary_repository import DiaryRepository
 from app.repositories.mindmap_repository import MindmapRepository
 from app.repositories.protocols.chat_repository_protocol import ChatRepositoryProtocol
+from app.repositories.protocols.diary_repository_protocol import DiaryRepositoryProtocol
 from app.repositories.scrap_repository import ScrapRepository
 from app.repositories.vector_repository import VectorRepository
 from app.services.community_summary_service import CommunitySummaryService
@@ -22,7 +23,7 @@ class AgentServiceContainer:
 
     scrap_repo: ScrapRepository
     vector_repo: VectorRepository
-    diary_repo: DiaryRepository
+    diary_repo: DiaryRepositoryProtocol
     mindmap_repo: MindmapRepository
     hybrid_search: HybridSearchService
     scrap_service: ScrapService

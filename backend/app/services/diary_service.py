@@ -7,8 +7,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import before_sleep_log, retry, stop_after_attempt, wait_exponential
 
 from app.config.llm import get_analytical_llm, get_tagger_llm
-from app.repositories.diary_repository import DiaryRepository
 from app.repositories.diary_scrap_link_repository import DiaryScrapLinkRepository
+from app.repositories.protocols.diary_repository_protocol import DiaryRepositoryProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class DiaryService:
 
     def __init__(
         self,
-        diary_repo: DiaryRepository,
+        diary_repo: DiaryRepositoryProtocol,
         link_repo: DiaryScrapLinkRepository | None = None,
     ):
         self.diary_repo = diary_repo
