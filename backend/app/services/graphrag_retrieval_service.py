@@ -14,7 +14,7 @@ from supabase import Client
 
 from app.config.llm import get_analytical_llm
 from app.repositories.protocols.mindmap_repository_protocol import MindmapRepositoryProtocol
-from app.repositories.vector_repository import VectorRepository
+from app.repositories.protocols.vector_repository_protocol import VectorRepositoryProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ class GraphRAGRetrievalService:
     def __init__(
         self,
         mindmap_repo: MindmapRepositoryProtocol,
-        vector_repo: VectorRepository,
+        vector_repo: VectorRepositoryProtocol,
         db: Client,
     ):
         self.mindmap_repo = mindmap_repo

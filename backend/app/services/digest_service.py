@@ -8,8 +8,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.config.llm import get_creative_llm
 from app.domain.diary import DiaryEntry
-from app.repositories.chat_repository import ChatRepository
-from app.repositories.diary_repository import DiaryRepository
+from app.repositories.protocols.chat_repository_protocol import ChatRepositoryProtocol
+from app.repositories.protocols.diary_repository_protocol import DiaryRepositoryProtocol
 from app.repositories.protocols.scrap_repository_protocol import ScrapRepositoryProtocol
 
 logger = logging.getLogger(__name__)
@@ -51,8 +51,8 @@ class DigestService:
     def __init__(
         self,
         scrap_repo: ScrapRepositoryProtocol,
-        diary_repo: DiaryRepository,
-        chat_repo: ChatRepository | None = None,
+        diary_repo: DiaryRepositoryProtocol,
+        chat_repo: ChatRepositoryProtocol | None = None,
     ):
         self.scrap_repo = scrap_repo
         self.diary_repo = diary_repo

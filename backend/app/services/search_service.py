@@ -5,7 +5,7 @@ from uuid import UUID
 
 from app.repositories.protocols.mindmap_repository_protocol import MindmapRepositoryProtocol
 from app.repositories.protocols.scrap_repository_protocol import ScrapRepositoryProtocol
-from app.repositories.vector_repository import VectorRepository
+from app.repositories.protocols.vector_repository_protocol import VectorRepositoryProtocol
 from app.services.hybrid_search_service import HybridSearchService
 from app.utils import parse_iso_datetime
 
@@ -21,7 +21,7 @@ class SearchService:
 
     def __init__(
         self,
-        vector_repo: VectorRepository,
+        vector_repo: VectorRepositoryProtocol,
         scrap_repo: ScrapRepositoryProtocol | None = None,
         mindmap_repo: MindmapRepositoryProtocol | None = None,
         *,
