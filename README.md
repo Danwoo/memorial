@@ -1,6 +1,6 @@
 # Memoir AI
 
-> A personal app for capturing what you read, think, and write — and making sense of it over time.
+> A personal memoir app for recording daily life, revisiting what shaped you, and writing your story over time.
 
 [![Live Demo](https://img.shields.io/badge/demo-memoir--knowledge.vercel.app-4f86f4?style=flat-square)](https://memoir-knowledge.vercel.app/demo)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
@@ -15,6 +15,8 @@
 ---
 
 Write diary entries, save web articles and PDFs, then talk to **Socrates** — an AI agent that searches your own notes to answer questions and prompt reflection. A 3D knowledge graph maps how your content connects over time.
+
+The product goal is a growing memoir: revisit a period of your life, check the original records, and edit a reflection in your own words. The planned completion criteria and pilot KPIs are in [the project plan](docs/PROJECT_PLAN.md); they are targets, not claims that the full flow is already deployed.
 
 Built with React + FastAPI and a two-agent LangGraph system (Socrates for dialogue, Librarian for retrieval) using GraphRAG over Supabase pgvector and KuzuDB.
 
@@ -91,7 +93,9 @@ Required: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and either `OPENROUTER_AP
 
 ## 한국어
 
-일기 작성, 웹 콘텐츠 저장, AI 대화를 하나로 통합한 개인 지식 관리 앱입니다. **소크라테스** 에이전트가 저장된 다이어리와 스크랩을 GraphRAG로 검색해 맥락 기반 대화를 제공합니다.
+일기·스크랩·대화를 시간 흐름으로 엮어 자신의 경험과 생각의 변화를 돌아보고, 직접 고쳐 쌓아 가는 **개인 회고록 서비스**를 목표로 합니다. **소크라테스** 에이전트가 저장된 다이어리와 스크랩을 검색해 회상과 맥락 기반 대화를 돕습니다.
+
+목표 흐름은 **기록 → 시기별 회상 → 근거 확인 → 회고 초안 → 사용자 편집·저장 → 이어 쓰기**입니다. 구현·배포와 구분한 완료 기준 및 KPI는 [개발·완성 계획](docs/PROJECT_PLAN.md)에 정리했습니다.
 
 React + FastAPI 풀스택, LangGraph 기반 멀티 에이전트 시스템(소크라테스 + 라이브러리언), Supabase pgvector + KuzuDB로 구성되어 있습니다.
 
